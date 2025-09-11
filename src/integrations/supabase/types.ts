@@ -16,36 +16,45 @@ export type Database = {
     Tables: {
       attendees: {
         Row: {
+          arrival_window: string | null
           created_at: string
+          early_access: boolean | null
           email: string | null
           first_name: string
           id: string
           last_name: string
           notes: string | null
+          override_early_checkin: boolean | null
           phone: string | null
           regfox_id: string | null
           ticket_type: Database["public"]["Enums"]["ticket_type"]
           updated_at: string
         }
         Insert: {
+          arrival_window?: string | null
           created_at?: string
+          early_access?: boolean | null
           email?: string | null
           first_name: string
           id?: string
           last_name: string
           notes?: string | null
+          override_early_checkin?: boolean | null
           phone?: string | null
           regfox_id?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
         }
         Update: {
+          arrival_window?: string | null
           created_at?: string
+          early_access?: boolean | null
           email?: string | null
           first_name?: string
           id?: string
           last_name?: string
           notes?: string | null
+          override_early_checkin?: boolean | null
           phone?: string | null
           regfox_id?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]

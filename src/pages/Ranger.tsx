@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Scan, MapPin, CheckCircle, XCircle, ArrowLeft, Clock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Scan, MapPin, CheckCircle, XCircle, ArrowLeft, Clock, Shield, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,7 @@ interface ScanResult {
   result: 'allow' | 'deny';
   reason: string;
   scanned_at: string;
+  extra?: any;
 }
 
 const Ranger = () => {
@@ -23,17 +25,13 @@ const Ranger = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
   const [stats, setStats] = useState({ allowed: 0, denied: 0 });
+  const [overrideMode, setOverrideMode] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const locations = [
     { value: "gate_main", label: "Main Gate" },
-    { value: "gate_early", label: "Early Gate" },
-    { value: "meals", label: "Meal Station" },
-    { value: "bar", label: "Bar" },
-    { value: "headphones", label: "Headphones Station" },
-    { value: "activity_1", label: "Activity Area 1" },
-    { value: "activity_2", label: "Activity Area 2" },
+    { value: "early_gate", label: "Early Gate" }, 
     { value: "power_zone", label: "Power Zone" }
   ];
 
@@ -64,6 +62,58 @@ const Ranger = () => {
     }
   };
 
+  const checkAccess = (location: string, attendee: any = null): { allow: boolean; reason: string } => {
+    const now = new Date();
+    
+    // September 2025 access windows (EDT UTC-04)
+    const earlyStart = new Date('2025-09-25T12:00:00-04:00'); // Sep 25 12:00 EDT
+    const mainStart = new Date('2025-09-26T06:00:00-04:00');  // Sep 26 06:00 EDT
+    const eventEnd = new Date('2025-09-28T23:59:00-04:00');   // Sep 28 23:59 EDT
+    
+    // If override mode is active, allow all access
+    if (overrideMode) {
+      return { allow: true, reason: 'Override mode active' };
+    }
+    
+    // Check if we're before event starts
+    if (now < earlyStart) {
+      return { allow: false, reason: 'Event has not started yet' };
+    }
+    
+    // Check if we're after event ends
+    if (now > eventEnd) {
+      return { allow: false, reason: 'Event has ended' };
+    }
+    
+    // Location-specific access rules
+    switch (location) {
+      case 'early_gate':
+        if (now >= earlyStart && now < mainStart) {
+          // Early check-in window - would check attendee.arrival_window === 'early' in real implementation
+          return { allow: true, reason: 'Early check-in access' };
+        } else if (now >= mainStart) {
+          return { allow: false, reason: 'Use Main Gate - early check-in closed' };
+        }
+        break;
+        
+      case 'gate_main':
+        if (now >= mainStart) {
+          return { allow: true, reason: 'Main gate access' };
+        } else {
+          return { allow: false, reason: 'Main gate opens Sep 26 at 6:00 AM' };
+        }
+        
+      case 'power_zone':
+        if (now >= earlyStart) {
+          // Would check attendee.ticket_type === 'premium_power' in real implementation
+          return { allow: Math.random() > 0.3, reason: Math.random() > 0.3 ? 'Premium power access' : 'Premium ticket required' };
+        }
+        break;
+    }
+    
+    return { allow: false, reason: 'Access not permitted at this time' };
+  };
+
   const handleScan = async () => {
     if (!selectedLocation) {
       toast({
@@ -76,21 +126,22 @@ const Ranger = () => {
 
     setIsScanning(true);
     
-    // Simulate NFC scan or manual entry
     try {
-      // For now, we'll simulate a successful scan
-      // In real implementation, this would integrate with Web NFC API
       const mockUID = `TAG_${Date.now()}`;
+      const accessCheck = checkAccess(selectedLocation);
       
+      const scanData = {
+        rfid_uid: mockUID,
+        location: selectedLocation,
+        action: 'verify' as const,
+        result: accessCheck.allow ? 'allow' as const : 'deny' as const,
+        reason: accessCheck.reason,
+        extra: overrideMode ? { override_used: true } : null
+      };
+
       const { data, error } = await supabase
         .from('scans')
-        .insert({
-          rfid_uid: mockUID,
-          location: selectedLocation,
-          action: 'verify',
-          result: Math.random() > 0.2 ? 'allow' : 'deny', // 80% success rate for demo
-          reason: Math.random() > 0.2 ? 'Valid access' : 'Tag not found'
-        })
+        .insert(scanData)
         .select()
         .single();
 
@@ -125,7 +176,15 @@ const Ranger = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-accent">Ranger Station</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold text-accent">Ranger Station</h1>
+              {overrideMode && (
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  OVERRIDE ACTIVE
+                </Badge>
+              )}
+            </div>
             <p className="text-muted-foreground">RFID scanning and access control</p>
           </div>
           <Button variant="outline" onClick={handleBackToRoles}>
@@ -133,6 +192,34 @@ const Ranger = () => {
             Back to Role Selection
           </Button>
         </div>
+
+        {/* Override Mode Toggle */}
+        <Card className="mb-6 border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-900/10">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-amber-600" />
+                <div>
+                  <Label className="text-sm font-medium">Early Check-In Override</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Bypass time restrictions for early arrivals
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={overrideMode}
+                onCheckedChange={setOverrideMode}
+              />
+            </div>
+            {overrideMode && (
+              <div className="mt-3 p-2 rounded-md bg-amber-100 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <p className="text-xs text-amber-800 dark:text-amber-200">
+                  ⚠️ Override mode allows access regardless of time restrictions. All scans will be logged with override flag.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -243,11 +330,19 @@ const Ranger = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <Badge variant={scan.result === 'allow' ? 'default' : 'destructive'}>
-                        {scan.result}
-                      </Badge>
-                      <p className="text-xs text-muted-foreground mt-1">
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={scan.result === 'allow' ? 'default' : 'destructive'}>
+                          {scan.result}
+                        </Badge>
+                        {scan.extra?.override_used && (
+                          <Badge variant="outline" className="text-xs">
+                            <Shield className="h-3 w-3 mr-1" />
+                            OVERRIDE
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
                         {new Date(scan.scanned_at).toLocaleTimeString()}
                       </p>
                     </div>
