@@ -14,7 +14,148 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendees: {
+        Row: {
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          regfox_id: string | null
+          ticket_type: Database["public"]["Enums"]["ticket_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          regfox_id?: string | null
+          ticket_type?: Database["public"]["Enums"]["ticket_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          regfox_id?: string | null
+          ticket_type?: Database["public"]["Enums"]["ticket_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rfid_tags: {
+        Row: {
+          attendee_id: string | null
+          deactivated_at: string | null
+          issued_at: string | null
+          reason: string | null
+          status: Database["public"]["Enums"]["tag_status"]
+          uid: string
+        }
+        Insert: {
+          attendee_id?: string | null
+          deactivated_at?: string | null
+          issued_at?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["tag_status"]
+          uid: string
+        }
+        Update: {
+          attendee_id?: string | null
+          deactivated_at?: string | null
+          issued_at?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["tag_status"]
+          uid?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfid_tags_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: false
+            referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scans: {
+        Row: {
+          action: Database["public"]["Enums"]["scan_action"]
+          device_id: string | null
+          extra: Json | null
+          id: number
+          location: string
+          reason: string | null
+          result: Database["public"]["Enums"]["scan_result"]
+          rfid_uid: string | null
+          scanned_at: string
+          staff_id: string | null
+        }
+        Insert: {
+          action?: Database["public"]["Enums"]["scan_action"]
+          device_id?: string | null
+          extra?: Json | null
+          id?: number
+          location: string
+          reason?: string | null
+          result: Database["public"]["Enums"]["scan_result"]
+          rfid_uid?: string | null
+          scanned_at?: string
+          staff_id?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["scan_action"]
+          device_id?: string | null
+          extra?: Json | null
+          id?: number
+          location?: string
+          reason?: string | null
+          result?: Database["public"]["Enums"]["scan_result"]
+          rfid_uid?: string | null
+          scanned_at?: string
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scans_rfid_uid_fkey"
+            columns: ["rfid_uid"]
+            isOneToOne: false
+            referencedRelation: "rfid_tags"
+            referencedColumns: ["uid"]
+          },
+        ]
+      }
+      staff: {
+        Row: {
+          created_at: string
+          display_name: string
+          role: Database["public"]["Enums"]["staff_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          role?: Database["public"]["Enums"]["staff_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          role?: Database["public"]["Enums"]["staff_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +164,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      scan_action: "entry" | "exit" | "verify"
+      scan_result: "allow" | "deny"
+      staff_role: "admin" | "checkin" | "ranger" | "vendor"
+      tag_status: "unissued" | "active" | "lost" | "replaced" | "deactivated"
+      ticket_type:
+        | "premium_power"
+        | "dry_site"
+        | "day_pass"
+        | "staff"
+        | "vendor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +300,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      scan_action: ["entry", "exit", "verify"],
+      scan_result: ["allow", "deny"],
+      staff_role: ["admin", "checkin", "ranger", "vendor"],
+      tag_status: ["unissued", "active", "lost", "replaced", "deactivated"],
+      ticket_type: ["premium_power", "dry_site", "day_pass", "staff", "vendor"],
+    },
   },
 } as const
