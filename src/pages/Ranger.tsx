@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Scan, MapPin, CheckCircle, XCircle, LogOut, Clock } from "lucide-react";
+import { Scan, MapPin, CheckCircle, XCircle, ArrowLeft, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -89,8 +89,7 @@ const Ranger = () => {
           location: selectedLocation,
           action: 'verify',
           result: Math.random() > 0.2 ? 'allow' : 'deny', // 80% success rate for demo
-          reason: Math.random() > 0.2 ? 'Valid access' : 'Tag not found',
-          staff_id: (await supabase.auth.getUser()).data.user?.id
+          reason: Math.random() > 0.2 ? 'Valid access' : 'Tag not found'
         })
         .select()
         .single();
@@ -116,8 +115,7 @@ const Ranger = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
+  const handleBackToRoles = () => {
     navigate("/");
   };
 
@@ -130,9 +128,9 @@ const Ranger = () => {
             <h1 className="text-3xl font-bold text-accent">Ranger Station</h1>
             <p className="text-muted-foreground">RFID scanning and access control</p>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
+          <Button variant="outline" onClick={handleBackToRoles}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Role Selection
           </Button>
         </div>
 

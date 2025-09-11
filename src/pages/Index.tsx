@@ -64,11 +64,13 @@ const Index = () => {
                   </CardHeader>
                   <CardContent className="text-center">
                     <CardDescription className="mb-4">{role.description}</CardDescription>
-                    <Button variant="outline" size="sm" onClick={() => navigate("/auth", {
-                  state: {
-                    role: role.id
-                  }
-                })} className="w-full">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      if (role.id === 'admin') {
+                        navigate("/auth", { state: { role: role.id } });
+                      } else {
+                        navigate(role.path);
+                      }
+                    }} className="w-full">
                       Continue as {role.title}
                     </Button>
                   </CardContent>
