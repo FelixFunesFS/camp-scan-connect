@@ -13,19 +13,12 @@ const Index = () => {
     color: "bg-primary text-primary-foreground",
     path: "/dashboard"
   }, {
-    id: "checkin",
-    title: "Check-In",
-    description: "Attendee lookup, RFID activation, and campsite assignment",
+    id: "parking",
+    title: "Parking Activation",
+    description: "RFID wristband activation for attendees at parking areas",
     icon: UserCheck,
     color: "bg-secondary text-secondary-foreground",
-    path: "/check-in"
-  }, {
-    id: "ranger",
-    title: "Ranger",
-    description: "Gate access control and station operations hub",
-    icon: Scan,
-    color: "bg-accent text-accent-foreground",
-    path: "/ranger"
+    path: "/parking-activation"
   }, {
     id: "vendor",
     title: "Vendor",
@@ -33,6 +26,28 @@ const Index = () => {
     icon: ShoppingCart,
     color: "bg-muted text-muted-foreground",
     path: "/vendor"
+  }];
+
+  const stations = [{
+    id: "meal",
+    title: "Meal Station",
+    description: "Breakfast, lunch, and dinner service",
+    path: "/meal-station"
+  }, {
+    id: "drinks",
+    title: "Drinks Station", 
+    description: "Beverage redemption service",
+    path: "/drinks-station"
+  }, {
+    id: "headphones",
+    title: "Headphones Station",
+    description: "Silent disco equipment checkout",
+    path: "/headphones-station"
+  }, {
+    id: "activation",
+    title: "Activation Station",
+    description: "RFID activation and deactivation",
+    path: "/activation"
   }];
   return <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
       <div className="max-w-4xl mx-auto">
@@ -79,6 +94,32 @@ const Index = () => {
           </div>
         </div>
 
+        {/* Station Operations */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+            <Scan className="h-5 w-5" />
+            Station Operations
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {stations.map(station => (
+              <Card key={station.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-lg mb-2">{station.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">{station.description}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate(station.path)}
+                    className="w-full"
+                  >
+                    Access {station.title}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
         {/* Self-Activate Section */}
         <Card className="border-secondary/20 bg-secondary/5">
           <CardHeader className="text-center">
@@ -91,7 +132,7 @@ const Index = () => {
             <CardDescription className="mb-4">
               Already checked in? Activate your RFID wristband using your phone number.
             </CardDescription>
-            <Button variant="secondary" onClick={() => navigate("/self-activate")} className="w-full max-w-md">
+            <Button variant="secondary" onClick={() => navigate("/parking-activation")} className="w-full max-w-md">
               Activate My Wristband
             </Button>
           </CardContent>

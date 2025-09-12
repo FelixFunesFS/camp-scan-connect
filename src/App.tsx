@@ -7,9 +7,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import CheckIn from "./pages/CheckIn";
+import ParkingActivation from "./pages/ParkingActivation";
 import Ranger from "./pages/Ranger";
-import SelfActivate from "./pages/SelfActivate";
 import ActivationStation from "./pages/ActivationStation";
 import MealStation from "./pages/MealStation";
 import DrinksStation from "./pages/DrinksStation";
@@ -27,9 +26,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/check-in" element={<CheckIn />} />
+          <Route path="/parking-activation" element={<ParkingActivation />} />
           <Route path="/ranger" element={<Ranger />} />
-          <Route path="/self-activate" element={<SelfActivate />} />
           <Route path="/activation" element={<ActivationStation />} />
           <Route path="/meal-station" element={<MealStation />} />
           <Route path="/drinks-station" element={<DrinksStation />} />
