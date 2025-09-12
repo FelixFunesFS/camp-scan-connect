@@ -23,12 +23,13 @@ interface MealWindow {
   label: string;
   start: string;
   end: string;
+  days: number[]; // 5 = Friday, 6 = Saturday, 0 = Sunday
 }
 
 const MEAL_WINDOWS: MealWindow[] = [
-  { type: 'breakfast', label: 'Breakfast', start: '06:00', end: '10:00' },
-  { type: 'lunch', label: 'Lunch', start: '11:00', end: '15:00' },
-  { type: 'dinner', label: 'Dinner', start: '17:00', end: '21:00' },
+  { type: 'breakfast', label: 'Breakfast', start: '06:00', end: '10:00', days: [6, 0] }, // Saturday, Sunday
+  { type: 'lunch', label: 'Lunch', start: '11:00', end: '15:00', days: [6] }, // Saturday only
+  { type: 'dinner', label: 'Dinner', start: '17:00', end: '21:00', days: [5, 6] }, // Friday, Saturday
 ];
 
 const MAX_DAILY_MEALS = 3;
@@ -39,6 +40,7 @@ export default function MealStation() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [mealCount, setMealCount] = useState(0);
   const [currentMealWindow, setCurrentMealWindow] = useState<MealWindow | null>(null);
+  const [currentDay, setCurrentDay] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -74,12 +76,24 @@ export default function MealStation() {
   const checkCurrentMealWindow = () => {
     const now = new Date();
     const currentTime = now.toTimeString().substring(0, 5);
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
+    
+    // Set current day name
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    setCurrentDay(dayNames[dayOfWeek]);
 
     const activeMeal = MEAL_WINDOWS.find(meal => 
-      currentTime >= meal.start && currentTime <= meal.end
+      meal.days.includes(dayOfWeek) && 
+      currentTime >= meal.start && 
+      currentTime <= meal.end
     );
 
     setCurrentMealWindow(activeMeal || null);
+  };
+
+  const getAvailableMealsForToday = () => {
+    const dayOfWeek = new Date().getDay();
+    return MEAL_WINDOWS.filter(meal => meal.days.includes(dayOfWeek));
   };
 
   const loadMealCount = async () => {
@@ -169,16 +183,21 @@ export default function MealStation() {
         {/* Meal Window Status */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              <span className="font-medium">Current Meal Window:</span>
-              {currentMealWindow ? (
-                <Badge variant="default">
-                  {currentMealWindow.label} ({currentMealWindow.start} - {currentMealWindow.end})
-                </Badge>
-              ) : (
-                <Badge variant="secondary">No active meal window</Badge>
-              )}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                <span className="font-medium">Today ({currentDay}):</span>
+                {currentMealWindow ? (
+                  <Badge variant="default">
+                    {currentMealWindow.label} ({currentMealWindow.start} - {currentMealWindow.end})
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">No active meal window</Badge>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Available meals today: {getAvailableMealsForToday().map(meal => meal.label).join(', ') || 'None'}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -247,16 +266,30 @@ export default function MealStation() {
               </Button>
             )}
 
-            {/* Meal Windows Info */}
+            {/* Today's Meal Windows */}
             <div className="pt-4 border-t">
-              <h4 className="font-medium mb-2">Meal Windows</h4>
+              <h4 className="font-medium mb-2">Today's Meal Schedule</h4>
               <div className="space-y-1 text-sm text-muted-foreground">
-                {MEAL_WINDOWS.map((meal) => (
-                  <div key={meal.type} className="flex justify-between">
-                    <span>{meal.label}:</span>
-                    <span>{meal.start} - {meal.end}</span>
-                  </div>
-                ))}
+                {getAvailableMealsForToday().length > 0 ? (
+                  getAvailableMealsForToday().map((meal) => (
+                    <div key={meal.type} className="flex justify-between">
+                      <span>{meal.label}:</span>
+                      <span>{meal.start} - {meal.end}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p>No meals available today</p>
+                )}
+              </div>
+              
+              {/* Event Schedule Overview */}
+              <div className="mt-4 pt-4 border-t">
+                <h5 className="font-medium mb-2 text-xs uppercase tracking-wide">Event Schedule</h5>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div><strong>Friday:</strong> Dinner (17:00-21:00)</div>
+                  <div><strong>Saturday:</strong> Breakfast (06:00-10:00), Lunch (11:00-15:00), Dinner (17:00-21:00)</div>
+                  <div><strong>Sunday:</strong> Breakfast (06:00-10:00)</div>
+                </div>
               </div>
             </div>
           </CardContent>
