@@ -10,6 +10,10 @@ import Dashboard from "./pages/Dashboard";
 import CheckIn from "./pages/CheckIn";
 import Ranger from "./pages/Ranger";
 import SelfActivate from "./pages/SelfActivate";
+import ActivationStation from "./pages/ActivationStation";
+import MealStation from "./pages/MealStation";
+import DrinksStation from "./pages/DrinksStation";
+import HeadphonesStation from "./pages/HeadphonesStation";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +30,10 @@ const App = () => (
           <Route path="/check-in" element={<CheckIn />} />
           <Route path="/ranger" element={<Ranger />} />
           <Route path="/self-activate" element={<SelfActivate />} />
+          <Route path="/activation" element={<ActivationStation />} />
+          <Route path="/meal-station" element={<MealStation />} />
+          <Route path="/drinks-station" element={<DrinksStation />} />
+          <Route path="/headphones-station" element={<HeadphonesStation />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
