@@ -34,7 +34,10 @@ const Ranger = () => {
   const locations = [
     { value: "gate_main", label: "Main Gate" },
     { value: "early_gate", label: "Early Gate" }, 
-    { value: "power_zone", label: "Power Zone" }
+    { value: "power_zone", label: "Power Zone" },
+    { value: "meal", label: "Meal" },
+    { value: "bar", label: "Bar" },
+    { value: "head_phones_checkout", label: "Head Phones Check out" }
   ];
 
   useEffect(() => {
@@ -92,10 +95,10 @@ const Ranger = () => {
   const checkAccess = async (location: string, rfidUid: string): Promise<{ allow: boolean; reason: string; attendee?: any }> => {
     const now = new Date();
     
-    // September 2025 access windows (EDT UTC-04)
-    const earlyStart = new Date('2025-09-25T12:00:00-04:00'); // Sep 25 12:00 EDT
-    const mainStart = new Date('2025-09-26T06:00:00-04:00');  // Sep 26 06:00 EDT
-    const eventEnd = new Date('2025-09-28T23:59:00-04:00');   // Sep 28 23:59 EDT
+    // September 2025 access windows (EDT UTC-04) - Testing dates
+    const earlyStart = new Date('2025-09-11T12:00:00-04:00'); // Sep 11 12:00 EDT
+    const mainStart = new Date('2025-09-11T18:00:00-04:00');  // Sep 11 18:00 EDT
+    const eventEnd = new Date('2025-09-14T23:59:00-04:00');   // Sep 14 23:59 EDT
     
     // Look up attendee by RFID
     let attendee = null;
@@ -150,7 +153,7 @@ const Ranger = () => {
         if (now >= mainStart) {
           return { allow: true, reason: 'Main gate access granted', attendee };
         } else {
-          return { allow: false, reason: 'Main gate opens Sep 26 at 6:00 AM', attendee };
+          return { allow: false, reason: 'Main gate opens Sep 11 at 6:00 PM', attendee };
         }
         
       case 'power_zone':
@@ -163,6 +166,15 @@ const Ranger = () => {
           }
         }
         break;
+        
+      case 'meal':
+      case 'bar':
+      case 'head_phones_checkout':
+        if (now >= earlyStart) {
+          return { allow: true, reason: 'Service access granted during event hours', attendee };
+        } else {
+          return { allow: false, reason: 'Service not available yet - event starts Sep 11 at 12:00 PM', attendee };
+        }
     }
     
     return { allow: false, reason: 'Access not permitted at this time', attendee };
