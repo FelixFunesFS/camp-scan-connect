@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Scan, MapPin, CheckCircle, XCircle, ArrowLeft, Clock, Shield, AlertTriangle } from "lucide-react";
+import { Scan, MapPin, CheckCircle, XCircle, ArrowLeft, Clock, Shield, AlertTriangle, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -22,10 +22,12 @@ interface ScanResult {
 
 const Ranger = () => {
   const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedRfid, setSelectedRfid] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
   const [stats, setStats] = useState({ allowed: 0, denied: 0 });
   const [overrideMode, setOverrideMode] = useState(false);
+  const [availableRfids, setAvailableRfids] = useState<Array<{uid: string, attendee_name: string, ticket_type: string}>>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,9 +39,34 @@ const Ranger = () => {
 
   useEffect(() => {
     loadRecentScans();
+    loadAvailableRfids();
     const interval = setInterval(loadRecentScans, 10000); // Refresh every 10 seconds
     return () => clearInterval(interval);
   }, []);
+
+  const loadAvailableRfids = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('rfid_tags')
+        .select(`
+          uid,
+          attendees!inner(first_name, last_name, ticket_type, early_access, override_early_checkin)
+        `)
+        .eq('status', 'active');
+
+      if (error) throw error;
+      
+      const rfids = data?.map(tag => ({
+        uid: tag.uid,
+        attendee_name: `${tag.attendees.first_name} ${tag.attendees.last_name}`,
+        ticket_type: tag.attendees.ticket_type
+      })) || [];
+      
+      setAvailableRfids(rfids);
+    } catch (error) {
+      console.error('Error loading RFID tags:', error);
+    }
+  };
 
   const loadRecentScans = async () => {
     try {
@@ -62,7 +89,7 @@ const Ranger = () => {
     }
   };
 
-  const checkAccess = (location: string, attendee: any = null): { allow: boolean; reason: string } => {
+  const checkAccess = async (location: string, rfidUid: string): Promise<{ allow: boolean; reason: string; attendee?: any }> => {
     const now = new Date();
     
     // September 2025 access windows (EDT UTC-04)
@@ -70,48 +97,75 @@ const Ranger = () => {
     const mainStart = new Date('2025-09-26T06:00:00-04:00');  // Sep 26 06:00 EDT
     const eventEnd = new Date('2025-09-28T23:59:00-04:00');   // Sep 28 23:59 EDT
     
+    // Look up attendee by RFID
+    let attendee = null;
+    try {
+      const { data, error } = await supabase
+        .from('rfid_tags')
+        .select(`
+          uid,
+          attendees!inner(*, ticket_type, early_access, override_early_checkin)
+        `)
+        .eq('uid', rfidUid)
+        .eq('status', 'active')
+        .single();
+
+      if (error) throw error;
+      attendee = data?.attendees;
+    } catch (error) {
+      return { allow: false, reason: 'Invalid RFID tag or attendee not found' };
+    }
+
     // If override mode is active, allow all access
     if (overrideMode) {
-      return { allow: true, reason: 'Override mode active' };
+      return { allow: true, reason: 'Override mode active', attendee };
     }
     
     // Check if we're before event starts
     if (now < earlyStart) {
-      return { allow: false, reason: 'Event has not started yet' };
+      return { allow: false, reason: 'Event has not started yet', attendee };
     }
     
     // Check if we're after event ends
     if (now > eventEnd) {
-      return { allow: false, reason: 'Event has ended' };
+      return { allow: false, reason: 'Event has ended', attendee };
     }
     
-    // Location-specific access rules
+    // Location-specific access rules using real attendee data
     switch (location) {
       case 'early_gate':
         if (now >= earlyStart && now < mainStart) {
-          // Early check-in window - would check attendee.arrival_window === 'early' in real implementation
-          return { allow: true, reason: 'Early check-in access' };
+          // Check if attendee has early access or override
+          if (attendee.early_access || attendee.override_early_checkin) {
+            return { allow: true, reason: 'Early check-in access granted', attendee };
+          } else {
+            return { allow: false, reason: 'Early check-in not permitted for this ticket', attendee };
+          }
         } else if (now >= mainStart) {
-          return { allow: false, reason: 'Use Main Gate - early check-in closed' };
+          return { allow: false, reason: 'Use Main Gate - early check-in closed', attendee };
         }
         break;
         
       case 'gate_main':
         if (now >= mainStart) {
-          return { allow: true, reason: 'Main gate access' };
+          return { allow: true, reason: 'Main gate access granted', attendee };
         } else {
-          return { allow: false, reason: 'Main gate opens Sep 26 at 6:00 AM' };
+          return { allow: false, reason: 'Main gate opens Sep 26 at 6:00 AM', attendee };
         }
         
       case 'power_zone':
         if (now >= earlyStart) {
-          // Would check attendee.ticket_type === 'premium_power' in real implementation
-          return { allow: Math.random() > 0.3, reason: Math.random() > 0.3 ? 'Premium power access' : 'Premium ticket required' };
+          // Check if attendee has premium power ticket
+          if (attendee.ticket_type === 'premium_power') {
+            return { allow: true, reason: 'Premium power zone access', attendee };
+          } else {
+            return { allow: false, reason: 'Premium power ticket required', attendee };
+          }
         }
         break;
     }
     
-    return { allow: false, reason: 'Access not permitted at this time' };
+    return { allow: false, reason: 'Access not permitted at this time', attendee };
   };
 
   const handleScan = async () => {
@@ -124,19 +178,33 @@ const Ranger = () => {
       return;
     }
 
+    if (!selectedRfid) {
+      toast({
+        title: "RFID Required",
+        description: "Please select an RFID tag to scan.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsScanning(true);
     
     try {
-      const mockUID = `TAG_${Date.now()}`;
-      const accessCheck = checkAccess(selectedLocation);
+      const accessCheck = await checkAccess(selectedLocation, selectedRfid);
       
       const scanData = {
-        rfid_uid: mockUID,
+        rfid_uid: selectedRfid,
         location: selectedLocation,
         action: 'verify' as const,
         result: accessCheck.allow ? 'allow' as const : 'deny' as const,
         reason: accessCheck.reason,
-        extra: overrideMode ? { override_used: true } : null
+        extra: {
+          ...(overrideMode ? { override_used: true } : {}),
+          ...(accessCheck.attendee ? { 
+            attendee_name: `${accessCheck.attendee.first_name} ${accessCheck.attendee.last_name}`,
+            ticket_type: accessCheck.attendee.ticket_type 
+          } : {})
+        }
       };
 
       const { data, error } = await supabase
@@ -149,7 +217,7 @@ const Ranger = () => {
 
       toast({
         title: data.result === 'allow' ? "Access Granted" : "Access Denied",
-        description: data.reason,
+        description: `${data.reason}${accessCheck.attendee ? ` - ${accessCheck.attendee.first_name} ${accessCheck.attendee.last_name}` : ''}`,
         variant: data.result === 'allow' ? "default" : "destructive"
       });
 
@@ -279,9 +347,36 @@ const Ranger = () => {
               </Select>
             </div>
 
+            <div>
+              <Label className="text-sm font-medium mb-2 block">RFID Tag (Testing)</Label>
+              <Select value={selectedRfid} onValueChange={setSelectedRfid}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select RFID tag to scan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRfids.map((rfid) => (
+                    <SelectItem key={rfid.uid} value={rfid.uid}>
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        <div className="text-left">
+                          <div className="font-medium">{rfid.uid}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {rfid.attendee_name} ({rfid.ticket_type})
+                          </div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                In production, this would be automatically detected by RFID scanner hardware
+              </p>
+            </div>
+
             <Button 
               onClick={handleScan}
-              disabled={isScanning || !selectedLocation}
+              disabled={isScanning || !selectedLocation || !selectedRfid}
               className="w-full h-20 text-xl"
               size="lg"
             >
