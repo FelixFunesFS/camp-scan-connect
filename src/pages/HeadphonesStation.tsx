@@ -30,18 +30,23 @@ export default function HeadphonesStation() {
     }
   }, [selectedRfid]);
 
-  const handleRfidScan = (rfidData: RfidTag) => {
+  const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
+    if (rfidData.attendee_id) {
+      await checkHeadphoneStatus(rfidData.attendee_id);
+      await handleHeadphoneToggle(rfidData);
+    }
   };
 
-  const checkHeadphoneStatus = async () => {
-    if (!selectedRfid?.attendee_id) return;
+  const checkHeadphoneStatus = async (attendeeId?: string) => {
+    const targetAttendeeId = attendeeId || selectedRfid?.attendee_id;
+    if (!targetAttendeeId) return;
 
     // Get the latest headphone transaction
     const { data: lastTransaction } = await supabase
       .from("station_transactions")
       .select("*")
-      .eq("attendee_id", selectedRfid.attendee_id)
+      .eq("attendee_id", targetAttendeeId)
       .eq("station_type", "headphones")
       .order("created_at", { ascending: false })
       .limit(1)
@@ -54,8 +59,9 @@ export default function HeadphonesStation() {
     }
   };
 
-  const handleHeadphoneToggle = async () => {
-    if (!selectedRfid?.attendee_id) return;
+  const handleHeadphoneToggle = async (rfidData?: RfidTag) => {
+    const attendeeId = rfidData?.attendee_id || selectedRfid?.attendee_id;
+    if (!attendeeId) return;
 
     setIsProcessing(true);
 
@@ -67,10 +73,10 @@ export default function HeadphonesStation() {
       const { error } = await supabase
         .from("station_transactions")
         .insert({
-          attendee_id: selectedRfid.attendee_id,
+          attendee_id: attendeeId,
           station_type: 'headphones',
           transaction_type: transactionType,
-          rfid_uid: selectedRfid.uid,
+          rfid_uid: rfidData?.uid || selectedRfid?.uid,
           current_status: newStatus
         });
 
@@ -134,7 +140,7 @@ export default function HeadphonesStation() {
                 </div>
 
                 <Button
-                  onClick={handleHeadphoneToggle}
+                  onClick={() => handleHeadphoneToggle()}
                   disabled={isProcessing}
                   size="lg"
                   className="w-full h-16 text-lg"

@@ -30,17 +30,22 @@ export default function DrinksStation() {
     }
   }, [selectedRfid]);
 
-  const handleRfidScan = (rfidData: RfidTag) => {
+  const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
+    if (rfidData.attendee_id) {
+      await loadDrinkCount(rfidData.attendee_id);
+      await handleDrinkScan(rfidData);
+    }
   };
 
-  const loadDrinkCount = async () => {
-    if (!selectedRfid?.attendee_id) return;
+  const loadDrinkCount = async (attendeeId?: string) => {
+    const targetAttendeeId = attendeeId || selectedRfid?.attendee_id;
+    if (!targetAttendeeId) return;
 
     const { data: transactions, error } = await supabase
       .from("station_transactions")
       .select("*")
-      .eq("attendee_id", selectedRfid.attendee_id)
+      .eq("attendee_id", targetAttendeeId)
       .eq("station_type", "drinks")
       .gte("created_at", new Date().toISOString().split('T')[0]);
 
@@ -52,8 +57,9 @@ export default function DrinksStation() {
     setDrinkCount(transactions.length);
   };
 
-  const handleDrinkScan = async () => {
-    if (!selectedRfid?.attendee_id) return;
+  const handleDrinkScan = async (rfidData?: RfidTag) => {
+    const attendeeId = rfidData?.attendee_id || selectedRfid?.attendee_id;
+    if (!attendeeId) return;
 
     setIsProcessing(true);
 
@@ -61,10 +67,10 @@ export default function DrinksStation() {
       const { error } = await supabase
         .from("station_transactions")
         .insert({
-          attendee_id: selectedRfid.attendee_id,
+          attendee_id: attendeeId,
           station_type: 'drinks',
           transaction_type: 'drink',
-          rfid_uid: selectedRfid.uid,
+          rfid_uid: rfidData?.uid || selectedRfid?.uid,
           daily_count: drinkCount + 1
         });
 
@@ -128,7 +134,7 @@ export default function DrinksStation() {
                 </div>
 
                 <Button
-                  onClick={handleDrinkScan}
+                  onClick={() => handleDrinkScan()}
                   disabled={isProcessing}
                   size="lg"
                   className="w-full h-16 text-lg"

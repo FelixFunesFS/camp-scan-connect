@@ -32,18 +32,23 @@ export default function ActivationStation() {
     }
   }, [selectedRfid]);
 
-  const handleRfidScan = (rfidData: RfidTag) => {
+  const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
+    if (rfidData.attendee_id) {
+      await checkCurrentStatus(rfidData.attendee_id);
+      await handleActivationToggle(rfidData);
+    }
   };
 
-  const checkCurrentStatus = async () => {
-    if (!selectedRfid?.attendee_id) return;
+  const checkCurrentStatus = async (attendeeId?: string) => {
+    const targetAttendeeId = attendeeId || selectedRfid?.attendee_id;
+    if (!targetAttendeeId) return;
 
     // Check latest activation status
     const { data: lastTransaction } = await supabase
       .from("station_transactions")
       .select("*")
-      .eq("attendee_id", selectedRfid.attendee_id)
+      .eq("attendee_id", targetAttendeeId)
       .eq("station_type", "activation")
       .order("created_at", { ascending: false })
       .limit(1)
@@ -56,8 +61,9 @@ export default function ActivationStation() {
     }
   };
 
-  const handleActivationToggle = async () => {
-    if (!selectedRfid?.attendee_id) return;
+  const handleActivationToggle = async (rfidData?: RfidTag) => {
+    const attendeeId = rfidData?.attendee_id || selectedRfid?.attendee_id;
+    if (!attendeeId) return;
 
     setIsProcessing(true);
 
@@ -68,10 +74,10 @@ export default function ActivationStation() {
       const { error } = await supabase
         .from("station_transactions")
         .insert({
-          attendee_id: selectedRfid.attendee_id,
+          attendee_id: attendeeId,
           station_type: 'activation',
           transaction_type: transactionType,
-          rfid_uid: selectedRfid.uid,
+          rfid_uid: rfidData?.uid || selectedRfid?.uid,
           current_status: newStatus
         });
 
@@ -129,7 +135,7 @@ export default function ActivationStation() {
                 </Badge>
 
                 <Button
-                  onClick={handleActivationToggle}
+                  onClick={() => handleActivationToggle()}
                   disabled={isProcessing}
                   size="lg"
                   className="w-full h-16 text-lg"

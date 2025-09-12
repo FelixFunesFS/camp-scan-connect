@@ -23,6 +23,8 @@ interface RfidScannerProps {
   placeholder?: string;
   title?: string;
   showAttendeeInfo?: boolean;
+  autoTrigger?: boolean;
+  isProcessing?: boolean;
 }
 
 export const RfidScanner = ({ 
@@ -31,7 +33,9 @@ export const RfidScanner = ({
   disabled = false, 
   placeholder = "Select RFID tag...",
   title = "RFID Scanner",
-  showAttendeeInfo = true
+  showAttendeeInfo = true,
+  autoTrigger = false,
+  isProcessing = false
 }: RfidScannerProps) => {
   const [selectedRfid, setSelectedRfid] = useState<string>("");
   const [availableRfids, setAvailableRfids] = useState<RfidTag[]>([]);
@@ -69,6 +73,16 @@ export const RfidScanner = ({
     }
   };
 
+  const handleRfidChange = (uid: string) => {
+    setSelectedRfid(uid);
+    if (autoTrigger && uid) {
+      const rfidData = availableRfids.find(rfid => rfid.uid === uid);
+      if (rfidData) {
+        onScan(rfidData);
+      }
+    }
+  };
+
   const selectedRfidData = availableRfids.find(rfid => rfid.uid === selectedRfid);
 
   return (
@@ -81,9 +95,9 @@ export const RfidScanner = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Select value={selectedRfid} onValueChange={setSelectedRfid} disabled={disabled || isLoading}>
+          <Select value={selectedRfid} onValueChange={handleRfidChange} disabled={disabled || isLoading || isProcessing}>
             <SelectTrigger>
-              <SelectValue placeholder={placeholder} />
+              <SelectValue placeholder={isProcessing ? "Processing..." : placeholder} />
             </SelectTrigger>
             <SelectContent className="bg-card border border-border shadow-lg z-50">
               {availableRfids.map((rfid) => (
@@ -116,15 +130,24 @@ export const RfidScanner = ({
           </div>
         )}
 
-        <Button 
-          onClick={handleScan}
-          disabled={!selectedRfid || disabled}
-          className="w-full"
-          size="lg"
-        >
-          <Scan className="h-4 w-4 mr-2" />
-          Scan
-        </Button>
+{!autoTrigger && (
+          <Button 
+            onClick={handleScan}
+            disabled={!selectedRfid || disabled}
+            className="w-full"
+            size="lg"
+          >
+            <Scan className="h-4 w-4 mr-2" />
+            Scan
+          </Button>
+        )}
+
+        {autoTrigger && isProcessing && (
+          <div className="flex items-center justify-center p-4 text-muted-foreground">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mr-2"></div>
+            Processing...
+          </div>
+        )}
       </CardContent>
     </Card>
   );

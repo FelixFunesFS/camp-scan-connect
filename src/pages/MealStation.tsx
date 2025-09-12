@@ -53,8 +53,12 @@ export default function MealStation() {
     }
   }, [selectedRfid]);
 
-  const handleRfidScan = (rfidData: RfidTag) => {
+  const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
+    if (rfidData.attendee_id) {
+      await loadMealCount(rfidData.attendee_id);
+      await handleMealScan(rfidData);
+    }
   };
 
   const checkCurrentMealWindow = () => {
@@ -80,13 +84,14 @@ export default function MealStation() {
     return MEAL_WINDOWS.filter(meal => meal.days.includes(dayOfWeek));
   };
 
-  const loadMealCount = async () => {
-    if (!selectedRfid?.attendee_id) return;
+  const loadMealCount = async (attendeeId?: string) => {
+    const targetAttendeeId = attendeeId || selectedRfid?.attendee_id;
+    if (!targetAttendeeId) return;
 
     const { data: transactions, error } = await supabase
       .from("station_transactions")
       .select("*")
-      .eq("attendee_id", selectedRfid.attendee_id)
+      .eq("attendee_id", targetAttendeeId)
       .eq("station_type", "meal")
       .gte("created_at", new Date().toISOString().split('T')[0]);
 
@@ -102,8 +107,9 @@ export default function MealStation() {
     return mealCount < MAX_DAILY_MEALS && currentMealWindow !== null;
   };
 
-  const handleMealScan = async () => {
-    if (!selectedRfid?.attendee_id || !currentMealWindow || !canGetMeal()) return;
+  const handleMealScan = async (rfidData?: RfidTag) => {
+    const attendeeId = rfidData?.attendee_id || selectedRfid?.attendee_id;
+    if (!attendeeId || !currentMealWindow || !canGetMeal()) return;
 
     setIsProcessing(true);
 
@@ -113,10 +119,10 @@ export default function MealStation() {
       const { error } = await supabase
         .from("station_transactions")
         .insert({
-          attendee_id: selectedRfid.attendee_id,
+          attendee_id: attendeeId,
           station_type: 'meal',
           transaction_type: transactionType,
-          rfid_uid: selectedRfid.uid,
+          rfid_uid: rfidData?.uid || selectedRfid?.uid,
           daily_count: mealCount + 1,
           extra_data: { meal_type: currentMealWindow.type }
         });
@@ -197,7 +203,7 @@ export default function MealStation() {
                 </div>
                 
                 <Button
-                  onClick={handleMealScan}
+                  onClick={() => handleMealScan()}
                   disabled={isProcessing || !canGetMeal()}
                   size="lg"
                   className="w-full h-16 text-lg"
