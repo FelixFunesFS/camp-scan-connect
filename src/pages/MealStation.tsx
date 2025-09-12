@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Utensils, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { RfidScanner } from "@/components/RfidScanner";
 
 interface RfidTag {
   uid: string;
@@ -35,8 +35,7 @@ const MEAL_WINDOWS: MealWindow[] = [
 const MAX_DAILY_MEALS = 3;
 
 export default function MealStation() {
-  const [selectedRfid, setSelectedRfid] = useState<string>("");
-  const [availableRfids, setAvailableRfids] = useState<RfidTag[]>([]);
+  const [selectedRfid, setSelectedRfid] = useState<RfidTag | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mealCount, setMealCount] = useState(0);
   const [currentMealWindow, setCurrentMealWindow] = useState<MealWindow | null>(null);
@@ -45,7 +44,6 @@ export default function MealStation() {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadAvailableRfids();
     checkCurrentMealWindow();
   }, []);
 
@@ -55,22 +53,8 @@ export default function MealStation() {
     }
   }, [selectedRfid]);
 
-  const loadAvailableRfids = async () => {
-    const { data: rfids, error } = await supabase
-      .from("rfid_tags")
-      .select(`
-        uid,
-        attendee_id,
-        attendee:attendees(first_name, last_name, ticket_type)
-      `)
-      .eq("status", "active");
-
-    if (error) {
-      console.error("Error loading RFIDs:", error);
-      return;
-    }
-
-    setAvailableRfids(rfids as RfidTag[]);
+  const handleRfidScan = (rfidData: RfidTag) => {
+    setSelectedRfid(rfidData);
   };
 
   const checkCurrentMealWindow = () => {
@@ -97,15 +81,12 @@ export default function MealStation() {
   };
 
   const loadMealCount = async () => {
-    if (!selectedRfid) return;
-
-    const selectedTag = availableRfids.find(tag => tag.uid === selectedRfid);
-    if (!selectedTag?.attendee_id) return;
+    if (!selectedRfid?.attendee_id) return;
 
     const { data: transactions, error } = await supabase
       .from("station_transactions")
       .select("*")
-      .eq("attendee_id", selectedTag.attendee_id)
+      .eq("attendee_id", selectedRfid.attendee_id)
       .eq("station_type", "meal")
       .gte("created_at", new Date().toISOString().split('T')[0]);
 
@@ -122,10 +103,7 @@ export default function MealStation() {
   };
 
   const handleMealScan = async () => {
-    if (!selectedRfid || !currentMealWindow || !canGetMeal()) return;
-
-    const selectedTag = availableRfids.find(tag => tag.uid === selectedRfid);
-    if (!selectedTag?.attendee_id) return;
+    if (!selectedRfid?.attendee_id || !currentMealWindow || !canGetMeal()) return;
 
     setIsProcessing(true);
 
@@ -135,10 +113,10 @@ export default function MealStation() {
       const { error } = await supabase
         .from("station_transactions")
         .insert({
-          attendee_id: selectedTag.attendee_id,
+          attendee_id: selectedRfid.attendee_id,
           station_type: 'meal',
           transaction_type: transactionType,
-          rfid_uid: selectedRfid,
+          rfid_uid: selectedRfid.uid,
           daily_count: mealCount + 1,
           extra_data: { meal_type: currentMealWindow.type }
         });
@@ -161,8 +139,6 @@ export default function MealStation() {
       setIsProcessing(false);
     }
   };
-
-  const selectedTag = availableRfids.find(tag => tag.uid === selectedRfid);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -202,94 +178,74 @@ export default function MealStation() {
           </CardContent>
         </Card>
 
-        {/* Main Card */}
+        {/* RFID Scanner */}
+        <RfidScanner
+          onScan={handleRfidScan}
+          stationType="meal"
+          disabled={isProcessing}
+          title="Meal Distribution"
+          placeholder="Select RFID tag..."
+        />
+
+        {/* Meal Action */}
+        {selectedRfid && selectedRfid.attendee && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  Daily meals: <span className="font-bold">{mealCount}/{MAX_DAILY_MEALS}</span>
+                </div>
+                
+                <Button
+                  onClick={handleMealScan}
+                  disabled={isProcessing || !canGetMeal()}
+                  size="lg"
+                  className="w-full h-16 text-lg"
+                >
+                  {isProcessing ? (
+                    "Processing..."
+                  ) : !currentMealWindow ? (
+                    "No Active Meal Window"
+                  ) : mealCount >= MAX_DAILY_MEALS ? (
+                    "Daily Meal Limit Reached"
+                  ) : (
+                    <>
+                      <Utensils className="h-5 w-5 mr-2" />
+                      RECORD {currentMealWindow.label.toUpperCase()}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Today's Meal Windows */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Utensils className="h-5 w-5" />
-              Meal Distribution
-            </CardTitle>
+            <CardTitle className="text-lg">Today's Meal Schedule</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* RFID Selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select RFID Tag:</label>
-              <Select value={selectedRfid} onValueChange={setSelectedRfid}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose an RFID tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRfids.map((rfid) => (
-                    <SelectItem key={rfid.uid} value={rfid.uid}>
-                      {rfid.uid} - {rfid.attendee?.first_name} {rfid.attendee?.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <CardContent>
+            <div className="space-y-1 text-sm text-muted-foreground">
+              {getAvailableMealsForToday().length > 0 ? (
+                getAvailableMealsForToday().map((meal) => (
+                  <div key={meal.type} className="flex justify-between">
+                    <span>{meal.label}:</span>
+                    <span>{meal.start} - {meal.end}</span>
+                  </div>
+                ))
+              ) : (
+                <p>No meals available today</p>
+              )}
             </div>
-
-            {/* Attendee Info */}
-            {selectedTag?.attendee && (
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold text-lg">
-                  {selectedTag.attendee.first_name} {selectedTag.attendee.last_name}
-                </h3>
-                <p className="text-muted-foreground">Ticket: {selectedTag.attendee.ticket_type}</p>
-                <div className="mt-2 flex gap-2">
-                  <Badge variant={mealCount < MAX_DAILY_MEALS ? 'default' : 'destructive'}>
-                    Daily Meals: {mealCount}/{MAX_DAILY_MEALS}
-                  </Badge>
-                </div>
-              </div>
-            )}
-
-            {/* Scan Button */}
-            {selectedRfid && (
-              <Button
-                onClick={handleMealScan}
-                disabled={isProcessing || !canGetMeal()}
-                size="lg"
-                className="w-full h-16 text-lg"
-              >
-                {isProcessing ? (
-                  "Processing..."
-                ) : !currentMealWindow ? (
-                  "No Active Meal Window"
-                ) : mealCount >= MAX_DAILY_MEALS ? (
-                  "Daily Meal Limit Reached"
-                ) : (
-                  <>
-                    <Utensils className="h-5 w-5 mr-2" />
-                    RECORD {currentMealWindow.label.toUpperCase()}
-                  </>
-                )}
-              </Button>
-            )}
-
-            {/* Today's Meal Windows */}
-            <div className="pt-4 border-t">
-              <h4 className="font-medium mb-2">Today's Meal Schedule</h4>
-              <div className="space-y-1 text-sm text-muted-foreground">
-                {getAvailableMealsForToday().length > 0 ? (
-                  getAvailableMealsForToday().map((meal) => (
-                    <div key={meal.type} className="flex justify-between">
-                      <span>{meal.label}:</span>
-                      <span>{meal.start} - {meal.end}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p>No meals available today</p>
-                )}
-              </div>
-              
-              {/* Event Schedule Overview */}
-              <div className="mt-4 pt-4 border-t">
-                <h5 className="font-medium mb-2 text-xs uppercase tracking-wide">Event Schedule</h5>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div><strong>Friday:</strong> Dinner (17:00-21:00)</div>
-                  <div><strong>Saturday:</strong> Breakfast (06:00-10:00), Lunch (11:00-15:00), Dinner (17:00-21:00)</div>
-                  <div><strong>Sunday:</strong> Breakfast (06:00-10:00)</div>
-                </div>
+            
+            {/* Event Schedule Overview */}
+            <div className="mt-4 pt-4 border-t">
+              <h5 className="font-medium mb-2 text-xs uppercase tracking-wide">Event Schedule</h5>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div><strong>Friday:</strong> Dinner (17:00-21:00)</div>
+                <div><strong>Saturday:</strong> Breakfast (06:00-10:00), Lunch (11:00-15:00), Dinner (17:00-21:00)</div>
+                <div><strong>Sunday:</strong> Breakfast (06:00-10:00)</div>
               </div>
             </div>
           </CardContent>

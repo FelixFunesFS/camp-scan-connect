@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, UserCheck, UserX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { RfidScanner } from "@/components/RfidScanner";
 
 interface RfidTag {
   uid: string;
@@ -16,39 +16,15 @@ interface RfidTag {
     last_name: string;
     ticket_type: string;
   };
-  status: 'active' | 'inactive' | 'unissued';
+  status?: 'active' | 'inactive' | 'unissued';
 }
 
 export default function ActivationStation() {
-  const [selectedRfid, setSelectedRfid] = useState<string>("");
-  const [availableRfids, setAvailableRfids] = useState<RfidTag[]>([]);
+  const [selectedRfid, setSelectedRfid] = useState<RfidTag | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activationStatus, setActivationStatus] = useState<'active' | 'inactive' | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    loadAvailableRfids();
-  }, []);
-
-  const loadAvailableRfids = async () => {
-    const { data: rfids, error } = await supabase
-      .from("rfid_tags")
-      .select(`
-        uid,
-        attendee_id,
-        status,
-        attendee:attendees(first_name, last_name, ticket_type)
-      `)
-      .eq("status", "active");
-
-    if (error) {
-      console.error("Error loading RFIDs:", error);
-      return;
-    }
-
-    setAvailableRfids(rfids as RfidTag[]);
-  };
 
   useEffect(() => {
     if (selectedRfid) {
@@ -56,17 +32,18 @@ export default function ActivationStation() {
     }
   }, [selectedRfid]);
 
-  const checkCurrentStatus = async () => {
-    if (!selectedRfid) return;
+  const handleRfidScan = (rfidData: RfidTag) => {
+    setSelectedRfid(rfidData);
+  };
 
-    const selectedTag = availableRfids.find(tag => tag.uid === selectedRfid);
-    if (!selectedTag?.attendee_id) return;
+  const checkCurrentStatus = async () => {
+    if (!selectedRfid?.attendee_id) return;
 
     // Check latest activation status
     const { data: lastTransaction } = await supabase
       .from("station_transactions")
       .select("*")
-      .eq("attendee_id", selectedTag.attendee_id)
+      .eq("attendee_id", selectedRfid.attendee_id)
       .eq("station_type", "activation")
       .order("created_at", { ascending: false })
       .limit(1)
@@ -80,10 +57,7 @@ export default function ActivationStation() {
   };
 
   const handleActivationToggle = async () => {
-    if (!selectedRfid) return;
-
-    const selectedTag = availableRfids.find(tag => tag.uid === selectedRfid);
-    if (!selectedTag?.attendee_id) return;
+    if (!selectedRfid?.attendee_id) return;
 
     setIsProcessing(true);
 
@@ -94,10 +68,10 @@ export default function ActivationStation() {
       const { error } = await supabase
         .from("station_transactions")
         .insert({
-          attendee_id: selectedTag.attendee_id,
+          attendee_id: selectedRfid.attendee_id,
           station_type: 'activation',
           transaction_type: transactionType,
-          rfid_uid: selectedRfid,
+          rfid_uid: selectedRfid.uid,
           current_status: newStatus
         });
 
@@ -120,8 +94,6 @@ export default function ActivationStation() {
     }
   };
 
-  const selectedTag = availableRfids.find(tag => tag.uid === selectedRfid);
-
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -138,73 +110,49 @@ export default function ActivationStation() {
           <h1 className="text-2xl font-bold">Activation Station</h1>
         </div>
 
-        {/* Main Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5" />
-              Attendee Activation Control
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* RFID Selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select RFID Tag:</label>
-              <Select value={selectedRfid} onValueChange={setSelectedRfid}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose an RFID tag to activate/deactivate" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRfids.map((rfid) => (
-                    <SelectItem key={rfid.uid} value={rfid.uid}>
-                      {rfid.uid} - {rfid.attendee?.first_name} {rfid.attendee?.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        {/* RFID Scanner */}
+        <RfidScanner
+          onScan={handleRfidScan}
+          stationType="activation"
+          disabled={isProcessing}
+          title="Attendee Activation Control"
+          placeholder="Select RFID tag..."
+        />
 
-            {/* Attendee Info */}
-            {selectedTag?.attendee && (
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold text-lg">
-                  {selectedTag.attendee.first_name} {selectedTag.attendee.last_name}
-                </h3>
-                <p className="text-muted-foreground">Ticket: {selectedTag.attendee.ticket_type}</p>
-                <div className="mt-2">
-                  <Badge variant={activationStatus === 'active' ? 'default' : 'secondary'}>
-                    Status: {activationStatus === 'active' ? 'ACTIVE' : 'INACTIVE'}
-                  </Badge>
-                </div>
+        {/* Activation Action */}
+        {selectedRfid && selectedRfid.attendee && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <Badge variant={activationStatus === 'active' ? 'default' : 'secondary'} className="text-lg px-4 py-2">
+                  Status: {activationStatus === 'active' ? 'ACTIVE' : 'INACTIVE'}
+                </Badge>
+
+                <Button
+                  onClick={handleActivationToggle}
+                  disabled={isProcessing}
+                  size="lg"
+                  className="w-full h-16 text-lg"
+                  variant={activationStatus === 'active' ? 'destructive' : 'default'}
+                >
+                  {isProcessing ? (
+                    "Processing..."
+                  ) : activationStatus === 'active' ? (
+                    <>
+                      <UserX className="h-5 w-5 mr-2" />
+                      DEACTIVATE
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="h-5 w-5 mr-2" />
+                      ACTIVATE
+                    </>
+                  )}
+                </Button>
               </div>
-            )}
-
-            {/* Action Button */}
-            {selectedRfid && (
-              <Button
-                onClick={handleActivationToggle}
-                disabled={isProcessing}
-                size="lg"
-                className="w-full h-16 text-lg"
-                variant={activationStatus === 'active' ? 'destructive' : 'default'}
-              >
-                {isProcessing ? (
-                  "Processing..."
-                ) : activationStatus === 'active' ? (
-                  <>
-                    <UserX className="h-5 w-5 mr-2" />
-                    DEACTIVATE
-                  </>
-                ) : (
-                  <>
-                    <UserCheck className="h-5 w-5 mr-2" />
-                    ACTIVATE
-                  </>
-                )}
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

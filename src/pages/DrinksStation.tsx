@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Beer, Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { RfidScanner } from "@/components/RfidScanner";
 
 interface RfidTag {
   uid: string;
@@ -19,16 +18,11 @@ interface RfidTag {
 }
 
 export default function DrinksStation() {
-  const [selectedRfid, setSelectedRfid] = useState<string>("");
-  const [availableRfids, setAvailableRfids] = useState<RfidTag[]>([]);
+  const [selectedRfid, setSelectedRfid] = useState<RfidTag | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [drinkCount, setDrinkCount] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  useEffect(() => {
-    loadAvailableRfids();
-  }, []);
 
   useEffect(() => {
     if (selectedRfid) {
@@ -36,34 +30,17 @@ export default function DrinksStation() {
     }
   }, [selectedRfid]);
 
-  const loadAvailableRfids = async () => {
-    const { data: rfids, error } = await supabase
-      .from("rfid_tags")
-      .select(`
-        uid,
-        attendee_id,
-        attendee:attendees(first_name, last_name, ticket_type)
-      `)
-      .eq("status", "active");
-
-    if (error) {
-      console.error("Error loading RFIDs:", error);
-      return;
-    }
-
-    setAvailableRfids(rfids as RfidTag[]);
+  const handleRfidScan = (rfidData: RfidTag) => {
+    setSelectedRfid(rfidData);
   };
 
   const loadDrinkCount = async () => {
-    if (!selectedRfid) return;
-
-    const selectedTag = availableRfids.find(tag => tag.uid === selectedRfid);
-    if (!selectedTag?.attendee_id) return;
+    if (!selectedRfid?.attendee_id) return;
 
     const { data: transactions, error } = await supabase
       .from("station_transactions")
       .select("*")
-      .eq("attendee_id", selectedTag.attendee_id)
+      .eq("attendee_id", selectedRfid.attendee_id)
       .eq("station_type", "drinks")
       .gte("created_at", new Date().toISOString().split('T')[0]);
 
@@ -76,10 +53,7 @@ export default function DrinksStation() {
   };
 
   const handleDrinkScan = async () => {
-    if (!selectedRfid) return;
-
-    const selectedTag = availableRfids.find(tag => tag.uid === selectedRfid);
-    if (!selectedTag?.attendee_id) return;
+    if (!selectedRfid?.attendee_id) return;
 
     setIsProcessing(true);
 
@@ -87,10 +61,10 @@ export default function DrinksStation() {
       const { error } = await supabase
         .from("station_transactions")
         .insert({
-          attendee_id: selectedTag.attendee_id,
+          attendee_id: selectedRfid.attendee_id,
           station_type: 'drinks',
           transaction_type: 'drink',
-          rfid_uid: selectedRfid,
+          rfid_uid: selectedRfid.uid,
           daily_count: drinkCount + 1
         });
 
@@ -113,8 +87,6 @@ export default function DrinksStation() {
     }
   };
 
-  const selectedTag = availableRfids.find(tag => tag.uid === selectedRfid);
-
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -131,84 +103,53 @@ export default function DrinksStation() {
           <h1 className="text-2xl font-bold">Drinks Station</h1>
         </div>
 
-        {/* Main Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Beer className="h-5 w-5" />
-              Drink Counter
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* RFID Selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select RFID Tag:</label>
-              <Select value={selectedRfid} onValueChange={setSelectedRfid}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose an RFID tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRfids.map((rfid) => (
-                    <SelectItem key={rfid.uid} value={rfid.uid}>
-                      {rfid.uid} - {rfid.attendee?.first_name} {rfid.attendee?.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        {/* RFID Scanner */}
+        <RfidScanner
+          onScan={handleRfidScan}
+          stationType="drinks"
+          disabled={isProcessing}
+          title="Drink Counter"
+          placeholder="Select RFID tag..."
+        />
 
-            {/* Attendee Info */}
-            {selectedTag?.attendee && (
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold text-lg">
-                  {selectedTag.attendee.first_name} {selectedTag.attendee.last_name}
-                </h3>
-                <p className="text-muted-foreground">Ticket: {selectedTag.attendee.ticket_type}</p>
-                <div className="mt-2">
-                  <Badge variant="default">
-                    Daily Drinks: {drinkCount}
-                  </Badge>
+        {/* Drink Action */}
+        {selectedRfid && selectedRfid.attendee && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                {/* Drink Counter Display */}
+                <div className="p-8 bg-muted rounded-lg">
+                  <div className="text-6xl font-bold text-primary mb-2">
+                    {drinkCount}
+                  </div>
+                  <p className="text-lg text-muted-foreground">
+                    Drinks Today
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleDrinkScan}
+                  disabled={isProcessing}
+                  size="lg"
+                  className="w-full h-16 text-lg"
+                >
+                  {isProcessing ? (
+                    "Processing..."
+                  ) : (
+                    <>
+                      <Plus className="h-5 w-5 mr-2" />
+                      ADD DRINK
+                    </>
+                  )}
+                </Button>
+
+                <div className="text-center text-sm text-muted-foreground">
+                  <p>No daily limits - tap to record each drink served</p>
                 </div>
               </div>
-            )}
-
-            {/* Drink Counter Display */}
-            {selectedRfid && (
-              <div className="text-center p-8 bg-muted rounded-lg">
-                <div className="text-6xl font-bold text-primary mb-2">
-                  {drinkCount}
-                </div>
-                <p className="text-lg text-muted-foreground">
-                  Drinks Today
-                </p>
-              </div>
-            )}
-
-            {/* Scan Button */}
-            {selectedRfid && (
-              <Button
-                onClick={handleDrinkScan}
-                disabled={isProcessing}
-                size="lg"
-                className="w-full h-16 text-lg"
-              >
-                {isProcessing ? (
-                  "Processing..."
-                ) : (
-                  <>
-                    <Plus className="h-5 w-5 mr-2" />
-                    ADD DRINK
-                  </>
-                )}
-              </Button>
-            )}
-
-            {/* Info */}
-            <div className="pt-4 border-t text-center text-sm text-muted-foreground">
-              <p>No daily limits - tap to record each drink served</p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
