@@ -132,7 +132,7 @@ export default function HeadphonesStation() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Ranger
+            Back to Ranger Hub
           </Button>
           <h1 className="text-2xl font-bold">Headphones Station</h1>
         </div>

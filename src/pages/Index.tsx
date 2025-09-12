@@ -22,7 +22,7 @@ const Index = () => {
   }, {
     id: "ranger",
     title: "Ranger",
-    description: "Station scanning for gates, meals, activities",
+    description: "Gate access control and station operations hub",
     icon: Scan,
     color: "bg-accent text-accent-foreground",
     path: "/ranger"
