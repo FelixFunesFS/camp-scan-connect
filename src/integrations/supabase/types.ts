@@ -165,17 +165,64 @@ export type Database = {
         }
         Relationships: []
       }
+      station_transactions: {
+        Row: {
+          attendee_id: string
+          created_at: string
+          current_status: string | null
+          daily_count: number | null
+          extra_data: Json | null
+          id: string
+          rfid_uid: string | null
+          staff_id: string | null
+          station_type: Database["public"]["Enums"]["station_type"]
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Insert: {
+          attendee_id: string
+          created_at?: string
+          current_status?: string | null
+          daily_count?: number | null
+          extra_data?: Json | null
+          id?: string
+          rfid_uid?: string | null
+          staff_id?: string | null
+          station_type: Database["public"]["Enums"]["station_type"]
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Update: {
+          attendee_id?: string
+          created_at?: string
+          current_status?: string | null
+          daily_count?: number | null
+          extra_data?: Json | null
+          id?: string
+          rfid_uid?: string | null
+          staff_id?: string | null
+          station_type?: Database["public"]["Enums"]["station_type"]
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_daily_transaction_count: {
+        Args: {
+          p_attendee_id: string
+          p_station_type: Database["public"]["Enums"]["station_type"]
+          p_transaction_types: Database["public"]["Enums"]["transaction_type"][]
+        }
+        Returns: number
+      }
     }
     Enums: {
       scan_action: "entry" | "exit" | "verify"
       scan_result: "allow" | "deny"
       staff_role: "admin" | "checkin" | "ranger" | "vendor"
+      station_type: "activation" | "meal" | "drinks" | "headphones"
       tag_status: "unissued" | "active" | "lost" | "replaced" | "deactivated"
       ticket_type:
         | "premium_power"
@@ -183,6 +230,15 @@ export type Database = {
         | "day_pass"
         | "staff"
         | "vendor"
+      transaction_type:
+        | "activate"
+        | "deactivate"
+        | "meal_breakfast"
+        | "meal_lunch"
+        | "meal_dinner"
+        | "drink"
+        | "headphone_checkout"
+        | "headphone_checkin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -313,8 +369,19 @@ export const Constants = {
       scan_action: ["entry", "exit", "verify"],
       scan_result: ["allow", "deny"],
       staff_role: ["admin", "checkin", "ranger", "vendor"],
+      station_type: ["activation", "meal", "drinks", "headphones"],
       tag_status: ["unissued", "active", "lost", "replaced", "deactivated"],
       ticket_type: ["premium_power", "dry_site", "day_pass", "staff", "vendor"],
+      transaction_type: [
+        "activate",
+        "deactivate",
+        "meal_breakfast",
+        "meal_lunch",
+        "meal_dinner",
+        "drink",
+        "headphone_checkout",
+        "headphone_checkin",
+      ],
     },
   },
 } as const
