@@ -310,6 +310,9 @@ export type Database = {
         | "day_pass"
         | "staff"
         | "vendor"
+        | "glamping"
+        | "cabin"
+        | "rv_site"
       transaction_type:
         | "activate"
         | "deactivate"
@@ -451,7 +454,16 @@ export const Constants = {
       staff_role: ["admin", "checkin", "ranger", "vendor"],
       station_type: ["activation", "meal", "drinks", "headphones"],
       tag_status: ["unissued", "active", "lost", "replaced", "deactivated"],
-      ticket_type: ["premium_power", "dry_site", "day_pass", "staff", "vendor"],
+      ticket_type: [
+        "premium_power",
+        "dry_site",
+        "day_pass",
+        "staff",
+        "vendor",
+        "glamping",
+        "cabin",
+        "rv_site",
+      ],
       transaction_type: [
         "activate",
         "deactivate",
