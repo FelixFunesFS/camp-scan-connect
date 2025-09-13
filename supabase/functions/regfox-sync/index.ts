@@ -74,11 +74,10 @@ serve(async (req) => {
       let regfoxAttendees: RegFoxAttendee[] = [];
       
       try {
-        // Make API call to RegFox
-        const regfoxResponse = await fetch('https://api.regfox.com/v1/attendees', {
+        // Make API call to WebConnex (RegFox)
+        const regfoxResponse = await fetch(`https://api.webconnex.com/v2/public/search/registrants?product=redpodium.com2&pretty=true&apiKey=${regfoxApiKey}`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${regfoxApiKey}`,
             'Content-Type': 'application/json'
           }
         });
