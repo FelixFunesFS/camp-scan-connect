@@ -181,10 +181,20 @@ serve(async (req) => {
       console.log(`Processing ${syncResult.totalRecords} attendees from RegFox`);
 
       // Process each attendee from RegFox
-      for (const regfoxAttendee of regfoxAttendees) {
+      for (let i = 0; i < regfoxAttendees.length; i++) {
+        const regfoxAttendee = regfoxAttendees[i];
         try {
           // Extract data from fieldData (RegFox custom fields)
           const fieldData = regfoxAttendee.fieldData || {};
+          
+          // DEBUG: Log the complete structure of the first 3 attendees to understand the data format
+          if (i < 3) {
+            console.log(`=== DEBUG: RegFox Attendee ${i + 1} Structure ===`);
+            console.log('Full attendee object:', JSON.stringify(regfoxAttendee, null, 2));
+            console.log('Available fieldData keys:', Object.keys(fieldData));
+            console.log('fieldData structure:', JSON.stringify(fieldData, null, 2));
+            console.log('=== End Debug ===');
+          }
           
           // Map common field names (adjust these based on your actual RegFox form fields)
           const firstName = fieldData['First Name'] || fieldData['firstName'] || fieldData['first_name'] || '';
