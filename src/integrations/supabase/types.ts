@@ -14,9 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          id: string
+          name: string
+          notes: string | null
+          participant_count: number | null
+          recorded_at: string
+          staff_id: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          notes?: string | null
+          participant_count?: number | null
+          recorded_at?: string
+          staff_id?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          notes?: string | null
+          participant_count?: number | null
+          recorded_at?: string
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       attendees: {
         Row: {
           arrival_window: string | null
+          checked_in_at: string | null
           created_at: string
           early_access: boolean | null
           email: string | null
@@ -29,9 +65,11 @@ export type Database = {
           regfox_id: string | null
           ticket_type: Database["public"]["Enums"]["ticket_type"]
           updated_at: string
+          waiver_signed: boolean | null
         }
         Insert: {
           arrival_window?: string | null
+          checked_in_at?: string | null
           created_at?: string
           early_access?: boolean | null
           email?: string | null
@@ -44,9 +82,11 @@ export type Database = {
           regfox_id?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
+          waiver_signed?: boolean | null
         }
         Update: {
           arrival_window?: string | null
+          checked_in_at?: string | null
           created_at?: string
           early_access?: boolean | null
           email?: string | null
@@ -59,6 +99,46 @@ export type Database = {
           regfox_id?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
+          waiver_signed?: boolean | null
+        }
+        Relationships: []
+      }
+      regfox_sync_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          new_records: number | null
+          status: string
+          sync_completed_at: string | null
+          sync_started_at: string
+          sync_type: string
+          total_records: number | null
+          updated_records: number | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          new_records?: number | null
+          status: string
+          sync_completed_at?: string | null
+          sync_started_at?: string
+          sync_type: string
+          total_records?: number | null
+          updated_records?: number | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          new_records?: number | null
+          status?: string
+          sync_completed_at?: string | null
+          sync_started_at?: string
+          sync_type?: string
+          total_records?: number | null
+          updated_records?: number | null
         }
         Relationships: []
       }
