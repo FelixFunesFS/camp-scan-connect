@@ -7,16 +7,39 @@ const corsHeaders = {
 };
 
 interface RegFoxWebhookPayload {
-  event: string;
+  event?: string;
+  eventType?: string;
   data: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
     phone?: string;
-    registrationPath: string;
-    registrationDate: string;
-    status: string;
+    registrationPath?: string;
+    registrationDate?: string;
+    status?: string;
+    // New format fields
+    registrants?: Array<{
+      id: string;
+      data: Array<{
+        fieldId?: number;
+        fieldName?: string;
+        fieldValue?: string;
+      }>;
+    }>;
+    registrationTimestamp?: string;
+    billing?: {
+      name?: {
+        first?: string;
+        last?: string;
+      };
+      email?: string;
+      phone?: string;
+    };
+    tickets?: Array<{
+      ticketKey?: string;
+      ticketLabel?: string;
+    }>;
   };
 }
 
@@ -60,67 +83,125 @@ serve(async (req) => {
     };
 
     try {
-      // Process the webhook data
-      if (payload.event === 'registration.created' || payload.event === 'registration.updated') {
-        const regfoxAttendee = payload.data;
+      // Determine event type and process accordingly
+      const eventType = payload.event || payload.eventType;
+      console.log('Processing event type:', eventType);
 
-        // Map RegFox ticket type to our enum
-        const ticketTypeMap: Record<string, string> = {
-          'Premium Power Site': 'premium_power',
-          'Dry Site': 'dry_site',
-          'Day Pass': 'day_pass',
-          'Staff': 'staff',
-          'Vendor': 'vendor'
-        };
+      if (eventType === 'registration.created' || eventType === 'registration.updated' || eventType === 'registration') {
+        let attendeeData: any = null;
+        let attendeeId: string | null = null;
 
-        const ticketType = ticketTypeMap[regfoxAttendee.registrationPath] || 'dry_site';
+        // Handle original format (direct data structure)
+        if (payload.data.firstName && payload.data.lastName) {
+          console.log('Processing original format');
+          attendeeData = {
+            first_name: payload.data.firstName,
+            last_name: payload.data.lastName,
+            email: payload.data.email,
+            phone: payload.data.phone || null,
+            regfox_id: payload.data.id
+          };
+          attendeeId = payload.data.id;
+        } 
+        // Handle new format (registrants array)
+        else if (payload.data.registrants && payload.data.registrants.length > 0) {
+          console.log('Processing new format with registrants');
+          const registrant = payload.data.registrants[0];
+          
+          // Extract name and email from billing or registrant data
+          const firstName = payload.data.billing?.name?.first || 
+                          registrant.data?.find(d => d.fieldName?.toLowerCase().includes('first'))?.fieldValue || 'Unknown';
+          const lastName = payload.data.billing?.name?.last || 
+                         registrant.data?.find(d => d.fieldName?.toLowerCase().includes('last'))?.fieldValue || 'User';
+          const email = payload.data.billing?.email || 
+                       registrant.data?.find(d => d.fieldName?.toLowerCase().includes('email'))?.fieldValue;
+          const phone = payload.data.billing?.phone || 
+                       registrant.data?.find(d => d.fieldName?.toLowerCase().includes('phone'))?.fieldValue;
 
-        // Check if attendee already exists
-        const { data: existingAttendee } = await supabase
-          .from('attendees')
-          .select('id')
-          .eq('regfox_id', regfoxAttendee.id)
-          .single();
-
-        const attendeeData = {
-          regfox_id: regfoxAttendee.id,
-          first_name: regfoxAttendee.firstName,
-          last_name: regfoxAttendee.lastName,
-          email: regfoxAttendee.email,
-          phone: regfoxAttendee.phone || null,
-          ticket_type: ticketType,
-          waiver_signed: false,
-          checked_in_at: null,
-          created_at: regfoxAttendee.registrationDate
-        };
-
-        if (existingAttendee && payload.event === 'registration.updated') {
-          // Update existing attendee
-          const { error: updateError } = await supabase
-            .from('attendees')
-            .update({
-              ...attendeeData,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingAttendee.id);
-
-          if (updateError) {
-            result.errors.push(`Error updating attendee: ${updateError.message}`);
-          } else {
-            result.updatedRecords = 1;
-          }
-        } else if (!existingAttendee && payload.event === 'registration.created') {
-          // Insert new attendee
-          const { error: insertError } = await supabase
-            .from('attendees')
-            .insert(attendeeData);
-
-          if (insertError) {
-            result.errors.push(`Error inserting attendee: ${insertError.message}`);
-          } else {
-            result.newRecords = 1;
-          }
+          attendeeData = {
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            phone: phone || null,
+            regfox_id: registrant.id
+          };
+          attendeeId = registrant.id;
         }
+
+        if (attendeeData && attendeeId) {
+          // Map RegFox ticket type to our enum
+          const ticketTypeMap: Record<string, string> = {
+            'Premium Power Site': 'premium_power',
+            'Dry Site': 'dry_site', 
+            'Day Pass': 'day_pass',
+            'Staff': 'staff',
+            'Vendor': 'vendor'
+          };
+
+          // Determine ticket type from various possible sources
+          let ticketType = 'dry_site';
+          if (payload.data.registrationPath) {
+            ticketType = ticketTypeMap[payload.data.registrationPath] || 'dry_site';
+          } else if (payload.data.tickets && payload.data.tickets.length > 0) {
+            const ticket = payload.data.tickets[0];
+            ticketType = ticketTypeMap[ticket.ticketLabel || ticket.ticketKey || ''] || 'dry_site';
+          }
+
+          // Complete attendee data
+          const completeAttendeeData = {
+            ...attendeeData,
+            ticket_type: ticketType,
+            waiver_signed: false,
+            checked_in_at: null,
+            created_at: payload.data.registrationDate || payload.data.registrationTimestamp || new Date().toISOString()
+          };
+
+          // Check if attendee already exists
+          const { data: existingAttendee } = await supabase
+            .from('attendees')
+            .select('id')
+            .eq('regfox_id', attendeeId)
+            .maybeSingle();
+
+          if (existingAttendee && (eventType === 'registration.updated' || eventType === 'registration')) {
+            console.log('Updating existing attendee:', attendeeId);
+            // Update existing attendee (removed manual updated_at field)
+            const { error: updateError } = await supabase
+              .from('attendees')
+              .update(completeAttendeeData)
+              .eq('id', existingAttendee.id);
+
+            if (updateError) {
+              console.error('Update error:', updateError);
+              result.errors.push(`Error updating attendee: ${updateError.message}`);
+            } else {
+              result.updatedRecords = 1;
+              console.log('Successfully updated attendee');
+            }
+          } else if (!existingAttendee) {
+            console.log('Creating new attendee:', attendeeId);
+            // Insert new attendee
+            const { error: insertError } = await supabase
+              .from('attendees')
+              .insert(completeAttendeeData);
+
+            if (insertError) {
+              console.error('Insert error:', insertError);
+              result.errors.push(`Error inserting attendee: ${insertError.message}`);
+            } else {
+              result.newRecords = 1;
+              console.log('Successfully created attendee');
+            }
+          } else {
+            console.log('Attendee already exists, no action needed');
+          }
+        } else {
+          result.errors.push('Unable to extract attendee data from webhook payload');
+          console.error('Failed to extract attendee data from payload');
+        }
+      } else {
+        console.log('Unhandled event type:', eventType);
+        result.errors.push(`Unhandled event type: ${eventType}`);
       }
 
       // Update sync log with results
