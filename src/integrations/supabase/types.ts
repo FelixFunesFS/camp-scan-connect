@@ -58,14 +58,18 @@ export type Database = {
           email: string | null
           first_name: string
           id: string
+          is_veteran: boolean | null
           last_name: string
           meal_plan: string | null
+          military_branch: string | null
           notes: string | null
           override_early_checkin: boolean | null
           phone: string | null
           regfox_id: string | null
+          registration_status: Database["public"]["Enums"]["registration_status"]
           ticket_type: Database["public"]["Enums"]["ticket_type"]
           updated_at: string
+          veteran_thanked_at: string | null
           waiver_signed: boolean | null
         }
         Insert: {
@@ -76,14 +80,18 @@ export type Database = {
           email?: string | null
           first_name: string
           id?: string
+          is_veteran?: boolean | null
           last_name: string
           meal_plan?: string | null
+          military_branch?: string | null
           notes?: string | null
           override_early_checkin?: boolean | null
           phone?: string | null
           regfox_id?: string | null
+          registration_status?: Database["public"]["Enums"]["registration_status"]
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
+          veteran_thanked_at?: string | null
           waiver_signed?: boolean | null
         }
         Update: {
@@ -94,14 +102,18 @@ export type Database = {
           email?: string | null
           first_name?: string
           id?: string
+          is_veteran?: boolean | null
           last_name?: string
           meal_plan?: string | null
+          military_branch?: string | null
           notes?: string | null
           override_early_checkin?: boolean | null
           phone?: string | null
           regfox_id?: string | null
+          registration_status?: Database["public"]["Enums"]["registration_status"]
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
+          veteran_thanked_at?: string | null
           waiver_signed?: boolean | null
         }
         Relationships: []
@@ -302,6 +314,12 @@ export type Database = {
       }
     }
     Enums: {
+      registration_status:
+        | "registered"
+        | "cancelled"
+        | "pending"
+        | "refunded"
+        | "waitlisted"
       scan_action: "entry" | "exit" | "verify"
       scan_result: "allow" | "deny"
       staff_role: "admin" | "checkin" | "ranger" | "vendor"
@@ -452,6 +470,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      registration_status: [
+        "registered",
+        "cancelled",
+        "pending",
+        "refunded",
+        "waitlisted",
+      ],
       scan_action: ["entry", "exit", "verify"],
       scan_result: ["allow", "deny"],
       staff_role: ["admin", "checkin", "ranger", "vendor"],

@@ -184,10 +184,65 @@ serve(async (req) => {
 
           ticketType = determineTicketTypeFromPayload(payload.data);
 
+          // Helper function to detect veteran status
+          const detectVeteranStatus = (payloadData: any) => {
+            if (payloadData.registrants && payloadData.registrants.length > 0) {
+              const registrant = payloadData.registrants[0];
+              const veteranField = registrant.data?.find(d => 
+                d.fieldName?.toLowerCase().includes('veteran') || 
+                d.fieldName?.toLowerCase().includes('military') ||
+                d.fieldName?.toLowerCase().includes('service member') ||
+                d.fieldName?.toLowerCase().includes('armed forces')
+              );
+              
+              if (veteranField && veteranField.fieldValue) {
+                const value = veteranField.fieldValue.toLowerCase();
+                return value.includes('yes') || value.includes('true') || value === 'veteran';
+              }
+            }
+            return false;
+          };
+
+          // Helper function to extract military branch
+          const extractMilitaryBranch = (payloadData: any) => {
+            if (payloadData.registrants && payloadData.registrants.length > 0) {
+              const registrant = payloadData.registrants[0];
+              const branchField = registrant.data?.find(d => 
+                d.fieldName?.toLowerCase().includes('branch') || 
+                d.fieldName?.toLowerCase().includes('service branch') ||
+                d.fieldName?.toLowerCase().includes('military branch')
+              );
+              
+              if (branchField && branchField.fieldValue) {
+                return branchField.fieldValue;
+              }
+            }
+            return null;
+          };
+
+          // Map RegFox status to our enum
+          const mapRegistrationStatus = (status: string | undefined) => {
+            if (!status) return 'registered';
+            
+            const statusLower = status.toLowerCase();
+            if (statusLower.includes('cancel')) return 'cancelled';
+            if (statusLower.includes('refund')) return 'refunded';
+            if (statusLower.includes('pending')) return 'pending';
+            if (statusLower.includes('waitlist')) return 'waitlisted';
+            return 'registered';
+          };
+
+          const isVeteran = detectVeteranStatus(payload.data);
+          const militaryBranch = extractMilitaryBranch(payload.data);
+          const registrationStatus = mapRegistrationStatus(payload.data.status);
+
           // Complete attendee data
           const completeAttendeeData = {
             ...attendeeData,
             ticket_type: ticketType,
+            registration_status: registrationStatus,
+            is_veteran: isVeteran,
+            military_branch: militaryBranch,
             waiver_signed: false,
             checked_in_at: null,
             created_at: payload.data.registrationDate || payload.data.registrationTimestamp || new Date().toISOString()

@@ -268,7 +268,31 @@ serve(async (req) => {
           const dateOfBirth = fields['dateOfBirth'] || fields['Date of Birth'] || null;
           const gender = fields['gender'] || fields['Gender'] || null;
           const maritalStatus = fields['status'] || fields['Status?'] || null;
-          const isVeteran = fields['areYouVeteran'] === 'yes' || fields['Are you a veteran?'] === 'yes';
+          
+          // Enhanced veteran detection
+          const isVeteran = fields['areYouVeteran'] === 'yes' || 
+                           fields['Are you a veteran?'] === 'yes' ||
+                           fields['military'] === 'yes' ||
+                           fields['Military Service'] === 'yes' ||
+                           fields['veteran'] === 'yes';
+          
+          // Extract military branch
+          const militaryBranch = fields['militaryBranch'] || 
+                               fields['Military Branch'] || 
+                               fields['serviceBranch'] ||
+                               fields['Service Branch'] || null;
+          
+          // Map RegFox status to our enum
+          const mapRegistrationStatus = (status: string) => {
+            const statusLower = status.toLowerCase();
+            if (statusLower.includes('cancel')) return 'cancelled';
+            if (statusLower.includes('refund')) return 'refunded';
+            if (statusLower.includes('pending')) return 'pending';
+            if (statusLower.includes('waitlist')) return 'waitlisted';
+            return 'registered';
+          };
+          
+          const registrationStatus = mapRegistrationStatus(regfoxAttendee.status);
           
           // Determine ticket type based on accommodation and features
           const ticketType = determineTicketType(fields);
@@ -290,6 +314,9 @@ serve(async (req) => {
             email: email,
             phone: phone,
             ticket_type: ticketType,
+            registration_status: registrationStatus,
+            is_veteran: isVeteran,
+            military_branch: militaryBranch,
             early_access: earlyAccess,
             meal_plan: mealPlan,
             waiver_signed: false, // Will be updated when waiver is actually signed

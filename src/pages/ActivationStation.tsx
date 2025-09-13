@@ -15,6 +15,9 @@ interface RfidTag {
     first_name: string;
     last_name: string;
     ticket_type: string;
+    is_veteran?: boolean;
+    military_branch?: string;
+    veteran_thanked_at?: string;
   };
   status?: 'active' | 'inactive' | 'unissued';
 }
@@ -23,6 +26,7 @@ export default function ActivationStation() {
   const [selectedRfid, setSelectedRfid] = useState<RfidTag | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activationStatus, setActivationStatus] = useState<'active' | 'inactive' | null>(null);
+  const [attendeeDetails, setAttendeeDetails] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -35,6 +39,14 @@ export default function ActivationStation() {
   const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
     if (rfidData.attendee_id) {
+      // Fetch full attendee details including veteran status
+      const { data: attendee } = await supabase
+        .from('attendees')
+        .select('*')
+        .eq('id', rfidData.attendee_id)
+        .single();
+      
+      setAttendeeDetails(attendee);
       await checkCurrentStatus(rfidData.attendee_id);
       await handleActivationToggle(rfidData);
     }
@@ -83,11 +95,28 @@ export default function ActivationStation() {
 
       if (error) throw error;
 
+      // Check if veteran and this is their first activation (and we should thank them)
+      if (attendeeDetails?.is_veteran && !attendeeDetails?.veteran_thanked_at && transactionType === 'activate') {
+        // Update veteran_thanked_at timestamp
+        await supabase
+          .from('attendees')
+          .update({ veteran_thanked_at: new Date().toISOString() })
+          .eq('id', attendeeId);
+
+        // Show special veteran message
+        toast({
+          title: "🇺🇸 Thank You for Your Service!",
+          description: `Welcome to Melanated Campout 2025, ${attendeeDetails.first_name}! We honor your dedication to our country.${attendeeDetails.military_branch ? ` Thank you for serving in the ${attendeeDetails.military_branch}.` : ''}`,
+          duration: 6000,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Attendee ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`,
+        });
+      }
+
       setActivationStatus(newStatus);
-      toast({
-        title: "Success",
-        description: `Attendee ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`,
-      });
     } catch (error) {
       console.error("Error updating activation:", error);
       toast({

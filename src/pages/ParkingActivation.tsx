@@ -19,6 +19,10 @@ interface Attendee {
   phone: string;
   regfox_id: string;
   ticket_type: string;
+  registration_status: string;
+  is_veteran: boolean;
+  military_branch?: string;
+  veteran_thanked_at?: string;
   notes: string;
 }
 
@@ -179,6 +183,15 @@ const ParkingActivation = () => {
 
       if (transactionError) throw transactionError;
 
+      // Check if veteran and hasn't been thanked yet
+      if (selectedAttendee.is_veteran && !selectedAttendee.veteran_thanked_at) {
+        // Update veteran_thanked_at timestamp
+        await supabase
+          .from('attendees')
+          .update({ veteran_thanked_at: new Date().toISOString() })
+          .eq('id', selectedAttendee.id);
+      }
+
       setIsActivated(true);
       toast({
         title: "Success!",
@@ -218,6 +231,22 @@ const ParkingActivation = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-center">
+            {/* Veteran Thank You Message */}
+            {selectedAttendee.is_veteran && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl">🇺🇸</span>
+                  <p className="text-lg font-bold text-blue-800">
+                    Thank You for Your Service!
+                  </p>
+                </div>
+                <p className="text-sm text-blue-700">
+                  We honor your dedication and sacrifice to our country.
+                  {selectedAttendee.military_branch && ` Thank you for serving in the ${selectedAttendee.military_branch}.`}
+                </p>
+              </div>
+            )}
+            
             <div className="p-4 bg-green-50 rounded-lg">
               <p className="text-sm text-green-800 font-medium">
                 RFID wristband is now active and ready to use at all stations.
