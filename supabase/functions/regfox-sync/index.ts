@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface RegFoxFieldData {
+  label: string;
+  path: string;
+  value: string;
+  amount?: string;
+}
+
 interface RegFoxAttendee {
   id: string;
   displayId?: string;
@@ -14,7 +21,7 @@ interface RegFoxAttendee {
   status: string;
   amount?: number;
   currency?: string;
-  fieldData: Record<string, any>;
+  fieldData: RegFoxFieldData[];
   checkedIn?: boolean;
   dateCreated: string;
   dateUpdated: string;
@@ -177,43 +184,94 @@ serve(async (req) => {
         regfoxAttendees = []; // Empty array means no new data to sync
       }
 
+      // Helper function to parse RegFox fieldData array
+      const parseFieldData = (fieldDataArray: RegFoxFieldData[]) => {
+        const parsed: Record<string, string> = {};
+        
+        if (!Array.isArray(fieldDataArray)) {
+          return parsed;
+        }
+        
+        for (const field of fieldDataArray) {
+          // Index by both label and path for flexible lookup
+          if (field.label) {
+            parsed[field.label] = field.value || '';
+          }
+          if (field.path) {
+            parsed[field.path] = field.value || '';
+          }
+        }
+        
+        return parsed;
+      };
+
+      // Helper function to determine ticket type from RegFox data
+      const determineTicketType = (fields: Record<string, string>) => {
+        // Check accommodation type
+        const accommodationType = fields['multipleChoice'] || fields['Are you staying in a Tent, Van/Rooftop,  RV, Glamping Tent, or Cabin??'] || '';
+        
+        // Check for specific ticket packages
+        const hasGlampingTent = accommodationType.includes('glampingTent') || 
+                               fields['glampingTent'] || 
+                               fields['Glamping Tent- King + twin bunks Package'];
+        const hasTent = accommodationType.includes('tent') && !hasGlampingTent;
+        const hasRV = accommodationType.includes('rv') || accommodationType.includes('RV');
+        const hasCabin = accommodationType.includes('cabin');
+        
+        // Check for additional activity wristband (indicates premium features)
+        const hasActivityWristband = fields['additionalActivityWristbandTent2'] === 'additionalActivityWristband' ||
+                                   fields['Additional Activity Wristband- Tent/ Van/Rooftop'] === 'additionalActivityWristband';
+        
+        // Determine ticket type based on accommodations
+        if (hasGlampingTent) return 'glamping';
+        if (hasCabin) return 'cabin';
+        if (hasRV) return 'rv_site';
+        if (hasTent && hasActivityWristband) return 'premium_power';
+        if (hasTent) return 'dry_site';
+        
+        // Default fallback
+        return 'dry_site';
+      };
+
       syncResult.totalRecords = regfoxAttendees.length;
       console.log(`Processing ${syncResult.totalRecords} attendees from RegFox`);
 
       // Process each attendee from RegFox
-      for (let i = 0; i < regfoxAttendees.length; i++) {
-        const regfoxAttendee = regfoxAttendees[i];
+      for (const regfoxAttendee of regfoxAttendees) {
         try {
-          // Extract data from fieldData (RegFox custom fields)
-          const fieldData = regfoxAttendee.fieldData || {};
+          // Parse the fieldData array into a searchable object
+          const fieldData = regfoxAttendee.fieldData || [];
+          const fields = parseFieldData(fieldData);
           
-          // DEBUG: Log the complete structure of the first 3 attendees to understand the data format
-          if (i < 3) {
-            console.log(`=== DEBUG: RegFox Attendee ${i + 1} Structure ===`);
-            console.log('Full attendee object:', JSON.stringify(regfoxAttendee, null, 2));
-            console.log('Available fieldData keys:', Object.keys(fieldData));
-            console.log('fieldData structure:', JSON.stringify(fieldData, null, 2));
-            console.log('=== End Debug ===');
-          }
+          // Extract attendee information using the parsed fields
+          const firstName = fields['name2.first'] || fields['First Name'] || '';
+          const lastName = fields['name2.last'] || fields['Last Name'] || '';
+          const email = fields['email'] || fields['Email'] || '';
+          const phone = fields['phone'] || fields['Phone Number'] || null;
           
-          // Map common field names (adjust these based on your actual RegFox form fields)
-          const firstName = fieldData['First Name'] || fieldData['firstName'] || fieldData['first_name'] || '';
-          const lastName = fieldData['Last Name'] || fieldData['lastName'] || fieldData['last_name'] || '';
-          const email = fieldData['Email'] || fieldData['email'] || '';
-          const phone = fieldData['Phone'] || fieldData['phone'] || fieldData['Phone Number'] || null;
+          // Additional contact info
+          const emergencyContact = fields['emergencyContactNameNumber'] || fields['Emergency Contact Name & Number?'] || null;
           
-          // Map RegFox ticket type to our enum (update these mappings based on your form)
-          const ticketTypeMap: Record<string, string> = {
-            'Premium Power Site': 'premium_power',
-            'Dry Site': 'dry_site', 
-            'Day Pass': 'day_pass',
-            'Staff': 'staff',
-            'Vendor': 'vendor'
+          // Address information
+          const address = {
+            street: fields['address.street1'] || fields['Street Address'] || null,
+            city: fields['address.city'] || fields['City'] || null,
+            state: fields['address.state'] || fields['State'] || null,
+            postalCode: fields['address.postalCode'] || fields['ZIP/Postal Code'] || null,
+            country: fields['address.country'] || fields['Country'] || null
           };
-
-          // Try to determine ticket type from fieldData or use a default
-          const registrationType = fieldData['Registration Type'] || fieldData['Ticket Type'] || fieldData['registrationType'] || 'Dry Site';
-          const ticketType = ticketTypeMap[registrationType] || 'dry_site';
+          
+          // Personal information
+          const dateOfBirth = fields['dateOfBirth'] || fields['Date of Birth'] || null;
+          const gender = fields['gender'] || fields['Gender'] || null;
+          const maritalStatus = fields['status'] || fields['Status?'] || null;
+          const isVeteran = fields['areYouVeteran'] === 'yes' || fields['Are you a veteran?'] === 'yes';
+          
+          // Determine ticket type based on accommodation and features
+          const ticketType = determineTicketType(fields);
+          
+          // Early access determination (glamping and cabins typically get early access)
+          const earlyAccess = ticketType === 'glamping' || ticketType === 'cabin';
 
           // Check if attendee already exists by regfox_id
           const { data: existingAttendee } = await supabase
@@ -229,8 +287,10 @@ serve(async (req) => {
             email: email,
             phone: phone,
             ticket_type: ticketType,
-            waiver_signed: false,
+            early_access: earlyAccess,
+            waiver_signed: false, // Will be updated when waiver is actually signed
             checked_in_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,
+            notes: emergencyContact ? `Emergency Contact: ${emergencyContact}` : null,
             created_at: regfoxAttendee.dateCreated
           };
 
