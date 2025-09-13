@@ -101,56 +101,34 @@ serve(async (req) => {
       let regfoxAttendees: RegFoxAttendee[] = [];
       
       try {
-        // Try different product parameter formats
-        const productParams = [
-          'redpodium.com2',
-          'redpodium.com',
-          'redpodium'
-        ];
+        // Use the exact parameters from the API documentation
+        const requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=redpodium.com2&pretty=true&limit=1000`;
+        console.log(`Making RegFox API call to: ${requestUrl}`);
+        console.log(`Request headers: apiKey=[MASKED], Content-Type=application/json`);
 
-        let successfulResponse = null;
-        let lastError = null;
-
-        for (const product of productParams) {
-          const requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=${product}&pretty=true`;
-          console.log(`Trying API call with product parameter: ${product}`);
-          console.log(`Request URL: ${requestUrl}`);
-          console.log(`Request headers: apiKey=[MASKED], Content-Type=application/json`);
-
-          try {
-            const regfoxResponse = await fetch(requestUrl, {
-              method: 'GET',
-              headers: {
-                'apiKey': regfoxApiKey,
-                'Content-Type': 'application/json'
-              }
-            });
-
-            console.log(`Response status for ${product}:`, regfoxResponse.status);
-            
-            if (regfoxResponse.ok) {
-              const responseData = await regfoxResponse.json();
-              console.log(`Successful response for ${product}:`, responseData);
-              successfulResponse = responseData;
-              break;
-            } else {
-              const errorText = await regfoxResponse.text();
-              lastError = `${regfoxResponse.status} ${regfoxResponse.statusText}: ${errorText}`;
-              console.log(`Failed response for ${product}:`, lastError);
-            }
-            
-          } catch (fetchError) {
-            lastError = fetchError.message;
-            console.error(`Fetch error for ${product}:`, fetchError.message);
+        const regfoxResponse = await fetch(requestUrl, {
+          method: 'GET',
+          headers: {
+            'apiKey': regfoxApiKey,
+            'Content-Type': 'application/json'
           }
+        });
+
+        console.log(`Response status:`, regfoxResponse.status);
+        console.log(`Response headers:`, regfoxResponse.headers);
+
+        if (!regfoxResponse.ok) {
+          const errorText = await regfoxResponse.text();
+          console.error(`RegFox API error response:`, errorText);
+          throw new Error(`RegFox API error: ${regfoxResponse.status} ${regfoxResponse.statusText} - ${errorText}`);
         }
 
-        if (!successfulResponse) {
-          throw new Error(`All product parameters failed. Last error: ${lastError}`);
-        }
+        const responseData = await regfoxResponse.json();
+        console.log(`RegFox API response:`, JSON.stringify(responseData, null, 2));
 
+        
         // Handle WebConnex API response format - data is in responseData.data
-        regfoxAttendees = successfulResponse.data || [];
+        regfoxAttendees = responseData.data || [];
         
         // Validate data format
         if (!Array.isArray(regfoxAttendees)) {
