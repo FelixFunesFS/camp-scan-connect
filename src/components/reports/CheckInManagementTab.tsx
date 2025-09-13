@@ -5,32 +5,38 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { FilterPanel } from "./shared/FilterPanel";
 import { ExportButton } from "./shared/ExportButton";
+import { ResponsiveAttendeesTable } from "./shared/ResponsiveAttendeesTable";
+import { ColumnSelector } from "./shared/ColumnSelector";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Search, 
-  UserCheck, 
-  UserX, 
-  FileText, 
-  AlertCircle,
-  CheckCircle,
-  Clock
-} from "lucide-react";
+import { Search } from "lucide-react";
 
 interface CheckInManagementTabProps {
   isRefreshing: boolean;
 }
 
-interface Attendee {
+export interface EnhancedAttendee {
   id: string;
   first_name: string;
   last_name: string;
   email: string;
   phone: string;
+  regfox_id: string;
   ticket_type: string;
+  meal_plan: string;
   waiver_signed: boolean;
   checked_in_at: string | null;
   arrival_window: string;
+  notes: string;
   created_at: string;
+  updated_at: string;
+  // RFID related
+  rfid_uid: string | null;
+  rfid_status: 'unissued' | 'active' | 'lost' | 'replaced' | 'deactivated';
+  // Calculated fields
+  has_headphones: boolean;
+  bar_hits: number;
+  overall_status: 'complete' | 'partial' | 'pending';
+  arrival_day: string | null;
 }
 
 interface ActiveFilter {
@@ -39,32 +45,125 @@ interface ActiveFilter {
   label: string;
 }
 
+export interface TableColumn {
+  key: keyof EnhancedAttendee;
+  label: string;
+  sortable?: boolean;
+  mobile?: boolean;
+  desktop?: boolean;
+  width?: string;
+}
+
 export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRefreshing }) => {
-  const [attendees, setAttendees] = useState<Attendee[]>([]);
-  const [filteredAttendees, setFilteredAttendees] = useState<Attendee[]>([]);
+  const [attendees, setAttendees] = useState<EnhancedAttendee[]>([]);
+  const [filteredAttendees, setFilteredAttendees] = useState<EnhancedAttendee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    'first_name', 'ticket_type', 'meal_plan', 'overall_status', 'rfid_status', 'waiver_signed'
+  ]);
   const itemsPerPage = 50;
+
+  const allColumns: TableColumn[] = [
+    { key: 'first_name', label: 'Name', mobile: true, desktop: true, width: 'min-w-32' },
+    { key: 'email', label: 'Email', desktop: true, width: 'min-w-48' },
+    { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32' },
+    { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24' },
+    { key: 'rfid_uid', label: 'RFID UID', desktop: true, width: 'min-w-24' },
+    { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24' },
+    { key: 'ticket_type', label: 'Ticket Type', mobile: true, desktop: true, width: 'min-w-32' },
+    { key: 'meal_plan', label: 'Meal Plan', mobile: true, desktop: true, width: 'min-w-28' },
+    { key: 'has_headphones', label: 'Has Headphones', desktop: true, width: 'min-w-32' },
+    { key: 'bar_hits', label: 'Bar Hits', desktop: true, width: 'min-w-20' },
+    { key: 'waiver_signed', label: 'Waiver', mobile: true, desktop: true, width: 'min-w-20' },
+    { key: 'arrival_day', label: 'Arrival Day', desktop: true, width: 'min-w-28' },
+    { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-40' },
+    { key: 'updated_at', label: 'Last Updated', desktop: true, width: 'min-w-32' }
+  ];
 
   const fetchAttendees = async () => {
     try {
       setIsLoading(true);
 
-      const { data, error } = await supabase
+      // Fetch attendees with RFID tags and transaction counts
+      const { data: attendeesData, error: attendeesError } = await supabase
         .from('attendees')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select(`
+          *,
+          rfid_tags (
+            uid,
+            status
+          )
+        `)
+        .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (attendeesError) throw attendeesError;
 
-      // Add default values for missing fields
-      const processedAttendees = (data || []).map(attendee => ({
-        ...attendee,
-        waiver_signed: attendee.waiver_signed ?? false,
-        checked_in_at: attendee.checked_in_at ?? null
-      }));
+      // Fetch headphone transactions count for each attendee
+      const { data: headphoneData, error: headphoneError } = await supabase
+        .from('station_transactions')
+        .select('attendee_id, transaction_type')
+        .eq('station_type', 'headphones')
+        .in('transaction_type', ['headphone_checkout', 'headphone_checkin']);
+
+      if (headphoneError) throw headphoneError;
+
+      // Fetch bar transaction counts
+      const { data: barData, error: barError } = await supabase
+        .from('station_transactions')
+        .select('attendee_id, transaction_type')
+        .eq('station_type', 'drinks');
+
+      if (barError) throw barError;
+
+      // Process the data
+      const processedAttendees: EnhancedAttendee[] = (attendeesData || []).map(attendee => {
+        const rfidTag = attendee.rfid_tags?.[0];
+        
+        // Calculate headphones status
+        const headphoneTransactions = headphoneData.filter(t => t.attendee_id === attendee.id);
+        const hasCheckout = headphoneTransactions.some(t => t.transaction_type === 'headphone_checkout');
+        const hasCheckin = headphoneTransactions.some(t => t.transaction_type === 'headphone_checkin');
+        const has_headphones = hasCheckout && !hasCheckin;
+
+        // Calculate bar hits (drink transactions)
+        const bar_hits = barData.filter(t => t.attendee_id === attendee.id && t.transaction_type === 'drink').length;
+
+        // Determine overall status
+        let overall_status: 'complete' | 'partial' | 'pending' = 'pending';
+        if (attendee.checked_in_at && attendee.waiver_signed && rfidTag?.status === 'active') {
+          overall_status = 'complete';
+        } else if (attendee.checked_in_at || attendee.waiver_signed || rfidTag?.uid) {
+          overall_status = 'partial';
+        }
+
+        // Determine arrival day from arrival window or notes
+        let arrival_day = null;
+        if (attendee.arrival_window === 'early') {
+          arrival_day = 'Friday';
+        } else if (attendee.arrival_window === 'standard') {
+          arrival_day = 'Saturday';
+        }
+
+        return {
+          ...attendee,
+          rfid_uid: rfidTag?.uid || null,
+          rfid_status: rfidTag?.status || 'unissued',
+          has_headphones,
+          bar_hits,
+          overall_status,
+          arrival_day,
+          waiver_signed: attendee.waiver_signed ?? false,
+          checked_in_at: attendee.checked_in_at ?? null,
+          meal_plan: attendee.meal_plan || 'No',
+          notes: attendee.notes || '',
+          email: attendee.email || '',
+          phone: attendee.phone || '',
+          regfox_id: attendee.regfox_id || ''
+        };
+      });
 
       setAttendees(processedAttendees);
       setFilteredAttendees(processedAttendees);
@@ -97,6 +196,20 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       }, () => {
         fetchAttendees();
       })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'rfid_tags'
+      }, () => {
+        fetchAttendees();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'station_transactions'
+      }, () => {
+        fetchAttendees();
+      })
       .subscribe();
 
     return () => {
@@ -114,19 +227,20 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         attendee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         attendee.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         attendee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        attendee.phone?.includes(searchTerm)
+        attendee.phone?.includes(searchTerm) ||
+        attendee.regfox_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        attendee.rfid_uid?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Apply active filters
     activeFilters.forEach(filter => {
       switch (filter.key) {
+        case 'overall_status':
+          filtered = filtered.filter(a => a.overall_status === filter.value);
+          break;
         case 'rfid_status':
-          if (filter.value === 'active') {
-            filtered = filtered.filter(a => a.checked_in_at !== null);
-          } else if (filter.value === 'inactive') {
-            filtered = filtered.filter(a => a.checked_in_at === null);
-          }
+          filtered = filtered.filter(a => a.rfid_status === filter.value);
           break;
         case 'waiver_status':
           if (filter.value === 'signed') {
@@ -137,6 +251,12 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           break;
         case 'ticket_type':
           filtered = filtered.filter(a => a.ticket_type === filter.value);
+          break;
+        case 'meal_plan':
+          filtered = filtered.filter(a => a.meal_plan === filter.value);
+          break;
+        case 'has_headphones':
+          filtered = filtered.filter(a => a.has_headphones === (filter.value === 'yes'));
           break;
         case 'arrival_window':
           filtered = filtered.filter(a => a.arrival_window === filter.value);
@@ -150,12 +270,25 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
 
   const filterOptions = [
     {
+      key: "overall_status",
+      label: "Overall Status",
+      type: "select" as const,
+      options: [
+        { value: "complete", label: "Complete" },
+        { value: "partial", label: "Partial" },
+        { value: "pending", label: "Pending" }
+      ]
+    },
+    {
       key: "rfid_status",
       label: "RFID Status",
       type: "select" as const,
       options: [
         { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" }
+        { value: "deactivated", label: "Deactivated" },
+        { value: "lost", label: "Lost" },
+        { value: "replaced", label: "Replaced" },
+        { value: "unissued", label: "Unissued" }
       ]
     },
     {
@@ -180,6 +313,24 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         { value: "day_pass", label: "Day Pass" },
         { value: "staff", label: "Staff" },
         { value: "vendor", label: "Vendor" }
+      ]
+    },
+    {
+      key: "meal_plan",
+      label: "Meal Plan",
+      type: "select" as const,
+      options: [
+        { value: "Yes", label: "Yes" },
+        { value: "No", label: "No" }
+      ]
+    },
+    {
+      key: "has_headphones",
+      label: "Has Headphones",
+      type: "select" as const,
+      options: [
+        { value: "yes", label: "Yes" },
+        { value: "no", label: "No" }
       ]
     },
     {
@@ -222,48 +373,45 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const paginatedAttendees = filteredAttendees.slice(startIndex, endIndex);
   const totalPages = Math.ceil(filteredAttendees.length / itemsPerPage);
 
-  const getRfidStatus = (checkedInAt: string | null) => {
-    return checkedInAt ? 'Active' : 'Inactive';
-  };
-
-  const getRfidStatusColor = (checkedInAt: string | null) => {
-    return checkedInAt 
-      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-  };
-
-  const getWaiverStatusColor = (signed?: boolean) => {
-    return signed 
-      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-  };
-
   const exportData = filteredAttendees.map(attendee => ({
     name: `${attendee.first_name} ${attendee.last_name}`,
-    email: attendee.email || '',
-    phone: attendee.phone || '',
+    phone: attendee.phone,
+    email: attendee.email,
+    regfoxId: attendee.regfox_id,
+    rfidUid: attendee.rfid_uid || '',
+    status: attendee.overall_status,
     ticketType: attendee.ticket_type,
-    rfidStatus: getRfidStatus(attendee.checked_in_at),
-    waiverStatus: attendee.waiver_signed === true ? 'Signed' : 'Unsigned',
-    arrivalWindow: attendee.arrival_window,
-    checkedInAt: attendee.checked_in_at || 'Not checked in'
+    mealPlan: attendee.meal_plan,
+    hasHeadphones: attendee.has_headphones ? 'Yes' : 'No',
+    barHits: attendee.bar_hits,
+    waiverSigned: attendee.waiver_signed ? 'Yes' : 'No',
+    arrivalDay: attendee.arrival_day || '',
+    notes: attendee.notes,
+    lastUpdated: new Date(attendee.updated_at).toLocaleDateString()
   }));
 
   return (
     <div className="space-y-6" data-export-target>
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-primary">Check-In Management</h2>
           <p className="text-muted-foreground">
             {filteredAttendees.length.toLocaleString()} of {attendees.length.toLocaleString()} attendees
           </p>
         </div>
-        <ExportButton 
-          data={exportData}
-          filename="checkin-management"
-          title="Check-In Management Report"
-        />
+        <div className="flex flex-col sm:flex-row gap-2">
+          <ColumnSelector
+            columns={allColumns}
+            visibleColumns={visibleColumns}
+            onVisibleColumnsChange={setVisibleColumns}
+          />
+          <ExportButton 
+            data={exportData}
+            filename="checkin-management"
+            title="Check-In Management Report"
+          />
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -276,7 +424,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search by name, email, or phone..."
+                placeholder="Search by name, email, phone, RegFox ID, or RFID UID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -295,140 +443,18 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       </div>
 
       {/* Results Table */}
-      <Card className="border-primary/20">
-        <CardHeader>
-          <CardTitle>Attendees List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-4">
-              {[...Array(10)].map((_, i) => (
-                <div key={i} className="h-12 bg-muted animate-pulse rounded" />
-              ))}
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-3 text-primary">Name</th>
-                      <th className="text-left p-3 text-primary">Contact</th>
-                      <th className="text-center p-3 text-primary">Ticket Type</th>
-                      <th className="text-center p-3 text-primary">RFID Status</th>
-                      <th className="text-center p-3 text-primary">Waiver</th>
-                      <th className="text-center p-3 text-primary">Arrival</th>
-                      <th className="text-center p-3 text-primary">Check-In Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedAttendees.map((attendee) => (
-                      <tr key={attendee.id} className="border-b hover:bg-muted/50">
-                        <td className="p-3">
-                          <div className="font-medium">{attendee.first_name} {attendee.last_name}</div>
-                        </td>
-                        <td className="p-3">
-                          <div className="text-xs text-muted-foreground space-y-1">
-                            {attendee.email && <div>{attendee.email}</div>}
-                            {attendee.phone && <div>{attendee.phone}</div>}
-                          </div>
-                        </td>
-                        <td className="text-center p-3">
-                          <Badge variant="outline">
-                            {attendee.ticket_type.replace(/_/g, ' ').toUpperCase()}
-                          </Badge>
-                        </td>
-                        <td className="text-center p-3">
-                          <Badge className={getRfidStatusColor(attendee.checked_in_at)}>
-                            {attendee.checked_in_at ? (
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                            ) : (
-                              <UserX className="h-3 w-3 mr-1" />
-                            )}
-                            {getRfidStatus(attendee.checked_in_at)}
-                          </Badge>
-                        </td>
-                        <td className="text-center p-3">
-                          <Badge className={getWaiverStatusColor(attendee.waiver_signed)}>
-                            {attendee.waiver_signed === true ? (
-                              <FileText className="h-3 w-3 mr-1" />
-                            ) : (
-                              <AlertCircle className="h-3 w-3 mr-1" />
-                            )}
-                            {attendee.waiver_signed === true ? 'Signed' : 'Unsigned'}
-                          </Badge>
-                        </td>
-                        <td className="text-center p-3">
-                          <Badge variant="outline">
-                            {attendee.arrival_window === 'early' ? 'Early' : 'Standard'}
-                          </Badge>
-                        </td>
-                        <td className="text-center p-3">
-                          {attendee.checked_in_at ? (
-                            <div className="text-xs text-muted-foreground">
-                              {new Date(attendee.checked_in_at).toLocaleDateString()}<br />
-                              {new Date(attendee.checked_in_at).toLocaleTimeString()}
-                            </div>
-                          ) : (
-                            <Badge variant="secondary">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Pending
-                            </Badge>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1}-{Math.min(endIndex, filteredAttendees.length)} of {filteredAttendees.length}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <div className="flex items-center gap-2">
-                      {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                        const page = i + Math.max(1, currentPage - 2);
-                        if (page > totalPages) return null;
-                        return (
-                          <Button
-                            key={page}
-                            variant={currentPage === page ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setCurrentPage(page)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {page}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+      <ResponsiveAttendeesTable
+        attendees={paginatedAttendees}
+        columns={allColumns}
+        visibleColumns={visibleColumns}
+        isLoading={isLoading}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        startIndex={startIndex}
+        endIndex={endIndex}
+        totalCount={filteredAttendees.length}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };
