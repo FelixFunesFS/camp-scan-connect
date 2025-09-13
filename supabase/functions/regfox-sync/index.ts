@@ -8,13 +8,16 @@ const corsHeaders = {
 
 interface RegFoxAttendee {
   id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  registrationPath: string;
-  registrationDate: string;
+  displayId?: string;
+  formId: string;
+  orderId?: string;
   status: string;
+  amount?: number;
+  currency?: string;
+  fieldData: Record<string, any>;
+  checkedIn?: boolean;
+  dateCreated: string;
+  dateUpdated: string;
 }
 
 interface SyncResult {
@@ -36,10 +39,16 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get RegFox API key
+    // Get RegFox API key and Form ID
     const regfoxApiKey = Deno.env.get('REGFOX_API_KEY');
+    const regfoxFormId = Deno.env.get('REGFOX_FORM_ID');
+    
     if (!regfoxApiKey) {
       throw new Error('RegFox API key not configured');
+    }
+    
+    if (!regfoxFormId) {
+      throw new Error('RegFox Form ID not configured');
     }
 
     console.log('Starting RegFox sync...');
@@ -95,53 +104,75 @@ serve(async (req) => {
         throw pingError;
       }
 
-      // Fetch attendees from RegFox API
+      // Fetch attendees from RegFox API with pagination
       console.log('Fetching attendees from RegFox API...');
       
       let regfoxAttendees: RegFoxAttendee[] = [];
+      let startingAfter: string | null = null;
+      let hasMore = true;
       
       try {
-        // Use the exact parameters from the API documentation
-        const requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=redpodium.com2&pretty=true&limit=1000`;
-        console.log(`Making RegFox API call to: ${requestUrl}`);
-        console.log(`Request headers: apiKey=[MASKED], Content-Type=application/json`);
-
-        const regfoxResponse = await fetch(requestUrl, {
-          method: 'GET',
-          headers: {
-            'apiKey': regfoxApiKey,
-            'Content-Type': 'application/json'
+        // Use pagination to fetch all registrants
+        while (hasMore) {
+          let requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=regfox.com&formId=${encodeURIComponent(regfoxFormId)}&limit=250&sort=asc`;
+          
+          if (startingAfter) {
+            requestUrl += `&startingAfter=${encodeURIComponent(startingAfter)}`;
           }
-        });
+          
+          console.log(`Making RegFox API call to: ${requestUrl}`);
+          console.log(`Request headers: apiKey=[MASKED], Content-Type=application/json`);
 
-        console.log(`Response status:`, regfoxResponse.status);
-        console.log(`Response headers:`, regfoxResponse.headers);
+          const regfoxResponse = await fetch(requestUrl, {
+            method: 'GET',
+            headers: {
+              'apiKey': regfoxApiKey,
+              'Content-Type': 'application/json'
+            }
+          });
 
-        if (!regfoxResponse.ok) {
-          const errorText = await regfoxResponse.text();
-          console.error(`RegFox API error response:`, errorText);
-          throw new Error(`RegFox API error: ${regfoxResponse.status} ${regfoxResponse.statusText} - ${errorText}`);
+          console.log(`Response status:`, regfoxResponse.status);
+
+          if (!regfoxResponse.ok) {
+            const errorText = await regfoxResponse.text();
+            console.error(`RegFox API error response:`, errorText);
+            throw new Error(`RegFox API error: ${regfoxResponse.status} ${regfoxResponse.statusText} - ${errorText}`);
+          }
+
+          const responseData = await regfoxResponse.json();
+          console.log(`RegFox API response (page):`, {
+            totalResults: responseData.totalResults,
+            hasMore: responseData.hasMore,
+            dataLength: responseData.data?.length || 0,
+            startingAfter: responseData.startingAfter
+          });
+
+          // Handle WebConnex API response format
+          const pageAttendees = responseData.data || [];
+          
+          if (!Array.isArray(pageAttendees)) {
+            throw new Error('Invalid RegFox API response format: expected array of attendees');
+          }
+          
+          regfoxAttendees.push(...pageAttendees);
+          
+          // Check pagination
+          hasMore = responseData.hasMore === true;
+          startingAfter = responseData.startingAfter || null;
+          
+          console.log(`Fetched ${pageAttendees.length} attendees from this page. Total so far: ${regfoxAttendees.length}`);
+          
+          // Safety check to prevent infinite loops
+          if (regfoxAttendees.length > 10000) {
+            console.warn('Reached safety limit of 10,000 attendees. Stopping pagination.');
+            break;
+          }
         }
-
-        const responseData = await regfoxResponse.json();
-        console.log(`RegFox API response:`, JSON.stringify(responseData, null, 2));
-
         
-        // Handle WebConnex API response format - data is in responseData.data
-        regfoxAttendees = responseData.data || [];
-        
-        // Validate data format
-        if (!Array.isArray(regfoxAttendees)) {
-          throw new Error('Invalid RegFox API response format: expected array of attendees');
-        }
-        
-        console.log(`Successfully retrieved ${regfoxAttendees.length} attendees`);
+        console.log(`Successfully retrieved ${regfoxAttendees.length} total attendees`);
         
       } catch (apiError) {
         console.error('RegFox API call failed:', apiError.message);
-        
-        // For now, if RegFox API fails, log the error but don't fail the sync
-        // This allows the function to work during development/testing
         syncResult.errors.push(`RegFox API error: ${apiError.message}`);
         regfoxAttendees = []; // Empty array means no new data to sync
       }
@@ -152,18 +183,29 @@ serve(async (req) => {
       // Process each attendee from RegFox
       for (const regfoxAttendee of regfoxAttendees) {
         try {
-          // Map RegFox ticket type to our enum
+          // Extract data from fieldData (RegFox custom fields)
+          const fieldData = regfoxAttendee.fieldData || {};
+          
+          // Map common field names (adjust these based on your actual RegFox form fields)
+          const firstName = fieldData['First Name'] || fieldData['firstName'] || fieldData['first_name'] || '';
+          const lastName = fieldData['Last Name'] || fieldData['lastName'] || fieldData['last_name'] || '';
+          const email = fieldData['Email'] || fieldData['email'] || '';
+          const phone = fieldData['Phone'] || fieldData['phone'] || fieldData['Phone Number'] || null;
+          
+          // Map RegFox ticket type to our enum (update these mappings based on your form)
           const ticketTypeMap: Record<string, string> = {
             'Premium Power Site': 'premium_power',
-            'Dry Site': 'dry_site',
+            'Dry Site': 'dry_site', 
             'Day Pass': 'day_pass',
             'Staff': 'staff',
             'Vendor': 'vendor'
           };
 
-          const ticketType = ticketTypeMap[regfoxAttendee.registrationPath] || 'dry_site';
+          // Try to determine ticket type from fieldData or use a default
+          const registrationType = fieldData['Registration Type'] || fieldData['Ticket Type'] || fieldData['registrationType'] || 'Dry Site';
+          const ticketType = ticketTypeMap[registrationType] || 'dry_site';
 
-          // Check if attendee already exists
+          // Check if attendee already exists by regfox_id
           const { data: existingAttendee } = await supabase
             .from('attendees')
             .select('id, updated_at')
@@ -172,14 +214,14 @@ serve(async (req) => {
 
           const attendeeData = {
             regfox_id: regfoxAttendee.id,
-            first_name: regfoxAttendee.firstName,
-            last_name: regfoxAttendee.lastName,
-            email: regfoxAttendee.email,
-            phone: regfoxAttendee.phone || null,
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            phone: phone,
             ticket_type: ticketType,
             waiver_signed: false,
-            checked_in_at: null,
-            created_at: regfoxAttendee.registrationDate
+            checked_in_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,
+            created_at: regfoxAttendee.dateCreated
           };
 
           if (existingAttendee) {
