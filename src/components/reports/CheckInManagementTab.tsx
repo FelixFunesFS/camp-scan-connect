@@ -27,8 +27,8 @@ interface Attendee {
   email: string;
   phone: string;
   ticket_type: string;
-  waiver_signed: boolean;
-  checked_in_at: string | null;
+  waiver_signed?: boolean;
+  checked_in_at?: string | null;
   arrival_window: string;
   created_at: string;
 }
@@ -59,8 +59,15 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
 
       if (error) throw error;
 
-      setAttendees(data || []);
-      setFilteredAttendees(data || []);
+      // Add default values for missing fields
+      const processedAttendees = (data || []).map(attendee => ({
+        ...attendee,
+        waiver_signed: (attendee as any).waiver_signed ?? false,
+        checked_in_at: (attendee as any).checked_in_at ?? null
+      }));
+
+      setAttendees(processedAttendees);
+      setFilteredAttendees(processedAttendees);
 
     } catch (error) {
       console.error("Error fetching attendees:", error);
@@ -123,9 +130,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           break;
         case 'waiver_status':
           if (filter.value === 'signed') {
-            filtered = filtered.filter(a => a.waiver_signed);
+            filtered = filtered.filter(a => a.waiver_signed === true);
           } else if (filter.value === 'unsigned') {
-            filtered = filtered.filter(a => !a.waiver_signed);
+            filtered = filtered.filter(a => a.waiver_signed !== true);
           }
           break;
         case 'ticket_type':
@@ -222,7 +229,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
   };
 
-  const getWaiverStatusColor = (signed: boolean) => {
+  const getWaiverStatusColor = (signed?: boolean) => {
     return signed 
       ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
       : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
@@ -234,7 +241,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     phone: attendee.phone || '',
     ticketType: attendee.ticket_type,
     rfidStatus: getRfidStatus(attendee.checked_in_at),
-    waiverStatus: attendee.waiver_signed ? 'Signed' : 'Unsigned',
+    waiverStatus: attendee.waiver_signed === true ? 'Signed' : 'Unsigned',
     arrivalWindow: attendee.arrival_window,
     checkedInAt: attendee.checked_in_at || 'Not checked in'
   }));
@@ -340,12 +347,12 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
                         </td>
                         <td className="text-center p-3">
                           <Badge className={getWaiverStatusColor(attendee.waiver_signed)}>
-                            {attendee.waiver_signed ? (
+                            {attendee.waiver_signed === true ? (
                               <FileText className="h-3 w-3 mr-1" />
                             ) : (
                               <AlertCircle className="h-3 w-3 mr-1" />
                             )}
-                            {attendee.waiver_signed ? 'Signed' : 'Unsigned'}
+                            {attendee.waiver_signed === true ? 'Signed' : 'Unsigned'}
                           </Badge>
                         </td>
                         <td className="text-center p-3">
