@@ -174,6 +174,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       options: [
         { value: "dry_site", label: "Dry Site" },
         { value: "premium_power", label: "Premium Power" },
+        { value: "glamping", label: "Glamping" },
+        { value: "cabin", label: "Cabin" },
+        { value: "rv_site", label: "RV Site" },
         { value: "day_pass", label: "Day Pass" },
         { value: "staff", label: "Staff" },
         { value: "vendor", label: "Vendor" }
