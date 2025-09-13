@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   CheckCircle, 
@@ -13,7 +14,10 @@ import {
   User,
   Mail,
   Phone,
-  Users
+  Users,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { EnhancedAttendee, TableColumn } from "../CheckInManagementTab";
 
@@ -28,6 +32,9 @@ interface ResponsiveAttendeesTableProps {
   endIndex: number;
   totalCount: number;
   onPageChange: (page: number) => void;
+  sortField: string;
+  sortDirection: 'asc' | 'desc';
+  onSort: (field: any) => void;
 }
 
 export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> = ({
@@ -40,9 +47,38 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
   startIndex,
   endIndex,
   totalCount,
-  onPageChange
+  onPageChange,
+  sortField,
+  sortDirection,
+  onSort
 }) => {
   const isMobile = useIsMobile();
+
+  const getSortableFieldMap = (key: string): string | null => {
+    switch (key) {
+      case 'first_name':
+        return 'name';
+      case 'email':
+      case 'phone':
+      case 'regfox_id':
+      case 'bar_hits':
+      case 'arrival_day':
+      case 'updated_at':
+        return key;
+      default:
+        return null;
+    }
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    const sortableField = getSortableFieldMap(columnKey);
+    if (!sortableField || sortField !== sortableField) {
+      return <ArrowUpDown className="h-4 w-4 opacity-50" />;
+    }
+    return sortDirection === 'asc' ? 
+      <ArrowUp className="h-4 w-4 text-primary" /> : 
+      <ArrowDown className="h-4 w-4 text-primary" />;
+  };
 
   const getStatusColor = (status: EnhancedAttendee['overall_status']) => {
     switch (status) {
@@ -178,6 +214,35 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
   if (isMobile) {
     return (
       <div className="space-y-4" data-export-target>
+        {/* Mobile Sort Selector */}
+        <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-lg">
+          <span className="text-sm font-medium">Sort by:</span>
+          <Select 
+            value={`${sortField}-${sortDirection}`}
+            onValueChange={(value) => {
+              const [field, direction] = value.split('-');
+              onSort(field);
+              if (sortField === field && sortDirection !== direction) {
+                onSort(field); // Toggle direction
+              }
+            }}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="updated_at-desc">Last Updated (Newest)</SelectItem>
+              <SelectItem value="updated_at-asc">Last Updated (Oldest)</SelectItem>
+              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="email-asc">Email (A-Z)</SelectItem>
+              <SelectItem value="email-desc">Email (Z-A)</SelectItem>
+              <SelectItem value="bar_hits-desc">Bar Hits (Most)</SelectItem>
+              <SelectItem value="bar_hits-asc">Bar Hits (Least)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {isLoading ? (
           <>
             {[...Array(5)].map((_, i) => (
@@ -305,11 +370,25 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    {visibleTableColumns.map((column) => (
-                      <th key={column.key} className={`text-left p-3 text-primary ${column.width || 'min-w-24'}`}>
-                        {column.label}
-                      </th>
-                    ))}
+                    {visibleTableColumns.map((column) => {
+                      const sortableField = getSortableFieldMap(column.key);
+                      const isSortable = !!sortableField;
+                      
+                      return (
+                        <th 
+                          key={column.key} 
+                          className={`text-left p-3 text-primary ${column.width || 'min-w-24'} ${
+                            isSortable ? 'cursor-pointer hover:bg-muted/50 select-none' : ''
+                          }`}
+                          onClick={() => isSortable && onSort(sortableField)}
+                        >
+                          <div className="flex items-center gap-1">
+                            {column.label}
+                            {isSortable && getSortIcon(column.key)}
+                          </div>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>

@@ -14,6 +14,9 @@ interface CheckInManagementTabProps {
   isRefreshing: boolean;
 }
 
+type SortField = 'name' | 'email' | 'phone' | 'regfox_id' | 'updated_at' | 'bar_hits' | 'arrival_day';
+type SortDirection = 'asc' | 'desc';
+
 export interface EnhancedAttendee {
   id: string;
   first_name: string;
@@ -63,28 +66,30 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState<SortField>('updated_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     'first_name', 'ticket_type', 'meal_plan', 'overall_status', 'rfid_status', 'waiver_signed'
   ]);
   const itemsPerPage = 50;
 
   const allColumns: TableColumn[] = [
-    { key: 'first_name', label: 'Name', mobile: true, desktop: true, width: 'min-w-32' },
-    { key: 'email', label: 'Email', desktop: true, width: 'min-w-48' },
-    { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32' },
-    { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24' },
+    { key: 'first_name', label: 'Name', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'email', label: 'Email', desktop: true, width: 'min-w-48', sortable: true },
+    { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'rfid_uid', label: 'RFID UID', desktop: true, width: 'min-w-24' },
     { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24' },
     { key: 'ticket_type', label: 'Ticket Type', mobile: true, desktop: true, width: 'min-w-32' },
     { key: 'meal_plan', label: 'Meal Plan', mobile: true, desktop: true, width: 'min-w-28' },
     { key: 'has_headphones', label: 'Has Headphones', desktop: true, width: 'min-w-32' },
-    { key: 'bar_hits', label: 'Bar Hits', desktop: true, width: 'min-w-20' },
+    { key: 'bar_hits', label: 'Bar Hits', desktop: true, width: 'min-w-20', sortable: true },
     { key: 'waiver_signed', label: 'Waiver', mobile: true, desktop: true, width: 'min-w-20' },
-    { key: 'arrival_day', label: 'Arrival Day', desktop: true, width: 'min-w-28' },
+    { key: 'arrival_day', label: 'Arrival Day', desktop: true, width: 'min-w-28', sortable: true },
     { key: 'is_duplicate', label: 'Duplicate Status', desktop: true, width: 'min-w-24' },
     { key: 'is_phone_duplicate', label: 'Phone Duplicate', desktop: true, width: 'min-w-24' },
     { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-40' },
-    { key: 'updated_at', label: 'Last Updated', desktop: true, width: 'min-w-32' }
+    { key: 'updated_at', label: 'Last Updated', desktop: true, width: 'min-w-32', sortable: true }
   ];
 
   const fetchAttendees = async () => {
@@ -314,9 +319,62 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       }
     });
 
-    setFilteredAttendees(filtered);
+    // Sort the filtered results
+    const sortedFiltered = filtered.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'name':
+          aValue = `${a.first_name} ${a.last_name}`.toLowerCase();
+          bValue = `${b.first_name} ${b.last_name}`.toLowerCase();
+          break;
+        case 'email':
+          aValue = a.email?.toLowerCase() || '';
+          bValue = b.email?.toLowerCase() || '';
+          break;
+        case 'phone':
+          aValue = a.phone || '';
+          bValue = b.phone || '';
+          break;
+        case 'regfox_id':
+          aValue = a.regfox_id || '';
+          bValue = b.regfox_id || '';
+          break;
+        case 'updated_at':
+          aValue = new Date(a.updated_at || 0).getTime();
+          bValue = new Date(b.updated_at || 0).getTime();
+          break;
+        case 'bar_hits':
+          aValue = a.bar_hits || 0;
+          bValue = b.bar_hits || 0;
+          break;
+        case 'arrival_day':
+          aValue = a.arrival_day || '';
+          bValue = b.arrival_day || '';
+          break;
+        default:
+          aValue = '';
+          bValue = '';
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    setFilteredAttendees(sortedFiltered);
     setCurrentPage(1);
-  }, [attendees, searchTerm, activeFilters]);
+  }, [attendees, searchTerm, activeFilters, sortField, sortDirection]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
   const filterOptions = [
     {
@@ -522,6 +580,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         endIndex={endIndex}
         totalCount={filteredAttendees.length}
         onPageChange={setCurrentPage}
+        sortField={sortField}
+        sortDirection={sortDirection}
+        onSort={handleSort}
       />
     </div>
   );
