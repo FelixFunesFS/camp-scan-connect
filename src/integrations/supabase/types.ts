@@ -59,6 +59,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          meal_plan: string | null
           notes: string | null
           override_early_checkin: boolean | null
           phone: string | null
@@ -76,6 +77,7 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          meal_plan?: string | null
           notes?: string | null
           override_early_checkin?: boolean | null
           phone?: string | null
@@ -93,6 +95,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          meal_plan?: string | null
           notes?: string | null
           override_early_checkin?: boolean | null
           phone?: string | null

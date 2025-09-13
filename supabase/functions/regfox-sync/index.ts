@@ -252,6 +252,9 @@ serve(async (req) => {
           // Additional contact info
           const emergencyContact = fields['emergencyContactNameNumber'] || fields['Emergency Contact Name & Number?'] || null;
           
+          // Meal plan information
+          const mealPlan = fields['mealPlan'] || fields['Meal Plan-'] || fields['Meal Plan'] || null;
+          
           // Address information
           const address = {
             street: fields['address.street1'] || fields['Street Address'] || null,
@@ -288,6 +291,7 @@ serve(async (req) => {
             phone: phone,
             ticket_type: ticketType,
             early_access: earlyAccess,
+            meal_plan: mealPlan,
             waiver_signed: false, // Will be updated when waiver is actually signed
             checked_in_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,
             notes: emergencyContact ? `Emergency Contact: ${emergencyContact}` : null,
