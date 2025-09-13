@@ -68,14 +68,11 @@ serve(async (req) => {
     };
 
     try {
-      // Fetch attendees from RegFox API
-      console.log('Fetching attendees from RegFox API...');
-      
-      let regfoxAttendees: RegFoxAttendee[] = [];
+      // First, test API key with ping endpoint
+      console.log('Testing API key with ping endpoint...');
       
       try {
-        // Make API call to WebConnex (RegFox) - API key goes in header
-        const regfoxResponse = await fetch(`https://api.webconnex.com/v2/public/search/registrants?product=redpodium.com2&pretty=true`, {
+        const pingResponse = await fetch('https://api.webconnex.com/v2/public/ping', {
           method: 'GET',
           headers: {
             'apiKey': regfoxApiKey,
@@ -83,20 +80,84 @@ serve(async (req) => {
           }
         });
 
-        if (!regfoxResponse.ok) {
-          throw new Error(`RegFox API error: ${regfoxResponse.status} ${regfoxResponse.statusText}`);
+        console.log('Ping response status:', pingResponse.status);
+        const pingData = await pingResponse.json();
+        console.log('Ping response data:', pingData);
+
+        if (!pingResponse.ok) {
+          throw new Error(`API key validation failed: ${pingResponse.status} ${pingResponse.statusText}`);
         }
 
-        const responseData = await regfoxResponse.json();
-        console.log('RegFox API response received:', responseData);
-        
+        console.log('API key validation successful');
+      } catch (pingError) {
+        console.error('API key ping test failed:', pingError.message);
+        syncResult.errors.push(`API key validation error: ${pingError.message}`);
+        throw pingError;
+      }
+
+      // Fetch attendees from RegFox API
+      console.log('Fetching attendees from RegFox API...');
+      
+      let regfoxAttendees: RegFoxAttendee[] = [];
+      
+      try {
+        // Try different product parameter formats
+        const productParams = [
+          'redpodium.com2',
+          'redpodium.com',
+          'redpodium'
+        ];
+
+        let successfulResponse = null;
+        let lastError = null;
+
+        for (const product of productParams) {
+          const requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=${product}&pretty=true`;
+          console.log(`Trying API call with product parameter: ${product}`);
+          console.log(`Request URL: ${requestUrl}`);
+          console.log(`Request headers: apiKey=[MASKED], Content-Type=application/json`);
+
+          try {
+            const regfoxResponse = await fetch(requestUrl, {
+              method: 'GET',
+              headers: {
+                'apiKey': regfoxApiKey,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            console.log(`Response status for ${product}:`, regfoxResponse.status);
+            
+            if (regfoxResponse.ok) {
+              const responseData = await regfoxResponse.json();
+              console.log(`Successful response for ${product}:`, responseData);
+              successfulResponse = responseData;
+              break;
+            } else {
+              const errorText = await regfoxResponse.text();
+              lastError = `${regfoxResponse.status} ${regfoxResponse.statusText}: ${errorText}`;
+              console.log(`Failed response for ${product}:`, lastError);
+            }
+            
+          } catch (fetchError) {
+            lastError = fetchError.message;
+            console.error(`Fetch error for ${product}:`, fetchError.message);
+          }
+        }
+
+        if (!successfulResponse) {
+          throw new Error(`All product parameters failed. Last error: ${lastError}`);
+        }
+
         // Handle WebConnex API response format - data is in responseData.data
-        regfoxAttendees = responseData.data || [];
+        regfoxAttendees = successfulResponse.data || [];
         
         // Validate data format
         if (!Array.isArray(regfoxAttendees)) {
           throw new Error('Invalid RegFox API response format: expected array of attendees');
         }
+        
+        console.log(`Successfully retrieved ${regfoxAttendees.length} attendees`);
         
       } catch (apiError) {
         console.error('RegFox API call failed:', apiError.message);
