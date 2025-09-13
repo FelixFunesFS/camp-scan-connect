@@ -129,23 +129,60 @@ serve(async (req) => {
         }
 
         if (attendeeData && attendeeId) {
-          // Map RegFox ticket type to our enum
+          // Enhanced ticket type mapping to match database enum and sync function logic
           const ticketTypeMap: Record<string, string> = {
             'Premium Power Site': 'premium_power',
-            'Dry Site': 'dry_site', 
+            'Dry Site': 'dry_site',
+            'RV Site': 'rv_site',
+            'Glamping': 'glamping',
+            'Glamping Tent': 'glamping',
+            'Cabin': 'cabin',
             'Day Pass': 'day_pass',
             'Staff': 'staff',
             'Vendor': 'vendor'
           };
 
-          // Determine ticket type from various possible sources
+          // Enhanced ticket type determination logic matching sync function
           let ticketType = 'dry_site';
-          if (payload.data.registrationPath) {
-            ticketType = ticketTypeMap[payload.data.registrationPath] || 'dry_site';
-          } else if (payload.data.tickets && payload.data.tickets.length > 0) {
-            const ticket = payload.data.tickets[0];
-            ticketType = ticketTypeMap[ticket.ticketLabel || ticket.ticketKey || ''] || 'dry_site';
-          }
+          
+          // Helper function to determine ticket type from RegFox data (matching sync function)
+          const determineTicketTypeFromPayload = (payloadData: any) => {
+            // Check for accommodation type in registrant data
+            if (payloadData.registrants && payloadData.registrants.length > 0) {
+              const registrant = payloadData.registrants[0];
+              const accommodationField = registrant.data?.find(d => 
+                d.fieldName?.toLowerCase().includes('accommodation') || 
+                d.fieldName?.toLowerCase().includes('tent') ||
+                d.fieldName?.toLowerCase().includes('staying')
+              );
+              
+              if (accommodationField && accommodationField.fieldValue) {
+                const accommodation = accommodationField.fieldValue.toLowerCase();
+                if (accommodation.includes('glamping')) return 'glamping';
+                if (accommodation.includes('cabin')) return 'cabin';
+                if (accommodation.includes('rv')) return 'rv_site';
+                if (accommodation.includes('premium') || accommodation.includes('power')) return 'premium_power';
+              }
+            }
+            
+            // Fallback to registration path mapping
+            if (payloadData.registrationPath && ticketTypeMap[payloadData.registrationPath]) {
+              return ticketTypeMap[payloadData.registrationPath];
+            }
+            
+            // Fallback to ticket mapping
+            if (payloadData.tickets && payloadData.tickets.length > 0) {
+              const ticket = payloadData.tickets[0];
+              const ticketLabel = ticket.ticketLabel || ticket.ticketKey || '';
+              if (ticketTypeMap[ticketLabel]) {
+                return ticketTypeMap[ticketLabel];
+              }
+            }
+            
+            return 'dry_site'; // Safe default
+          };
+
+          ticketType = determineTicketTypeFromPayload(payload.data);
 
           // Complete attendee data
           const completeAttendeeData = {
