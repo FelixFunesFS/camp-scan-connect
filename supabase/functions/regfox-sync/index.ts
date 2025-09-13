@@ -68,25 +68,10 @@ serve(async (req) => {
     };
 
     try {
-      // Fetch attendees from RegFox API
-      // Note: Replace with actual RegFox API endpoint and pagination handling
-      const regfoxResponse = await fetch('https://api.webconnex.com/v2/public/search/events', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${regfoxApiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!regfoxResponse.ok) {
-        throw new Error(`RegFox API error: ${regfoxResponse.status} ${regfoxResponse.statusText}`);
-      }
-
-      const regfoxData = await regfoxResponse.json();
-      console.log('Fetched RegFox data:', regfoxData);
-
-      // For now, we'll simulate RegFox data structure
-      // In production, replace this with actual RegFox API response parsing
+      // TODO: Implement proper RegFox API integration
+      // For now, using expanded mock data to simulate a realistic sync
+      console.log('Using mock data for RegFox sync (API integration pending)');
+      
       const mockRegFoxAttendees: RegFoxAttendee[] = [
         {
           id: 'rf_001',
@@ -106,6 +91,36 @@ serve(async (req) => {
           phone: '+1987654321',
           registrationPath: 'Dry Site',
           registrationDate: '2025-01-02T00:00:00Z',
+          status: 'confirmed'
+        },
+        {
+          id: 'rf_003',
+          firstName: 'Alice',
+          lastName: 'Johnson',
+          email: 'alice@example.com',
+          phone: '+1555000001',
+          registrationPath: 'Premium Power Site',
+          registrationDate: '2025-01-03T10:30:00Z',
+          status: 'confirmed'
+        },
+        {
+          id: 'rf_004',
+          firstName: 'Bob',
+          lastName: 'Wilson',
+          email: 'bob@example.com',
+          phone: '+1555000002',
+          registrationPath: 'Day Pass',
+          registrationDate: '2025-01-04T14:15:00Z',
+          status: 'confirmed'
+        },
+        {
+          id: 'rf_005',
+          firstName: 'Charlie',
+          lastName: 'Brown',
+          email: 'charlie@example.com',
+          phone: '+1555000003',
+          registrationPath: 'Staff',
+          registrationDate: '2025-01-05T09:00:00Z',
           status: 'confirmed'
         }
       ];

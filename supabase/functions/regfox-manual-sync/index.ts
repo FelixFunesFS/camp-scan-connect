@@ -25,8 +25,15 @@ serve(async (req) => {
       body: {}
     });
 
+    console.log('Sync response:', syncResponse);
+
     if (syncResponse.error) {
+      console.error('Sync function error details:', syncResponse.error);
       throw new Error(`Sync function error: ${syncResponse.error.message}`);
+    }
+
+    if (!syncResponse.data) {
+      throw new Error('Sync function returned no data');
     }
 
     console.log('Manual sync completed:', syncResponse.data);
