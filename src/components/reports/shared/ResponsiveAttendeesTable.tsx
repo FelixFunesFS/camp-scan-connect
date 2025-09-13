@@ -12,7 +12,8 @@ import {
   FileText,
   User,
   Mail,
-  Phone
+  Phone,
+  Users
 } from "lucide-react";
 import { EnhancedAttendee, TableColumn } from "../CheckInManagementTab";
 
@@ -152,6 +153,14 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
           </div>
         );
       
+      case 'is_duplicate':
+        return (
+          <Badge variant={attendee.is_duplicate ? 'destructive' : 'secondary'}>
+            {attendee.is_duplicate && <Users className="h-3 w-3 mr-1" />}
+            {attendee.is_duplicate ? 'Duplicate' : 'Unique'}
+          </Badge>
+        );
+      
       default:
         const value = attendee[columnKey];
         return value ? String(value) : '-';
@@ -221,6 +230,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                           Bar: {attendee.bar_hits}
                         </Badge>
                       )}
+                      {attendee.is_duplicate && renderCellContent(attendee, 'is_duplicate')}
                     </div>
                   </div>
                 </CardContent>

@@ -37,6 +37,7 @@ export interface EnhancedAttendee {
   bar_hits: number;
   overall_status: 'complete' | 'partial' | 'pending';
   arrival_day: string | null;
+  is_duplicate: boolean;
 }
 
 interface ActiveFilter {
@@ -79,6 +80,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'bar_hits', label: 'Bar Hits', desktop: true, width: 'min-w-20' },
     { key: 'waiver_signed', label: 'Waiver', mobile: true, desktop: true, width: 'min-w-20' },
     { key: 'arrival_day', label: 'Arrival Day', desktop: true, width: 'min-w-28' },
+    { key: 'is_duplicate', label: 'Duplicate Status', desktop: true, width: 'min-w-24' },
     { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-40' },
     { key: 'updated_at', label: 'Last Updated', desktop: true, width: 'min-w-32' }
   ];
@@ -118,6 +120,13 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
 
       if (barError) throw barError;
 
+      // Create name key mapping for duplicate detection
+      const nameGroups = new Map<string, number>();
+      (attendeesData || []).forEach(attendee => {
+        const nameKey = `${attendee.first_name?.trim().toLowerCase()}-${attendee.last_name?.trim().toLowerCase()}`;
+        nameGroups.set(nameKey, (nameGroups.get(nameKey) || 0) + 1);
+      });
+
       // Process the data
       const processedAttendees: EnhancedAttendee[] = (attendeesData || []).map(attendee => {
         const rfidTag = attendee.rfid_tags?.[0];
@@ -147,6 +156,10 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           arrival_day = 'Saturday';
         }
 
+        // Check if this attendee is a duplicate based on name
+        const nameKey = `${attendee.first_name?.trim().toLowerCase()}-${attendee.last_name?.trim().toLowerCase()}`;
+        const is_duplicate = (nameGroups.get(nameKey) || 0) > 1;
+
         return {
           ...attendee,
           rfid_uid: rfidTag?.uid || null,
@@ -155,6 +168,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           bar_hits,
           overall_status,
           arrival_day,
+          is_duplicate,
           waiver_signed: attendee.waiver_signed ?? false,
           checked_in_at: attendee.checked_in_at ?? null,
           meal_plan: attendee.meal_plan || 'No',
@@ -261,6 +275,13 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         case 'arrival_window':
           filtered = filtered.filter(a => a.arrival_window === filter.value);
           break;
+        case 'duplicates':
+          if (filter.value === 'show_only') {
+            filtered = filtered.filter(a => a.is_duplicate === true);
+          } else if (filter.value === 'hide') {
+            filtered = filtered.filter(a => a.is_duplicate === false);
+          }
+          break;
       }
     });
 
@@ -340,6 +361,15 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       options: [
         { value: "early", label: "Early Access" },
         { value: "standard", label: "Standard" }
+      ]
+    },
+    {
+      key: "duplicates",
+      label: "Duplicate Names",
+      type: "select" as const,
+      options: [
+        { value: "show_only", label: "Show Only Duplicates" },
+        { value: "hide", label: "Hide Duplicates" }
       ]
     }
   ];
