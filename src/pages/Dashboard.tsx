@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserCheck, AlertTriangle, Zap, LogOut } from "lucide-react";
+import { Users, UserCheck, AlertTriangle, Zap, LogOut, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { RegFoxSyncPanel } from "@/components/RegFoxSyncPanel";
+import { WebhookStatus } from "@/components/WebhookStatus";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -196,6 +198,12 @@ const Dashboard = () => {
               </Button>
             </CardContent>
           </Card>
+        </div>
+
+        {/* RegFox Integration Panel */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <RegFoxSyncPanel />
+          <WebhookStatus />
         </div>
 
         {/* System Status */}

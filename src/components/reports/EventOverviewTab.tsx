@@ -68,9 +68,9 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ isRefreshing
       if (attendeesError) throw attendeesError;
 
       const totalRegistered = attendees?.length || 0;
-      const checkedInAttendees = attendees?.filter(a => (a as any).checked_in_at) || [];
+      const checkedInAttendees = attendees?.filter(a => a.checked_in_at) || [];
       const totalCheckedIn = checkedInAttendees.length;
-      const waiversSigned = attendees?.filter(a => (a as any).waiver_signed === true).length || 0;
+      const waiversSigned = attendees?.filter(a => a.waiver_signed === true).length || 0;
       const waiversMissing = totalRegistered - waiversSigned;
       const checkInPercentage = totalRegistered > 0 ? Math.round((totalCheckedIn / totalRegistered) * 100) : 0;
 

@@ -1,1 +1,10 @@
 project_id = "oglargpkunjeblfutekl"
+
+[functions.regfox-sync]
+verify_jwt = true
+
+[functions.regfox-webhook]
+verify_jwt = false
+
+[functions.regfox-manual-sync]
+verify_jwt = true

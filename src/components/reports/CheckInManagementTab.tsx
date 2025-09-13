@@ -27,8 +27,8 @@ interface Attendee {
   email: string;
   phone: string;
   ticket_type: string;
-  waiver_signed?: boolean;
-  checked_in_at?: string | null;
+  waiver_signed: boolean;
+  checked_in_at: string | null;
   arrival_window: string;
   created_at: string;
 }
@@ -62,8 +62,8 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       // Add default values for missing fields
       const processedAttendees = (data || []).map(attendee => ({
         ...attendee,
-        waiver_signed: (attendee as any).waiver_signed ?? false,
-        checked_in_at: (attendee as any).checked_in_at ?? null
+        waiver_signed: attendee.waiver_signed ?? false,
+        checked_in_at: attendee.checked_in_at ?? null
       }));
 
       setAttendees(processedAttendees);
