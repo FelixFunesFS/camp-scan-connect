@@ -68,67 +68,50 @@ serve(async (req) => {
     };
 
     try {
-      // TODO: Implement proper RegFox API integration
-      // For now, using expanded mock data to simulate a realistic sync
-      console.log('Using mock data for RegFox sync (API integration pending)');
+      // Fetch attendees from RegFox API
+      console.log('Fetching attendees from RegFox API...');
       
-      const mockRegFoxAttendees: RegFoxAttendee[] = [
-        {
-          id: 'rf_001',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com',
-          phone: '+1234567890',
-          registrationPath: 'Premium Power Site',
-          registrationDate: '2025-01-01T00:00:00Z',
-          status: 'confirmed'
-        },
-        {
-          id: 'rf_002',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane@example.com',
-          phone: '+1987654321',
-          registrationPath: 'Dry Site',
-          registrationDate: '2025-01-02T00:00:00Z',
-          status: 'confirmed'
-        },
-        {
-          id: 'rf_003',
-          firstName: 'Alice',
-          lastName: 'Johnson',
-          email: 'alice@example.com',
-          phone: '+1555000001',
-          registrationPath: 'Premium Power Site',
-          registrationDate: '2025-01-03T10:30:00Z',
-          status: 'confirmed'
-        },
-        {
-          id: 'rf_004',
-          firstName: 'Bob',
-          lastName: 'Wilson',
-          email: 'bob@example.com',
-          phone: '+1555000002',
-          registrationPath: 'Day Pass',
-          registrationDate: '2025-01-04T14:15:00Z',
-          status: 'confirmed'
-        },
-        {
-          id: 'rf_005',
-          firstName: 'Charlie',
-          lastName: 'Brown',
-          email: 'charlie@example.com',
-          phone: '+1555000003',
-          registrationPath: 'Staff',
-          registrationDate: '2025-01-05T09:00:00Z',
-          status: 'confirmed'
+      let regfoxAttendees: RegFoxAttendee[] = [];
+      
+      try {
+        // Make API call to RegFox
+        const regfoxResponse = await fetch('https://api.regfox.com/v1/attendees', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${regfoxApiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!regfoxResponse.ok) {
+          throw new Error(`RegFox API error: ${regfoxResponse.status} ${regfoxResponse.statusText}`);
         }
-      ];
 
-      syncResult.totalRecords = mockRegFoxAttendees.length;
+        const responseData = await regfoxResponse.json();
+        console.log('RegFox API response received:', { count: responseData?.data?.length || 0 });
+        
+        // Handle RegFox API response format
+        regfoxAttendees = responseData.data || [];
+        
+        // Validate data format
+        if (!Array.isArray(regfoxAttendees)) {
+          throw new Error('Invalid RegFox API response format: expected array of attendees');
+        }
+        
+      } catch (apiError) {
+        console.error('RegFox API call failed:', apiError.message);
+        
+        // For now, if RegFox API fails, log the error but don't fail the sync
+        // This allows the function to work during development/testing
+        syncResult.errors.push(`RegFox API error: ${apiError.message}`);
+        regfoxAttendees = []; // Empty array means no new data to sync
+      }
 
-      // Process each attendee
-      for (const regfoxAttendee of mockRegFoxAttendees) {
+      syncResult.totalRecords = regfoxAttendees.length;
+      console.log(`Processing ${syncResult.totalRecords} attendees from RegFox`);
+
+      // Process each attendee from RegFox
+      for (const regfoxAttendee of regfoxAttendees) {
         try {
           // Map RegFox ticket type to our enum
           const ticketTypeMap: Record<string, string> = {

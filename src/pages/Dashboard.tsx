@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { RegFoxSyncPanel } from "@/components/RegFoxSyncPanel";
 import { WebhookStatus } from "@/components/WebhookStatus";
+import { SystemCleanupStatus } from "@/components/SystemCleanupStatus";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -198,6 +199,11 @@ const Dashboard = () => {
               </Button>
             </CardContent>
           </Card>
+        </div>
+
+        {/* System Cleanup Status */}
+        <div className="mb-8">
+          <SystemCleanupStatus />
         </div>
 
         {/* RegFox Integration Panel */}
