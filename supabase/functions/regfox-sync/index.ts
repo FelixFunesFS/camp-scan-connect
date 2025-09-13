@@ -74,10 +74,11 @@ serve(async (req) => {
       let regfoxAttendees: RegFoxAttendee[] = [];
       
       try {
-        // Make API call to WebConnex (RegFox)
-        const regfoxResponse = await fetch(`https://api.webconnex.com/v2/public/search/registrants?product=redpodium.com2&pretty=true&apiKey=${regfoxApiKey}`, {
+        // Make API call to WebConnex (RegFox) - API key goes in header
+        const regfoxResponse = await fetch(`https://api.webconnex.com/v2/public/search/registrants?product=redpodium.com2&pretty=true`, {
           method: 'GET',
           headers: {
+            'apiKey': regfoxApiKey,
             'Content-Type': 'application/json'
           }
         });
@@ -87,9 +88,9 @@ serve(async (req) => {
         }
 
         const responseData = await regfoxResponse.json();
-        console.log('RegFox API response received:', { count: responseData?.data?.length || 0 });
+        console.log('RegFox API response received:', responseData);
         
-        // Handle RegFox API response format
+        // Handle WebConnex API response format - data is in responseData.data
         regfoxAttendees = responseData.data || [];
         
         // Validate data format
