@@ -160,7 +160,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
 
   if (isMobile) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4" data-export-target>
         {isLoading ? (
           <>
             {[...Array(5)].map((_, i) => (
@@ -269,7 +269,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
   );
 
   return (
-    <Card className="border-primary/20">
+    <Card className="border-primary/20" data-export-target>
       <CardHeader>
         <CardTitle>Attendees List</CardTitle>
       </CardHeader>

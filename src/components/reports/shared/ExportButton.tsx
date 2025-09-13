@@ -8,7 +8,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Download, FileText, Image, FileSpreadsheet } from "lucide-react";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import html2canvas from "html2canvas";
+import { useToast } from "@/hooks/use-toast";
 
 interface ExportButtonProps {
   data: any[];
@@ -28,79 +30,130 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
   size = "sm"
 }) => {
   const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
+
+  const escapeCsvField = (field: any): string => {
+    if (field === null || field === undefined) return "";
+    const str = String(field);
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
 
   const exportToCsv = () => {
-    if (!data.length) return;
+    if (!data.length) {
+      toast({
+        title: "Export Error",
+        description: "No data available to export",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    const headers = Object.keys(data[0]);
-    const csvContent = [
-      headers.join(","),
-      ...data.map(row => 
-        headers.map(header => 
-          typeof row[header] === 'string' && row[header].includes(',') 
-            ? `"${row[header]}"` 
-            : row[header]
-        ).join(",")
-      )
-    ].join("\n");
+    try {
+      const headers = Object.keys(data[0]);
+      const csvContent = [
+        headers.map(escapeCsvField).join(","),
+        ...data.map(row => 
+          headers.map(header => escapeCsvField(row[header])).join(",")
+        )
+      ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${filename}.csv`;
-    link.click();
+      // Add UTF-8 BOM for Excel compatibility
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${filename}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Export Successful",
+        description: `CSV file "${filename}.csv" has been downloaded`,
+      });
+    } catch (error) {
+      console.error("CSV export failed:", error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export CSV file",
+        variant: "destructive",
+      });
+    }
   };
 
   const exportToPdf = async () => {
+    if (!data.length) {
+      toast({
+        title: "Export Error",
+        description: "No data available to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsExporting(true);
     try {
       const pdf = new jsPDF();
       
-      // Add title
+      // Add title and metadata
       if (title) {
         pdf.setFontSize(16);
-        pdf.text(title, 20, 20);
+        pdf.text(title, 14, 22);
         pdf.setFontSize(10);
-        pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
+        pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, 32);
+        pdf.text(`Total Records: ${data.length}`, 14, 40);
       }
 
-      // Add data as text (simplified)
-      let yPos = title ? 50 : 20;
-      const pageHeight = pdf.internal.pageSize.height;
-      
-      if (data.length > 0) {
-        const headers = Object.keys(data[0]);
-        
-        // Headers
-        pdf.setFontSize(8);
-        let xPos = 20;
-        headers.forEach((header, index) => {
-          pdf.text(header, xPos, yPos);
-          xPos += 30;
-        });
-        
-        yPos += 10;
-        
-        // Data rows
-        data.forEach((row) => {
-          if (yPos > pageHeight - 20) {
-            pdf.addPage();
-            yPos = 20;
-          }
-          
-          xPos = 20;
-          headers.forEach((header) => {
-            const value = row[header]?.toString() || "";
-            pdf.text(value.substring(0, 15), xPos, yPos);
-            xPos += 30;
-          });
-          yPos += 8;
-        });
-      }
+      const headers = Object.keys(data[0]);
+      const tableData = data.map(row => 
+        headers.map(header => {
+          const value = row[header];
+          if (value === null || value === undefined) return "";
+          return String(value);
+        })
+      );
+
+      // Use autoTable for proper table formatting
+      autoTable(pdf, {
+        head: [headers],
+        body: tableData,
+        startY: title ? 50 : 20,
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+        },
+        margin: { top: 20, right: 14, bottom: 20, left: 14 },
+        tableWidth: 'auto',
+        theme: 'striped',
+      });
 
       pdf.save(`${filename}.pdf`);
+      
+      toast({
+        title: "Export Successful",
+        description: `PDF file "${filename}.pdf" has been downloaded`,
+      });
     } catch (error) {
       console.error("Export to PDF failed:", error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export PDF file",
+        variant: "destructive",
+      });
     } finally {
       setIsExporting(false);
     }
@@ -110,15 +163,41 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
     setIsExporting(true);
     try {
       const element = document.querySelector('[data-export-target]');
-      if (element) {
-        const canvas = await html2canvas(element as HTMLElement);
-        const link = document.createElement("a");
-        link.download = `${filename}.png`;
-        link.href = canvas.toDataURL();
-        link.click();
+      if (!element) {
+        toast({
+          title: "Export Error",
+          description: "No content found to export as image",
+          variant: "destructive",
+        });
+        return;
       }
+
+      const canvas = await html2canvas(element as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+      });
+      
+      const link = document.createElement("a");
+      link.download = `${filename}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Export Successful",
+        description: `Image file "${filename}.png" has been downloaded`,
+      });
     } catch (error) {
       console.error("Export to image failed:", error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export image file",
+        variant: "destructive",
+      });
     } finally {
       setIsExporting(false);
     }
