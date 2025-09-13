@@ -136,19 +136,29 @@ const ParkingActivation = () => {
         return;
       }
 
-      // Generate unique RFID UID
-      const uidPrefix = isStaffMode ? 'STAFF' : 'SELF';
-      const mockUID = `${uidPrefix}_${Date.now()}`;
+      // Find an available unassigned RFID tag
+      const { data: availableTag, error: findError } = await supabase
+        .from('rfid_tags')
+        .select('uid')
+        .is('attendee_id', null)
+        .eq('status', 'active')
+        .limit(1)
+        .single();
+
+      if (findError || !availableTag) {
+        setError("No available RFID tags found. Please contact event staff.");
+        setIsLoading(false);
+        return;
+      }
       
-      // Insert RFID tag
+      // Assign the RFID tag to the attendee
       const { error: tagError } = await supabase
         .from('rfid_tags')
-        .insert({
-          uid: mockUID,
+        .update({
           attendee_id: selectedAttendee.id,
-          status: 'active',
           issued_at: new Date().toISOString()
-        });
+        })
+        .eq('uid', availableTag.uid);
 
       if (tagError) throw tagError;
 
@@ -157,7 +167,7 @@ const ParkingActivation = () => {
         .from('station_transactions')
         .insert({
           attendee_id: selectedAttendee.id,
-          rfid_uid: mockUID,
+          rfid_uid: availableTag.uid,
           station_type: 'activation',
           transaction_type: 'activate',
           current_status: 'active',
