@@ -74,14 +74,25 @@ export const FoodBeverageTab: React.FC<FoodBeverageTabProps> = ({ isRefreshing }
       const mealTransactions = transactions?.filter(t => t.station_type === 'meal') || [];
       const drinkTransactions = transactions?.filter(t => t.station_type === 'drinks') || [];
 
-      // Count meals by type (simplified - in real app, this would be more detailed)
+      // Count meals by type based on actual transaction times
       const totalMeals = mealTransactions.length;
       const totalDrinks = drinkTransactions.length;
 
-      // Mock breakdown for demonstration
-      const breakfastServed = Math.floor(totalMeals * 0.3);
-      const lunchServed = Math.floor(totalMeals * 0.4);
-      const dinnerServed = Math.floor(totalMeals * 0.3);
+      // Classify meals by time of day (realistic meal time classification)
+      let breakfastServed = 0;
+      let lunchServed = 0;
+      let dinnerServed = 0;
+
+      mealTransactions.forEach(transaction => {
+        const hour = new Date(transaction.created_at).getHours();
+        if (hour >= 6 && hour < 11) {
+          breakfastServed++;
+        } else if (hour >= 11 && hour < 16) {
+          lunchServed++;
+        } else {
+          dinnerServed++;
+        }
+      });
 
       setStats({
         totalMeals,

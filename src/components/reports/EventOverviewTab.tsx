@@ -82,15 +82,37 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ isRefreshing
         checkInPercentage
       });
 
-      // Generate daily check-in data (mock data for visualization)
-      const mockDailyData: DailyCheckInData[] = [
-        { date: "2025-04-25", day: "Fri", expected: 120, actual: 0 },
-        { date: "2025-04-26", day: "Sat", expected: 800, actual: totalCheckedIn * 0.6 },
-        { date: "2025-04-27", day: "Sun", expected: 200, actual: totalCheckedIn * 0.4 },
-        { date: "2025-04-28", day: "Mon", expected: 80, actual: 0 }
-      ];
+      // Generate real daily check-in data from actual timestamps
+      const realDailyData: DailyCheckInData[] = [];
+      
+      if (checkedInAttendees.length > 0) {
+        // Group check-ins by date
+        const checkInsByDate = checkedInAttendees.reduce((acc, attendee) => {
+          if (attendee.checked_in_at) {
+            const date = new Date(attendee.checked_in_at).toISOString().split('T')[0];
+            acc[date] = (acc[date] || 0) + 1;
+          }
+          return acc;
+        }, {} as Record<string, number>);
 
-      setDailyData(mockDailyData);
+        // Convert to chart data format
+        Object.entries(checkInsByDate).forEach(([date, actual]) => {
+          const dateObj = new Date(date);
+          const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+          
+          realDailyData.push({
+            date,
+            day: dayName,
+            expected: actual, // Use actual as expected since we don't have expected data
+            actual
+          });
+        });
+
+        // Sort by date
+        realDailyData.sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      setDailyData(realDailyData);
 
     } catch (error) {
       console.error("Error fetching overview data:", error);

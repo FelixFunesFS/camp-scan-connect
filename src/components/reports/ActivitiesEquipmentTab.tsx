@@ -58,7 +58,7 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
   const [equipmentStats, setEquipmentStats] = useState<EquipmentStats>({
     headphonesCheckedOut: 0,
     headphonesAvailable: 0,
-    totalHeadphones: 100 // Mock total
+    totalHeadphones: 50 // Real initial inventory - can be made configurable
   });
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [timelineData, setTimelineData] = useState<TimelineData[]>([]);
@@ -78,13 +78,13 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
 
       if (headphoneError) throw headphoneError;
 
-      // Calculate headphone stats
+      // Calculate headphone stats with real inventory count
       const checkoutTransactions = headphoneTransactions?.filter(t => t.transaction_type === 'headphone_checkout') || [];
       const checkinTransactions = headphoneTransactions?.filter(t => t.transaction_type === 'headphone_checkin') || [];
       
-      const headphonesCheckedOut = checkoutTransactions.length - checkinTransactions.length;
-      const totalHeadphones = 100; // Mock total
-      const headphonesAvailable = totalHeadphones - headphonesCheckedOut;
+      const headphonesCheckedOut = Math.max(0, checkoutTransactions.length - checkinTransactions.length);
+      const totalHeadphones = 50; // Real inventory count - could be made configurable via settings
+      const headphonesAvailable = Math.max(0, totalHeadphones - headphonesCheckedOut);
 
       setEquipmentStats({
         headphonesCheckedOut: Math.max(0, headphonesCheckedOut),
@@ -132,10 +132,18 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
 
   const fetchActivities = async () => {
     try {
-      // Mock activities for now since table might not exist yet
-      setActivities([]);
+      const { data: activities, error } = await supabase
+        .from('activities')
+        .select('*')
+        .order('recorded_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      
+      setActivities(activities || []);
     } catch (error) {
       console.error("Error fetching activities:", error);
+      setActivities([]);
     }
   };
 
@@ -143,19 +151,23 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
     if (!newActivity.name.trim() || newActivity.participants <= 0) return;
 
     try {
-      // Mock implementation for now
-      const mockActivity: ActivityData = {
-        id: Date.now().toString(),
-        name: newActivity.name,
-        participant_count: newActivity.participants,
-        recorded_at: new Date().toISOString(),
-        notes: 'Manually logged activity'
-      };
-      
-      setActivities(prev => [mockActivity, ...prev]);
-      setNewActivity({ name: '', participants: 0 });
-      setShowAddActivity(false);
+      const { data: newActivityRecord, error } = await supabase
+        .from('activities')
+        .insert({
+          name: newActivity.name,
+          participant_count: newActivity.participants,
+          notes: 'Manually logged via dashboard'
+        })
+        .select()
+        .single();
 
+      if (error) throw error;
+
+      if (newActivityRecord) {
+        setActivities(prev => [newActivityRecord, ...prev]);
+        setNewActivity({ name: '', participants: 0 });
+        setShowAddActivity(false);
+      }
     } catch (error) {
       console.error("Error adding activity:", error);
     }
