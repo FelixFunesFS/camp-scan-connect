@@ -161,6 +161,14 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
           </Badge>
         );
       
+      case 'is_phone_duplicate':
+        return (
+          <Badge variant={attendee.is_phone_duplicate ? 'destructive' : 'secondary'}>
+            {attendee.is_phone_duplicate && <Phone className="h-3 w-3 mr-1" />}
+            {attendee.is_phone_duplicate ? 'Duplicate' : 'Unique'}
+          </Badge>
+        );
+      
       default:
         const value = attendee[columnKey];
         return value ? String(value) : '-';
@@ -231,6 +239,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                         </Badge>
                       )}
                       {attendee.is_duplicate && renderCellContent(attendee, 'is_duplicate')}
+                      {attendee.is_phone_duplicate && renderCellContent(attendee, 'is_phone_duplicate')}
                     </div>
                   </div>
                 </CardContent>

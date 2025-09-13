@@ -38,6 +38,7 @@ export interface EnhancedAttendee {
   overall_status: 'complete' | 'partial' | 'pending';
   arrival_day: string | null;
   is_duplicate: boolean;
+  is_phone_duplicate: boolean;
 }
 
 interface ActiveFilter {
@@ -81,6 +82,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'waiver_signed', label: 'Waiver', mobile: true, desktop: true, width: 'min-w-20' },
     { key: 'arrival_day', label: 'Arrival Day', desktop: true, width: 'min-w-28' },
     { key: 'is_duplicate', label: 'Duplicate Status', desktop: true, width: 'min-w-24' },
+    { key: 'is_phone_duplicate', label: 'Phone Duplicate', desktop: true, width: 'min-w-24' },
     { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-40' },
     { key: 'updated_at', label: 'Last Updated', desktop: true, width: 'min-w-32' }
   ];
@@ -120,11 +122,21 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
 
       if (barError) throw barError;
 
-      // Create name key mapping for duplicate detection
+      // Create name and phone key mappings for duplicate detection
       const nameGroups = new Map<string, number>();
+      const phoneGroups = new Map<string, number>();
+      
       (attendeesData || []).forEach(attendee => {
         const nameKey = `${attendee.first_name?.trim().toLowerCase()}-${attendee.last_name?.trim().toLowerCase()}`;
         nameGroups.set(nameKey, (nameGroups.get(nameKey) || 0) + 1);
+        
+        // Normalize phone number for comparison (remove spaces, dashes, parentheses)
+        if (attendee.phone) {
+          const phoneKey = attendee.phone.replace(/[\s\-\(\)]/g, '').toLowerCase();
+          if (phoneKey.length > 0) {
+            phoneGroups.set(phoneKey, (phoneGroups.get(phoneKey) || 0) + 1);
+          }
+        }
       });
 
       // Process the data
@@ -159,6 +171,15 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         // Check if this attendee is a duplicate based on name
         const nameKey = `${attendee.first_name?.trim().toLowerCase()}-${attendee.last_name?.trim().toLowerCase()}`;
         const is_duplicate = (nameGroups.get(nameKey) || 0) > 1;
+        
+        // Check if this attendee is a duplicate based on phone
+        let is_phone_duplicate = false;
+        if (attendee.phone) {
+          const phoneKey = attendee.phone.replace(/[\s\-\(\)]/g, '').toLowerCase();
+          if (phoneKey.length > 0) {
+            is_phone_duplicate = (phoneGroups.get(phoneKey) || 0) > 1;
+          }
+        }
 
         return {
           ...attendee,
@@ -169,6 +190,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           overall_status,
           arrival_day,
           is_duplicate,
+          is_phone_duplicate,
           waiver_signed: attendee.waiver_signed ?? false,
           checked_in_at: attendee.checked_in_at ?? null,
           meal_plan: attendee.meal_plan || 'No',
@@ -282,6 +304,13 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
             filtered = filtered.filter(a => a.is_duplicate === false);
           }
           break;
+        case 'phone_duplicates':
+          if (filter.value === 'show_only') {
+            filtered = filtered.filter(a => a.is_phone_duplicate === true);
+          } else if (filter.value === 'hide') {
+            filtered = filtered.filter(a => a.is_phone_duplicate === false);
+          }
+          break;
       }
     });
 
@@ -366,6 +395,15 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: "duplicates",
       label: "Duplicate Names",
+      type: "select" as const,
+      options: [
+        { value: "show_only", label: "Show Only Duplicates" },
+        { value: "hide", label: "Hide Duplicates" }
+      ]
+    },
+    {
+      key: "phone_duplicates",
+      label: "Duplicate Phone Numbers",
       type: "select" as const,
       options: [
         { value: "show_only", label: "Show Only Duplicates" },
