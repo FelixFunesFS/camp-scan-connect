@@ -72,7 +72,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     <SelectValue placeholder={filter.placeholder || "All"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All</SelectItem>
                     {filter.options.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
