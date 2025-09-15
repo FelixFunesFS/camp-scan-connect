@@ -89,12 +89,33 @@ serve(async (req) => {
 
       if (eventType === 'registration.created' || eventType === 'registration.updated' || eventType === 'registration' || 
           eventType === 'registrant_cancel' || eventType === 'registrant_edit') {
+        
         let attendeeData: any = null;
         let attendeeId: string | null = null;
+        
+        // Initialize address and personal info variables with defaults
+        let streetAddress: string | null = null;
+        let city: string | null = null;
+        let state: string | null = null;
+        let postalCode: string | null = null;
+        let country: string | null = null;
+        let dateOfBirth: string | null = null;
+        let gender: string | null = null;
+        let maritalStatus: string | null = null;
+        let tShirtSize: string | null = null;
+        let dietaryRestrictions: string | null = null;
+        let specialAccommodations: string | null = null;
+        let howDidYouHear: string | null = null;
+        let mealPlan: string | null = null;
+        let emergencyContactName: string | null = null;
+        let emergencyContactPhone: string | null = null;
+        let customFields: Record<string, any> = {};
 
         // Handle original format (direct data structure)
         if (payload.data.firstName && payload.data.lastName) {
           console.log('Processing original format');
+          
+          // Basic attendee data
           attendeeData = {
             first_name: payload.data.firstName,
             last_name: payload.data.lastName,
@@ -103,6 +124,16 @@ serve(async (req) => {
             regfox_id: payload.data.id
           };
           attendeeId = payload.data.id;
+          
+          // For old format, address and other fields might be in different structure
+          // Add basic extraction if available
+          if (payload.data.address) {
+            streetAddress = payload.data.address.street || null;
+            city = payload.data.address.city || null;
+            state = payload.data.address.state || null;
+            postalCode = payload.data.address.zip || payload.data.address.postalCode || null;
+            country = payload.data.address.country || null;
+          }
         } 
         // Handle new format (registrants array)
         else if (payload.data.registrants && payload.data.registrants.length > 0) {
@@ -130,28 +161,55 @@ serve(async (req) => {
             return null;
           };
 
-          // Address information - with proper null handling
-          const streetAddress = extractFieldValue(['street', 'address line 1', 'address']) || null;
-          const city = extractFieldValue(['city']) || null;
-          const state = extractFieldValue(['state', 'province']) || null;
-          const postalCode = extractFieldValue(['zip', 'postal', 'postal code']) || null;
-          const country = extractFieldValue(['country']) || null;
+          // Enhanced address extraction - handle both nested object and field-based formats
+          try {
+            // First try RegFox nested address object format
+            if (registrant.data) {
+              const addressField = registrant.data.find(d => d.key === 'address');
+              if (addressField && typeof addressField === 'object') {
+                streetAddress = addressField.street1?.value || null;
+                city = addressField.city?.value || null;
+                state = addressField.state?.value || null;
+                postalCode = addressField.postalCode?.value || null;
+                country = addressField.country?.value || null;
+              }
+            }
+            
+            // Fallback to pattern-based extraction if nested format didn't work
+            if (!streetAddress) {
+              streetAddress = extractFieldValue(['street', 'address line 1', 'address']) || null;
+            }
+            if (!city) {
+              city = extractFieldValue(['city']) || null;
+            }
+            if (!state) {
+              state = extractFieldValue(['state', 'province']) || null;
+            }
+            if (!postalCode) {
+              postalCode = extractFieldValue(['zip', 'postal', 'postal code']) || null;
+            }
+            if (!country) {
+              country = extractFieldValue(['country']) || null;
+            }
+          } catch (error) {
+            console.error('Error extracting address data:', error);
+          }
           
           // Personal demographics - with proper null handling
-          const dateOfBirth = extractFieldValue(['date of birth', 'birthday', 'birth date']) || null;
-          const gender = extractFieldValue(['gender']) || null;
-          const maritalStatus = extractFieldValue(['marital', 'status', 'relationship status']) || null;
+          dateOfBirth = extractFieldValue(['date of birth', 'birthday', 'birth date']) || null;
+          gender = extractFieldValue(['gender']) || null;
+          maritalStatus = extractFieldValue(['marital', 'status', 'relationship status']) || null;
           
           // Event preferences - with proper null handling
-          const tShirtSize = extractFieldValue(['shirt size', 't-shirt', 'tshirt size']) || null;
-          const dietaryRestrictions = extractFieldValue(['dietary', 'allergies', 'food allergies', 'restrictions']) || null;
-          const specialAccommodations = extractFieldValue(['accommodation', 'accessibility', 'special needs']) || null;
-          const howDidYouHear = extractFieldValue(['how did you hear', 'referral', 'source']) || null;
-          const mealPlan = extractFieldValue(['meal plan', 'meal']) || null;
+          tShirtSize = extractFieldValue(['shirt size', 't-shirt', 'tshirt size']) || null;
+          dietaryRestrictions = extractFieldValue(['dietary', 'allergies', 'food allergies', 'restrictions']) || null;
+          specialAccommodations = extractFieldValue(['accommodation', 'accessibility', 'special needs']) || null;
+          howDidYouHear = extractFieldValue(['how did you hear', 'referral', 'source']) || null;
+          mealPlan = extractFieldValue(['meal plan', 'meal']) || null;
           
           // Emergency contact - try to extract name and phone separately with null handling
-          let emergencyContactName = extractFieldValue(['emergency contact name', 'emergency name']) || null;
-          let emergencyContactPhone = extractFieldValue(['emergency contact phone', 'emergency phone', 'emergency number']) || null;
+          emergencyContactName = extractFieldValue(['emergency contact name', 'emergency name']) || null;
+          emergencyContactPhone = extractFieldValue(['emergency contact phone', 'emergency phone', 'emergency number']) || null;
           
           // If combined field exists, try to parse it
           const emergencyContactCombined = extractFieldValue(['emergency contact', 'emergency']) || null;
@@ -168,7 +226,6 @@ serve(async (req) => {
           }
           
           // Collect unhandled custom fields
-          const customFields: Record<string, any> = {};
           const handledPatterns = [
             'first', 'last', 'email', 'phone', 'street', 'address', 'city', 'state', 
             'province', 'zip', 'postal', 'country', 'date of birth', 'birthday', 
