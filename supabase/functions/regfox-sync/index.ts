@@ -207,42 +207,67 @@ serve(async (req) => {
 
       // Helper function to detect "Additional Night" purchase (Thursday early access)
       const detectAdditionalNight = (fields: Record<string, string>) => {
-        // Check for fields containing "Additional Night" in their label/key
-        for (const [key, value] of Object.entries(fields)) {
-          if (key.toLowerCase().includes('additional night') && value) {
-            console.log(`Found Additional Night field: ${key} = ${value}`);
-            return true;
-          }
-        }
-        return false;
+        console.log('Sync - All field names:', Object.keys(fields));
+        
+        // Check for various "Additional Night" related fields with comprehensive patterns
+        const additionalNightFields = Object.keys(fields).filter(key => {
+          const lowerKey = key.toLowerCase();
+          return (
+            (lowerKey.includes('additional') && lowerKey.includes('night')) ||
+            (lowerKey.includes('thursday') && (lowerKey.includes('night') || lowerKey.includes('arrival'))) ||
+            (lowerKey.includes('early') && lowerKey.includes('access')) ||
+            lowerKey.includes('extra night') ||
+            lowerKey.includes('additional day')
+          );
+        });
+        
+        console.log('Sync - Additional night fields found:', additionalNightFields);
+        
+        // Check if any additional night field has a truthy value
+        return additionalNightFields.some(field => {
+          const value = fields[field];
+          console.log(`Sync - Field "${field}": ${value}`);
+          // More comprehensive check for truthy values
+          if (!value) return false;
+          const stringValue = String(value).toLowerCase();
+          return stringValue !== '0' && 
+                 stringValue !== 'false' && 
+                 stringValue !== 'no' && 
+                 stringValue !== '' && 
+                 stringValue !== 'null' &&
+                 stringValue !== 'undefined';
+        });
       };
 
       // Helper function to determine ticket type from RegFox data
       const determineTicketType = (fields: Record<string, string>) => {
-        // Check accommodation type
-        const accommodationType = fields['multipleChoice'] || fields['Are you staying in a Tent, Van/Rooftop,  RV, Glamping Tent, or Cabin??'] || '';
+        console.log('Sync - Determining ticket type from field data...');
         
-        // Check for specific ticket packages
-        const hasGlampingTent = accommodationType.includes('glampingTent') || 
-                               fields['glampingTent'] || 
-                               fields['Glamping Tent- King + twin bunks Package'];
-        const hasTent = accommodationType.includes('tent') && !hasGlampingTent;
-        const hasRV = accommodationType.includes('rv') || accommodationType.includes('RV');
-        const hasCabin = accommodationType.includes('cabin');
+        // Define accommodation field patterns and their corresponding ticket types
+        const accommodationMappings = [
+          { patterns: ['glamping'], ticketType: 'glamping' },
+          { patterns: ['rv', 'recreational vehicle'], ticketType: 'rv_site' },
+          { patterns: ['cabin', 'lodge'], ticketType: 'cabin' },
+          { patterns: ['tent', 'camping', 'dry'], ticketType: 'dry_site' }
+        ];
         
-        // Check for additional activity wristband (indicates premium features)
-        const hasActivityWristband = fields['additionalActivityWristbandTent2'] === 'additionalActivityWristband' ||
-                                   fields['Additional Activity Wristband- Tent/ Van/Rooftop'] === 'additionalActivityWristband';
+        // Check all field names and values for accommodation indicators
+        for (const [fieldName, fieldValue] of Object.entries(fields)) {
+          if (!fieldValue) continue;
+          
+          const searchText = `${fieldName} ${fieldValue}`.toLowerCase();
+          console.log(`Sync - Checking field: ${fieldName} = ${fieldValue}`);
+          
+          for (const mapping of accommodationMappings) {
+            if (mapping.patterns.some(pattern => searchText.includes(pattern))) {
+              console.log(`Sync - Found ticket type "${mapping.ticketType}" from pattern "${mapping.patterns[0]}" in "${searchText}"`);
+              return mapping.ticketType;
+            }
+          }
+        }
         
-        // Determine ticket type based on accommodations
-        if (hasGlampingTent) return 'glamping';
-        if (hasCabin) return 'cabin';
-        if (hasRV) return 'rv_site';
-        if (hasTent && hasActivityWristband) return 'premium_power';
-        if (hasTent) return 'dry_site';
-        
-        // Default fallback
-        return 'dry_site';
+        console.log('Sync - No specific accommodation found, defaulting to dry_site');
+        return 'dry_site'; // default fallback
       };
 
       syncResult.totalRecords = regfoxAttendees.length;
@@ -318,7 +343,7 @@ serve(async (req) => {
           // Arrival window based on early access (Additional Night purchase)
           const arrivalWindow = earlyAccess ? 'early' : 'standard';
           
-          console.log(`RegFox ID ${regfoxAttendee.id}: earlyAccess=${earlyAccess}, arrivalWindow=${arrivalWindow}`);
+          console.log(`Sync - RegFox ID ${regfoxAttendee.id}: ticketType=${ticketType}, earlyAccess=${earlyAccess}, arrivalWindow=${arrivalWindow}`);
 
           // Check if attendee already exists by regfox_id
           const { data: existingAttendee } = await supabase
@@ -345,6 +370,13 @@ serve(async (req) => {
             notes: emergencyContact ? `Emergency Contact: ${emergencyContact}` : null,
             created_at: regfoxAttendee.dateCreated
           };
+          
+          // Validate ticket_type against enum values before database operation
+          const validTicketTypes = ['dry_site', 'rv_site', 'glamping', 'cabin'];
+          if (!validTicketTypes.includes(attendeeData.ticket_type)) {
+            console.error(`Sync - Invalid ticket_type detected: "${attendeeData.ticket_type}". Setting to default "dry_site"`);
+            attendeeData.ticket_type = 'dry_site';
+          }
 
           if (existingAttendee) {
             // Update existing attendee

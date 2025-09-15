@@ -147,26 +147,39 @@ serve(async (req) => {
           
           // Helper function to determine ticket type from RegFox data (matching sync function)
           const determineTicketTypeFromPayload = (payloadData: any) => {
+            console.log('Webhook - Determining ticket type from payload data...');
+            
+            // Define accommodation field patterns and their corresponding ticket types
+            const accommodationMappings = [
+              { patterns: ['glamping'], ticketType: 'glamping' },
+              { patterns: ['rv', 'recreational vehicle'], ticketType: 'rv_site' },
+              { patterns: ['cabin', 'lodge'], ticketType: 'cabin' },
+              { patterns: ['tent', 'camping', 'dry'], ticketType: 'dry_site' }
+            ];
+            
             // Check for accommodation type in registrant data
             if (payloadData.registrants && payloadData.registrants.length > 0) {
               const registrant = payloadData.registrants[0];
-              const accommodationField = registrant.data?.find(d => 
-                d.fieldName?.toLowerCase().includes('accommodation') || 
-                d.fieldName?.toLowerCase().includes('tent') ||
-                d.fieldName?.toLowerCase().includes('staying')
-              );
+              console.log('Webhook - Registrant data fields:', registrant.data?.map(d => `${d.fieldName}: ${d.fieldValue}`));
               
-              if (accommodationField && accommodationField.fieldValue) {
-                const accommodation = accommodationField.fieldValue.toLowerCase();
-                if (accommodation.includes('glamping')) return 'glamping';
-                if (accommodation.includes('cabin')) return 'cabin';
-                if (accommodation.includes('rv')) return 'rv_site';
-                if (accommodation.includes('premium') || accommodation.includes('power')) return 'premium_power';
+              for (const field of (registrant.data || [])) {
+                if (!field.fieldValue) continue;
+                
+                const searchText = `${field.fieldName} ${field.fieldValue}`.toLowerCase();
+                console.log(`Webhook - Checking field: ${field.fieldName} = ${field.fieldValue}`);
+                
+                for (const mapping of accommodationMappings) {
+                  if (mapping.patterns.some(pattern => searchText.includes(pattern))) {
+                    console.log(`Webhook - Found ticket type "${mapping.ticketType}" from pattern "${mapping.patterns[0]}" in "${searchText}"`);
+                    return mapping.ticketType;
+                  }
+                }
               }
             }
             
             // Fallback to registration path mapping
             if (payloadData.registrationPath && ticketTypeMap[payloadData.registrationPath]) {
+              console.log(`Webhook - Found ticket type from registration path: ${payloadData.registrationPath} -> ${ticketTypeMap[payloadData.registrationPath]}`);
               return ticketTypeMap[payloadData.registrationPath];
             }
             
@@ -175,10 +188,12 @@ serve(async (req) => {
               const ticket = payloadData.tickets[0];
               const ticketLabel = ticket.ticketLabel || ticket.ticketKey || '';
               if (ticketTypeMap[ticketLabel]) {
+                console.log(`Webhook - Found ticket type from ticket label: ${ticketLabel} -> ${ticketTypeMap[ticketLabel]}`);
                 return ticketTypeMap[ticketLabel];
               }
             }
             
+            console.log('Webhook - No specific accommodation found, defaulting to dry_site');
             return 'dry_site'; // Safe default
           };
 
@@ -238,23 +253,52 @@ serve(async (req) => {
 
           // Helper function to detect "Additional Night" purchase (Thursday early access)
           const detectAdditionalNight = (payloadData: any) => {
+            console.log('Webhook - Detecting additional night from payload data...');
+            
             if (payloadData.registrants && payloadData.registrants.length > 0) {
               const registrant = payloadData.registrants[0];
-              const additionalNightField = registrant.data?.find(d => 
-                d.fieldName?.toLowerCase().includes('additional night') && d.fieldValue
-              );
+              console.log('Webhook - Registrant data fields:', registrant.data?.map(d => d.fieldName));
               
-              if (additionalNightField) {
-                console.log(`Found Additional Night field: ${additionalNightField.fieldName} = ${additionalNightField.fieldValue}`);
-                return true;
+              // Check for various "Additional Night" related fields with comprehensive patterns
+              const additionalNightField = registrant.data?.find(d => {
+                if (!d.fieldName) return false;
+                const lowerFieldName = d.fieldName.toLowerCase();
+                return (
+                  (lowerFieldName.includes('additional') && lowerFieldName.includes('night')) ||
+                  (lowerFieldName.includes('thursday') && (lowerFieldName.includes('night') || lowerFieldName.includes('arrival'))) ||
+                  (lowerFieldName.includes('early') && lowerFieldName.includes('access')) ||
+                  lowerFieldName.includes('extra night') ||
+                  lowerFieldName.includes('additional day')
+                );
+              });
+              
+              if (additionalNightField && additionalNightField.fieldValue) {
+                console.log(`Webhook - Found Additional Night field: ${additionalNightField.fieldName} = ${additionalNightField.fieldValue}`);
+                const stringValue = String(additionalNightField.fieldValue).toLowerCase();
+                return stringValue !== '0' && 
+                       stringValue !== 'false' && 
+                       stringValue !== 'no' && 
+                       stringValue !== '' && 
+                       stringValue !== 'null' &&
+                       stringValue !== 'undefined';
               }
             }
             
-            // Check direct payload fields for Additional Night
+            // Check direct payload fields for Additional Night with comprehensive patterns
             for (const [key, value] of Object.entries(payloadData)) {
-              if (key.toLowerCase().includes('additional night') && value) {
-                console.log(`Found Additional Night in payload: ${key} = ${value}`);
-                return true;
+              if (!value) continue;
+              const lowerKey = key.toLowerCase();
+              if ((lowerKey.includes('additional') && lowerKey.includes('night')) ||
+                  (lowerKey.includes('thursday') && (lowerKey.includes('night') || lowerKey.includes('arrival'))) ||
+                  (lowerKey.includes('early') && lowerKey.includes('access'))) {
+                console.log(`Webhook - Found Additional Night in payload: ${key} = ${value}`);
+                const stringValue = String(value).toLowerCase();
+                return stringValue !== '0' && 
+                       stringValue !== 'false' && 
+                       stringValue !== 'no' && 
+                       stringValue !== '' && 
+                       stringValue !== 'null' &&
+                       stringValue !== 'undefined';
               }
             }
             
@@ -282,6 +326,13 @@ serve(async (req) => {
             checked_in_at: null,
             created_at: payload.data.registrationDate || payload.data.registrationTimestamp || new Date().toISOString()
           };
+          
+          // Validate ticket_type against enum values before database operation
+          const validTicketTypes = ['dry_site', 'rv_site', 'glamping', 'cabin'];
+          if (!validTicketTypes.includes(completeAttendeeData.ticket_type)) {
+            console.error(`Webhook - Invalid ticket_type detected: "${completeAttendeeData.ticket_type}". Setting to default "dry_site"`);
+            completeAttendeeData.ticket_type = 'dry_site';
+          }
 
           // Check if attendee already exists
           const { data: existingAttendee } = await supabase
