@@ -273,16 +273,11 @@ serve(async (req) => {
 
       // Helper function to detect "Additional Night" purchase (Thursday early access)
       const detectAdditionalNight = (fields: Record<string, string>) => {
-        console.log('Sync - Checking for Additional Night (Thursday early access)...');
-        
         // Check for the simple "Additional Night (Thursday)" field
         const simpleThursdayField = fields['Additional Night (Thursday)'];
         if (simpleThursdayField) {
-          console.log(`Sync - Found simple Thursday field: ${simpleThursdayField}`);
-          // Check if it's a quantity > 0 or "1" or truthy
           const qty = parseInt(simpleThursdayField);
           if (!isNaN(qty) && qty > 0) {
-            console.log('Sync - Early access detected via quantity field');
             return true;
           }
         }
@@ -296,67 +291,40 @@ serve(async (req) => {
         ];
         
         for (const fieldName of exactAdditionalNightFields) {
-          if (fields[fieldName]) {
-            const value = fields[fieldName];
-            console.log(`Sync - Found exact Additional Night field "${fieldName}": ${value}`);
-            
-            // Check if the value indicates a purchase (non-zero, non-empty)
-            if (value && value.trim() !== '' && value !== '0' && value.toLowerCase() !== 'false') {
-              console.log(`Sync - Additional Night detected via exact field: ${fieldName} = ${value}`);
-              return true;
-            }
+          const value = fields[fieldName];
+          if (value && value.trim() !== '' && value !== '0' && value.toLowerCase() !== 'false') {
+            return true;
           }
         }
         
-        // Check for any field with "Thursday" or "Additional Night" that has a truthy value
+        // Check for any field with "Thursday" that has a truthy value
         const thursdayFields = Object.keys(fields).filter(key => {
           const keyLower = key.toLowerCase();
           return (keyLower.includes('thursday') || keyLower.includes('additional night')) &&
                  keyLower.includes('thursday');
         });
         
-        console.log('Sync - Thursday-related fields found:', thursdayFields);
-        
         for (const field of thursdayFields) {
           const value = fields[field];
           if (value && value !== '0' && value.toLowerCase() !== 'false' && value.trim() !== '') {
-            console.log(`Sync - Early access detected via Thursday field: ${field} = ${value}`);
             return true;
           }
         }
         
-        console.log('Sync - No Additional Night detected');
         return false;
       };
 
       // Helper function to determine ticket type from RegFox data
       const determineTicketType = (fields: Record<string, string>) => {
-        console.log('Sync - Determining ticket type from field data...');
-        console.log('Sync - Available fields:', Object.keys(fields));
-        
         // Primary accommodation field - This is the main field that determines accommodation type
         const primaryAccommodationField = 'Are you staying in a Tent, Van/Rooftop,  RV, Glamping Tent, or Cabin??';
         const accommodationType = fields[primaryAccommodationField]?.toLowerCase();
         
-        console.log(`Sync - Primary accommodation field value: "${accommodationType}"`);
-        
         if (accommodationType) {
-          if (accommodationType.includes('glamping')) {
-            console.log('Sync - Detected glamping from primary field');
-            return 'glamping';
-          }
-          if (accommodationType.includes('rv')) {
-            console.log('Sync - Detected RV from primary field');
-            return 'rv_site';
-          }
-          if (accommodationType.includes('cabin')) {
-            console.log('Sync - Detected cabin from primary field');
-            return 'cabin';
-          }
-          if (accommodationType.includes('tent') || accommodationType.includes('van')) {
-            console.log('Sync - Detected tent/van from primary field');
-            return 'dry_site';
-          }
+          if (accommodationType.includes('glamping')) return 'glamping';
+          if (accommodationType.includes('rv')) return 'rv_site';
+          if (accommodationType.includes('cabin')) return 'cabin';
+          if (accommodationType.includes('tent') || accommodationType.includes('van')) return 'dry_site';
         }
         
         // Fallback: Check for registration options that indicate ticket type
@@ -369,8 +337,6 @@ serve(async (req) => {
         
         for (const field of registrationFields) {
           if (fields[field]) {
-            console.log(`Sync - Found registration option field: ${field} = ${fields[field]}`);
-            
             if (field.includes('RV')) return 'rv_site';
             if (field.includes('Glamping')) return 'glamping';
             if (field.includes('Cabin')) return 'cabin';
@@ -381,54 +347,72 @@ serve(async (req) => {
         // Final fallback: Check multipleChoice field
         const multipleChoice = fields['multipleChoice']?.toLowerCase();
         if (multipleChoice) {
-          console.log(`Sync - MultipleChoice field value: "${multipleChoice}"`);
-          
           if (multipleChoice.includes('glamping')) return 'glamping';
           if (multipleChoice.includes('rv')) return 'rv_site';
           if (multipleChoice.includes('cabin')) return 'cabin';
           if (multipleChoice.includes('tent')) return 'dry_site';
         }
         
-        console.log('Sync - No specific accommodation found, defaulting to dry_site');
         return 'dry_site';
       };
 
       syncResult.totalRecords = regfoxAttendees.length;
       console.log(`Processing ${syncResult.totalRecords} attendees from RegFox`);
 
-      // Process each attendee from RegFox
-      for (const regfoxAttendee of regfoxAttendees) {
-        try {
-          // Check for cancellation every 10 attendees or every 30 seconds
-          const now = Date.now();
-          if (now - lastHeartbeat > 30000) { // 30 seconds
-            if (await checkCancellation()) {
-              throw new Error('Sync cancelled by user');
-            }
-            
-            await updateHeartbeat({
-              processed: syncResult.newRecords + syncResult.updatedRecords,
-              total: syncResult.totalRecords,
-              currentId: regfoxAttendee.id
-            });
-            
-            lastHeartbeat = now;
-          }
+      // Process attendees in batches to prevent CPU timeouts
+      const BATCH_SIZE = 50; // Process 50 attendees at a time
+      const batches = [];
+      
+      for (let i = 0; i < regfoxAttendees.length; i += BATCH_SIZE) {
+        batches.push(regfoxAttendees.slice(i, i + BATCH_SIZE));
+      }
+      
+      console.log(`Processing ${batches.length} batches of up to ${BATCH_SIZE} attendees each`);
 
+      // Process each batch with CPU timeout protection
+      const startTime = Date.now();
+      const MAX_EXECUTION_TIME = 15 * 60 * 1000; // 15 minutes max execution time
+      
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        // Check for CPU timeout before each batch
+        const elapsedTime = Date.now() - startTime;
+        if (elapsedTime > MAX_EXECUTION_TIME) {
+          console.warn(`Approaching CPU timeout limit. Processed ${batchIndex} of ${batches.length} batches.`);
+          syncResult.errors.push(`Sync stopped early due to CPU timeout. Processed ${syncResult.newRecords + syncResult.updatedRecords} of ${syncResult.totalRecords} attendees.`);
+          break;
+        }
+        
+        const batch = batches[batchIndex];
+        console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} attendees)`);
+        
+        // Check for cancellation before each batch
+        if (await checkCancellation()) {
+          throw new Error('Sync cancelled by user');
+        }
+        
+        // Update heartbeat with batch progress
+        await updateHeartbeat({
+          batch: batchIndex + 1,
+          totalBatches: batches.length,
+          processed: syncResult.newRecords + syncResult.updatedRecords,
+          total: syncResult.totalRecords
+        });
+
+        // Process attendees in current batch
+        for (const regfoxAttendee of batch) {
+        try {
           // Parse the fieldData array into a searchable object
           const fieldData = regfoxAttendee.fieldData || [];
           const fields = parseFieldData(fieldData);
           
-          // ===== COMPREHENSIVE FIELD DISCOVERY LOGGING =====
-          console.log(`=== REGFOX FIELD DISCOVERY - ID: ${regfoxAttendee.id} ===`);
-          console.log('All RegFox field labels:', Object.keys(fields).filter(k => !k.includes('.')));
-          console.log('All RegFox field paths:', Object.keys(fields).filter(k => k.includes('.')));
-          console.log('Complete field mapping:', JSON.stringify(fields, null, 2));
-          console.log('Raw fieldData array:', JSON.stringify(fieldData, null, 2));
-          console.log('=== END FIELD DISCOVERY ===');
-          
-          // Log all field names for debugging Additional Night detection
-          console.log(`RegFox ID ${regfoxAttendee.id} fields:`, Object.keys(fields));
+          // Lightweight logging (removed CPU-intensive comprehensive field discovery)
+          if (batchIndex === 0 && batch.indexOf(regfoxAttendee) === 0) {
+            // Only log field discovery for the first attendee to help with debugging
+            console.log(`=== SAMPLE FIELD DISCOVERY - ID: ${regfoxAttendee.id} ===`);
+            console.log('Sample field labels:', Object.keys(fields).filter(k => !k.includes('.')).slice(0, 10));
+            console.log('Sample field paths:', Object.keys(fields).filter(k => k.includes('.')).slice(0, 10));
+            console.log('=== END SAMPLE FIELD DISCOVERY ===');
+          }
           
           // Extract attendee information using the parsed fields
           const firstName = fields['name2.first'] || fields['First Name'] || '';
@@ -540,7 +524,6 @@ serve(async (req) => {
                   valueStr === 'yes' || valueStr === 'true' || valueStr === '1' ||
                   valueStr.includes('agree')) {
                 waiverSigned = true;
-                console.log(`Sync - Waiver signed detected via field: ${field} = ${value}`);
                 break;
               }
             }
@@ -561,7 +544,6 @@ serve(async (req) => {
             const value = fields[field];
             if (value && (value.toLowerCase() === 'yes' || value === 'true' || value === '1')) {
               isVeteran = true;
-              console.log(`Sync - Veteran status detected via field: ${field} = ${value}`);
               break;
             }
           }
@@ -575,7 +557,6 @@ serve(async (req) => {
               const value = fields[field];
               if (value && value.toLowerCase() === 'yes') {
                 isVeteran = true;
-                console.log(`Sync - Veteran status detected via pattern: ${field} = ${value}`);
                 break;
               }
             }
@@ -721,7 +702,10 @@ serve(async (req) => {
         } catch (error) {
           syncResult.errors.push(`Error processing attendee ${regfoxAttendee.id}: ${error.message}`);
         }
-      }
+      } // End of batch processing loop
+      
+      console.log(`Completed batch ${batchIndex + 1}/${batches.length}`);
+    } // End of batch iteration loop
 
       // Update sync log with results
       const { error: updateSyncLogError } = await supabase
