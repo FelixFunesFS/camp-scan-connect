@@ -130,31 +130,31 @@ serve(async (req) => {
             return null;
           };
 
-          // Address information
-          const streetAddress = extractFieldValue(['street', 'address line 1', 'address']);
-          const city = extractFieldValue(['city']);
-          const state = extractFieldValue(['state', 'province']);
-          const postalCode = extractFieldValue(['zip', 'postal', 'postal code']);
-          const country = extractFieldValue(['country']);
+          // Address information - with proper null handling
+          const streetAddress = extractFieldValue(['street', 'address line 1', 'address']) || null;
+          const city = extractFieldValue(['city']) || null;
+          const state = extractFieldValue(['state', 'province']) || null;
+          const postalCode = extractFieldValue(['zip', 'postal', 'postal code']) || null;
+          const country = extractFieldValue(['country']) || null;
           
-          // Personal demographics
-          const dateOfBirth = extractFieldValue(['date of birth', 'birthday', 'birth date']);
-          const gender = extractFieldValue(['gender']);
-          const maritalStatus = extractFieldValue(['marital', 'status', 'relationship status']);
+          // Personal demographics - with proper null handling
+          const dateOfBirth = extractFieldValue(['date of birth', 'birthday', 'birth date']) || null;
+          const gender = extractFieldValue(['gender']) || null;
+          const maritalStatus = extractFieldValue(['marital', 'status', 'relationship status']) || null;
           
-          // Event preferences
-          const tShirtSize = extractFieldValue(['shirt size', 't-shirt', 'tshirt size']);
-          const dietaryRestrictions = extractFieldValue(['dietary', 'allergies', 'food allergies', 'restrictions']);
-          const specialAccommodations = extractFieldValue(['accommodation', 'accessibility', 'special needs']);
-          const howDidYouHear = extractFieldValue(['how did you hear', 'referral', 'source']);
-          const mealPlan = extractFieldValue(['meal plan', 'meal']);
+          // Event preferences - with proper null handling
+          const tShirtSize = extractFieldValue(['shirt size', 't-shirt', 'tshirt size']) || null;
+          const dietaryRestrictions = extractFieldValue(['dietary', 'allergies', 'food allergies', 'restrictions']) || null;
+          const specialAccommodations = extractFieldValue(['accommodation', 'accessibility', 'special needs']) || null;
+          const howDidYouHear = extractFieldValue(['how did you hear', 'referral', 'source']) || null;
+          const mealPlan = extractFieldValue(['meal plan', 'meal']) || null;
           
-          // Emergency contact - try to extract name and phone separately
-          let emergencyContactName = extractFieldValue(['emergency contact name', 'emergency name']);
-          let emergencyContactPhone = extractFieldValue(['emergency contact phone', 'emergency phone', 'emergency number']);
+          // Emergency contact - try to extract name and phone separately with null handling
+          let emergencyContactName = extractFieldValue(['emergency contact name', 'emergency name']) || null;
+          let emergencyContactPhone = extractFieldValue(['emergency contact phone', 'emergency phone', 'emergency number']) || null;
           
           // If combined field exists, try to parse it
-          const emergencyContactCombined = extractFieldValue(['emergency contact', 'emergency']);
+          const emergencyContactCombined = extractFieldValue(['emergency contact', 'emergency']) || null;
           if (emergencyContactCombined && !emergencyContactName && !emergencyContactPhone) {
             const phoneRegex = /(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/;
             const phoneMatch = emergencyContactCombined.match(phoneRegex);
