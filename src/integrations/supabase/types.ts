@@ -171,37 +171,52 @@ export type Database = {
       }
       regfox_sync_log: {
         Row: {
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           error_message: string | null
+          heartbeat_at: string | null
           id: string
           new_records: number | null
+          progress_info: Json | null
           status: string
           sync_completed_at: string | null
           sync_started_at: string
+          sync_timeout_minutes: number | null
           sync_type: string
           total_records: number | null
           updated_records: number | null
         }
         Insert: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           error_message?: string | null
+          heartbeat_at?: string | null
           id?: string
           new_records?: number | null
+          progress_info?: Json | null
           status: string
           sync_completed_at?: string | null
           sync_started_at?: string
+          sync_timeout_minutes?: number | null
           sync_type: string
           total_records?: number | null
           updated_records?: number | null
         }
         Update: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           error_message?: string | null
+          heartbeat_at?: string | null
           id?: string
           new_records?: number | null
+          progress_info?: Json | null
           status?: string
           sync_completed_at?: string | null
           sync_started_at?: string
+          sync_timeout_minutes?: number | null
           sync_type?: string
           total_records?: number | null
           updated_records?: number | null
@@ -350,11 +365,50 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_locks: {
+        Row: {
+          expires_at: string
+          id: string
+          lock_type: string
+          locked_at: string
+          locked_by: string | null
+          metadata: Json | null
+        }
+        Insert: {
+          expires_at: string
+          id?: string
+          lock_type: string
+          locked_at?: string
+          locked_by?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          lock_type?: string
+          locked_at?: string
+          locked_by?: string | null
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      acquire_sync_lock: {
+        Args: { p_sync_id: string; p_timeout_minutes?: number }
+        Returns: string
+      }
+      can_start_sync: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      cleanup_expired_locks: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_daily_transaction_count: {
         Args: {
           p_attendee_id: string
@@ -362,6 +416,10 @@ export type Database = {
           p_transaction_types: Database["public"]["Enums"]["transaction_type"][]
         }
         Returns: number
+      }
+      release_sync_lock: {
+        Args: { p_sync_id: string }
+        Returns: boolean
       }
     }
     Enums: {

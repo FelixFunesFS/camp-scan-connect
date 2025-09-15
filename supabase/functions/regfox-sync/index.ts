@@ -60,13 +60,33 @@ serve(async (req) => {
 
     console.log('Starting RegFox sync...');
 
+    // Check if sync can start (no active syncs or locks)
+    const { data: canStart, error: lockCheckError } = await supabase.rpc('can_start_sync');
+    
+    if (lockCheckError) {
+      throw new Error(`Failed to check sync status: ${lockCheckError.message}`);
+    }
+
+    if (!canStart) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Another sync is already in progress. Please wait for it to complete or cancel it first.',
+        code: 'SYNC_IN_PROGRESS'
+      }), {
+        status: 409,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Create sync log entry
     const { data: syncLog, error: syncLogError } = await supabase
       .from('regfox_sync_log')
       .insert({
         sync_type: 'initial_sync',
         status: 'in_progress',
-        sync_started_at: new Date().toISOString()
+        sync_started_at: new Date().toISOString(),
+        heartbeat_at: new Date().toISOString(),
+        sync_timeout_minutes: 20
       })
       .select()
       .single();
@@ -76,12 +96,58 @@ serve(async (req) => {
       throw syncLogError;
     }
 
+    // Acquire sync lock
+    const { data: lockId, error: lockError } = await supabase.rpc('acquire_sync_lock', {
+      p_sync_id: syncLog.id,
+      p_timeout_minutes: 20
+    });
+
+    if (lockError || !lockId) {
+      // Failed to acquire lock, mark sync as failed
+      await supabase
+        .from('regfox_sync_log')
+        .update({
+          status: 'error',
+          error_message: 'Failed to acquire sync lock - another sync may be running',
+          sync_completed_at: new Date().toISOString()
+        })
+        .eq('id', syncLog.id);
+      
+      throw new Error('Failed to acquire sync lock - another sync may be running');
+    }
+
+    console.log(`Acquired sync lock: ${lockId}`);
+
     const syncResult: SyncResult = {
       totalRecords: 0,
       newRecords: 0,
       updatedRecords: 0,
       errors: []
     };
+
+    // Helper function to check if sync is cancelled
+    const checkCancellation = async () => {
+      const { data: syncStatus } = await supabase
+        .from('regfox_sync_log')
+        .select('cancelled_at')
+        .eq('id', syncLog.id)
+        .single();
+      
+      return syncStatus?.cancelled_at != null;
+    };
+
+    // Helper function to update heartbeat
+    const updateHeartbeat = async (progressInfo?: any) => {
+      await supabase
+        .from('regfox_sync_log')
+        .update({
+          heartbeat_at: new Date().toISOString(),
+          progress_info: progressInfo || {}
+        })
+        .eq('id', syncLog.id);
+    };
+
+    let lastHeartbeat = Date.now();
 
     try {
       // First, test API key with ping endpoint
@@ -301,6 +367,22 @@ serve(async (req) => {
       // Process each attendee from RegFox
       for (const regfoxAttendee of regfoxAttendees) {
         try {
+          // Check for cancellation every 10 attendees or every 30 seconds
+          const now = Date.now();
+          if (now - lastHeartbeat > 30000) { // 30 seconds
+            if (await checkCancellation()) {
+              throw new Error('Sync cancelled by user');
+            }
+            
+            await updateHeartbeat({
+              processed: syncResult.newRecords + syncResult.updatedRecords,
+              total: syncResult.totalRecords,
+              currentId: regfoxAttendee.id
+            });
+            
+            lastHeartbeat = now;
+          }
+
           // Parse the fieldData array into a searchable object
           const fieldData = regfoxAttendee.fieldData || [];
           const fields = parseFieldData(fieldData);
@@ -554,13 +636,17 @@ serve(async (req) => {
           new_records: syncResult.newRecords,
           updated_records: syncResult.updatedRecords,
           error_message: syncResult.errors.length > 0 ? syncResult.errors.join('; ') : null,
-          sync_completed_at: new Date().toISOString()
+          sync_completed_at: new Date().toISOString(),
+          heartbeat_at: new Date().toISOString()
         })
         .eq('id', syncLog.id);
 
       if (updateSyncLogError) {
         console.error('Error updating sync log:', updateSyncLogError);
       }
+
+      // Release sync lock
+      await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
 
       console.log('RegFox sync completed:', syncResult);
 
@@ -573,6 +659,9 @@ serve(async (req) => {
       });
 
     } catch (error) {
+      // Release sync lock on error
+      await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
+      
       // Update sync log with error
       await supabase
         .from('regfox_sync_log')
