@@ -15,6 +15,7 @@ import MealStation from "./pages/MealStation";
 import DrinksStation from "./pages/DrinksStation";
 import HeadphonesStation from "./pages/HeadphonesStation";
 import SystemValidation from "./pages/SystemValidation";
+import RfidTestingHub from "./pages/RfidTestingHub";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/drinks-station" element={<DrinksStation />} />
           <Route path="/headphones-station" element={<HeadphonesStation />} />
           <Route path="/system-validation" element={<SystemValidation />} />
+          <Route path="/rfid-testing" element={<RfidTestingHub />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

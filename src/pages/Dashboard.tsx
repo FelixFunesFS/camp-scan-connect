@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserCheck, AlertTriangle, Zap, LogOut, Download } from "lucide-react";
+import { Users, UserCheck, AlertTriangle, Zap, LogOut, Download, TestTube } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -136,6 +136,26 @@ const Dashboard = () => {
           })}
         </div>
 
+
+        {/* Quick Actions */}
+        <div className="mb-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Development Tools</CardTitle>
+              <CardDescription>Testing and validation utilities</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/rfid-testing")}
+                className="gap-2"
+              >
+                <TestTube className="h-4 w-4" />
+                RFID Testing Hub
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* System Cleanup Status */}
         <div className="mb-8">
