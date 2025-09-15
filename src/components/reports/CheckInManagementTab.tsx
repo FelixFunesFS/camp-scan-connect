@@ -392,6 +392,11 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     }
   };
 
+  const handleResetSort = () => {
+    setSortField(null);
+    setSortDirection('asc');
+  };
+
   const filterOptions = [
     {
       key: "overall_status",

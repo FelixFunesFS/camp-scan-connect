@@ -273,10 +273,21 @@ serve(async (req) => {
 
       // Helper function to detect "Additional Night" purchase (Thursday early access)
       const detectAdditionalNight = (fields: Record<string, string>) => {
-        console.log('Sync - All field names:', Object.keys(fields));
-        console.log('Sync - All field values:', JSON.stringify(fields, null, 2));
+        console.log('Sync - Checking for Additional Night (Thursday early access)...');
         
-        // Exact field names from RegFox form for Thursday Additional Night purchases
+        // Check for the simple "Additional Night (Thursday)" field
+        const simpleThursdayField = fields['Additional Night (Thursday)'];
+        if (simpleThursdayField) {
+          console.log(`Sync - Found simple Thursday field: ${simpleThursdayField}`);
+          // Check if it's a quantity > 0 or "1" or truthy
+          const qty = parseInt(simpleThursdayField);
+          if (!isNaN(qty) && qty > 0) {
+            console.log('Sync - Early access detected via quantity field');
+            return true;
+          }
+        }
+        
+        // Check for accommodation-specific Thursday fields
         const exactAdditionalNightFields = [
           'Additional Night (Thursday) (Tent or Van/Roof Top)',
           'Additional Night (Thursday) (RV)',
@@ -284,81 +295,102 @@ serve(async (req) => {
           'Additional Night (Thursday) (Cabin)'
         ];
         
-        // Check for exact field matches first
         for (const fieldName of exactAdditionalNightFields) {
           if (fields[fieldName]) {
             const value = fields[fieldName];
             console.log(`Sync - Found exact Additional Night field "${fieldName}": ${value}`);
             
-            // Check if the value indicates a purchase
-            // Handle "X of Y" patterns (e.g., "0 of 1", "1 of 1") as purchases
-            const ofPattern = /^\d+\s+of\s+\d+$/i.test(value.trim());
-            if (value && value.trim() !== '' && (ofPattern || (value !== '0' && value.toLowerCase() !== 'false'))) {
+            // Check if the value indicates a purchase (non-zero, non-empty)
+            if (value && value.trim() !== '' && value !== '0' && value.toLowerCase() !== 'false') {
               console.log(`Sync - Additional Night detected via exact field: ${fieldName} = ${value}`);
               return true;
             }
           }
         }
         
-        // Fallback: Check for fields containing "Additional Night" and "Thursday"
-        const additionalNightFields = Object.keys(fields).filter(key => {
+        // Check for any field with "Thursday" or "Additional Night" that has a truthy value
+        const thursdayFields = Object.keys(fields).filter(key => {
           const keyLower = key.toLowerCase();
-          return keyLower.includes('additional night') && keyLower.includes('thursday');
+          return (keyLower.includes('thursday') || keyLower.includes('additional night')) &&
+                 keyLower.includes('thursday');
         });
         
-        console.log('Sync - Additional night fields found (fallback):', additionalNightFields);
+        console.log('Sync - Thursday-related fields found:', thursdayFields);
         
-        // Check if any additional night field has a truthy value
-        const hasAdditionalNight = additionalNightFields.some(field => {
+        for (const field of thursdayFields) {
           const value = fields[field];
-          console.log(`Sync - Fallback field "${field}": ${value}`);
-          
-          if (!value) return false;
-          const stringValue = String(value).toLowerCase().trim();
-          return stringValue !== '0' && 
-                 stringValue !== 'false' && 
-                 stringValue !== 'no' && 
-                 stringValue !== '' && 
-                 stringValue !== 'null' &&
-                 stringValue !== 'undefined';
-        });
-        
-        if (hasAdditionalNight) {
-          console.log('Sync - Additional Night detected via fallback pattern matching');
+          if (value && value !== '0' && value.toLowerCase() !== 'false' && value.trim() !== '') {
+            console.log(`Sync - Early access detected via Thursday field: ${field} = ${value}`);
+            return true;
+          }
         }
         
-        return hasAdditionalNight;
+        console.log('Sync - No Additional Night detected');
+        return false;
       };
 
       // Helper function to determine ticket type from RegFox data
       const determineTicketType = (fields: Record<string, string>) => {
         console.log('Sync - Determining ticket type from field data...');
+        console.log('Sync - Available fields:', Object.keys(fields));
         
-        // Define accommodation field patterns and their corresponding ticket types
-        const accommodationMappings = [
-          { patterns: ['glamping'], ticketType: 'glamping' },
-          { patterns: ['rv', 'recreational vehicle'], ticketType: 'rv_site' },
-          { patterns: ['cabin', 'lodge'], ticketType: 'cabin' },
-          { patterns: ['tent', 'camping', 'dry'], ticketType: 'dry_site' }
-        ];
+        // Primary accommodation field - This is the main field that determines accommodation type
+        const primaryAccommodationField = 'Are you staying in a Tent, Van/Rooftop,  RV, Glamping Tent, or Cabin??';
+        const accommodationType = fields[primaryAccommodationField]?.toLowerCase();
         
-        // Check all field names and values for accommodation indicators
-        for (const [fieldName, fieldValue] of Object.entries(fields)) {
-          if (!fieldValue) continue;
-          
-          const searchText = `${fieldName} ${fieldValue}`.toLowerCase();
-          console.log(`Sync - Checking field: ${fieldName} = ${fieldValue}`);
-          
-          for (const mapping of accommodationMappings) {
-            if (mapping.patterns.some(pattern => searchText.includes(pattern))) {
-              console.log(`Sync - Found ticket type "${mapping.ticketType}" from pattern "${mapping.patterns[0]}" in "${searchText}"`);
-              return mapping.ticketType;
-            }
+        console.log(`Sync - Primary accommodation field value: "${accommodationType}"`);
+        
+        if (accommodationType) {
+          if (accommodationType.includes('glamping')) {
+            console.log('Sync - Detected glamping from primary field');
+            return 'glamping';
+          }
+          if (accommodationType.includes('rv')) {
+            console.log('Sync - Detected RV from primary field');
+            return 'rv_site';
+          }
+          if (accommodationType.includes('cabin')) {
+            console.log('Sync - Detected cabin from primary field');
+            return 'cabin';
+          }
+          if (accommodationType.includes('tent') || accommodationType.includes('van')) {
+            console.log('Sync - Detected tent/van from primary field');
+            return 'dry_site';
           }
         }
         
+        // Fallback: Check for registration options that indicate ticket type
+        const registrationFields = [
+          'RV Registration Options',
+          'Tent Registration Options', 
+          'Glamping Registration Options',
+          'Cabin Registration Options'
+        ];
+        
+        for (const field of registrationFields) {
+          if (fields[field]) {
+            console.log(`Sync - Found registration option field: ${field} = ${fields[field]}`);
+            
+            if (field.includes('RV')) return 'rv_site';
+            if (field.includes('Glamping')) return 'glamping';
+            if (field.includes('Cabin')) return 'cabin';
+            if (field.includes('Tent')) return 'dry_site';
+          }
+        }
+        
+        // Final fallback: Check multipleChoice field
+        const multipleChoice = fields['multipleChoice']?.toLowerCase();
+        if (multipleChoice) {
+          console.log(`Sync - MultipleChoice field value: "${multipleChoice}"`);
+          
+          if (multipleChoice.includes('glamping')) return 'glamping';
+          if (multipleChoice.includes('rv')) return 'rv_site';
+          if (multipleChoice.includes('cabin')) return 'cabin';
+          if (multipleChoice.includes('tent')) return 'dry_site';
+        }
+        
         console.log('Sync - No specific accommodation found, defaulting to dry_site');
-        return 'dry_site'; // default fallback
+        return 'dry_site';
       };
 
       syncResult.totalRecords = regfoxAttendees.length;
@@ -460,8 +492,19 @@ serve(async (req) => {
           const howDidYouHear = fields['howDidYouHear'] || fields['How did you hear about us?'] || 
                               fields['referral'] || fields['Referral Source'] || null;
           
-          // Meal plan information
-          const mealPlan = fields['mealPlan'] || fields['Meal Plan-'] || fields['Meal Plan'] || null;
+          // Meal plan information - Enhanced detection
+          let mealPlan = fields['mealPlan'] || fields['Meal Plan-'] || fields['Meal Plan'] || null;
+          
+          // Look for meal plan in field names containing "meal"
+          if (!mealPlan) {
+            const mealFields = Object.keys(fields).filter(key => 
+              key.toLowerCase().includes('meal') && fields[key]
+            );
+            if (mealFields.length > 0) {
+              mealPlan = fields[mealFields[0]];
+              console.log(`Sync - Found meal plan via pattern matching: ${mealFields[0]} = ${mealPlan}`);
+            }
+          }
           
           // Collect all unhandled custom fields
           const customFields: Record<string, any> = {};
@@ -484,6 +527,25 @@ serve(async (req) => {
             'veteran', 'militaryBranch', 'Military Branch', 'serviceBranch', 'Service Branch'
           ];
           
+          // Detect waiver status - Enhanced detection
+          let waiverSigned = false;
+          const waiverFields = ['waiver', 'Waiver', 'agreement', 'Agreement', 'waiver_signed'];
+          
+          for (const field of waiverFields) {
+            const value = fields[field];
+            if (value) {
+              // Check for various waiver signature indicators
+              const valueStr = String(value).toLowerCase();
+              if (valueStr.includes('.pdf') || valueStr.includes('signed') || 
+                  valueStr === 'yes' || valueStr === 'true' || valueStr === '1' ||
+                  valueStr.includes('agree')) {
+                waiverSigned = true;
+                console.log(`Sync - Waiver signed detected via field: ${field} = ${value}`);
+                break;
+              }
+            }
+          }
+          
           // Store any fields not explicitly handled
           for (const [fieldName, fieldValue] of Object.entries(fields)) {
             if (!handledFields.includes(fieldName) && fieldValue) {
@@ -491,18 +553,52 @@ serve(async (req) => {
             }
           }
           
-          // Enhanced veteran detection
-          const isVeteran = fields['areYouVeteran'] === 'yes' || 
-                           fields['Are you a veteran?'] === 'yes' ||
-                           fields['military'] === 'yes' ||
-                           fields['Military Service'] === 'yes' ||
-                           fields['veteran'] === 'yes';
+          // Enhanced veteran detection - Check multiple field patterns
+          let isVeteran = false;
+          const veteranFields = ['areYouVeteran', 'Are you a veteran?', 'military', 'Military Service', 'veteran'];
           
-          // Extract military branch
-          const militaryBranch = fields['militaryBranch'] || 
+          for (const field of veteranFields) {
+            const value = fields[field];
+            if (value && (value.toLowerCase() === 'yes' || value === 'true' || value === '1')) {
+              isVeteran = true;
+              console.log(`Sync - Veteran status detected via field: ${field} = ${value}`);
+              break;
+            }
+          }
+          
+          // Also check for veteran-related field patterns
+          if (!isVeteran) {
+            const veteranPatternFields = Object.keys(fields).filter(key => 
+              key.toLowerCase().includes('veteran') && fields[key]
+            );
+            for (const field of veteranPatternFields) {
+              const value = fields[field];
+              if (value && value.toLowerCase() === 'yes') {
+                isVeteran = true;
+                console.log(`Sync - Veteran status detected via pattern: ${field} = ${value}`);
+                break;
+              }
+            }
+          }
+          
+          // Extract military branch - Enhanced detection
+          let militaryBranch = fields['militaryBranch'] || 
                                fields['Military Branch'] || 
                                fields['serviceBranch'] ||
                                fields['Service Branch'] || null;
+          
+          // Look for branch in field names containing "branch" or "service"
+          if (!militaryBranch && isVeteran) {
+            const branchFields = Object.keys(fields).filter(key => {
+              const keyLower = key.toLowerCase();
+              return (keyLower.includes('branch') || keyLower.includes('service')) && 
+                     fields[key] && fields[key] !== 'yes' && fields[key] !== 'no';
+            });
+            if (branchFields.length > 0) {
+              militaryBranch = fields[branchFields[0]];
+              console.log(`Sync - Military branch detected via pattern: ${branchFields[0]} = ${militaryBranch}`);
+            }
+          }
           
           // Map RegFox status to our enum
           const mapRegistrationStatus = (status: string) => {
@@ -574,7 +670,7 @@ serve(async (req) => {
             // Custom fields and metadata
             custom_fields: customFields,
             
-            waiver_signed: false, // Will be updated when waiver is actually signed
+            waiver_signed: waiverSigned,
             checked_in_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,
             notes: null, // Keep notes separate from emergency contact
             created_at: regfoxAttendee.dateCreated

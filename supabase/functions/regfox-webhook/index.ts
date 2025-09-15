@@ -87,7 +87,8 @@ serve(async (req) => {
       const eventType = payload.event || payload.eventType;
       console.log('Processing event type:', eventType);
 
-      if (eventType === 'registration.created' || eventType === 'registration.updated' || eventType === 'registration') {
+      if (eventType === 'registration.created' || eventType === 'registration.updated' || eventType === 'registration' || 
+          eventType === 'registrant_cancel' || eventType === 'registrant_edit') {
         let attendeeData: any = null;
         let attendeeId: string | null = null;
 
@@ -244,17 +245,62 @@ serve(async (req) => {
               const registrant = payloadData.registrants[0];
               console.log('Webhook - Registrant data fields:', registrant.data?.map(d => `${d.fieldName}: ${d.fieldValue}`));
               
+              // Primary accommodation field - This is the main field that determines accommodation type
+              const primaryAccommodationField = 'Are you staying in a Tent, Van/Rooftop,  RV, Glamping Tent, or Cabin??';
+              
               for (const field of (registrant.data || [])) {
-                if (!field.fieldValue) continue;
-                
-                const searchText = `${field.fieldName} ${field.fieldValue}`.toLowerCase();
-                console.log(`Webhook - Checking field: ${field.fieldName} = ${field.fieldValue}`);
-                
-                for (const mapping of accommodationMappings) {
-                  if (mapping.patterns.some(pattern => searchText.includes(pattern))) {
-                    console.log(`Webhook - Found ticket type "${mapping.ticketType}" from pattern "${mapping.patterns[0]}" in "${searchText}"`);
-                    return mapping.ticketType;
+                if (field.fieldName === primaryAccommodationField && field.fieldValue) {
+                  const accommodationType = field.fieldValue.toLowerCase();
+                  console.log(`Webhook - Primary accommodation field value: "${accommodationType}"`);
+                  
+                  if (accommodationType.includes('glamping')) {
+                    console.log('Webhook - Detected glamping from primary field');
+                    return 'glamping';
                   }
+                  if (accommodationType.includes('rv')) {
+                    console.log('Webhook - Detected RV from primary field');
+                    return 'rv_site';
+                  }
+                  if (accommodationType.includes('cabin')) {
+                    console.log('Webhook - Detected cabin from primary field');
+                    return 'cabin';
+                  }
+                  if (accommodationType.includes('tent') || accommodationType.includes('van')) {
+                    console.log('Webhook - Detected tent/van from primary field');
+                    return 'dry_site';
+                  }
+                }
+              }
+              
+              // Fallback: Check for registration options that indicate ticket type
+              const registrationFields = [
+                'RV Registration Options',
+                'Tent Registration Options', 
+                'Glamping Registration Options',
+                'Cabin Registration Options'
+              ];
+              
+              for (const field of (registrant.data || [])) {
+                if (field.fieldName && registrationFields.includes(field.fieldName) && field.fieldValue) {
+                  console.log(`Webhook - Found registration option field: ${field.fieldName} = ${field.fieldValue}`);
+                  
+                  if (field.fieldName.includes('RV')) return 'rv_site';
+                  if (field.fieldName.includes('Glamping')) return 'glamping';
+                  if (field.fieldName.includes('Cabin')) return 'cabin';
+                  if (field.fieldName.includes('Tent')) return 'dry_site';
+                }
+              }
+              
+              // Final fallback: Check multipleChoice field
+              for (const field of (registrant.data || [])) {
+                if (field.fieldName === 'multipleChoice' && field.fieldValue) {
+                  const multipleChoice = field.fieldValue.toLowerCase();
+                  console.log(`Webhook - MultipleChoice field value: "${multipleChoice}"`);
+                  
+                  if (multipleChoice.includes('glamping')) return 'glamping';
+                  if (multipleChoice.includes('rv')) return 'rv_site';
+                  if (multipleChoice.includes('cabin')) return 'cabin';
+                  if (multipleChoice.includes('tent')) return 'dry_site';
                 }
               }
             }
@@ -478,7 +524,7 @@ serve(async (req) => {
             .eq('regfox_id', attendeeId)
             .maybeSingle();
 
-          if (existingAttendee && (eventType === 'registration.updated' || eventType === 'registration')) {
+          if (existingAttendee && (eventType === 'registration.updated' || eventType === 'registration' || eventType === 'registrant_edit')) {
             console.log('Updating existing attendee:', attendeeId);
             // Update existing attendee (removed manual updated_at field)
             const { error: updateError } = await supabase
@@ -492,6 +538,24 @@ serve(async (req) => {
             } else {
               result.updatedRecords = 1;
               console.log('Successfully updated attendee');
+            }
+          } else if (eventType === 'registrant_cancel') {
+            console.log('Cancelling attendee registration:', attendeeId);
+            // Update registration status to cancelled
+            const { error: cancelError } = await supabase
+              .from('attendees')
+              .update({ 
+                registration_status: 'cancelled',
+                updated_at: new Date().toISOString()
+              })
+              .eq('regfox_id', attendeeId);
+
+            if (cancelError) {
+              console.error('Cancel error:', cancelError);
+              result.errors.push(`Error cancelling attendee: ${cancelError.message}`);
+            } else {
+              result.updatedRecords = 1;
+              console.log('Successfully cancelled attendee registration');
             }
           } else if (!existingAttendee) {
             console.log('Creating new attendee:', attendeeId);
