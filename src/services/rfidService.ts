@@ -46,7 +46,7 @@ class RfidService {
           )
         `)
         .eq('uid', uid)
-        .eq('status', 'active')
+        .in('status', ['assigned', 'active'])
         .single();
 
       if (error) {
@@ -102,7 +102,7 @@ class RfidService {
         .from('rfid_tags')
         .select('uid')
         .eq('attendee_id', attendeeId)
-        .eq('status', 'active')
+        .in('status', ['assigned', 'active'])
         .single();
 
       if (existingRfid) {
@@ -130,7 +130,7 @@ class RfidService {
           .insert({
             uid: uid.trim(),
             attendee_id: attendeeId,
-            status: 'active',
+        status: 'assigned',
             issued_at: new Date().toISOString()
           })
           .select()
@@ -143,7 +143,7 @@ class RfidService {
           .from('rfid_tags')
           .update({
             attendee_id: attendeeId,
-            status: 'active',
+            status: 'assigned',
             issued_at: new Date().toISOString(),
             deactivated_at: null,
             reason: null
@@ -251,7 +251,7 @@ class RfidService {
         .from('rfid_tags')
         .select('*')
         .eq('attendee_id', attendeeId)
-        .eq('status', 'active')
+        .in('status', ['assigned', 'active'])
         .single();
 
       if (error) return null;
@@ -287,6 +287,65 @@ class RfidService {
       }
     } catch (error) {
       console.error('Error recording transaction:', error);
+    }
+  }
+  // New method to check if attendee is both assigned and activated
+  async checkAttendeeReadiness(attendeeId: string): Promise<{ isReady: boolean; message: string; hasAssignment: boolean; hasActivation: boolean }> {
+    try {
+      // Check if attendee has an assigned RFID
+      const { data: rfidTag } = await supabase
+        .from('rfid_tags')
+        .select('uid, status')
+        .eq('attendee_id', attendeeId)
+        .in('status', ['assigned', 'active'])
+        .single();
+
+      const hasAssignment = !!rfidTag;
+
+      if (!hasAssignment) {
+        return {
+          isReady: false,
+          message: "No RFID assigned to this attendee",
+          hasAssignment: false,
+          hasActivation: false
+        };
+      }
+
+      // Check if attendee has been activated
+      const { data: activationTransaction } = await supabase
+        .from('station_transactions')
+        .select('transaction_type, created_at')
+        .eq('attendee_id', attendeeId)
+        .eq('station_type', 'activation')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      const hasActivation = activationTransaction?.transaction_type === 'activate';
+
+      if (!hasActivation) {
+        return {
+          isReady: false,
+          message: "Attendee has RFID assigned but not activated. Please visit Activation Station first.",
+          hasAssignment: true,
+          hasActivation: false
+        };
+      }
+
+      return {
+        isReady: true,
+        message: "Attendee is ready for station services",
+        hasAssignment: true,
+        hasActivation: true
+      };
+    } catch (error) {
+      console.error('Error checking attendee readiness:', error);
+      return {
+        isReady: false,
+        message: "Error checking attendee status",
+        hasAssignment: false,
+        hasActivation: false
+      };
     }
   }
 }

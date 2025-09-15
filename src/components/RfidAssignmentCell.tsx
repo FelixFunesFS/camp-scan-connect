@@ -79,12 +79,12 @@ export const RfidAssignmentCell = ({
     setIsProcessing(true);
     
     try {
-      // Check if attendee already has an active RFID
+      // Check if attendee already has an assigned or active RFID
       const { data: existingRfid } = await supabase
         .from('rfid_tags')
         .select('uid, status')
         .eq('attendee_id', attendeeId)
-        .eq('status', 'active')
+        .in('status', ['assigned', 'active'])
         .single();
 
       if (existingRfid) {
@@ -113,7 +113,7 @@ export const RfidAssignmentCell = ({
           .insert({
             uid: uid.trim(),
             attendee_id: attendeeId,
-            status: 'active',
+            status: 'assigned',
             issued_at: new Date().toISOString()
           });
       } else {
@@ -122,7 +122,7 @@ export const RfidAssignmentCell = ({
           .from('rfid_tags')
           .update({
             attendee_id: attendeeId,
-            status: 'active',
+            status: 'assigned',
             issued_at: new Date().toISOString(),
             deactivated_at: null,
             reason: null
@@ -130,28 +130,9 @@ export const RfidAssignmentCell = ({
           .eq('uid', uid.trim());
       }
 
-      // Log the assignment transaction
-      const { error: transactionError } = await supabase
-        .from('station_transactions')
-        .insert({
-          attendee_id: attendeeId,
-          rfid_uid: uid.trim(),
-          station_type: 'activation',
-          transaction_type: 'activate',
-          current_status: 'active',
-          extra_data: {
-            assignment_method: 'manual',
-            previous_rfid: existingRfid?.uid || null
-          }
-        });
-
-      if (transactionError) {
-        console.error('Transaction logging error:', transactionError);
-      }
-
       toast({
         title: "RFID Assigned",
-        description: `UID ${uid.trim()} assigned to ${attendeeName}`,
+        description: `UID ${uid.trim()} assigned to ${attendeeName}. Use Activation Station to activate.`,
       });
 
       setUid("");
@@ -221,7 +202,8 @@ export const RfidAssignmentCell = ({
   const getRfidStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'active': return 'default';
-      case 'unissued': return 'secondary';
+      case 'assigned': return 'secondary';
+      case 'unissued': return 'outline';
       case 'lost': return 'destructive';
       case 'replaced': return 'outline';
       case 'deactivated': return 'destructive';
@@ -229,7 +211,7 @@ export const RfidAssignmentCell = ({
     }
   };
 
-  if (currentRfidUid && currentRfidStatus === 'active') {
+  if (currentRfidUid && (currentRfidStatus === 'active' || currentRfidStatus === 'assigned')) {
     return (
       <div className="flex items-center gap-2">
         <div className="flex flex-col">

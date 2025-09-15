@@ -13,13 +13,6 @@ const Index = () => {
     color: "bg-primary text-primary-foreground",
     path: "/dashboard"
   }, {
-    id: "parking",
-    title: "Parking Activation",
-    description: "RFID wristband activation for attendees at parking areas",
-    icon: UserCheck,
-    color: "bg-secondary text-secondary-foreground",
-    path: "/parking-activation"
-  }, {
     id: "system",
     title: "System Validation",
     description: "Pre-event testing and system validation",
@@ -127,23 +120,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Self-Activate Section */}
-        <Card className="border-secondary/20 bg-secondary/5">
-          <CardHeader className="text-center">
-            <CardTitle className="text-secondary flex items-center justify-center gap-2">
-              <Scan className="h-5 w-5" />
-              Attendee Self-Activation
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            <CardDescription className="mb-4">
-              Already checked in? Activate your RFID wristband using your phone number.
-            </CardDescription>
-            <Button variant="secondary" onClick={() => navigate("/parking-activation")} className="w-full max-w-md">
-              Activate My Wristband
-            </Button>
-          </CardContent>
-        </Card>
 
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-muted-foreground">

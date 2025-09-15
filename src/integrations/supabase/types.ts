@@ -433,7 +433,13 @@ export type Database = {
       scan_result: "allow" | "deny"
       staff_role: "admin" | "checkin" | "ranger" | "vendor"
       station_type: "activation" | "meal" | "drinks" | "headphones"
-      tag_status: "unissued" | "active" | "lost" | "replaced" | "deactivated"
+      tag_status:
+        | "unissued"
+        | "assigned"
+        | "active"
+        | "lost"
+        | "replaced"
+        | "deactivated"
       ticket_type:
         | "premium_power"
         | "dry_site"
@@ -590,7 +596,14 @@ export const Constants = {
       scan_result: ["allow", "deny"],
       staff_role: ["admin", "checkin", "ranger", "vendor"],
       station_type: ["activation", "meal", "drinks", "headphones"],
-      tag_status: ["unissued", "active", "lost", "replaced", "deactivated"],
+      tag_status: [
+        "unissued",
+        "assigned",
+        "active",
+        "lost",
+        "replaced",
+        "deactivated",
+      ],
       ticket_type: [
         "premium_power",
         "dry_site",

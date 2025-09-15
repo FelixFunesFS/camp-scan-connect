@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RfidScanner } from "@/components/RfidScanner";
+import { rfidService } from "@/services/rfidService";
 
 interface RfidTag {
   uid: string;
@@ -40,6 +41,7 @@ export default function MealStation() {
   const [mealCount, setMealCount] = useState(0);
   const [currentMealWindow, setCurrentMealWindow] = useState<MealWindow | null>(null);
   const [currentDay, setCurrentDay] = useState<string>("");
+  const [attendeeReadiness, setAttendeeReadiness] = useState<{ isReady: boolean; message: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -56,8 +58,19 @@ export default function MealStation() {
   const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
     if (rfidData.attendee_id) {
-      await loadMealCount(rfidData.attendee_id);
-      await handleMealScan(rfidData);
+      // Check if attendee is ready for station services
+      const readiness = await rfidService.checkAttendeeReadiness(rfidData.attendee_id);
+      setAttendeeReadiness(readiness);
+      
+      if (readiness.isReady) {
+        await loadMealCount(rfidData.attendee_id);
+      } else {
+        toast({
+          title: "Service Not Available",
+          description: readiness.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -104,7 +117,7 @@ export default function MealStation() {
   };
 
   const canGetMeal = () => {
-    return mealCount < MAX_DAILY_MEALS && currentMealWindow !== null;
+    return attendeeReadiness?.isReady && mealCount < MAX_DAILY_MEALS && currentMealWindow !== null;
   };
 
   const handleMealScan = async (rfidData?: RfidTag) => {
@@ -198,6 +211,14 @@ export default function MealStation() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
+                {!attendeeReadiness?.isReady && attendeeReadiness && (
+                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
+                    <p className="text-sm text-destructive font-medium">
+                      {attendeeReadiness.message}
+                    </p>
+                  </div>
+                )}
+                
                 <div className="text-sm text-muted-foreground">
                   Daily meals: <span className="font-bold">{mealCount}/{MAX_DAILY_MEALS}</span>
                 </div>
@@ -210,6 +231,8 @@ export default function MealStation() {
                 >
                   {isProcessing ? (
                     "Processing..."
+                  ) : !attendeeReadiness?.isReady ? (
+                    "Service Not Available"
                   ) : !currentMealWindow ? (
                     "No Active Meal Window"
                   ) : mealCount >= MAX_DAILY_MEALS ? (

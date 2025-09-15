@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RfidScanner } from "@/components/RfidScanner";
+import { rfidService } from "@/services/rfidService";
 
 interface RfidTag {
   uid: string;
@@ -21,6 +22,7 @@ export default function HeadphonesStation() {
   const [selectedRfid, setSelectedRfid] = useState<RfidTag | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [headphoneStatus, setHeadphoneStatus] = useState<'checked_out' | 'available' | null>(null);
+  const [attendeeReadiness, setAttendeeReadiness] = useState<{ isReady: boolean; message: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -33,8 +35,19 @@ export default function HeadphonesStation() {
   const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
     if (rfidData.attendee_id) {
-      await checkHeadphoneStatus(rfidData.attendee_id);
-      await handleHeadphoneToggle(rfidData);
+      // Check if attendee is ready for station services
+      const readiness = await rfidService.checkAttendeeReadiness(rfidData.attendee_id);
+      setAttendeeReadiness(readiness);
+      
+      if (readiness.isReady) {
+        await checkHeadphoneStatus(rfidData.attendee_id);
+      } else {
+        toast({
+          title: "Service Not Available",
+          description: readiness.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -129,6 +142,14 @@ export default function HeadphonesStation() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
+                {!attendeeReadiness?.isReady && attendeeReadiness && (
+                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
+                    <p className="text-sm text-destructive font-medium">
+                      {attendeeReadiness.message}
+                    </p>
+                  </div>
+                )}
+                
                 {/* Status Display */}
                 <div className="p-8 bg-muted rounded-lg">
                   <Headphones className={`mx-auto h-16 w-16 mb-4 ${
@@ -141,13 +162,15 @@ export default function HeadphonesStation() {
 
                 <Button
                   onClick={() => handleHeadphoneToggle()}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !attendeeReadiness?.isReady}
                   size="lg"
                   className="w-full h-16 text-lg"
                   variant={headphoneStatus === 'checked_out' ? 'default' : 'secondary'}
                 >
                   {isProcessing ? (
                     "Processing..."
+                  ) : !attendeeReadiness?.isReady ? (
+                    "Service Not Available"
                   ) : headphoneStatus === 'checked_out' ? (
                     <>
                       <LogIn className="h-5 w-5 mr-2" />

@@ -38,6 +38,8 @@ export default function ActivationStation() {
 
   const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
+    
+    // Only proceed if RFID is assigned to an attendee
     if (rfidData.attendee_id) {
       // Fetch full attendee details including veteran status
       const { data: attendee } = await supabase
@@ -48,7 +50,12 @@ export default function ActivationStation() {
       
       setAttendeeDetails(attendee);
       await checkCurrentStatus(rfidData.attendee_id);
-      await handleActivationToggle(rfidData);
+    } else {
+      toast({
+        title: "RFID Not Assigned",
+        description: "This RFID is not assigned to any attendee. Please assign it first.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -155,7 +162,7 @@ export default function ActivationStation() {
         />
 
         {/* Activation Action */}
-        {selectedRfid && selectedRfid.attendee && (
+        {selectedRfid && selectedRfid.attendee_id && selectedRfid.attendee && (
           <Card>
             <CardContent className="pt-6">
               <div className="text-center space-y-4">

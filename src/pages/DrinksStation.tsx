@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RfidScanner } from "@/components/RfidScanner";
+import { rfidService } from "@/services/rfidService";
 
 interface RfidTag {
   uid: string;
@@ -21,6 +22,7 @@ export default function DrinksStation() {
   const [selectedRfid, setSelectedRfid] = useState<RfidTag | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [drinkCount, setDrinkCount] = useState(0);
+  const [attendeeReadiness, setAttendeeReadiness] = useState<{ isReady: boolean; message: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -33,8 +35,19 @@ export default function DrinksStation() {
   const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
     if (rfidData.attendee_id) {
-      await loadDrinkCount(rfidData.attendee_id);
-      await handleDrinkScan(rfidData);
+      // Check if attendee is ready for station services
+      const readiness = await rfidService.checkAttendeeReadiness(rfidData.attendee_id);
+      setAttendeeReadiness(readiness);
+      
+      if (readiness.isReady) {
+        await loadDrinkCount(rfidData.attendee_id);
+      } else {
+        toast({
+          title: "Service Not Available",
+          description: readiness.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -123,6 +136,14 @@ export default function DrinksStation() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
+                {!attendeeReadiness?.isReady && attendeeReadiness && (
+                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
+                    <p className="text-sm text-destructive font-medium">
+                      {attendeeReadiness.message}
+                    </p>
+                  </div>
+                )}
+                
                 {/* Drink Counter Display */}
                 <div className="p-8 bg-muted rounded-lg">
                   <div className="text-6xl font-bold text-primary mb-2">
@@ -135,12 +156,14 @@ export default function DrinksStation() {
 
                 <Button
                   onClick={() => handleDrinkScan()}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !attendeeReadiness?.isReady}
                   size="lg"
                   className="w-full h-16 text-lg"
                 >
                   {isProcessing ? (
                     "Processing..."
+                  ) : !attendeeReadiness?.isReady ? (
+                    "Service Not Available"
                   ) : (
                     <>
                       <Plus className="h-5 w-5 mr-2" />
