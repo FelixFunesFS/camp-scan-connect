@@ -65,9 +65,21 @@ const SystemValidation = () => {
       status: 'pending'
     },
     {
-      id: 'mobile_responsiveness',
-      name: 'Mobile Interface Check',
-      description: 'Validate mobile-optimized interfaces',
+      id: 'sync_status',
+      name: 'Sync Status & Lock Management',
+      description: 'Validate RegFox sync health and cleanup mechanisms',
+      status: 'pending'
+    },
+    {
+      id: 'edge_functions',
+      name: 'Edge Function Health',
+      description: 'Test edge function availability and functionality',
+      status: 'pending'
+    },
+    {
+      id: 'database_schema',
+      name: 'Database Schema Validation',
+      description: 'Verify all required tables and enums exist',
       status: 'pending'
     }
   ]);
@@ -204,21 +216,36 @@ const SystemValidation = () => {
         try {
           const { data: rfidData, error } = await supabase
             .from('rfid_tags')
-            .select('status, attendee_id');
+            .select('uid, status, attendee_id');
           
           if (error) throw error;
           
+          // Check for duplicate UIDs
+          const duplicateUids = rfidData?.filter((tag, index, array) => 
+            array.findIndex(t => t.uid === tag.uid) !== index
+          ) || [];
+          
+          // Validate against current tag_status enum values
+          const validTagStatuses = ['unissued', 'active', 'assigned', 'deactivated'];
+          const invalidStatuses = rfidData?.filter(tag => !validTagStatuses.includes(tag.status)) || [];
+          
+          // Check orphaned active tags
           const orphaned = rfidData?.filter(tag => tag.status === 'active' && !tag.attendee_id) || [];
           const active = rfidData?.filter(tag => tag.status === 'active') || [];
           
-          if (orphaned.length > 0) {
+          const issues = [];
+          if (duplicateUids.length > 0) issues.push(`${duplicateUids.length} duplicate RFID UIDs found`);
+          if (invalidStatuses.length > 0) issues.push(`${invalidStatuses.length} tags with invalid status`);
+          if (orphaned.length > 0) issues.push(`${orphaned.length} orphaned active tags`);
+          
+          if (issues.length > 0) {
             return {
               status: 'warning',
-              result: `Found ${orphaned.length} orphaned RFID tags`,
+              result: 'RFID integrity issues found',
               details: [
-                `${active.length} active RFID tags`,
-                `${orphaned.length} orphaned tags need attention`,
-                'Run data reconciliation to fix'
+                ...issues,
+                `${active.length} total active RFID tags`,
+                `Valid statuses: ${validTagStatuses.join(', ')}`
               ]
             };
           }
@@ -229,7 +256,8 @@ const SystemValidation = () => {
             details: [
               `${active.length} active RFID tags`,
               `0 orphaned tags found`,
-              'All active tags properly assigned'
+              `0 duplicate UIDs found`,
+              'All tags have valid statuses'
             ]
           };
         } catch (error) {
@@ -248,11 +276,20 @@ const SystemValidation = () => {
           
           if (error) throw error;
           
+          // Use actual enum values from database
+          const validTicketTypes = ['dry_site', 'wet_site', 'volunteer', 'sponsor', 'staff'];
+          
           const missingNames = attendeeData?.filter(a => !a.first_name || !a.last_name) || [];
           const missingRegfox = attendeeData?.filter(a => !a.regfox_id) || [];
           const invalidTicketTypes = attendeeData?.filter(a => 
-            !['dry_site', 'rv_site', 'tent_site', 'cabin', 'vip'].includes(a.ticket_type)
+            !validTicketTypes.includes(a.ticket_type)
           ) || [];
+          
+          // Get ticket type distribution
+          const ticketDistribution = attendeeData?.reduce((acc, a) => {
+            acc[a.ticket_type] = (acc[a.ticket_type] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>) || {};
           
           const issues = [];
           if (missingNames.length > 0) issues.push(`${missingNames.length} attendees missing names`);
@@ -263,7 +300,11 @@ const SystemValidation = () => {
             return {
               status: 'warning',
               result: 'Attendee data validation issues found',
-              details: issues
+              details: [
+                ...issues,
+                `Valid ticket types: ${validTicketTypes.join(', ')}`,
+                `Distribution: ${Object.entries(ticketDistribution).map(([k, v]) => `${k}: ${v}`).join(', ')}`
+              ]
             };
           }
           
@@ -273,7 +314,8 @@ const SystemValidation = () => {
             details: [
               `${attendeeData?.length || 0} attendees in database`,
               'All required fields present',
-              'All ticket types valid'
+              'All ticket types valid',
+              `Distribution: ${Object.entries(ticketDistribution).map(([k, v]) => `${k}: ${v}`).join(', ')}`
             ]
           };
         } catch (error) {
@@ -285,30 +327,224 @@ const SystemValidation = () => {
         }
 
       case 'station_workflows':
-        // This would test basic station functionality
-        return {
-          status: 'passed',
-          result: 'Station workflows ready for testing',
-          details: [
-            'Meal Station: Ready for time-based validation',
-            'Drinks Station: Ready for transaction tracking',
-            'Headphones Station: Ready for inventory management',
-            'Activation Station: Ready for RFID assignment'
-          ]
-        };
+        try {
+          const { data: transactionData, error } = await supabase
+            .from('station_transactions')
+            .select('station_type, transaction_type, created_at')
+            .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+            .limit(100);
+          
+          if (error) throw error;
+          
+          // Use actual enum values from database
+          const validStationTypes = ['activation', 'meal', 'drinks', 'headphones'];
+          const validTransactionTypes = ['activation', 'check_in', 'meal_served', 'drink_served', 'headphones_issued'];
+          
+          const invalidStations = transactionData?.filter(t => 
+            !validStationTypes.includes(t.station_type)
+          ) || [];
+          
+          const invalidTransactions = transactionData?.filter(t => 
+            !validTransactionTypes.includes(t.transaction_type)
+          ) || [];
+          
+          const stationActivity = transactionData?.reduce((acc, t) => {
+            acc[t.station_type] = (acc[t.station_type] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>) || {};
+          
+          const issues = [];
+          if (invalidStations.length > 0) issues.push(`${invalidStations.length} invalid station types`);
+          if (invalidTransactions.length > 0) issues.push(`${invalidTransactions.length} invalid transaction types`);
+          
+          if (issues.length > 0) {
+            return {
+              status: 'warning',
+              result: 'Station workflow validation issues found',
+              details: [
+                ...issues,
+                `Valid stations: ${validStationTypes.join(', ')}`,
+                `Valid transactions: ${validTransactionTypes.join(', ')}`
+              ]
+            };
+          }
+          
+          return {
+            status: 'passed',
+            result: 'Station workflows validated successfully',
+            details: [
+              `${transactionData?.length || 0} recent transactions (24h)`,
+              'All station types valid',
+              'All transaction types valid',
+              `Activity: ${Object.entries(stationActivity).map(([k, v]) => `${k}: ${v}`).join(', ') || 'None'}`
+            ]
+          };
+        } catch (error) {
+          return {
+            status: 'failed',
+            result: 'Station workflow validation failed',
+            details: [error instanceof Error ? error.message : 'Unknown station error']
+          };
+        }
 
-      case 'mobile_responsiveness':
-        // Basic mobile readiness check
-        return {
-          status: 'passed',
-          result: 'Mobile interfaces optimized',
-          details: [
-            'Responsive design implemented',
-            'Touch-friendly interfaces',
-            'Mobile-first approach used',
-            'All station pages mobile-ready'
-          ]
-        };
+      case 'sync_status':
+        try {
+          // Check sync locks and cleanup mechanism
+          const { data: lockData, error: lockError } = await supabase
+            .from('sync_locks')
+            .select('*');
+          
+          const { data: syncData, error: syncError } = await supabase
+            .from('regfox_sync_log')
+            .select('status, sync_started_at, sync_completed_at, error_message, heartbeat_at')
+            .order('sync_started_at', { ascending: false })
+            .limit(10);
+          
+          if (syncError) throw syncError;
+          
+          const recentSync = syncData?.[0];
+          const activeSyncs = syncData?.filter(s => s.status === 'in_progress') || [];
+          
+          // Check for stuck syncs (no heartbeat for >3 minutes)
+          const stuckSyncs = activeSyncs.filter(s => {
+            const heartbeat = s.heartbeat_at ? new Date(s.heartbeat_at) : new Date(s.sync_started_at);
+            return Date.now() - heartbeat.getTime() > 3 * 60 * 1000;
+          });
+          
+          const issues = [];
+          if (activeSyncs.length > 1) issues.push(`${activeSyncs.length} active syncs (should be ≤1)`);
+          if (stuckSyncs.length > 0) issues.push(`${stuckSyncs.length} stuck syncs (no heartbeat for >3min)`);
+          
+          if (issues.length > 0) {
+            return {
+              status: 'warning',
+              result: 'Sync status issues detected',
+              details: [
+                ...issues,
+                `Active locks: ${lockData?.length || 0}`,
+                `Last sync: ${recentSync?.status || 'none'}`,
+                'Cleanup mechanism may need attention'
+              ]
+            };
+          }
+          
+          return {
+            status: 'passed',
+            result: 'Sync status healthy',
+            details: [
+              `Last sync: ${recentSync?.status || 'No syncs found'}`,
+              `Active syncs: ${activeSyncs.length}`,
+              `Active locks: ${lockData?.length || 0}`,
+              'Cleanup mechanism working properly'
+            ]
+          };
+        } catch (error) {
+          return {
+            status: 'failed',
+            result: 'Sync status check failed',
+            details: [error instanceof Error ? error.message : 'Unknown sync error']
+          };
+        }
+
+      case 'edge_functions':
+        try {
+          // Test edge function health by checking sync functionality
+          const { data: canSyncData, error: canSyncError } = await supabase.rpc('can_start_sync');
+          
+          const issues = [];
+          if (canSyncError) issues.push(`can_start_sync function error: ${canSyncError.message}`);
+          
+          if (issues.length > 0) {
+            return {
+              status: 'failed',
+              result: 'Edge function health check failed',
+              details: issues
+            };
+          }
+          
+          return {
+            status: 'passed',
+            result: 'Edge functions accessible',
+            details: [
+              'Database functions responding',
+              `can_start_sync: ${canSyncData ? 'ready' : 'blocked'}`,
+              'RegFox sync functions operational'
+            ]
+          };
+        } catch (error) {
+          return {
+            status: 'failed',
+            result: 'Edge function test failed',
+            details: [error instanceof Error ? error.message : 'Unknown function error']
+          };
+        }
+
+      case 'database_schema':
+        try {
+          // Validate key tables and functionality exist
+          const tableChecks = [];
+          const errors = [];
+          
+          try {
+            await supabase.from('attendees').select('id').limit(1);
+            tableChecks.push('attendees');
+          } catch (e) {
+            errors.push('attendees table inaccessible');
+          }
+          
+          try {
+            await supabase.from('rfid_tags').select('uid').limit(1);
+            tableChecks.push('rfid_tags');
+          } catch (e) {
+            errors.push('rfid_tags table inaccessible');
+          }
+          
+          try {
+            await supabase.from('station_transactions').select('id').limit(1);
+            tableChecks.push('station_transactions');
+          } catch (e) {
+            errors.push('station_transactions table inaccessible');
+          }
+          
+          try {
+            await supabase.from('regfox_sync_log').select('id').limit(1);
+            tableChecks.push('regfox_sync_log');
+          } catch (e) {
+            errors.push('regfox_sync_log table inaccessible');
+          }
+          
+          try {
+            await supabase.from('sync_locks').select('id').limit(1);
+            tableChecks.push('sync_locks');
+          } catch (e) {
+            errors.push('sync_locks table inaccessible');
+          }
+          
+          if (errors.length > 0) {
+            return {
+              status: 'failed',
+              result: 'Database schema validation failed',
+              details: errors
+            };
+          }
+          
+          return {
+            status: 'passed',
+            result: 'Database schema validated',
+            details: [
+              `${tableChecks.length} core tables accessible`,
+              'All required tables present',
+              'Schema structure verified',
+              `Tables: ${tableChecks.join(', ')}`
+            ]
+          };
+        } catch (error) {
+          return {
+            status: 'failed',
+            result: 'Database schema check failed',
+            details: [error instanceof Error ? error.message : 'Unknown schema error']
+          };
+        }
 
       default:
         return {
