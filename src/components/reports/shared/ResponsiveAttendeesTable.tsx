@@ -17,7 +17,9 @@ import {
   Users,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Hash,
+  ShoppingCart
 } from "lucide-react";
 import { EnhancedAttendee, TableColumn } from "../CheckInManagementTab";
 
@@ -235,6 +237,26 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
           </Badge>
         );
       
+      case 'regfox_id':
+        return (
+          <div className="flex items-center gap-2">
+            <Hash className="w-3 h-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {String(attendee.regfox_id || 'N/A')}
+            </span>
+          </div>
+        );
+      
+      case 'order_id':
+        return (
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="w-3 h-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {String(attendee.order_id || 'N/A')}
+            </span>
+          </div>
+        );
+      
       default:
         const value = attendee[columnKey];
         return value ? String(value) : '-';
@@ -299,8 +321,14 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                         </h3>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                           <User className="h-3 w-3" />
-                          {attendee.regfox_id || 'No ID'}
+                          RegFox: {attendee.regfox_id || 'No ID'}
                         </div>
+                        {attendee.order_id && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <ShoppingCart className="h-3 w-3" />
+                            Order: {attendee.order_id}
+                          </div>
+                        )}
                       </div>
                       {renderCellContent(attendee, 'overall_status')}
                     </div>

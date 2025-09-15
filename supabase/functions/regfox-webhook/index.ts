@@ -193,7 +193,8 @@ serve(async (req) => {
             last_name: lastName,
             email: email,
             phone: phone || null,
-            regfox_id: registrant.id
+            regfox_id: registrant.id,
+            order_id: payload.data.id || null
           };
           attendeeId = registrant.id;
         }
@@ -416,6 +417,7 @@ serve(async (req) => {
           // Complete attendee data with all enhanced fields
           const completeAttendeeData = {
             ...attendeeData,
+            order_id: payload.data.id || attendeeData.order_id || null,
             ticket_type: ticketType,
             registration_status: registrationStatus,
             is_veteran: isVeteran,

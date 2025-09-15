@@ -454,6 +454,7 @@ serve(async (req) => {
 
           const attendeeData = {
             regfox_id: regfoxAttendee.id,
+            order_id: regfoxAttendee.orderId || null,
             first_name: firstName,
             last_name: lastName,
             email: email,

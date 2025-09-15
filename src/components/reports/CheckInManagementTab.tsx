@@ -24,6 +24,7 @@ export interface EnhancedAttendee {
   email: string;
   phone: string;
   regfox_id: string;
+  order_id?: string | null;
   ticket_type: string;
   meal_plan: string;
   waiver_signed: boolean;
@@ -79,6 +80,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'email', label: 'Email', desktop: true, width: 'min-w-48', sortable: true },
     { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
     { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'order_id', label: 'Order ID', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'rfid_uid', label: 'RFID UID', desktop: true, width: 'min-w-24' },
     { key: 'overall_status', label: 'Check-In Status', mobile: true, desktop: true, width: 'min-w-28' },
     { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-32' },

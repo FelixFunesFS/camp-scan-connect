@@ -74,6 +74,7 @@ export type Database = {
           meal_plan: string | null
           military_branch: string | null
           notes: string | null
+          order_id: string | null
           override_early_checkin: boolean | null
           phone: string | null
           postal_code: string | null
@@ -112,6 +113,7 @@ export type Database = {
           meal_plan?: string | null
           military_branch?: string | null
           notes?: string | null
+          order_id?: string | null
           override_early_checkin?: boolean | null
           phone?: string | null
           postal_code?: string | null
@@ -150,6 +152,7 @@ export type Database = {
           meal_plan?: string | null
           military_branch?: string | null
           notes?: string | null
+          order_id?: string | null
           override_early_checkin?: boolean | null
           phone?: string | null
           postal_code?: string | null
