@@ -71,21 +71,21 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [sortField, setSortField] = useState<SortField>('updated_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    'first_name', 'ticket_type', 'meal_plan', 'overall_status', 'registration_status', 'rfid_status', 'waiver_signed'
+    'order_id', 'first_name', 'phone', 'ticket_type', 'meal_plan', 'registration_status', 'rfid_status', 'overall_status'
   ]);
   const itemsPerPage = 50;
 
   const allColumns: TableColumn[] = [
-    { key: 'first_name', label: 'Name', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'email', label: 'Email', desktop: true, width: 'min-w-48', sortable: true },
-    { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'order_id', label: 'Order ID', desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'first_name', label: 'Name', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'email', label: 'Email', desktop: true, width: 'min-w-48', sortable: true },
+    { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'rfid_uid', label: 'RFID UID', desktop: true, width: 'min-w-24' },
-    { key: 'overall_status', label: 'Check-In Status', mobile: true, desktop: true, width: 'min-w-28' },
-    { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-32' },
     { key: 'ticket_type', label: 'Ticket Type', mobile: true, desktop: true, width: 'min-w-32' },
     { key: 'meal_plan', label: 'Meal Plan', mobile: true, desktop: true, width: 'min-w-28' },
+    { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-32' },
+    { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-28' },
     { key: 'has_headphones', label: 'Has Headphones', desktop: true, width: 'min-w-32' },
     { key: 'bar_hits', label: 'Bar Hits', desktop: true, width: 'min-w-20', sortable: true },
     { key: 'waiver_signed', label: 'Waiver', mobile: true, desktop: true, width: 'min-w-20' },
@@ -93,7 +93,8 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'is_duplicate', label: 'Duplicate Status', desktop: true, width: 'min-w-24' },
     { key: 'is_phone_duplicate', label: 'Phone Duplicate', desktop: true, width: 'min-w-24' },
     { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-40' },
-    { key: 'updated_at', label: 'Last Updated', desktop: true, width: 'min-w-32', sortable: true }
+    { key: 'updated_at', label: 'Last Updated', desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'overall_status', label: 'Check-In Status', mobile: true, desktop: true, width: 'min-w-28' }
   ];
 
   const fetchAttendees = async () => {
