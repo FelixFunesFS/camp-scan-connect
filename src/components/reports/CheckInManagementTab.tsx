@@ -1,202 +1,158 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { FilterPanel } from "./shared/FilterPanel";
+import { ColumnSelector } from "./shared/ColumnSelector";
 import { ExportButton } from "./shared/ExportButton";
 import { ResponsiveAttendeesTable } from "./shared/ResponsiveAttendeesTable";
-import { ColumnSelector } from "./shared/ColumnSelector";
-import { supabase } from "@/integrations/supabase/client";
-import { Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Types
+export interface EnhancedAttendee {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  regfox_id?: string;
+  order_id?: string;
+  ticket_type: string;
+  registration_status: string;
+  checked_in_at?: string;
+  waiver_signed?: boolean;
+  rfid_uid?: string;
+  rfid_status: string;
+  has_headphones?: boolean;
+  bar_hits?: number;
+  overall_status: string;
+  arrival_day?: string;
+  is_duplicate?: boolean;
+  is_phone_duplicate?: boolean;
+  meal_plan?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TableColumn {
+  key: string;
+  label: string;
+  mobile?: boolean;
+  desktop?: boolean;
+  width?: string;
+  sortable?: boolean;
+}
 
 interface CheckInManagementTabProps {
   isRefreshing: boolean;
 }
 
-type SortField = 'name' | 'email' | 'phone' | 'regfox_id' | 'updated_at' | 'bar_hits' | 'arrival_day' | 'order_id' | 'ticket_type' | 'meal_plan' | 'registration_status' | 'rfid_status' | 'overall_status';
+interface GroupedAttendee {
+  orderId: string | null;
+  attendees: EnhancedAttendee[];
+}
+
+// Remove unused ActiveFilter type import
+type SortField = keyof EnhancedAttendee | '';
 type SortDirection = 'asc' | 'desc';
 
-export interface EnhancedAttendee {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  regfox_id: string;
-  order_id?: string | null;
-  ticket_type: string;
-  meal_plan: string;
-  waiver_signed: boolean;
-  checked_in_at: string | null;
-  arrival_window: string;
-  notes: string;
-  created_at: string;
-  updated_at: string;
-  registration_status: 'registered' | 'cancelled' | 'pending' | 'refunded' | 'waitlisted';
-  // RFID related
-  rfid_uid: string | null;
-  rfid_status: 'unissued' | 'active' | 'lost' | 'replaced' | 'deactivated';
-  // Calculated fields
-  has_headphones: boolean;
-  bar_hits: number;
-  overall_status: 'complete' | 'RFID Assigned' | 'Checked In' | 'pending';
-  arrival_day: string | null;
-  is_duplicate: boolean;
-  is_phone_duplicate: boolean;
-}
-
-interface ActiveFilter {
-  key: string;
-  value: string;
-  label: string;
-}
-
-export interface TableColumn {
-  key: keyof EnhancedAttendee;
-  label: string;
-  sortable?: boolean;
-  mobile?: boolean;
-  desktop?: boolean;
-  width?: string;
-}
-
 export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRefreshing }) => {
+  // State management
   const [attendees, setAttendees] = useState<EnhancedAttendee[]>([]);
   const [filteredAttendees, setFilteredAttendees] = useState<EnhancedAttendee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortField, setSortField] = useState<SortField>('updated_at');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [isGroupedView, setIsGroupedView] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    'order_id', 'first_name', 'phone', 'ticket_type', 'meal_plan', 'registration_status', 'rfid_status', 'overall_status'
+    'first_name', 'last_name', 'email', 'overall_status', 'rfid_status', 'checked_in_at'
   ]);
-  const itemsPerPage = 50;
 
+  const { toast } = useToast();
+
+  // Table columns configuration
   const allColumns: TableColumn[] = [
     { key: 'order_id', label: 'Order ID', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'first_name', label: 'Name', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'last_name', label: 'Last Name', desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'email', label: 'Email', mobile: true, desktop: true, width: 'min-w-48', sortable: true },
     { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'email', label: 'Email', desktop: true, width: 'min-w-48', sortable: true },
-    { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24', sortable: true },
-    { key: 'rfid_uid', label: 'RFID UID', desktop: true, width: 'min-w-24' },
-    { key: 'ticket_type', label: 'Ticket Type', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'meal_plan', label: 'Meal Plan', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
-    { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
-    { key: 'has_headphones', label: 'Has Headphones', desktop: true, width: 'min-w-32' },
-    { key: 'bar_hits', label: 'Bar Hits', desktop: true, width: 'min-w-20', sortable: true },
-    { key: 'waiver_signed', label: 'Waiver', mobile: true, desktop: true, width: 'min-w-20' },
-    { key: 'arrival_day', label: 'Arrival Day', desktop: true, width: 'min-w-28', sortable: true },
-    { key: 'is_duplicate', label: 'Duplicate Status', desktop: true, width: 'min-w-24' },
+    { key: 'ticket_type', label: 'Ticket Type', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'meal_plan', label: 'Meal Plan', desktop: true, width: 'min-w-20', sortable: true },
+    { key: 'registration_status', label: 'Registration', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'checked_in_at', label: 'Check-in Time', desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'waiver_signed', label: 'Waiver', desktop: true, width: 'min-w-20' },
+    { key: 'has_headphones', label: 'Headphones', desktop: true, width: 'min-w-24' },
+    { key: 'bar_hits', label: 'Bar Visits', desktop: true, width: 'min-w-20' },
+    { key: 'arrival_day', label: 'Arrival Day', desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'is_duplicate', label: 'Name Duplicate', desktop: true, width: 'min-w-24' },
     { key: 'is_phone_duplicate', label: 'Phone Duplicate', desktop: true, width: 'min-w-24' },
-    { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-40' },
-    { key: 'updated_at', label: 'Last Updated', desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'overall_status', label: 'Check-In Status', mobile: true, desktop: true, width: 'min-w-28', sortable: true }
+    { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24' },
+    { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-48' }
   ];
 
+  // Data fetching
   const fetchAttendees = async () => {
     try {
       setIsLoading(true);
-
-      // Fetch attendees with RFID tags and transaction counts
+      
       const { data: attendeesData, error: attendeesError } = await supabase
         .from('attendees')
-        .select(`
-          *,
-          rfid_tags (
-            uid,
-            status
-          )
-        `)
-        .order('updated_at', { ascending: false });
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (attendeesError) throw attendeesError;
 
-      // Fetch headphone transactions count for each attendee
-      const { data: headphoneData, error: headphoneError } = await supabase
+      const { data: rfidData, error: rfidError } = await supabase
+        .from('rfid_tags')
+        .select('*');
+
+      if (rfidError) throw rfidError;
+
+      const { data: transactionData, error: transactionError } = await supabase
         .from('station_transactions')
-        .select('attendee_id, transaction_type')
-        .eq('station_type', 'headphones')
-        .in('transaction_type', ['headphone_checkout', 'headphone_checkin']);
+        .select('*');
 
-      if (headphoneError) throw headphoneError;
+      if (transactionError) throw transactionError;
 
-      // Fetch bar transaction counts
-      const { data: barData, error: barError } = await supabase
-        .from('station_transactions')
-        .select('attendee_id, transaction_type')
-        .eq('station_type', 'drinks');
-
-      if (barError) throw barError;
-
-      // Create name and phone key mappings for duplicate detection
-      const nameGroups = new Map<string, number>();
-      const phoneGroups = new Map<string, number>();
-      
-      (attendeesData || []).forEach(attendee => {
-        const nameKey = `${attendee.first_name?.trim().toLowerCase()}-${attendee.last_name?.trim().toLowerCase()}`;
-        nameGroups.set(nameKey, (nameGroups.get(nameKey) || 0) + 1);
+      const processedAttendees: EnhancedAttendee[] = attendeesData.map(attendee => {
+        const rfidTag = rfidData?.find(tag => tag.attendee_id === attendee.id);
+        const transactions = transactionData?.filter(t => t.attendee_id === attendee.id) || [];
         
-        // Normalize phone number for comparison (remove spaces, dashes, parentheses)
-        if (attendee.phone) {
-          const phoneKey = attendee.phone.replace(/[\s\-\(\)]/g, '').toLowerCase();
-          if (phoneKey.length > 0) {
-            phoneGroups.set(phoneKey, (phoneGroups.get(phoneKey) || 0) + 1);
-          }
-        }
-      });
-
-      // Process the data
-      const processedAttendees: EnhancedAttendee[] = (attendeesData || []).map(attendee => {
-        const rfidTag = attendee.rfid_tags?.[0];
+        const has_headphones = transactions.some(t => 
+          t.station_type === 'headphones' && t.transaction_type === 'activate'
+        );
         
-        // Calculate headphones status
-        const headphoneTransactions = headphoneData.filter(t => t.attendee_id === attendee.id);
-        const hasCheckout = headphoneTransactions.some(t => t.transaction_type === 'headphone_checkout');
-        const hasCheckin = headphoneTransactions.some(t => t.transaction_type === 'headphone_checkin');
-        const has_headphones = hasCheckout && !hasCheckin;
+        const bar_hits = transactions.filter(t => 
+          t.station_type === 'drinks' && t.transaction_type === 'drink'
+        ).length;
 
-        // Calculate bar hits (drink transactions)
-        const bar_hits = barData.filter(t => t.attendee_id === attendee.id && t.transaction_type === 'drink').length;
-
-        // Determine overall status based on RFID workflow
-        let overall_status: 'complete' | 'RFID Assigned' | 'Checked In' | 'pending' = 'pending';
-        
-        const hasRfidAssigned = rfidTag?.uid && rfidTag?.status !== 'unissued';
-        const hasRfidActive = rfidTag?.status === 'active';
-        const isCheckedIn = !!attendee.checked_in_at;
-        
-        if (hasRfidAssigned && hasRfidActive && isCheckedIn) {
+        let overall_status = 'pending';
+        if (attendee.checked_in_at && rfidTag?.status === 'active' && attendee.waiver_signed) {
           overall_status = 'complete';
-        } else if (hasRfidAssigned && !hasRfidActive) {
-          overall_status = 'RFID Assigned';
-        } else if (isCheckedIn && !hasRfidActive) {
+        } else if (attendee.checked_in_at) {
           overall_status = 'Checked In';
+        } else if (rfidTag?.status === 'active') {
+          overall_status = 'RFID Assigned';
         }
 
-        // Determine arrival day from arrival window or notes
-        let arrival_day = null;
-        if (attendee.arrival_window === 'early') {
-          arrival_day = 'Thursday';
-        } else if (attendee.arrival_window === 'standard') {
-          arrival_day = 'Friday';
-        }
+        const arrival_day = attendee.arrival_window === 'early' ? 'Thursday' : 'Friday';
 
-        // Check if this attendee is a duplicate based on name
-        const nameKey = `${attendee.first_name?.trim().toLowerCase()}-${attendee.last_name?.trim().toLowerCase()}`;
-        const is_duplicate = (nameGroups.get(nameKey) || 0) > 1;
-        
-        // Check if this attendee is a duplicate based on phone
-        let is_phone_duplicate = false;
-        if (attendee.phone) {
-          const phoneKey = attendee.phone.replace(/[\s\-\(\)]/g, '').toLowerCase();
-          if (phoneKey.length > 0) {
-            is_phone_duplicate = (phoneGroups.get(phoneKey) || 0) > 1;
-          }
-        }
+        const duplicateEmails = attendeesData.filter(a => 
+          a.email && a.email === attendee.email && a.id !== attendee.id
+        );
+        const is_duplicate = duplicateEmails.length > 0;
+
+        const duplicatePhones = attendeesData.filter(a => 
+          a.phone && a.phone === attendee.phone && a.id !== attendee.id
+        );
+        const is_phone_duplicate = duplicatePhones.length > 0;
 
         return {
           ...attendee,
@@ -224,6 +180,11 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
 
     } catch (error) {
       console.error("Error fetching attendees:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch attendees data",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -271,143 +232,249 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     };
   }, []);
 
-  // Apply filters
-  useEffect(() => {
-    let filtered = attendees;
+  // Filter and process attendees
+  const processedAttendees = useMemo(() => {
+    const filtered = filteredAttendees.filter(attendee => {
+      // Search functionality
+      if (searchTerm) {
+        const searchFields = [
+          attendee.first_name,
+          attendee.last_name,
+          attendee.email,
+          attendee.phone,
+          attendee.regfox_id,
+          attendee.order_id
+        ];
+        
+        const matchesSearch = searchFields.some(field => 
+          field?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        if (!matchesSearch) return false;
+      }
 
-    // Apply search term
-    if (searchTerm) {
-      filtered = filtered.filter(attendee => 
-        attendee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        attendee.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        attendee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        attendee.phone?.includes(searchTerm) ||
-        attendee.regfox_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        attendee.rfid_uid?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      // Filter functionality
+      for (const [filterKey, filterValue] of Object.entries(activeFilters)) {
+        if (!filterValue) continue;
+        
+        const attendeeValue = attendee[filterKey as keyof EnhancedAttendee];
+        
+        if (filterKey === 'checked_in_at') {
+          const isCheckedIn = attendeeValue ? 'yes' : 'no';
+          if (isCheckedIn !== filterValue) return false;
+        } else if (filterKey === 'waiver_signed') {
+          const hasWaiver = attendeeValue ? 'yes' : 'no';
+          if (hasWaiver !== filterValue) return false;
+        } else if (filterKey === 'has_headphones') {
+          const hasHeadphones = attendeeValue ? 'yes' : 'no';
+          if (hasHeadphones !== filterValue) return false;
+        } else if (filterKey === 'is_duplicate') {
+          const isDuplicate = attendeeValue ? 'yes' : 'no';
+          if (isDuplicate !== filterValue) return false;
+        } else if (filterKey === 'is_phone_duplicate') {
+          const isPhoneDuplicate = attendeeValue ? 'yes' : 'no';
+          if (isPhoneDuplicate !== filterValue) return false;
+        } else {
+          if (!attendeeValue || attendeeValue.toString().toLowerCase() !== filterValue.toLowerCase()) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+
+    return filtered;
+  }, [filteredAttendees, searchTerm, activeFilters]);
+
+  // Group attendees by order_id
+  const groupedAttendees: GroupedAttendee[] = useMemo(() => {
+    const groups = new Map<string, EnhancedAttendee[]>();
+    
+    processedAttendees.forEach(attendee => {
+      const key = attendee.order_id || 'no-order';
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(attendee);
+    });
+
+    return Array.from(groups.entries()).map(([orderId, attendees]) => ({
+      orderId: orderId === 'no-order' ? null : orderId,
+      attendees
+    }));
+  }, [processedAttendees]);
+
+  // Sort functionality
+  const sortedAttendees = useMemo(() => {
+    if (isGroupedView) {
+      // Sort groups by order_id, then sort attendees within each group
+      const sortedGroups = [...groupedAttendees].sort((a, b) => {
+        const aOrderId = a.orderId || '';
+        const bOrderId = b.orderId || '';
+        return sortDirection === 'asc' 
+          ? aOrderId.localeCompare(bOrderId)
+          : bOrderId.localeCompare(aOrderId);
+      });
+
+      if (!sortField) return sortedGroups;
+
+      // Sort attendees within each group
+      return sortedGroups.map(group => ({
+        ...group,
+        attendees: [...group.attendees].sort((a, b) => {
+          let aValue, bValue;
+
+          switch (sortField) {
+            case 'first_name':
+              aValue = a.first_name?.toLowerCase() || '';
+              bValue = b.first_name?.toLowerCase() || '';
+              break;
+            case 'last_name':
+              aValue = a.last_name?.toLowerCase() || '';
+              bValue = b.last_name?.toLowerCase() || '';
+              break;
+            case 'email':
+              aValue = a.email?.toLowerCase() || '';
+              bValue = b.email?.toLowerCase() || '';
+              break;
+            case 'phone':
+              aValue = a.phone || '';
+              bValue = b.phone || '';
+              break;
+            case 'checked_in_at':
+              aValue = a.checked_in_at ? new Date(a.checked_in_at).getTime() : 0;
+              bValue = b.checked_in_at ? new Date(b.checked_in_at).getTime() : 0;
+              break;
+            case 'rfid_status':
+              aValue = a.rfid_status?.toLowerCase() || '';
+              bValue = b.rfid_status?.toLowerCase() || '';
+              break;
+            case 'overall_status':
+              aValue = a.overall_status?.toLowerCase() || '';
+              bValue = b.overall_status?.toLowerCase() || '';
+              break;
+            case 'arrival_day':
+              aValue = a.arrival_day || '';
+              bValue = b.arrival_day || '';
+              break;
+            case 'meal_plan':
+              aValue = Number(a.meal_plan) || 0;
+              bValue = Number(b.meal_plan) || 0;
+              break;
+            case 'ticket_type':
+              aValue = a.ticket_type?.toLowerCase() || '';
+              bValue = b.ticket_type?.toLowerCase() || '';
+              break;
+            case 'registration_status':
+              aValue = a.registration_status?.toLowerCase() || '';
+              bValue = b.registration_status?.toLowerCase() || '';
+              break;
+            case 'order_id':
+              aValue = a.order_id || '';
+              bValue = b.order_id || '';
+              break;
+            default:
+              aValue = '';
+              bValue = '';
+          }
+
+          if (typeof aValue === 'number' && typeof bValue === 'number') {
+            return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+          }
+
+          return sortDirection === 'asc' 
+            ? String(aValue).localeCompare(String(bValue))
+            : String(bValue).localeCompare(String(aValue));
+        })
+      }));
+    } else {
+      // Individual view - sort all attendees
+      if (!sortField) return processedAttendees;
+
+      return [...processedAttendees].sort((a, b) => {
+        let aValue, bValue;
+
+        switch (sortField) {
+          case 'first_name':
+            aValue = a.first_name?.toLowerCase() || '';
+            bValue = b.first_name?.toLowerCase() || '';
+            break;
+          case 'last_name':
+            aValue = a.last_name?.toLowerCase() || '';
+            bValue = b.last_name?.toLowerCase() || '';
+            break;
+          case 'email':
+            aValue = a.email?.toLowerCase() || '';
+            bValue = b.email?.toLowerCase() || '';
+            break;
+          case 'phone':
+            aValue = a.phone || '';
+            bValue = b.phone || '';
+            break;
+          case 'checked_in_at':
+            aValue = a.checked_in_at ? new Date(a.checked_in_at).getTime() : 0;
+            bValue = b.checked_in_at ? new Date(b.checked_in_at).getTime() : 0;
+            break;
+          case 'rfid_status':
+            aValue = a.rfid_status?.toLowerCase() || '';
+            bValue = b.rfid_status?.toLowerCase() || '';
+            break;
+          case 'overall_status':
+            aValue = a.overall_status?.toLowerCase() || '';
+            bValue = b.overall_status?.toLowerCase() || '';
+            break;
+          case 'arrival_day':
+            aValue = a.arrival_day || '';
+            bValue = b.arrival_day || '';
+            break;
+          case 'meal_plan':
+            aValue = Number(a.meal_plan) || 0;
+            bValue = Number(b.meal_plan) || 0;
+            break;
+          case 'ticket_type':
+            aValue = a.ticket_type?.toLowerCase() || '';
+            bValue = b.ticket_type?.toLowerCase() || '';
+            break;
+          case 'registration_status':
+            aValue = a.registration_status?.toLowerCase() || '';
+            bValue = b.registration_status?.toLowerCase() || '';
+            break;
+          case 'order_id':
+            aValue = a.order_id || '';
+            bValue = b.order_id || '';
+            break;
+          default:
+            aValue = '';
+            bValue = '';
+        }
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        return sortDirection === 'asc' 
+          ? String(aValue).localeCompare(String(bValue))
+          : String(bValue).localeCompare(String(aValue));
+      });
     }
+  }, [groupedAttendees, processedAttendees, sortField, sortDirection, isGroupedView]);
 
-    // Apply active filters
-    activeFilters.forEach(filter => {
-      switch (filter.key) {
-        case 'overall_status':
-          filtered = filtered.filter(a => a.overall_status === filter.value);
-          break;
-        case 'registration_status':
-          filtered = filtered.filter(a => a.registration_status === filter.value);
-          break;
-        case 'rfid_status':
-          filtered = filtered.filter(a => a.rfid_status === filter.value);
-          break;
-        case 'waiver_status':
-          if (filter.value === 'signed') {
-            filtered = filtered.filter(a => a.waiver_signed === true);
-          } else if (filter.value === 'unsigned') {
-            filtered = filtered.filter(a => a.waiver_signed !== true);
-          }
-          break;
-        case 'ticket_type':
-          filtered = filtered.filter(a => a.ticket_type === filter.value);
-          break;
-        case 'meal_plan':
-          filtered = filtered.filter(a => a.meal_plan === filter.value);
-          break;
-        case 'has_headphones':
-          filtered = filtered.filter(a => a.has_headphones === (filter.value === 'yes'));
-          break;
-        case 'arrival_window':
-          filtered = filtered.filter(a => a.arrival_window === filter.value);
-          break;
-        case 'duplicates':
-          if (filter.value === 'show_only') {
-            filtered = filtered.filter(a => a.is_duplicate === true);
-          } else if (filter.value === 'hide') {
-            filtered = filtered.filter(a => a.is_duplicate === false);
-          }
-          break;
-        case 'phone_duplicates':
-          if (filter.value === 'show_only') {
-            filtered = filtered.filter(a => a.is_phone_duplicate === true);
-          } else if (filter.value === 'hide') {
-            filtered = filtered.filter(a => a.is_phone_duplicate === false);
-          }
-          break;
-      }
-    });
+  // Pagination
+  const itemsPerPage = 50;
+  const totalItems = isGroupedView 
+    ? (sortedAttendees as GroupedAttendee[]).reduce((sum, group) => sum + group.attendees.length, 0)
+    : (sortedAttendees as EnhancedAttendee[]).length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  
+  const paginatedData = isGroupedView 
+    ? (sortedAttendees as GroupedAttendee[])
+    : (sortedAttendees as EnhancedAttendee[]).slice(startIndex, endIndex);
 
-    // Sort the filtered results
-    const sortedFiltered = filtered.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (sortField) {
-        case 'name':
-          aValue = `${a.first_name} ${a.last_name}`.toLowerCase();
-          bValue = `${b.first_name} ${b.last_name}`.toLowerCase();
-          break;
-        case 'email':
-          aValue = a.email?.toLowerCase() || '';
-          bValue = b.email?.toLowerCase() || '';
-          break;
-        case 'phone':
-          aValue = a.phone || '';
-          bValue = b.phone || '';
-          break;
-        case 'regfox_id':
-          aValue = a.regfox_id || '';
-          bValue = b.regfox_id || '';
-          break;
-        case 'updated_at':
-          aValue = new Date(a.updated_at || 0).getTime();
-          bValue = new Date(b.updated_at || 0).getTime();
-          break;
-        case 'bar_hits':
-          aValue = a.bar_hits || 0;
-          bValue = b.bar_hits || 0;
-          break;
-        case 'arrival_day':
-          aValue = a.arrival_day || '';
-          bValue = b.arrival_day || '';
-          break;
-        case 'meal_plan':
-          aValue = Number(a.meal_plan) || 0;
-          bValue = Number(b.meal_plan) || 0;
-          break;
-        case 'ticket_type':
-          aValue = a.ticket_type?.toLowerCase() || '';
-          bValue = b.ticket_type?.toLowerCase() || '';
-          break;
-        case 'registration_status':
-          aValue = a.registration_status?.toLowerCase() || '';
-          bValue = b.registration_status?.toLowerCase() || '';
-          break;
-        case 'rfid_status':
-          aValue = a.rfid_status?.toLowerCase() || '';
-          bValue = b.rfid_status?.toLowerCase() || '';
-          break;
-        case 'overall_status':
-          aValue = a.overall_status?.toLowerCase() || '';
-          bValue = b.overall_status?.toLowerCase() || '';
-          break;
-        case 'order_id':
-          aValue = a.order_id || '';
-          bValue = b.order_id || '';
-          break;
-        default:
-          aValue = '';
-          bValue = '';
-      }
-
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    setFilteredAttendees(sortedFiltered);
-    setCurrentPage(1);
-  }, [attendees, searchTerm, activeFilters, sortField, sortDirection]);
-
-  const handleSort = (field: SortField) => {
+  // Sort handler
+  const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -416,232 +483,191 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     }
   };
 
-  const handleResetSort = () => {
-    setSortField(null);
-    setSortDirection('asc');
-  };
-
+  // Filter options
   const filterOptions = [
     {
-      key: "overall_status",
-      label: "Check-In Status",
-      type: "select" as const,
+      key: 'registration_status',
+      label: 'Registration Status',
+      options: [...new Set(attendees.map(a => a.registration_status).filter(Boolean))].map(status => ({
+        label: status.charAt(0).toUpperCase() + status.slice(1),
+        value: status
+      }))
+    },
+    {
+      key: 'ticket_type',
+      label: 'Ticket Type',
+      options: [...new Set(attendees.map(a => a.ticket_type).filter(Boolean))].map(type => ({
+        label: type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        value: type
+      }))
+    },
+    {
+      key: 'overall_status',
+      label: 'Overall Status',
+      options: [...new Set(attendees.map(a => a.overall_status).filter(Boolean))].map(status => ({
+        label: status,
+        value: status
+      }))
+    },
+    {
+      key: 'rfid_status',
+      label: 'RFID Status',
+      options: [...new Set(attendees.map(a => a.rfid_status).filter(Boolean))].map(status => ({
+        label: status.charAt(0).toUpperCase() + status.slice(1),
+        value: status
+      }))
+    },
+    {
+      key: 'checked_in_at',
+      label: 'Check-in Status',
       options: [
-        { value: "complete", label: "Complete" },
-        { value: "RFID Assigned", label: "RFID Assigned" },
-        { value: "Checked In", label: "Checked In" },
-        { value: "pending", label: "Pending" }
+        { label: 'Checked In', value: 'yes' },
+        { label: 'Not Checked In', value: 'no' }
       ]
     },
     {
-      key: "registration_status",
-      label: "Registration Status",
-      type: "select" as const,
+      key: 'waiver_signed',
+      label: 'Waiver Status',
       options: [
-        { value: "registered", label: "Registered" },
-        { value: "cancelled", label: "Cancelled" },
-        { value: "pending", label: "Pending" },
-        { value: "refunded", label: "Refunded" },
-        { value: "waitlisted", label: "Waitlisted" }
+        { label: 'Signed', value: 'yes' },
+        { label: 'Not Signed', value: 'no' }
       ]
     },
     {
-      key: "rfid_status",
-      label: "RFID Status",
-      type: "select" as const,
+      key: 'has_headphones',
+      label: 'Headphones',
       options: [
-        { value: "active", label: "Active" },
-        { value: "deactivated", label: "Deactivated" },
-        { value: "lost", label: "Lost" },
-        { value: "replaced", label: "Replaced" },
-        { value: "unissued", label: "Unissued" }
+        { label: 'Has Headphones', value: 'yes' },
+        { label: 'No Headphones', value: 'no' }
       ]
     },
     {
-      key: "waiver_status",
-      label: "Waiver Status",
-      type: "select" as const,
+      key: 'is_duplicate',
+      label: 'Name Duplicates',
       options: [
-        { value: "signed", label: "Signed" },
-        { value: "unsigned", label: "Unsigned" }
+        { label: 'Has Duplicate', value: 'yes' },
+        { label: 'No Duplicate', value: 'no' }
       ]
     },
     {
-      key: "ticket_type",
-      label: "Ticket Type",
-      type: "select" as const,
+      key: 'is_phone_duplicate',
+      label: 'Phone Duplicates',
       options: [
-        { value: "dry_site", label: "Dry Site" },
-        { value: "premium_power", label: "Premium Power" },
-        { value: "glamping", label: "Glamping" },
-        { value: "cabin", label: "Cabin" },
-        { value: "rv_site", label: "RV Site" },
-        { value: "day_pass", label: "Day Pass" },
-        { value: "staff", label: "Staff" },
-        { value: "vendor", label: "Vendor" }
-      ]
-    },
-    {
-      key: "meal_plan",
-      label: "Meal Plan",
-      type: "select" as const,
-      options: [
-        { value: "Yes", label: "Yes" },
-        { value: "No", label: "No" }
-      ]
-    },
-    {
-      key: "has_headphones",
-      label: "Has Headphones",
-      type: "select" as const,
-      options: [
-        { value: "yes", label: "Yes" },
-        { value: "no", label: "No" }
-      ]
-    },
-    {
-      key: "arrival_window",
-      label: "Arrival Window",
-      type: "select" as const,
-      options: [
-        { value: "early", label: "Early Access" },
-        { value: "standard", label: "Standard" }
-      ]
-    },
-    {
-      key: "duplicates",
-      label: "Duplicate Names",
-      type: "select" as const,
-      options: [
-        { value: "show_only", label: "Show Only Duplicates" },
-        { value: "hide", label: "Hide Duplicates" }
-      ]
-    },
-    {
-      key: "phone_duplicates",
-      label: "Duplicate Phone Numbers",
-      type: "select" as const,
-      options: [
-        { value: "show_only", label: "Show Only Duplicates" },
-        { value: "hide", label: "Hide Duplicates" }
+        { label: 'Has Duplicate', value: 'yes' },
+        { label: 'No Duplicate', value: 'no' }
       ]
     }
   ];
 
   const handleFilterChange = (key: string, value: string) => {
-    if (!value) {
-      handleClearFilter(key);
-      return;
-    }
-
-    const label = filterOptions.find(f => f.key === key)?.options?.find(o => o.value === value)?.label || value;
-    
-    setActiveFilters(prev => [
-      ...prev.filter(f => f.key !== key),
-      { key, value, label: `${filterOptions.find(f => f.key === key)?.label}: ${label}` }
-    ]);
+    setActiveFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
   };
 
   const handleClearFilter = (key: string) => {
-    setActiveFilters(prev => prev.filter(f => f.key !== key));
+    setActiveFilters(prev => {
+      const newFilters = { ...prev };
+      delete newFilters[key];
+      return newFilters;
+    });
   };
 
   const handleClearAllFilters = () => {
-    setActiveFilters([]);
-    setSearchTerm("");
+    setActiveFilters({});
+    setCurrentPage(1);
   };
 
-  // Pagination
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedAttendees = filteredAttendees.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(filteredAttendees.length / itemsPerPage);
-
-  const exportData = filteredAttendees.map(attendee => ({
-    name: `${attendee.first_name} ${attendee.last_name}`,
-    phone: attendee.phone,
-    email: attendee.email,
-    regfoxId: attendee.regfox_id,
-    rfidUid: attendee.rfid_uid || '',
-    status: attendee.overall_status,
-    ticketType: attendee.ticket_type,
-    mealPlan: attendee.meal_plan,
-    hasHeadphones: attendee.has_headphones ? 'Yes' : 'No',
-    barHits: attendee.bar_hits,
-    waiverSigned: attendee.waiver_signed ? 'Yes' : 'No',
-    arrivalDay: attendee.arrival_day || '',
-    notes: attendee.notes,
-    lastUpdated: new Date(attendee.updated_at).toLocaleDateString()
+  // Export data preparation
+  const exportData = processedAttendees.map(attendee => ({
+    'Order ID': attendee.order_id || '',
+    'First Name': attendee.first_name,
+    'Last Name': attendee.last_name,
+    'Email': attendee.email || '',
+    'Phone': attendee.phone || '',
+    'Ticket Type': attendee.ticket_type,
+    'Meal Plan': attendee.meal_plan || '',
+    'Registration Status': attendee.registration_status,
+    'Overall Status': attendee.overall_status,
+    'RFID Status': attendee.rfid_status,
+    'RFID UID': attendee.rfid_uid || '',
+    'Checked In': attendee.checked_in_at ? 'Yes' : 'No',
+    'Check-in Time': attendee.checked_in_at || '',
+    'Waiver Signed': attendee.waiver_signed ? 'Yes' : 'No',
+    'Has Headphones': attendee.has_headphones ? 'Yes' : 'No',
+    'Bar Visits': attendee.bar_hits || 0,
+    'Arrival Day': attendee.arrival_day || '',
+    'Name Duplicate': attendee.is_duplicate ? 'Yes' : 'No',
+    'Phone Duplicate': attendee.is_phone_duplicate ? 'Yes' : 'No',
+    'RegFox ID': attendee.regfox_id || '',
+    'Notes': attendee.notes || ''
   }));
 
   return (
-    <div className="space-y-6" data-export-target>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-primary">Check-In Management</h2>
-          <p className="text-muted-foreground">
-            {filteredAttendees.length.toLocaleString()} of {attendees.length.toLocaleString()} attendees
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <ColumnSelector
-            columns={allColumns}
-            visibleColumns={visibleColumns}
-            onVisibleColumnsChange={setVisibleColumns}
-          />
-          <ExportButton 
-            data={exportData}
-            filename="checkin-management"
-            title="Check-In Management Report"
-          />
-        </div>
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold">Check-In Management</h2>
+        <p className="text-muted-foreground mt-2">
+          Track attendee check-ins, RFID assignments, and overall status
+        </p>
       </div>
 
-      {/* Search and Filters */}
       <div className="space-y-4">
-        <Card className="border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Search Attendees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex gap-2 items-center">
               <Input
-                placeholder="Search by name, email, phone, RegFox ID, or RFID UID..."
+                placeholder="Search attendees..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="max-w-sm"
               />
+              
+              <Button
+                variant={isGroupedView ? "default" : "outline"}
+                onClick={() => setIsGroupedView(!isGroupedView)}
+                className="whitespace-nowrap"
+              >
+                {isGroupedView ? "Group View" : "Individual View"}
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+            
+            <div className="flex gap-2">
+              <ColumnSelector
+                columns={allColumns}
+                visibleColumns={visibleColumns}
+                onVisibleColumnsChange={setVisibleColumns}
+              />
+              <ExportButton data={exportData} filename="checkin-management-report" />
+            </div>
+          </div>
 
-        <FilterPanel
-          filters={filterOptions}
-          activeFilters={activeFilters}
-          onFilterChange={handleFilterChange}
-          onClearFilter={handleClearFilter}
-          onClearAll={handleClearAllFilters}
-        />
+          <FilterPanel
+            filterOptions={filterOptions}
+            activeFilters={activeFilters}
+            onFilterChange={handleFilterChange}
+            onClearFilter={handleClearFilter}
+            onClearAllFilters={handleClearAllFilters}
+          />
+
+          <ResponsiveAttendeesTable
+            attendees={isGroupedView ? [] : (paginatedData as EnhancedAttendee[])}
+            groupedAttendees={isGroupedView ? (paginatedData as GroupedAttendee[]) : []}
+            isGroupedView={isGroupedView}
+            columns={allColumns}
+            visibleColumns={visibleColumns}
+            isLoading={isLoading}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            startIndex={startIndex + 1}
+            endIndex={endIndex}
+            totalCount={totalItems}
+            onPageChange={setCurrentPage}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+          />
+        </div>
       </div>
-
-      {/* Results Table */}
-      <ResponsiveAttendeesTable
-        attendees={paginatedAttendees}
-        columns={allColumns}
-        visibleColumns={visibleColumns}
-        isLoading={isLoading}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        startIndex={startIndex}
-        endIndex={endIndex}
-        totalCount={filteredAttendees.length}
-        onPageChange={setCurrentPage}
-        sortField={sortField}
-        sortDirection={sortDirection}
-        onSort={handleSort}
-      />
     </div>
   );
 };
