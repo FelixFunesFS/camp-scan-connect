@@ -357,7 +357,9 @@ serve(async (req) => {
                   
                   // Check if the value indicates a purchase
                   const value = field.fieldValue.trim();
-                  if (value !== '' && value !== '0' && value.toLowerCase() !== 'false') {
+                  // Handle "X of Y" patterns (e.g., "0 of 1", "1 of 1") as purchases
+                  const ofPattern = /^\d+\s+of\s+\d+$/i.test(value);
+                  if (value !== '' && (ofPattern || (value !== '0' && value.toLowerCase() !== 'false'))) {
                     console.log(`Webhook - Additional Night detected via exact field: ${exactField} = ${value}`);
                     return true;
                   }

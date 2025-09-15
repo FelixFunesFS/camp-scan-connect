@@ -225,7 +225,9 @@ serve(async (req) => {
             console.log(`Sync - Found exact Additional Night field "${fieldName}": ${value}`);
             
             // Check if the value indicates a purchase
-            if (value && value.trim() !== '' && value !== '0' && value.toLowerCase() !== 'false') {
+            // Handle "X of Y" patterns (e.g., "0 of 1", "1 of 1") as purchases
+            const ofPattern = /^\d+\s+of\s+\d+$/i.test(value.trim());
+            if (value && value.trim() !== '' && (ofPattern || (value !== '0' && value.toLowerCase() !== 'false'))) {
               console.log(`Sync - Additional Night detected via exact field: ${fieldName} = ${value}`);
               return true;
             }
