@@ -409,6 +409,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_stuck_syncs: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_daily_transaction_count: {
         Args: {
           p_attendee_id: string

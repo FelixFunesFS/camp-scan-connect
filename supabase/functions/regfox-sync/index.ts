@@ -60,6 +60,10 @@ serve(async (req) => {
 
     console.log('Starting RegFox sync...');
 
+    // First, run cleanup to clear any stuck syncs
+    console.log('Running pre-sync cleanup...');
+    await supabase.functions.invoke('regfox-cleanup');
+
     // Check if sync can start (no active syncs or locks)
     const { data: canStart, error: lockCheckError } = await supabase.rpc('can_start_sync');
     
@@ -86,7 +90,7 @@ serve(async (req) => {
         status: 'in_progress',
         sync_started_at: new Date().toISOString(),
         heartbeat_at: new Date().toISOString(),
-        sync_timeout_minutes: 20
+        sync_timeout_minutes: 3
       })
       .select()
       .single();
@@ -99,7 +103,7 @@ serve(async (req) => {
     // Acquire sync lock
     const { data: lockId, error: lockError } = await supabase.rpc('acquire_sync_lock', {
       p_sync_id: syncLog.id,
-      p_timeout_minutes: 20
+      p_timeout_minutes: 3
     });
 
     if (lockError || !lockId) {
@@ -148,6 +152,34 @@ serve(async (req) => {
     };
 
     let lastHeartbeat = Date.now();
+
+    // Self-cleanup background task that runs even if function crashes
+    const selfCleanupTask = async () => {
+      await new Promise(resolve => setTimeout(resolve, 3 * 60 * 1000)); // Wait 3 minutes
+      try {
+        console.log('Self-cleanup task triggered for sync:', syncLog.id);
+        await supabase.functions.invoke('regfox-cleanup');
+      } catch (error) {
+        console.error('Self-cleanup task error:', error);
+      }
+    };
+
+    // Start the self-cleanup background task
+    // @ts-ignore - EdgeRuntime.waitUntil is available in Supabase edge functions
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(selfCleanupTask());
+    }
+
+    // Heartbeat monitoring - update every 30 seconds
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        await updateHeartbeat();
+        console.log('Heartbeat updated for sync:', syncLog.id);
+      } catch (error) {
+        console.error('Heartbeat update error:', error);
+      }
+    }, 30000);
 
     try {
       // First, test API key with ping endpoint
@@ -725,7 +757,8 @@ serve(async (req) => {
         console.error('Error updating sync log:', updateSyncLogError);
       }
 
-      // Release sync lock
+      // Clear heartbeat interval and release sync lock
+      clearInterval(heartbeatInterval);
       await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
 
       console.log('RegFox sync completed:', syncResult);
@@ -739,7 +772,8 @@ serve(async (req) => {
       });
 
     } catch (error) {
-      // Release sync lock on error
+      // Clear heartbeat interval and release sync lock on error
+      clearInterval(heartbeatInterval);
       await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
       
       // Update sync log with error

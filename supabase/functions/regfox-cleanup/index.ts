@@ -36,15 +36,15 @@ serve(async (req) => {
     await supabase.rpc('cleanup_expired_locks');
     console.log('Cleaned up expired locks');
 
-    // 2. Find and force-complete stuck syncs (in progress for more than 30 minutes)
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    // 2. Find and force-complete stuck syncs (in progress for more than 3 minutes)
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
     
     const { data: stuckSyncs, error: fetchError } = await supabase
       .from('regfox_sync_log')
-      .select('id, sync_started_at, sync_type')
+      .select('id, sync_started_at, sync_type, heartbeat_at')
       .eq('status', 'in_progress')
       .is('cancelled_at', null)
-      .lt('sync_started_at', thirtyMinutesAgo);
+      .or(`sync_started_at.lt.${threeMinutesAgo},heartbeat_at.lt.${threeMinutesAgo},heartbeat_at.is.null`);
 
     if (fetchError) {
       console.error('Error fetching stuck syncs:', fetchError);
@@ -56,12 +56,12 @@ serve(async (req) => {
         .from('regfox_sync_log')
         .update({
           status: 'error',
-          error_message: 'Sync timed out after 30 minutes',
+          error_message: 'Sync timed out after 3 minutes',
           sync_completed_at: new Date().toISOString()
         })
         .eq('status', 'in_progress')
         .is('cancelled_at', null)
-        .lt('sync_started_at', thirtyMinutesAgo);
+        .or(`sync_started_at.lt.${threeMinutesAgo},heartbeat_at.lt.${threeMinutesAgo},heartbeat_at.is.null`);
 
       if (updateError) {
         console.error('Error updating stuck syncs:', updateError);

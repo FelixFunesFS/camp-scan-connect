@@ -20,6 +20,10 @@ serve(async (req) => {
 
     console.log('Manual RegFox sync triggered');
 
+    // First run cleanup to clear any stuck syncs
+    console.log('Running pre-sync cleanup...');
+    await supabase.functions.invoke('regfox-cleanup');
+
     // Call the main regfox-sync function
     const syncResponse = await supabase.functions.invoke('regfox-sync', {
       body: {}
