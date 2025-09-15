@@ -129,6 +129,17 @@ serve(async (req) => {
         }
 
         if (attendeeData && attendeeId) {
+          // ===== COMPREHENSIVE FIELD DISCOVERY LOGGING =====
+          console.log(`=== WEBHOOK FIELD DISCOVERY - ID: ${attendeeId} ===`);
+          if (payload.data.registrants && payload.data.registrants.length > 0) {
+            const registrant = payload.data.registrants[0];
+            console.log('Webhook registrant field names:', registrant.data?.map(d => d.fieldName) || []);
+            console.log('Webhook registrant full data:', JSON.stringify(registrant.data, null, 2));
+          }
+          console.log('Webhook billing data:', JSON.stringify(payload.data.billing, null, 2));
+          console.log('Webhook tickets data:', JSON.stringify(payload.data.tickets, null, 2));
+          console.log('Webhook full payload:', JSON.stringify(payload.data, null, 2));
+          console.log('=== END WEBHOOK FIELD DISCOVERY ===');
           // Enhanced ticket type mapping to match database enum and sync function logic
           const ticketTypeMap: Record<string, string> = {
             'Premium Power Site': 'premium_power',
@@ -254,51 +265,68 @@ serve(async (req) => {
           // Helper function to detect "Additional Night" purchase (Thursday early access)
           const detectAdditionalNight = (payloadData: any) => {
             console.log('Webhook - Detecting additional night from payload data...');
+            console.log('Webhook - Full payload data:', JSON.stringify(payloadData, null, 2));
+            
+            // Exact field names from RegFox form for Thursday Additional Night purchases
+            const exactAdditionalNightFields = [
+              'Additional Night (Thursday) (Tent or Van/Roof Top)',
+              'Additional Night (Thursday) (RV)',
+              'Additional Night (Thursday) (Glamping Tent)',
+              'Additional Night (Thursday) (Cabin)'
+            ];
             
             if (payloadData.registrants && payloadData.registrants.length > 0) {
               const registrant = payloadData.registrants[0];
               console.log('Webhook - Registrant data fields:', registrant.data?.map(d => d.fieldName));
               
-              // Check for various "Additional Night" related fields with comprehensive patterns
+              // Check for exact field matches first
+              for (const exactField of exactAdditionalNightFields) {
+                const field = registrant.data?.find(d => d.fieldName === exactField);
+                if (field && field.fieldValue) {
+                  console.log(`Webhook - Found exact Additional Night field "${exactField}": ${field.fieldValue}`);
+                  
+                  // Check if the value indicates a purchase
+                  const value = field.fieldValue.trim();
+                  if (value !== '' && value !== '0' && value.toLowerCase() !== 'false') {
+                    console.log(`Webhook - Additional Night detected via exact field: ${exactField} = ${value}`);
+                    return true;
+                  }
+                }
+              }
+              
+              // Fallback: Check for fields containing "Additional Night" and "Thursday"
               const additionalNightField = registrant.data?.find(d => {
                 if (!d.fieldName) return false;
-                const lowerFieldName = d.fieldName.toLowerCase();
-                return (
-                  (lowerFieldName.includes('additional') && lowerFieldName.includes('night')) ||
-                  (lowerFieldName.includes('thursday') && (lowerFieldName.includes('night') || lowerFieldName.includes('arrival'))) ||
-                  (lowerFieldName.includes('early') && lowerFieldName.includes('access')) ||
-                  lowerFieldName.includes('extra night') ||
-                  lowerFieldName.includes('additional day')
-                );
+                const fieldName = d.fieldName.toLowerCase();
+                return fieldName.includes('additional night') && fieldName.includes('thursday');
               });
               
               if (additionalNightField && additionalNightField.fieldValue) {
-                console.log(`Webhook - Found Additional Night field: ${additionalNightField.fieldName} = ${additionalNightField.fieldValue}`);
-                const stringValue = String(additionalNightField.fieldValue).toLowerCase();
-                return stringValue !== '0' && 
+                console.log(`Webhook - Found Additional Night field (fallback): ${additionalNightField.fieldName} = ${additionalNightField.fieldValue}`);
+                const stringValue = String(additionalNightField.fieldValue).toLowerCase().trim();
+                const hasValue = stringValue !== '0' && 
                        stringValue !== 'false' && 
                        stringValue !== 'no' && 
                        stringValue !== '' && 
                        stringValue !== 'null' &&
                        stringValue !== 'undefined';
+                
+                if (hasValue) {
+                  console.log(`Webhook - Additional Night detected via fallback pattern matching`);
+                  return true;
+                }
               }
             }
             
-            // Check direct payload fields for Additional Night with comprehensive patterns
-            for (const [key, value] of Object.entries(payloadData)) {
-              if (!value) continue;
-              const lowerKey = key.toLowerCase();
-              if ((lowerKey.includes('additional') && lowerKey.includes('night')) ||
-                  (lowerKey.includes('thursday') && (lowerKey.includes('night') || lowerKey.includes('arrival'))) ||
-                  (lowerKey.includes('early') && lowerKey.includes('access'))) {
-                console.log(`Webhook - Found Additional Night in payload: ${key} = ${value}`);
-                const stringValue = String(value).toLowerCase();
-                return stringValue !== '0' && 
-                       stringValue !== 'false' && 
-                       stringValue !== 'no' && 
-                       stringValue !== '' && 
-                       stringValue !== 'null' &&
-                       stringValue !== 'undefined';
+            // Check direct payload fields for Additional Night with exact matches first
+            for (const exactField of exactAdditionalNightFields) {
+              if (payloadData[exactField]) {
+                const value = payloadData[exactField];
+                console.log(`Webhook - Found exact Additional Night in payload: ${exactField} = ${value}`);
+                if (value && value.toString().trim() !== '' && value !== '0' && value.toString().toLowerCase() !== 'false') {
+                  console.log(`Webhook - Additional Night detected via exact payload field: ${exactField} = ${value}`);
+                  return true;
+                }
               }
             }
             
@@ -330,8 +358,16 @@ serve(async (req) => {
           // Validate ticket_type against enum values before database operation
           const validTicketTypes = ['dry_site', 'rv_site', 'glamping', 'cabin'];
           if (!validTicketTypes.includes(completeAttendeeData.ticket_type)) {
-            console.error(`Webhook - Invalid ticket_type detected: "${completeAttendeeData.ticket_type}". Setting to default "dry_site"`);
+            console.error(`Webhook - Invalid ticket_type detected: "${completeAttendeeData.ticket_type}". Available types: ${validTicketTypes.join(', ')}`);
+            console.error(`Webhook - RegFox ID: ${attendeeId}, Payload data:`, JSON.stringify(payload.data, null, 2));
             completeAttendeeData.ticket_type = 'dry_site';
+          }
+          
+          // Validate registration_status against enum values
+          const validRegistrationStatuses = ['registered', 'cancelled', 'refunded', 'pending', 'waitlisted'];
+          if (!validRegistrationStatuses.includes(completeAttendeeData.registration_status)) {
+            console.error(`Webhook - Invalid registration_status detected: "${completeAttendeeData.registration_status}". Available statuses: ${validRegistrationStatuses.join(', ')}`);
+            completeAttendeeData.registration_status = 'registered';
           }
 
           // Check if attendee already exists

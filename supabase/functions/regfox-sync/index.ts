@@ -208,28 +208,45 @@ serve(async (req) => {
       // Helper function to detect "Additional Night" purchase (Thursday early access)
       const detectAdditionalNight = (fields: Record<string, string>) => {
         console.log('Sync - All field names:', Object.keys(fields));
+        console.log('Sync - All field values:', JSON.stringify(fields, null, 2));
         
-        // Check for various "Additional Night" related fields with comprehensive patterns
+        // Exact field names from RegFox form for Thursday Additional Night purchases
+        const exactAdditionalNightFields = [
+          'Additional Night (Thursday) (Tent or Van/Roof Top)',
+          'Additional Night (Thursday) (RV)',
+          'Additional Night (Thursday) (Glamping Tent)',
+          'Additional Night (Thursday) (Cabin)'
+        ];
+        
+        // Check for exact field matches first
+        for (const fieldName of exactAdditionalNightFields) {
+          if (fields[fieldName]) {
+            const value = fields[fieldName];
+            console.log(`Sync - Found exact Additional Night field "${fieldName}": ${value}`);
+            
+            // Check if the value indicates a purchase
+            if (value && value.trim() !== '' && value !== '0' && value.toLowerCase() !== 'false') {
+              console.log(`Sync - Additional Night detected via exact field: ${fieldName} = ${value}`);
+              return true;
+            }
+          }
+        }
+        
+        // Fallback: Check for fields containing "Additional Night" and "Thursday"
         const additionalNightFields = Object.keys(fields).filter(key => {
-          const lowerKey = key.toLowerCase();
-          return (
-            (lowerKey.includes('additional') && lowerKey.includes('night')) ||
-            (lowerKey.includes('thursday') && (lowerKey.includes('night') || lowerKey.includes('arrival'))) ||
-            (lowerKey.includes('early') && lowerKey.includes('access')) ||
-            lowerKey.includes('extra night') ||
-            lowerKey.includes('additional day')
-          );
+          const keyLower = key.toLowerCase();
+          return keyLower.includes('additional night') && keyLower.includes('thursday');
         });
         
-        console.log('Sync - Additional night fields found:', additionalNightFields);
+        console.log('Sync - Additional night fields found (fallback):', additionalNightFields);
         
         // Check if any additional night field has a truthy value
-        return additionalNightFields.some(field => {
+        const hasAdditionalNight = additionalNightFields.some(field => {
           const value = fields[field];
-          console.log(`Sync - Field "${field}": ${value}`);
-          // More comprehensive check for truthy values
+          console.log(`Sync - Fallback field "${field}": ${value}`);
+          
           if (!value) return false;
-          const stringValue = String(value).toLowerCase();
+          const stringValue = String(value).toLowerCase().trim();
           return stringValue !== '0' && 
                  stringValue !== 'false' && 
                  stringValue !== 'no' && 
@@ -237,6 +254,12 @@ serve(async (req) => {
                  stringValue !== 'null' &&
                  stringValue !== 'undefined';
         });
+        
+        if (hasAdditionalNight) {
+          console.log('Sync - Additional Night detected via fallback pattern matching');
+        }
+        
+        return hasAdditionalNight;
       };
 
       // Helper function to determine ticket type from RegFox data
@@ -279,6 +302,14 @@ serve(async (req) => {
           // Parse the fieldData array into a searchable object
           const fieldData = regfoxAttendee.fieldData || [];
           const fields = parseFieldData(fieldData);
+          
+          // ===== COMPREHENSIVE FIELD DISCOVERY LOGGING =====
+          console.log(`=== REGFOX FIELD DISCOVERY - ID: ${regfoxAttendee.id} ===`);
+          console.log('All RegFox field labels:', Object.keys(fields).filter(k => !k.includes('.')));
+          console.log('All RegFox field paths:', Object.keys(fields).filter(k => k.includes('.')));
+          console.log('Complete field mapping:', JSON.stringify(fields, null, 2));
+          console.log('Raw fieldData array:', JSON.stringify(fieldData, null, 2));
+          console.log('=== END FIELD DISCOVERY ===');
           
           // Log all field names for debugging Additional Night detection
           console.log(`RegFox ID ${regfoxAttendee.id} fields:`, Object.keys(fields));
@@ -374,8 +405,16 @@ serve(async (req) => {
           // Validate ticket_type against enum values before database operation
           const validTicketTypes = ['dry_site', 'rv_site', 'glamping', 'cabin'];
           if (!validTicketTypes.includes(attendeeData.ticket_type)) {
-            console.error(`Sync - Invalid ticket_type detected: "${attendeeData.ticket_type}". Setting to default "dry_site"`);
+            console.error(`Sync - Invalid ticket_type detected: "${attendeeData.ticket_type}". Available types: ${validTicketTypes.join(', ')}`);
+            console.error(`Sync - RegFox ID: ${regfoxAttendee.id}, Original ticket determination from fields:`, JSON.stringify(fields, null, 2));
             attendeeData.ticket_type = 'dry_site';
+          }
+          
+          // Validate registration_status against enum values
+          const validRegistrationStatuses = ['registered', 'cancelled', 'refunded', 'pending', 'waitlisted'];
+          if (!validRegistrationStatuses.includes(attendeeData.registration_status)) {
+            console.error(`Sync - Invalid registration_status detected: "${attendeeData.registration_status}". Available statuses: ${validRegistrationStatuses.join(', ')}`);
+            attendeeData.registration_status = 'registered';
           }
 
           if (existingAttendee) {
