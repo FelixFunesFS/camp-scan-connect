@@ -118,6 +118,76 @@ serve(async (req) => {
           const phone = payload.data.billing?.phone || 
                        registrant.data?.find(d => d.fieldName?.toLowerCase().includes('phone'))?.fieldValue;
 
+          // Enhanced field extraction for comprehensive data capture
+          const extractFieldValue = (fieldPatterns: string[]) => {
+            for (const pattern of fieldPatterns) {
+              const field = registrant.data?.find(d => 
+                d.fieldName?.toLowerCase().includes(pattern.toLowerCase())
+              );
+              if (field?.fieldValue) return field.fieldValue;
+            }
+            return null;
+          };
+
+          // Address information
+          const streetAddress = extractFieldValue(['street', 'address line 1', 'address']);
+          const city = extractFieldValue(['city']);
+          const state = extractFieldValue(['state', 'province']);
+          const postalCode = extractFieldValue(['zip', 'postal', 'postal code']);
+          const country = extractFieldValue(['country']);
+          
+          // Personal demographics
+          const dateOfBirth = extractFieldValue(['date of birth', 'birthday', 'birth date']);
+          const gender = extractFieldValue(['gender']);
+          const maritalStatus = extractFieldValue(['marital', 'status', 'relationship status']);
+          
+          // Event preferences
+          const tShirtSize = extractFieldValue(['shirt size', 't-shirt', 'tshirt size']);
+          const dietaryRestrictions = extractFieldValue(['dietary', 'allergies', 'food allergies', 'restrictions']);
+          const specialAccommodations = extractFieldValue(['accommodation', 'accessibility', 'special needs']);
+          const howDidYouHear = extractFieldValue(['how did you hear', 'referral', 'source']);
+          const mealPlan = extractFieldValue(['meal plan', 'meal']);
+          
+          // Emergency contact - try to extract name and phone separately
+          let emergencyContactName = extractFieldValue(['emergency contact name', 'emergency name']);
+          let emergencyContactPhone = extractFieldValue(['emergency contact phone', 'emergency phone', 'emergency number']);
+          
+          // If combined field exists, try to parse it
+          const emergencyContactCombined = extractFieldValue(['emergency contact', 'emergency']);
+          if (emergencyContactCombined && !emergencyContactName && !emergencyContactPhone) {
+            const phoneRegex = /(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/;
+            const phoneMatch = emergencyContactCombined.match(phoneRegex);
+            
+            if (phoneMatch) {
+              emergencyContactPhone = phoneMatch[1];
+              emergencyContactName = emergencyContactCombined.replace(phoneMatch[1], '').trim().replace(/[,-]$/, '');
+            } else {
+              emergencyContactName = emergencyContactCombined;
+            }
+          }
+          
+          // Collect unhandled custom fields
+          const customFields: Record<string, any> = {};
+          const handledPatterns = [
+            'first', 'last', 'email', 'phone', 'street', 'address', 'city', 'state', 
+            'province', 'zip', 'postal', 'country', 'date of birth', 'birthday', 
+            'gender', 'marital', 'status', 'shirt', 't-shirt', 'dietary', 'allergies', 
+            'accommodation', 'accessibility', 'how did you hear', 'referral', 'meal', 
+            'emergency', 'veteran', 'military', 'branch', 'additional night', 'thursday'
+          ];
+          
+          // Store fields not handled by standard patterns
+          registrant.data?.forEach(field => {
+            if (field.fieldName && field.fieldValue) {
+              const isHandled = handledPatterns.some(pattern => 
+                field.fieldName.toLowerCase().includes(pattern)
+              );
+              if (!isHandled) {
+                customFields[field.fieldName] = field.fieldValue;
+              }
+            }
+          });
+
           attendeeData = {
             first_name: firstName,
             last_name: lastName,
@@ -341,7 +411,7 @@ serve(async (req) => {
           
           console.log(`Webhook RegFox ID ${attendeeId}: earlyAccess=${earlyAccess}, arrivalWindow=${arrivalWindow}`);
 
-          // Complete attendee data
+          // Complete attendee data with all enhanced fields
           const completeAttendeeData = {
             ...attendeeData,
             ticket_type: ticketType,
@@ -350,6 +420,33 @@ serve(async (req) => {
             military_branch: militaryBranch,
             early_access: earlyAccess,
             arrival_window: arrivalWindow,
+            
+            // Address information
+            street_address: streetAddress,
+            city: city,
+            state: state,
+            postal_code: postalCode,
+            country: country,
+            
+            // Personal demographics
+            date_of_birth: dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : null,
+            gender: gender,
+            marital_status: maritalStatus,
+            
+            // Event preferences
+            meal_plan: mealPlan,
+            t_shirt_size: tShirtSize,
+            dietary_restrictions: dietaryRestrictions,
+            special_accommodations: specialAccommodations,
+            how_did_you_hear: howDidYouHear,
+            
+            // Emergency contact
+            emergency_contact_name: emergencyContactName,
+            emergency_contact_phone: emergencyContactPhone,
+            
+            // Custom fields and metadata
+            custom_fields: customFields,
+            
             waiver_signed: false,
             checked_in_at: null,
             created_at: payload.data.registrationDate || payload.data.registrationTimestamp || new Date().toISOString()

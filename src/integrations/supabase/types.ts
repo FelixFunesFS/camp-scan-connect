@@ -51,66 +51,114 @@ export type Database = {
       }
       attendees: {
         Row: {
+          additional_guests: Json | null
           arrival_window: string | null
           checked_in_at: string | null
+          city: string | null
+          country: string | null
           created_at: string
+          custom_fields: Json | null
+          date_of_birth: string | null
+          dietary_restrictions: string | null
           early_access: boolean | null
           email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           first_name: string
+          gender: string | null
+          how_did_you_hear: string | null
           id: string
           is_veteran: boolean | null
           last_name: string
+          marital_status: string | null
           meal_plan: string | null
           military_branch: string | null
           notes: string | null
           override_early_checkin: boolean | null
           phone: string | null
+          postal_code: string | null
           regfox_id: string | null
           registration_status: Database["public"]["Enums"]["registration_status"]
+          special_accommodations: string | null
+          state: string | null
+          street_address: string | null
+          t_shirt_size: string | null
           ticket_type: Database["public"]["Enums"]["ticket_type"]
           updated_at: string
           veteran_thanked_at: string | null
           waiver_signed: boolean | null
         }
         Insert: {
+          additional_guests?: Json | null
           arrival_window?: string | null
           checked_in_at?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          custom_fields?: Json | null
+          date_of_birth?: string | null
+          dietary_restrictions?: string | null
           early_access?: boolean | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           first_name: string
+          gender?: string | null
+          how_did_you_hear?: string | null
           id?: string
           is_veteran?: boolean | null
           last_name: string
+          marital_status?: string | null
           meal_plan?: string | null
           military_branch?: string | null
           notes?: string | null
           override_early_checkin?: boolean | null
           phone?: string | null
+          postal_code?: string | null
           regfox_id?: string | null
           registration_status?: Database["public"]["Enums"]["registration_status"]
+          special_accommodations?: string | null
+          state?: string | null
+          street_address?: string | null
+          t_shirt_size?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
           veteran_thanked_at?: string | null
           waiver_signed?: boolean | null
         }
         Update: {
+          additional_guests?: Json | null
           arrival_window?: string | null
           checked_in_at?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
+          custom_fields?: Json | null
+          date_of_birth?: string | null
+          dietary_restrictions?: string | null
           early_access?: boolean | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           first_name?: string
+          gender?: string | null
+          how_did_you_hear?: string | null
           id?: string
           is_veteran?: boolean | null
           last_name?: string
+          marital_status?: string | null
           meal_plan?: string | null
           military_branch?: string | null
           notes?: string | null
           override_early_checkin?: boolean | null
           phone?: string | null
+          postal_code?: string | null
           regfox_id?: string | null
           registration_status?: Database["public"]["Enums"]["registration_status"]
+          special_accommodations?: string | null
+          state?: string | null
+          street_address?: string | null
+          t_shirt_size?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
           veteran_thanked_at?: string | null

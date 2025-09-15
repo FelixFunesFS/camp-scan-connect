@@ -320,25 +320,92 @@ serve(async (req) => {
           const email = fields['email'] || fields['Email'] || '';
           const phone = fields['phone'] || fields['Phone Number'] || null;
           
-          // Additional contact info
-          const emergencyContact = fields['emergencyContactNameNumber'] || fields['Emergency Contact Name & Number?'] || null;
+          // Address information - comprehensive field mapping
+          const streetAddress = fields['address.street1'] || fields['Street Address'] || 
+                               fields['address'] || fields['Address'] || null;
+          const city = fields['address.city'] || fields['City'] || null;
+          const state = fields['address.state'] || fields['State'] || fields['Province'] || null;
+          const postalCode = fields['address.postalCode'] || fields['ZIP/Postal Code'] || 
+                            fields['zipCode'] || fields['Zip Code'] || null;
+          const country = fields['address.country'] || fields['Country'] || null;
+          
+          // Personal demographics
+          const dateOfBirth = fields['dateOfBirth'] || fields['Date of Birth'] || 
+                             fields['birthday'] || fields['Birthday'] || null;
+          const gender = fields['gender'] || fields['Gender'] || null;
+          const maritalStatus = fields['status'] || fields['Status?'] || fields['Marital Status'] || null;
+          
+          // Event preferences and custom fields
+          const tShirtSize = fields['tShirtSize'] || fields['T-Shirt Size'] || 
+                           fields['shirt size'] || fields['Shirt Size'] || null;
+          const dietaryRestrictions = fields['dietaryRestrictions'] || fields['Dietary Restrictions'] || 
+                                    fields['dietary'] || fields['Food Allergies'] || 
+                                    fields['allergies'] || fields['Allergies'] || null;
+          
+          // Emergency contact information - enhanced parsing
+          const emergencyContactRaw = fields['emergencyContactNameNumber'] || 
+                                    fields['Emergency Contact Name & Number?'] || 
+                                    fields['emergencyContact'] || fields['Emergency Contact'] || null;
+          
+          let emergencyContactName = null;
+          let emergencyContactPhone = null;
+          
+          if (emergencyContactRaw) {
+            // Try to parse name and phone from combined field
+            const phoneRegex = /(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/;
+            const phoneMatch = emergencyContactRaw.match(phoneRegex);
+            
+            if (phoneMatch) {
+              emergencyContactPhone = phoneMatch[1];
+              emergencyContactName = emergencyContactRaw.replace(phoneMatch[1], '').trim().replace(/[,-]$/, '');
+            } else {
+              emergencyContactName = emergencyContactRaw;
+            }
+          }
+          
+          // Override with separate fields if available
+          emergencyContactName = fields['Emergency Contact Name'] || emergencyContactName;
+          emergencyContactPhone = fields['Emergency Contact Phone'] || 
+                                 fields['Emergency Phone'] || emergencyContactPhone;
+          
+          // Special accommodations and preferences
+          const specialAccommodations = fields['specialAccommodations'] || 
+                                      fields['Special Accommodations'] || 
+                                      fields['accessibility'] || fields['Accessibility Needs'] || null;
+          
+          const howDidYouHear = fields['howDidYouHear'] || fields['How did you hear about us?'] || 
+                              fields['referral'] || fields['Referral Source'] || null;
           
           // Meal plan information
           const mealPlan = fields['mealPlan'] || fields['Meal Plan-'] || fields['Meal Plan'] || null;
           
-          // Address information
-          const address = {
-            street: fields['address.street1'] || fields['Street Address'] || null,
-            city: fields['address.city'] || fields['City'] || null,
-            state: fields['address.state'] || fields['State'] || null,
-            postalCode: fields['address.postalCode'] || fields['ZIP/Postal Code'] || null,
-            country: fields['address.country'] || fields['Country'] || null
-          };
+          // Collect all unhandled custom fields
+          const customFields: Record<string, any> = {};
+          const handledFields = [
+            'name2.first', 'First Name', 'name2.last', 'Last Name', 'email', 'Email',
+            'phone', 'Phone Number', 'address.street1', 'Street Address', 'address',
+            'Address', 'address.city', 'City', 'address.state', 'State', 'Province',
+            'address.postalCode', 'ZIP/Postal Code', 'zipCode', 'Zip Code',
+            'address.country', 'Country', 'dateOfBirth', 'Date of Birth', 'birthday',
+            'Birthday', 'gender', 'Gender', 'status', 'Status?', 'Marital Status',
+            'tShirtSize', 'T-Shirt Size', 'shirt size', 'Shirt Size',
+            'dietaryRestrictions', 'Dietary Restrictions', 'dietary', 'Food Allergies',
+            'allergies', 'Allergies', 'emergencyContactNameNumber', 
+            'Emergency Contact Name & Number?', 'emergencyContact', 'Emergency Contact',
+            'Emergency Contact Name', 'Emergency Contact Phone', 'Emergency Phone',
+            'specialAccommodations', 'Special Accommodations', 'accessibility',
+            'Accessibility Needs', 'howDidYouHear', 'How did you hear about us?',
+            'referral', 'Referral Source', 'mealPlan', 'Meal Plan-', 'Meal Plan',
+            'areYouVeteran', 'Are you a veteran?', 'military', 'Military Service',
+            'veteran', 'militaryBranch', 'Military Branch', 'serviceBranch', 'Service Branch'
+          ];
           
-          // Personal information
-          const dateOfBirth = fields['dateOfBirth'] || fields['Date of Birth'] || null;
-          const gender = fields['gender'] || fields['Gender'] || null;
-          const maritalStatus = fields['status'] || fields['Status?'] || null;
+          // Store any fields not explicitly handled
+          for (const [fieldName, fieldValue] of Object.entries(fields)) {
+            if (!handledFields.includes(fieldName) && fieldValue) {
+              customFields[fieldName] = fieldValue;
+            }
+          }
           
           // Enhanced veteran detection
           const isVeteran = fields['areYouVeteran'] === 'yes' || 
@@ -396,9 +463,35 @@ serve(async (req) => {
             early_access: earlyAccess,
             arrival_window: arrivalWindow,
             meal_plan: mealPlan,
+            
+            // Address information
+            street_address: streetAddress,
+            city: city,
+            state: state,
+            postal_code: postalCode,
+            country: country,
+            
+            // Personal demographics
+            date_of_birth: dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : null,
+            gender: gender,
+            marital_status: maritalStatus,
+            
+            // Event preferences
+            t_shirt_size: tShirtSize,
+            dietary_restrictions: dietaryRestrictions,
+            special_accommodations: specialAccommodations,
+            how_did_you_hear: howDidYouHear,
+            
+            // Emergency contact
+            emergency_contact_name: emergencyContactName,
+            emergency_contact_phone: emergencyContactPhone,
+            
+            // Custom fields and metadata
+            custom_fields: customFields,
+            
             waiver_signed: false, // Will be updated when waiver is actually signed
             checked_in_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,
-            notes: emergencyContact ? `Emergency Contact: ${emergencyContact}` : null,
+            notes: null, // Keep notes separate from emergency contact
             created_at: regfoxAttendee.dateCreated
           };
           
