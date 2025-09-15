@@ -20,6 +20,8 @@ interface ActiveFilter {
   label: string;
 }
 
+export type { ActiveFilter };
+
 interface FilterPanelProps {
   filters: FilterOption[];
   activeFilters: ActiveFilter[];

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FilterPanel } from "./shared/FilterPanel";
+import type { ActiveFilter } from "./shared/FilterPanel";
 import { ColumnSelector } from "./shared/ColumnSelector";
 import { ExportButton } from "./shared/ExportButton";
 import { ResponsiveAttendeesTable } from "./shared/ResponsiveAttendeesTable";
@@ -63,7 +64,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [filteredAttendees, setFilteredAttendees] = useState<EnhancedAttendee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -254,28 +255,28 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       }
 
       // Filter functionality
-      for (const [filterKey, filterValue] of Object.entries(activeFilters)) {
-        if (!filterValue) continue;
+      for (const filter of activeFilters) {
+        if (!filter.value) continue;
         
-        const attendeeValue = attendee[filterKey as keyof EnhancedAttendee];
+        const attendeeValue = attendee[filter.key as keyof EnhancedAttendee];
         
-        if (filterKey === 'checked_in_at') {
+        if (filter.key === 'checked_in_at') {
           const isCheckedIn = attendeeValue ? 'yes' : 'no';
-          if (isCheckedIn !== filterValue) return false;
-        } else if (filterKey === 'waiver_signed') {
+          if (isCheckedIn !== filter.value) return false;
+        } else if (filter.key === 'waiver_signed') {
           const hasWaiver = attendeeValue ? 'yes' : 'no';
-          if (hasWaiver !== filterValue) return false;
-        } else if (filterKey === 'has_headphones') {
+          if (hasWaiver !== filter.value) return false;
+        } else if (filter.key === 'has_headphones') {
           const hasHeadphones = attendeeValue ? 'yes' : 'no';
-          if (hasHeadphones !== filterValue) return false;
-        } else if (filterKey === 'is_duplicate') {
+          if (hasHeadphones !== filter.value) return false;
+        } else if (filter.key === 'is_duplicate') {
           const isDuplicate = attendeeValue ? 'yes' : 'no';
-          if (isDuplicate !== filterValue) return false;
-        } else if (filterKey === 'is_phone_duplicate') {
+          if (isDuplicate !== filter.value) return false;
+        } else if (filter.key === 'is_phone_duplicate') {
           const isPhoneDuplicate = attendeeValue ? 'yes' : 'no';
-          if (isPhoneDuplicate !== filterValue) return false;
+          if (isPhoneDuplicate !== filter.value) return false;
         } else {
-          if (!attendeeValue || attendeeValue.toString().toLowerCase() !== filterValue.toLowerCase()) {
+          if (!attendeeValue || attendeeValue.toString().toLowerCase() !== filter.value.toLowerCase()) {
             return false;
           }
         }
@@ -488,6 +489,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: 'registration_status',
       label: 'Registration Status',
+      type: "select" as const,
       options: [...new Set(attendees.map(a => a.registration_status).filter(Boolean))].map(status => ({
         label: status.charAt(0).toUpperCase() + status.slice(1),
         value: status
@@ -496,6 +498,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: 'ticket_type',
       label: 'Ticket Type',
+      type: "select" as const,
       options: [...new Set(attendees.map(a => a.ticket_type).filter(Boolean))].map(type => ({
         label: type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
         value: type
@@ -504,6 +507,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: 'overall_status',
       label: 'Overall Status',
+      type: "select" as const,
       options: [...new Set(attendees.map(a => a.overall_status).filter(Boolean))].map(status => ({
         label: status,
         value: status
@@ -512,6 +516,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: 'rfid_status',
       label: 'RFID Status',
+      type: "select" as const,
       options: [...new Set(attendees.map(a => a.rfid_status).filter(Boolean))].map(status => ({
         label: status.charAt(0).toUpperCase() + status.slice(1),
         value: status
@@ -520,6 +525,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: 'checked_in_at',
       label: 'Check-in Status',
+      type: "select" as const,
       options: [
         { label: 'Checked In', value: 'yes' },
         { label: 'Not Checked In', value: 'no' }
@@ -528,6 +534,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: 'waiver_signed',
       label: 'Waiver Status',
+      type: "select" as const,
       options: [
         { label: 'Signed', value: 'yes' },
         { label: 'Not Signed', value: 'no' }
@@ -536,6 +543,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: 'has_headphones',
       label: 'Headphones',
+      type: "select" as const,
       options: [
         { label: 'Has Headphones', value: 'yes' },
         { label: 'No Headphones', value: 'no' }
@@ -544,6 +552,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: 'is_duplicate',
       label: 'Name Duplicates',
+      type: "select" as const,
       options: [
         { label: 'Has Duplicate', value: 'yes' },
         { label: 'No Duplicate', value: 'no' }
@@ -552,6 +561,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     {
       key: 'is_phone_duplicate',
       label: 'Phone Duplicates',
+      type: "select" as const,
       options: [
         { label: 'Has Duplicate', value: 'yes' },
         { label: 'No Duplicate', value: 'no' }
@@ -560,20 +570,30 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   ];
 
   const handleFilterChange = (key: string, value: string) => {
-    setActiveFilters(prev => ({ ...prev, [key]: value }));
+    if (!value) {
+      handleClearFilter(key);
+      return;
+    }
+    
+    const filterOption = filterOptions.find(f => f.key === key);
+    const label = filterOption?.label || key;
+    
+    setActiveFilters(prev => {
+      const filtered = prev.filter(f => f.key !== key);
+      if (value) {
+        return [...filtered, { key, value, label }];
+      }
+      return filtered;
+    });
     setCurrentPage(1);
   };
 
   const handleClearFilter = (key: string) => {
-    setActiveFilters(prev => {
-      const newFilters = { ...prev };
-      delete newFilters[key];
-      return newFilters;
-    });
+    setActiveFilters(prev => prev.filter(f => f.key !== key));
   };
 
   const handleClearAllFilters = () => {
-    setActiveFilters({});
+    setActiveFilters([]);
     setCurrentPage(1);
   };
 
@@ -642,11 +662,11 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           </div>
 
           <FilterPanel
-            filterOptions={filterOptions}
+            filters={filterOptions}
             activeFilters={activeFilters}
             onFilterChange={handleFilterChange}
             onClearFilter={handleClearFilter}
-            onClearAllFilters={handleClearAllFilters}
+            onClearAll={handleClearAllFilters}
           />
 
           <ResponsiveAttendeesTable
