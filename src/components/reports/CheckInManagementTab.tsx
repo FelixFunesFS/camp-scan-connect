@@ -369,6 +369,30 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           aValue = a.arrival_day || '';
           bValue = b.arrival_day || '';
           break;
+        case 'meal_plan':
+          aValue = Number(a.meal_plan) || 0;
+          bValue = Number(b.meal_plan) || 0;
+          break;
+        case 'ticket_type':
+          aValue = a.ticket_type?.toLowerCase() || '';
+          bValue = b.ticket_type?.toLowerCase() || '';
+          break;
+        case 'registration_status':
+          aValue = a.registration_status?.toLowerCase() || '';
+          bValue = b.registration_status?.toLowerCase() || '';
+          break;
+        case 'rfid_status':
+          aValue = a.rfid_status?.toLowerCase() || '';
+          bValue = b.rfid_status?.toLowerCase() || '';
+          break;
+        case 'overall_status':
+          aValue = a.overall_status?.toLowerCase() || '';
+          bValue = b.overall_status?.toLowerCase() || '';
+          break;
+        case 'order_id':
+          aValue = a.order_id || '';
+          bValue = b.order_id || '';
+          break;
         default:
           aValue = '';
           bValue = '';
