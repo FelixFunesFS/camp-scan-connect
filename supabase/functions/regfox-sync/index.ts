@@ -205,6 +205,18 @@ serve(async (req) => {
         return parsed;
       };
 
+      // Helper function to detect "Additional Night" purchase (Thursday early access)
+      const detectAdditionalNight = (fields: Record<string, string>) => {
+        // Check for fields containing "Additional Night" in their label/key
+        for (const [key, value] of Object.entries(fields)) {
+          if (key.toLowerCase().includes('additional night') && value) {
+            console.log(`Found Additional Night field: ${key} = ${value}`);
+            return true;
+          }
+        }
+        return false;
+      };
+
       // Helper function to determine ticket type from RegFox data
       const determineTicketType = (fields: Record<string, string>) => {
         // Check accommodation type
@@ -242,6 +254,9 @@ serve(async (req) => {
           // Parse the fieldData array into a searchable object
           const fieldData = regfoxAttendee.fieldData || [];
           const fields = parseFieldData(fieldData);
+          
+          // Log all field names for debugging Additional Night detection
+          console.log(`RegFox ID ${regfoxAttendee.id} fields:`, Object.keys(fields));
           
           // Extract attendee information using the parsed fields
           const firstName = fields['name2.first'] || fields['First Name'] || '';
@@ -297,8 +312,13 @@ serve(async (req) => {
           // Determine ticket type based on accommodation and features
           const ticketType = determineTicketType(fields);
           
-          // Early access determination (glamping and cabins typically get early access)
-          const earlyAccess = ticketType === 'glamping' || ticketType === 'cabin';
+          // Early access determination based on "Additional Night" purchase ONLY
+          const earlyAccess = detectAdditionalNight(fields);
+          
+          // Arrival window based on early access (Additional Night purchase)
+          const arrivalWindow = earlyAccess ? 'early' : 'standard';
+          
+          console.log(`RegFox ID ${regfoxAttendee.id}: earlyAccess=${earlyAccess}, arrivalWindow=${arrivalWindow}`);
 
           // Check if attendee already exists by regfox_id
           const { data: existingAttendee } = await supabase
@@ -318,6 +338,7 @@ serve(async (req) => {
             is_veteran: isVeteran,
             military_branch: militaryBranch,
             early_access: earlyAccess,
+            arrival_window: arrivalWindow,
             meal_plan: mealPlan,
             waiver_signed: false, // Will be updated when waiver is actually signed
             checked_in_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,

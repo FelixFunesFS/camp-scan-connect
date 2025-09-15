@@ -236,6 +236,39 @@ serve(async (req) => {
           const militaryBranch = extractMilitaryBranch(payload.data);
           const registrationStatus = mapRegistrationStatus(payload.data.status);
 
+          // Helper function to detect "Additional Night" purchase (Thursday early access)
+          const detectAdditionalNight = (payloadData: any) => {
+            if (payloadData.registrants && payloadData.registrants.length > 0) {
+              const registrant = payloadData.registrants[0];
+              const additionalNightField = registrant.data?.find(d => 
+                d.fieldName?.toLowerCase().includes('additional night') && d.fieldValue
+              );
+              
+              if (additionalNightField) {
+                console.log(`Found Additional Night field: ${additionalNightField.fieldName} = ${additionalNightField.fieldValue}`);
+                return true;
+              }
+            }
+            
+            // Check direct payload fields for Additional Night
+            for (const [key, value] of Object.entries(payloadData)) {
+              if (key.toLowerCase().includes('additional night') && value) {
+                console.log(`Found Additional Night in payload: ${key} = ${value}`);
+                return true;
+              }
+            }
+            
+            return false;
+          };
+
+          // Early access determination based on "Additional Night" purchase ONLY
+          const earlyAccess = detectAdditionalNight(payload.data);
+          
+          // Arrival window based on early access (Additional Night purchase)
+          const arrivalWindow = earlyAccess ? 'early' : 'standard';
+          
+          console.log(`Webhook RegFox ID ${attendeeId}: earlyAccess=${earlyAccess}, arrivalWindow=${arrivalWindow}`);
+
           // Complete attendee data
           const completeAttendeeData = {
             ...attendeeData,
@@ -243,6 +276,8 @@ serve(async (req) => {
             registration_status: registrationStatus,
             is_veteran: isVeteran,
             military_branch: militaryBranch,
+            early_access: earlyAccess,
+            arrival_window: arrivalWindow,
             waiver_signed: false,
             checked_in_at: null,
             created_at: payload.data.registrationDate || payload.data.registrationTimestamp || new Date().toISOString()

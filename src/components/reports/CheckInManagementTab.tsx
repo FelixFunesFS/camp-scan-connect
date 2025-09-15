@@ -168,9 +168,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         // Determine arrival day from arrival window or notes
         let arrival_day = null;
         if (attendee.arrival_window === 'early') {
-          arrival_day = 'Friday';
+          arrival_day = 'Thursday';
         } else if (attendee.arrival_window === 'standard') {
-          arrival_day = 'Saturday';
+          arrival_day = 'Friday';
         }
 
         // Check if this attendee is a duplicate based on name
