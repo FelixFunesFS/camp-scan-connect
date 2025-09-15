@@ -66,6 +66,12 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       case 'bar_hits':
       case 'arrival_day':
       case 'updated_at':
+      case 'order_id':
+      case 'ticket_type':
+      case 'meal_plan':
+      case 'registration_status':
+      case 'rfid_status':
+      case 'overall_status':
         return key;
       default:
         return null;

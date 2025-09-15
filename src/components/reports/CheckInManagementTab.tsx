@@ -14,7 +14,7 @@ interface CheckInManagementTabProps {
   isRefreshing: boolean;
 }
 
-type SortField = 'name' | 'email' | 'phone' | 'regfox_id' | 'updated_at' | 'bar_hits' | 'arrival_day';
+type SortField = 'name' | 'email' | 'phone' | 'regfox_id' | 'updated_at' | 'bar_hits' | 'arrival_day' | 'order_id' | 'ticket_type' | 'meal_plan' | 'registration_status' | 'rfid_status' | 'overall_status';
 type SortDirection = 'asc' | 'desc';
 
 export interface EnhancedAttendee {
@@ -82,10 +82,10 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'email', label: 'Email', desktop: true, width: 'min-w-48', sortable: true },
     { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'rfid_uid', label: 'RFID UID', desktop: true, width: 'min-w-24' },
-    { key: 'ticket_type', label: 'Ticket Type', mobile: true, desktop: true, width: 'min-w-32' },
-    { key: 'meal_plan', label: 'Meal Plan', mobile: true, desktop: true, width: 'min-w-28' },
-    { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-32' },
-    { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-28' },
+    { key: 'ticket_type', label: 'Ticket Type', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'meal_plan', label: 'Meal Plan', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
+    { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
     { key: 'has_headphones', label: 'Has Headphones', desktop: true, width: 'min-w-32' },
     { key: 'bar_hits', label: 'Bar Hits', desktop: true, width: 'min-w-20', sortable: true },
     { key: 'waiver_signed', label: 'Waiver', mobile: true, desktop: true, width: 'min-w-20' },
@@ -94,7 +94,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'is_phone_duplicate', label: 'Phone Duplicate', desktop: true, width: 'min-w-24' },
     { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-40' },
     { key: 'updated_at', label: 'Last Updated', desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'overall_status', label: 'Check-In Status', mobile: true, desktop: true, width: 'min-w-28' }
+    { key: 'overall_status', label: 'Check-In Status', mobile: true, desktop: true, width: 'min-w-28', sortable: true }
   ];
 
   const fetchAttendees = async () => {
