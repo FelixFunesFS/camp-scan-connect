@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Download, Calendar, Users, Package, Utensils, Activity, TrendingUp } from "lucide-react";
+import { RefreshCw, Download, Calendar, Users, Package, Utensils, Activity, TrendingUp, Database } from "lucide-react";
 import { EventOverviewTab } from "@/components/reports/EventOverviewTab";
 import { PackageUtilizationTab } from "@/components/reports/PackageUtilizationTab";
 import { CheckInManagementTab } from "@/components/reports/CheckInManagementTab";
 import { FoodBeverageTab } from "@/components/reports/FoodBeverageTab";
 import { ActivitiesEquipmentTab } from "@/components/reports/ActivitiesEquipmentTab";
 import { SponsorImpactTab } from "@/components/reports/SponsorImpactTab";
+import { DataMigrationPanel } from "@/components/DataMigrationPanel";
 
 const Reports = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -68,7 +69,7 @@ const Reports = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 bg-muted/50">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 bg-muted/50">
             <TabsTrigger 
               value="overview" 
               className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -117,6 +118,14 @@ const Reports = () => {
               <span className="hidden sm:inline">Sponsor Impact</span>
               <span className="sm:hidden">Sponsors</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="migration" 
+              className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <Database className="h-4 w-4" />
+              <span className="hidden sm:inline">Data Migration</span>
+              <span className="sm:hidden">Migration</span>
+            </TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
@@ -142,6 +151,10 @@ const Reports = () => {
 
             <TabsContent value="sponsor" className="space-y-4">
               <SponsorImpactTab isRefreshing={isRefreshing} />
+            </TabsContent>
+
+            <TabsContent value="migration" className="space-y-4">
+              <DataMigrationPanel />
             </TabsContent>
           </div>
         </Tabs>
