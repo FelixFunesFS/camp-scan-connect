@@ -84,10 +84,29 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
     switch (status) {
       case 'complete':
         return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
-      case 'partial':
+      case 'RFID Assigned':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'Checked In':
         return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
       case 'pending':
         return 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200';
+      default:
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200';
+    }
+  };
+
+  const getRegistrationStatusColor = (status: EnhancedAttendee['registration_status']) => {
+    switch (status) {
+      case 'registered':
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'pending':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      case 'refunded':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'waitlisted':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       default:
         return 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200';
     }
@@ -125,9 +144,20 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         return (
           <Badge className={getStatusColor(attendee.overall_status)}>
             {attendee.overall_status === 'complete' && <CheckCircle className="h-3 w-3 mr-1" />}
-            {attendee.overall_status === 'partial' && <AlertCircle className="h-3 w-3 mr-1" />}
+            {attendee.overall_status === 'RFID Assigned' && <AlertCircle className="h-3 w-3 mr-1" />}
+            {attendee.overall_status === 'Checked In' && <AlertCircle className="h-3 w-3 mr-1" />}
             {attendee.overall_status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
-            {attendee.overall_status.charAt(0).toUpperCase() + attendee.overall_status.slice(1)}
+            {attendee.overall_status}
+          </Badge>
+        );
+      
+      case 'registration_status':
+        return (
+          <Badge className={getRegistrationStatusColor(attendee.registration_status)}>
+            {attendee.registration_status === 'registered' && <CheckCircle className="h-3 w-3 mr-1" />}
+            {attendee.registration_status === 'cancelled' && <XCircle className="h-3 w-3 mr-1" />}
+            {(attendee.registration_status === 'pending' || attendee.registration_status === 'waitlisted') && <Clock className="h-3 w-3 mr-1" />}
+            {attendee.registration_status.charAt(0).toUpperCase() + attendee.registration_status.slice(1)}
           </Badge>
         );
       
@@ -295,6 +325,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                     <div className="flex flex-wrap gap-2">
                       {renderCellContent(attendee, 'ticket_type')}
                       {renderCellContent(attendee, 'meal_plan')}
+                      {renderCellContent(attendee, 'registration_status')}
                       {renderCellContent(attendee, 'rfid_status')}
                       {renderCellContent(attendee, 'waiver_signed')}
                       {attendee.has_headphones && renderCellContent(attendee, 'has_headphones')}

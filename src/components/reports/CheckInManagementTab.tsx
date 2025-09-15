@@ -32,13 +32,14 @@ export interface EnhancedAttendee {
   notes: string;
   created_at: string;
   updated_at: string;
+  registration_status: 'registered' | 'cancelled' | 'pending' | 'refunded' | 'waitlisted';
   // RFID related
   rfid_uid: string | null;
   rfid_status: 'unissued' | 'active' | 'lost' | 'replaced' | 'deactivated';
   // Calculated fields
   has_headphones: boolean;
   bar_hits: number;
-  overall_status: 'complete' | 'partial' | 'pending';
+  overall_status: 'complete' | 'RFID Assigned' | 'Checked In' | 'pending';
   arrival_day: string | null;
   is_duplicate: boolean;
   is_phone_duplicate: boolean;
@@ -69,7 +70,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [sortField, setSortField] = useState<SortField>('updated_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    'first_name', 'ticket_type', 'meal_plan', 'overall_status', 'rfid_status', 'waiver_signed'
+    'first_name', 'ticket_type', 'meal_plan', 'overall_status', 'registration_status', 'rfid_status', 'waiver_signed'
   ]);
   const itemsPerPage = 50;
 
@@ -79,7 +80,8 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
     { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'rfid_uid', label: 'RFID UID', desktop: true, width: 'min-w-24' },
-    { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24' },
+    { key: 'overall_status', label: 'Check-In Status', mobile: true, desktop: true, width: 'min-w-28' },
+    { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-32' },
     { key: 'ticket_type', label: 'Ticket Type', mobile: true, desktop: true, width: 'min-w-32' },
     { key: 'meal_plan', label: 'Meal Plan', mobile: true, desktop: true, width: 'min-w-28' },
     { key: 'has_headphones', label: 'Has Headphones', desktop: true, width: 'min-w-32' },
@@ -157,12 +159,19 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         // Calculate bar hits (drink transactions)
         const bar_hits = barData.filter(t => t.attendee_id === attendee.id && t.transaction_type === 'drink').length;
 
-        // Determine overall status
-        let overall_status: 'complete' | 'partial' | 'pending' = 'pending';
-        if (attendee.checked_in_at && attendee.waiver_signed && rfidTag?.status === 'active') {
+        // Determine overall status based on RFID workflow
+        let overall_status: 'complete' | 'RFID Assigned' | 'Checked In' | 'pending' = 'pending';
+        
+        const hasRfidAssigned = rfidTag?.uid && rfidTag?.status !== 'unissued';
+        const hasRfidActive = rfidTag?.status === 'active';
+        const isCheckedIn = !!attendee.checked_in_at;
+        
+        if (hasRfidAssigned && hasRfidActive && isCheckedIn) {
           overall_status = 'complete';
-        } else if (attendee.checked_in_at || attendee.waiver_signed || rfidTag?.uid) {
-          overall_status = 'partial';
+        } else if (hasRfidAssigned && !hasRfidActive) {
+          overall_status = 'RFID Assigned';
+        } else if (isCheckedIn && !hasRfidActive) {
+          overall_status = 'Checked In';
         }
 
         // Determine arrival day from arrival window or notes
@@ -202,7 +211,8 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           notes: attendee.notes || '',
           email: attendee.email || '',
           phone: attendee.phone || '',
-          regfox_id: attendee.regfox_id || ''
+          regfox_id: attendee.regfox_id || '',
+          registration_status: attendee.registration_status || 'registered'
         };
       });
 
@@ -279,6 +289,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       switch (filter.key) {
         case 'overall_status':
           filtered = filtered.filter(a => a.overall_status === filter.value);
+          break;
+        case 'registration_status':
+          filtered = filtered.filter(a => a.registration_status === filter.value);
           break;
         case 'rfid_status':
           filtered = filtered.filter(a => a.rfid_status === filter.value);
@@ -379,12 +392,25 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const filterOptions = [
     {
       key: "overall_status",
-      label: "Overall Status",
+      label: "Check-In Status",
       type: "select" as const,
       options: [
         { value: "complete", label: "Complete" },
-        { value: "partial", label: "Partial" },
+        { value: "RFID Assigned", label: "RFID Assigned" },
+        { value: "Checked In", label: "Checked In" },
         { value: "pending", label: "Pending" }
+      ]
+    },
+    {
+      key: "registration_status",
+      label: "Registration Status",
+      type: "select" as const,
+      options: [
+        { value: "registered", label: "Registered" },
+        { value: "cancelled", label: "Cancelled" },
+        { value: "pending", label: "Pending" },
+        { value: "refunded", label: "Refunded" },
+        { value: "waitlisted", label: "Waitlisted" }
       ]
     },
     {
