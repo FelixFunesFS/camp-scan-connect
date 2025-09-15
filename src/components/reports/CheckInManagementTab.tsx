@@ -70,7 +70,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isGroupedView, setIsGroupedView] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    'first_name', 'last_name', 'email', 'overall_status', 'rfid_status', 'checked_in_at'
+    'first_name', 'last_name', 'email', 'overall_status', 'rfid_assignment', 'checked_in_at'
   ]);
 
   const { toast } = useToast();
@@ -86,7 +86,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'meal_plan', label: 'Meal Plan', desktop: true, width: 'min-w-20', sortable: true },
     { key: 'registration_status', label: 'Registration', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
-    { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'rfid_assignment', label: 'RFID Assignment', desktop: true, width: 'min-w-48', sortable: false },
     { key: 'checked_in_at', label: 'Check-in Time', desktop: true, width: 'min-w-32', sortable: true },
     { key: 'waiver_signed', label: 'Waiver', desktop: true, width: 'min-w-20' },
     { key: 'has_headphones', label: 'Headphones', desktop: true, width: 'min-w-24' },

@@ -4,7 +4,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Scan, User } from "lucide-react";
+import { useRfidCapture } from "@/hooks/useRfidCapture";
 
 interface RfidTag {
   uid: string;
@@ -83,6 +85,47 @@ export const RfidScanner = ({
     }
   };
 
+  // Enhanced RFID scanning with actual RFID reader support
+  const handleDirectRfidScan = async (scannedUid: string) => {
+    if (!scannedUid.trim()) return;
+    
+    // Find the RFID in available list or query database
+    let rfidData = availableRfids.find(rfid => rfid.uid === scannedUid);
+    
+    if (!rfidData) {
+      // If not in dropdown list, query database directly
+      try {
+        const { data, error } = await supabase
+          .from('rfid_tags')
+          .select(`
+            uid,
+            attendee_id,
+            attendee:attendees(first_name, last_name, ticket_type)
+          `)
+          .eq('uid', scannedUid)
+          .eq('status', 'active')
+          .single();
+
+        if (data && !error) {
+          rfidData = data;
+        }
+      } catch (error) {
+        console.error('Error querying RFID:', error);
+      }
+    }
+
+    if (rfidData) {
+      setSelectedRfid(scannedUid);
+      onScan(rfidData);
+    }
+  };
+
+  // Use RFID capture hook for auto-scanning
+  const { isCapturing } = useRfidCapture({
+    onCapture: handleDirectRfidScan,
+    enabled: !disabled && !isProcessing
+  });
+
   const selectedRfidData = availableRfids.find(rfid => rfid.uid === selectedRfid);
 
   return (
@@ -94,6 +137,14 @@ export const RfidScanner = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Auto-capture indicator */}
+        {isCapturing && (
+          <div className="flex items-center justify-center p-2 bg-green-50 border border-green-200 rounded-lg">
+            <div className="animate-pulse w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+            <span className="text-sm text-green-700">Waiting for RFID scan...</span>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Select value={selectedRfid} onValueChange={handleRfidChange} disabled={disabled || isLoading || isProcessing}>
             <SelectTrigger>

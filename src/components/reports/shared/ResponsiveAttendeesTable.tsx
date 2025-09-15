@@ -21,6 +21,7 @@ import {
   Hash,
   ShoppingCart
 } from "lucide-react";
+import { RfidAssignmentCell } from "../../RfidAssignmentCell";
 import { EnhancedAttendee, TableColumn } from "../CheckInManagementTab";
 import { CollapsibleOrderGroup } from "./CollapsibleOrderGroup";
 
@@ -45,6 +46,7 @@ interface ResponsiveAttendeesTableProps {
   sortField: string;
   sortDirection: 'asc' | 'desc';
   onSort: (field: any) => void;
+  onRfidAssignmentChange?: () => void;
 }
 
 export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> = ({
@@ -62,7 +64,8 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
   onPageChange,
   sortField,
   sortDirection,
-  onSort
+  onSort,
+  onRfidAssignmentChange
 }) => {
   const isMobile = useIsMobile();
 
@@ -276,6 +279,17 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         return attendee.regfox_id ? (
           <span className="font-mono text-sm">{attendee.regfox_id}</span>
         ) : '-';
+      
+      case 'rfid_assignment':
+        return (
+          <RfidAssignmentCell
+            attendeeId={attendee.id}
+            currentRfidUid={attendee.rfid_uid}
+            currentRfidStatus={attendee.rfid_status}
+            attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+            onAssignmentComplete={() => onRfidAssignmentChange?.()}
+          />
+        );
       
       case 'notes':
         return attendee.notes ? (
