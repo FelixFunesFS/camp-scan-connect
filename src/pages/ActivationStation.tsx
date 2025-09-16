@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { phoneActivationService, GroupActivationResult, PhoneActivationService, type PhoneLookupResult } from "@/services/phoneActivationService";
-import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import { RfidManagementPanel } from "@/components/RfidManagementPanel";
 
 export default function ActivationStation() {
@@ -285,7 +285,12 @@ export default function ActivationStation() {
                               <div className="space-y-1">
                                 {lookupResult?.attendee_details?.map((attendee: any, index: number) => (
                                   <div key={index} className="flex items-center justify-between text-sm bg-white/50 p-2 rounded">
-                                    <span className="font-medium">{attendee.name}</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">{attendee.name}</span>
+                                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                        {formatMealPlan(attendee.meal_plan)}
+                                      </span>
+                                    </div>
                                     <div className="flex items-center gap-2">
                                       {attendee.rfid_uid && (
                                         <span className="text-xs bg-blue-200 px-2 py-1 rounded">
@@ -310,9 +315,14 @@ export default function ActivationStation() {
                                 <div className="space-y-1">
                                   {lookupResult.order_companions.map((companion: any, index: number) => (
                                     <div key={index} className="flex items-center justify-between text-sm bg-orange-50/50 p-2 rounded border border-orange-200">
-                                      <div>
-                                        <span className="font-medium">{companion.name}</span>
-                                        <span className="text-xs text-gray-600 ml-2">({formatPhoneNumber(companion.phone)})</span>
+                                      <div className="flex items-center gap-2">
+                                        <div>
+                                          <span className="font-medium">{companion.name}</span>
+                                          <span className="text-xs text-gray-600 ml-2">({formatPhoneNumber(companion.phone)})</span>
+                                        </div>
+                                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                                          {formatMealPlan(companion.meal_plan)}
+                                        </span>
                                       </div>
                                       <div className="flex items-center gap-2">
                                         {companion.rfid_uid && (

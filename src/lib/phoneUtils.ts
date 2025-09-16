@@ -27,3 +27,13 @@ export function formatPhoneNumberPartial(phone: string): string {
   if (cleaned.length <= 6) return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
   return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
 }
+
+/**
+ * Formats meal plan information for display
+ * @param mealPlan - The meal plan value (string or null)
+ * @returns Formatted meal plan string
+ */
+export function formatMealPlan(mealPlan: string | null): string {
+  if (!mealPlan) return "No Meal Plan";
+  return `Meal Plan ${mealPlan}`;
+}
