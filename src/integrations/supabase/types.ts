@@ -418,6 +418,7 @@ export type Database = {
           attendee_details: Json[]
           order_id: string
           total_attendees: number
+          warnings: string[]
         }[]
       }
       activate_group_by_phone: {
@@ -428,6 +429,7 @@ export type Database = {
           attendee_details: Json[]
           order_id: string
           total_attendees: number
+          warnings: string[]
         }[]
       }
       bulk_generate_mock_rfids: {

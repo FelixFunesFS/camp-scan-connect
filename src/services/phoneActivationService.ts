@@ -6,6 +6,7 @@ export interface GroupActivationResult {
   activated_count: number;
   already_active_count: number;
   attendee_details: any[];
+  warnings?: string[];
 }
 
 export interface PhoneLookupResult {

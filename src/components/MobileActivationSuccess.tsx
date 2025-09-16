@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Users, RotateCcw, Home } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle, Users, RotateCcw, Home, AlertTriangle } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { MobileAttendeeCard } from "./MobileAttendeeCard";
 import type { GroupActivationResult } from "@/services/phoneActivationService";
@@ -75,6 +76,24 @@ export function MobileActivationSuccess({
           {activationResult.activated_count} of {activationResult.total_attendees} Total
         </Badge>
       </div>
+
+      {/* RFID Warnings */}
+      {activationResult.warnings && activationResult.warnings.length > 0 && (
+        <Alert className="border-warning bg-warning/5">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          <AlertDescription className="text-warning-foreground">
+            <div className="font-medium mb-2">⚠️ Service Access Warnings:</div>
+            <div className="space-y-1 text-sm">
+              {activationResult.warnings.map((warning, index) => (
+                <div key={index}>{warning}</div>
+              ))}
+            </div>
+            <div className="mt-2 text-xs opacity-75">
+              These attendees need RFID tags assigned at the Registration Station before they can use event services.
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Attendee Details */}
       {activationResult.attendee_details && activationResult.attendee_details.length > 0 && (
