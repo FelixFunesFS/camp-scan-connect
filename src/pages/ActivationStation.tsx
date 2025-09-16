@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { phoneActivationService, GroupActivationResult, PhoneActivationService, type PhoneLookupResult } from "@/services/phoneActivationService";
+import { formatPhoneNumber } from "@/lib/phoneUtils";
 
 export default function ActivationStation() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -195,6 +196,11 @@ export default function ActivationStation() {
                           <p className="text-sm text-muted-foreground">
                             Enter the phone number used when registering for the event
                           </p>
+                          {phoneNumber && phoneNumber.length > 0 && (
+                            <p className="text-sm font-medium text-primary">
+                              {formatPhoneNumber(phoneNumber)}
+                            </p>
+                          )}
                         </div>
 
                         <Button
@@ -219,9 +225,14 @@ export default function ActivationStation() {
                     ) : (
                       <div className="space-y-6">
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                          <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                            Found {lookupResult?.attendee_count} {lookupResult?.attendee_count === 1 ? 'Person' : 'People'}
-                          </h3>
+                          <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-blue-900">
+                              Phone: {formatPhoneNumber(phoneNumber)}
+                            </h3>
+                            <p className="text-blue-800">
+                              Found {lookupResult?.attendee_count} {lookupResult?.attendee_count === 1 ? 'Person' : 'People'}
+                            </p>
+                          </div>
                           <div className="space-y-2 text-blue-800">
                             <p><strong>Registration Type:</strong> {lookupResult?.has_group_order ? 'Group Order' : 'Individual Registration(s)'}</p>
                             {lookupResult?.order_id && (
@@ -273,6 +284,9 @@ export default function ActivationStation() {
                       <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
                       <div>
                         <h3 className="text-xl font-bold text-green-800">Activation Complete!</h3>
+                        <p className="text-green-700 font-medium">
+                          Phone: {formatPhoneNumber(phoneNumber)}
+                        </p>
                         <p className="text-green-700">
                           Order #{activationResult.order_id || 'Individual'}
                         </p>
