@@ -11,6 +11,7 @@ import { RfidManagementPanel } from "@/components/RfidManagementPanel";
 import { MobilePhoneInput } from "@/components/MobilePhoneInput";
 import { MobileActivationPreview } from "@/components/MobileActivationPreview";
 import { MobileActivationSuccess } from "@/components/MobileActivationSuccess";
+import { StaffAssistanceModal } from "@/components/StaffAssistanceModal";
 
 export default function ActivationStation() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -18,6 +19,9 @@ export default function ActivationStation() {
   const [activationResult, setActivationResult] = useState<GroupActivationResult | null>(null);
   const [lookupResult, setLookupResult] = useState<PhoneLookupResult | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [errorType, setErrorType] = useState<'not_found' | 'system_error' | 'network_error'>('system_error');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -41,19 +45,23 @@ export default function ActivationStation() {
         setLookupResult(result);
         setShowPreview(true);
       } else {
-        toast({
-          title: "No Attendees Found",
-          description: "No attendees found with this phone number. Please check the number and try again.",
-          variant: "destructive",
-        });
+        setErrorType('not_found');
+        setErrorMessage('No attendees found with this phone number');
+        setShowStaffModal(true);
       }
     } catch (error) {
       console.error('Lookup error:', error);
-      toast({
-        title: "Lookup Failed",
-        description: error instanceof Error ? error.message : "There was an error looking up attendees. Please try again.",
-        variant: "destructive",
-      });
+      const errorMsg = error instanceof Error ? error.message : "Unknown error occurred";
+      
+      // Determine error type based on error message
+      if (errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('connection')) {
+        setErrorType('network_error');
+      } else {
+        setErrorType('system_error');
+      }
+      
+      setErrorMessage(errorMsg);
+      setShowStaffModal(true);
     } finally {
       setIsProcessing(false);
     }
@@ -304,6 +312,14 @@ export default function ActivationStation() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <StaffAssistanceModal
+          isOpen={showStaffModal}
+          onClose={() => setShowStaffModal(false)}
+          phoneNumber={phoneNumber}
+          errorType={errorType}
+          errorMessage={errorMessage}
+        />
       </div>
     </div>
   );

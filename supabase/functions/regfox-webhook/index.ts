@@ -632,6 +632,16 @@ serve(async (req) => {
             console.log('Attendee already exists, no action needed');
           }
         } else {
+          // Enhanced debugging for failed extraction
+          console.error('=== WEBHOOK EXTRACTION FAILURE DEBUG ===');
+          console.error('Event type:', eventType);
+          console.error('Payload data keys:', Object.keys(payload.data || {}));
+          console.error('Payload billing:', JSON.stringify(payload.data.billing, null, 2));
+          console.error('Payload registrants:', JSON.stringify(payload.data.registrants, null, 2));
+          console.error('Extracted attendeeData:', attendeeData);
+          console.error('Extracted attendeeId:', attendeeId);
+          console.error('=== END EXTRACTION FAILURE DEBUG ===');
+          
           result.errors.push('Unable to extract attendee data from webhook payload');
           console.error('Failed to extract attendee data from payload');
         }
