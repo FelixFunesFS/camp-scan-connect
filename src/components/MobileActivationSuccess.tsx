@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Users, RotateCcw, Home, AlertTriangle, RefreshCw } from "lucide-react";
+import { CheckCircle, Users, RotateCcw, Home, AlertTriangle, RefreshCw, AlertCircle } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { MobileAttendeeCard } from "./MobileAttendeeCard";
 import { phoneActivationService, PhoneActivationService } from "@/services/phoneActivationService";
@@ -60,24 +60,67 @@ export function MobileActivationSuccess({
 
   const totalServiceReady = newlyActivated.length + alreadyActive.length;
 
+  // Determine activation status and styling
+  const getActivationStatus = () => {
+    if (totalServiceReady === activationResult.total_attendees) {
+      return {
+        type: 'complete',
+        title: 'Activation Complete!',
+        subtitle: 'All attendees are ready for services',
+        icon: CheckCircle,
+        cardClass: 'border-success/30 bg-success/5',
+        iconBgClass: 'bg-success/20',
+        iconClass: 'text-success',
+        titleClass: 'text-success'
+      };
+    } else if (totalServiceReady > 0) {
+      return {
+        type: 'partial',
+        title: 'Partial Activation Complete',
+        subtitle: `${totalServiceReady} of ${activationResult.total_attendees} attendees activated`,
+        icon: AlertTriangle,
+        cardClass: 'border-warning/30 bg-warning/5',
+        iconBgClass: 'bg-warning/20',
+        iconClass: 'text-warning',
+        titleClass: 'text-warning'
+      };
+    } else {
+      return {
+        type: 'none',
+        title: 'Activation Required',
+        subtitle: 'All attendees need RFID assignment',
+        icon: AlertCircle,
+        cardClass: 'border-destructive/30 bg-destructive/5',
+        iconBgClass: 'bg-destructive/20',
+        iconClass: 'text-destructive',
+        titleClass: 'text-destructive'
+      };
+    }
+  };
+
+  const status = getActivationStatus();
+
   return (
     <div className="space-y-6">
-      {/* Success Header */}
-      <Card className="border-success/30 bg-success/5">
+      {/* Dynamic Header */}
+      <Card className={status.cardClass}>
         <CardContent className="p-6 text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-success/20 rounded-full">
-              <CheckCircle className="h-8 w-8 text-success" />
+            <div className={`p-3 rounded-full ${status.iconBgClass}`}>
+              <status.icon className={`h-8 w-8 ${status.iconClass}`} />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-success mb-2">
-            Activation Complete!
+          <h2 className={`text-2xl font-bold mb-2 ${status.titleClass}`}>
+            {status.title}
           </h2>
           <p className="text-lg font-semibold mb-1">
             {formatPhoneNumber(phoneNumber)}
           </p>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-2">
             Order #{activationResult.order_id || 'Individual'}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {status.subtitle}
           </p>
         </CardContent>
       </Card>
@@ -108,7 +151,13 @@ export function MobileActivationSuccess({
 
       {/* Total Badge */}
       <div className="flex justify-center">
-        <Badge className="bg-primary text-primary-foreground text-lg px-4 py-2">
+        <Badge className={`text-lg px-4 py-2 ${
+          status.type === 'complete' 
+            ? 'bg-success text-success-foreground' 
+            : status.type === 'partial'
+            ? 'bg-warning text-warning-foreground'
+            : 'bg-destructive text-destructive-foreground'
+        }`}>
           <Users className="h-5 w-5 mr-2" />
           {totalServiceReady} Service Ready of {activationResult.total_attendees} Total
         </Badge>
@@ -257,7 +306,7 @@ export function MobileActivationSuccess({
             className="w-full h-12 text-base font-medium"
           >
             <RotateCcw className="h-5 w-5 mr-2" />
-            Activate Another Group
+            {status.type === 'complete' ? 'Activate Another Group' : 'Activate More Attendees'}
           </Button>
           <Button
             onClick={onGoHome}
