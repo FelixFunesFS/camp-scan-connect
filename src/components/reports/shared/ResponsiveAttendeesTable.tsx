@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -137,12 +138,24 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         return (
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
-            <span>{attendee.first_name}</span>
+            <Link 
+              to={`/attendee/${attendee.id}`}
+              className="text-primary hover:underline cursor-pointer"
+            >
+              {attendee.first_name}
+            </Link>
           </div>
         );
       
       case 'last_name':
-        return attendee.last_name;
+        return (
+          <Link 
+            to={`/attendee/${attendee.id}`}
+            className="text-primary hover:underline cursor-pointer"
+          >
+            {attendee.last_name}
+          </Link>
+        );
       
       case 'email':
         return attendee.email ? (
@@ -385,9 +398,14 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                           {/* Primary Info */}
                           <div className="flex items-start justify-between">
                             <div>
-                              <h3 className="font-medium text-base">
-                                {attendee.first_name} {attendee.last_name}
-                              </h3>
+                         <h3 className="font-medium text-base">
+                           <Link 
+                             to={`/attendee/${attendee.id}`}
+                             className="text-primary hover:underline cursor-pointer"
+                           >
+                             {attendee.first_name} {attendee.last_name}
+                           </Link>
+                         </h3>
                               {attendee.email && (
                                 <p className="text-sm text-muted-foreground mt-1">
                                   {attendee.email}
@@ -430,9 +448,14 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                     {/* Primary Info */}
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-medium text-base">
-                          {attendee.first_name} {attendee.last_name}
-                        </h3>
+                         <h3 className="font-medium text-base">
+                           <Link 
+                             to={`/attendee/${attendee.id}`}
+                             className="text-primary hover:underline cursor-pointer"
+                           >
+                             {attendee.first_name} {attendee.last_name}
+                           </Link>
+                         </h3>
                         {attendee.email && (
                           <p className="text-sm text-muted-foreground mt-1">
                             {attendee.email}
