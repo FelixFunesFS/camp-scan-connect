@@ -253,11 +253,11 @@ const Ranger = () => {
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground">Gate access control and station operations</p>
+            <p className="text-muted-foreground">Gate access control and security scanning</p>
           </div>
           <Button variant="outline" onClick={handleBackToRoles}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Role Selection
+            Back to Main Hub
           </Button>
         </div>
 
@@ -286,55 +286,6 @@ const Ranger = () => {
                 </p>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Station Operations */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Station Operations
-            </CardTitle>
-            <CardDescription>
-              Access different stations for attendee services
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button
-                variant="outline"
-                className="h-20 flex flex-col gap-2"
-                onClick={() => navigate("/activation")}
-              >
-                <Users className="h-6 w-6" />
-                <span className="text-sm">Activation</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-20 flex flex-col gap-2"
-                onClick={() => navigate("/meal-station")}
-              >
-                <Utensils className="h-6 w-6" />
-                <span className="text-sm">Meals</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-20 flex flex-col gap-2"
-                onClick={() => navigate("/drinks-station")}
-              >
-                <Coffee className="h-6 w-6" />
-                <span className="text-sm">Drinks</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-20 flex flex-col gap-2"
-                onClick={() => navigate("/headphones-station")}
-              >
-                <Headphones className="h-6 w-6" />
-                <span className="text-sm">Headphones</span>
-              </Button>
-            </div>
           </CardContent>
         </Card>
 

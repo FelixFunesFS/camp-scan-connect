@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, UserCheck, Scan, ShoppingCart, Users, Settings } from "lucide-react";
+import { Shield, UserCheck, Scan, ShoppingCart, Users, Settings, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
@@ -12,6 +12,13 @@ const Index = () => {
     icon: Shield,
     color: "bg-primary text-primary-foreground",
     path: "/dashboard"
+  }, {
+    id: "ranger",
+    title: "Ranger",
+    description: "Gate access control and security scanning",
+    icon: Radio,
+    color: "bg-secondary text-secondary-foreground",
+    path: "/ranger"
   }, {
     id: "system",
     title: "System Validation",
@@ -67,7 +74,7 @@ const Index = () => {
             <Users className="h-5 w-8" />
             Select Your Role
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {roles.map(role => {
             const Icon = role.icon;
             return <Card key={role.id} className="hover:shadow-lg transition-shadow cursor-pointer group">

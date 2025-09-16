@@ -1,151 +1,130 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Utensils, Clock } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Utensils, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { RfidScanner } from "@/components/RfidScanner";
-import { rfidService } from "@/services/rfidService";
+import { BaseStationComponent, StationChildProps } from "@/components/BaseStationComponent";
 
-interface RfidTag {
-  uid: string;
-  attendee_id: string | null;
-  attendee?: {
-    first_name: string;
-    last_name: string;
-    ticket_type: string;
-  };
-}
-
-interface MealWindow {
-  type: 'breakfast' | 'lunch' | 'dinner';
-  label: string;
-  start: string;
-  end: string;
-  days: number[]; // 5 = Friday, 6 = Saturday, 0 = Sunday
-}
-
-const MEAL_WINDOWS: MealWindow[] = [
-  { type: 'breakfast', label: 'Breakfast', start: '06:00', end: '10:00', days: [6, 0] }, // Saturday, Sunday
-  { type: 'lunch', label: 'Lunch', start: '11:00', end: '15:00', days: [6] }, // Saturday only
-  { type: 'dinner', label: 'Dinner', start: '17:00', end: '21:00', days: [5, 6] }, // Friday, Saturday
+// Meal windows configuration
+const MEAL_WINDOWS = [
+  { type: 'breakfast', label: 'Breakfast', start: '07:00', end: '10:00', days: [5, 6, 0] }, // Fri, Sat, Sun
+  { type: 'lunch', label: 'Lunch', start: '12:00', end: '15:00', days: [5, 6, 0] },
+  { type: 'dinner', label: 'Dinner', start: '18:00', end: '21:00', days: [5, 6, 0] }
 ];
 
-const MAX_DAILY_MEALS = 3;
-
 export default function MealStation() {
-  const [selectedRfid, setSelectedRfid] = useState<RfidTag | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [mealCount, setMealCount] = useState(0);
-  const [currentMealWindow, setCurrentMealWindow] = useState<MealWindow | null>(null);
-  const [currentDay, setCurrentDay] = useState<string>("");
-  const [attendeeReadiness, setAttendeeReadiness] = useState<{ isReady: boolean; message: string } | null>(null);
-  const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    checkCurrentMealWindow();
-  }, []);
+  return (
+    <BaseStationComponent
+      stationType="meal"
+      stationTitle="Meal Station"
+    >
+      {({ selectedRfid, attendeeReadiness, isProcessing, setIsProcessing, recordTransaction, loadDailyCount }: StationChildProps) => (
+        <MealContent
+          selectedRfid={selectedRfid}
+          attendeeReadiness={attendeeReadiness}
+          isProcessing={isProcessing}
+          setIsProcessing={setIsProcessing}
+          recordTransaction={recordTransaction}
+          loadDailyCount={loadDailyCount}
+          toast={toast}
+        />
+      )}
+    </BaseStationComponent>
+  );
+}
+
+interface MealContentProps extends Omit<StationChildProps, 'getLatestStatus'> {
+  toast: any;
+}
+
+function MealContent({ 
+  selectedRfid, 
+  attendeeReadiness, 
+  isProcessing, 
+  setIsProcessing, 
+  recordTransaction, 
+  loadDailyCount, 
+  toast 
+}: MealContentProps) {
+  const [mealCounts, setMealCounts] = useState({ breakfast: 0, lunch: 0, dinner: 0 });
+  const [currentMealWindow, setCurrentMealWindow] = useState<any>(null);
 
   useEffect(() => {
-    if (selectedRfid) {
-      loadMealCount();
+    if (selectedRfid && attendeeReadiness?.isReady) {
+      loadMealCounts();
+      checkCurrentMealWindow();
     }
-  }, [selectedRfid]);
+  }, [selectedRfid, attendeeReadiness]);
 
-  const handleRfidScan = async (rfidData: RfidTag) => {
-    setSelectedRfid(rfidData);
-    if (rfidData.attendee_id) {
-      // Check if attendee is ready for station services
-      const readiness = await rfidService.checkAttendeeReadiness(rfidData.attendee_id);
-      setAttendeeReadiness(readiness);
-      
-      if (readiness.isReady) {
-        await loadMealCount(rfidData.attendee_id);
-      } else {
-        toast({
-          title: "Service Not Available",
-          description: readiness.message,
-          variant: "destructive",
-        });
-      }
-    }
+  const loadMealCounts = async () => {
+    const breakfast = await loadDailyCount(['meal_breakfast']);
+    const lunch = await loadDailyCount(['meal_lunch']);  
+    const dinner = await loadDailyCount(['meal_dinner']);
+    
+    setMealCounts({ breakfast, lunch, dinner });
   };
 
   const checkCurrentMealWindow = () => {
     const now = new Date();
-    const currentTime = now.toTimeString().substring(0, 5);
-    const dayOfWeek = now.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
+    const currentTime = now.toTimeString().slice(0, 5);
+    const currentDay = now.getDay();
     
-    // Set current day name
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    setCurrentDay(dayNames[dayOfWeek]);
-
-    const activeMeal = MEAL_WINDOWS.find(meal => 
-      meal.days.includes(dayOfWeek) && 
-      currentTime >= meal.start && 
-      currentTime <= meal.end
-    );
-
-    setCurrentMealWindow(activeMeal || null);
-  };
-
-  const getAvailableMealsForToday = () => {
-    const dayOfWeek = new Date().getDay();
-    return MEAL_WINDOWS.filter(meal => meal.days.includes(dayOfWeek));
-  };
-
-  const loadMealCount = async (attendeeId?: string) => {
-    const targetAttendeeId = attendeeId || selectedRfid?.attendee_id;
-    if (!targetAttendeeId) return;
-
-    const { data: transactions, error } = await supabase
-      .from("station_transactions")
-      .select("*")
-      .eq("attendee_id", targetAttendeeId)
-      .eq("station_type", "meal")
-      .gte("created_at", new Date().toISOString().split('T')[0]);
-
-    if (error) {
-      console.error("Error loading meal count:", error);
-      return;
-    }
-
-    setMealCount(transactions.length);
+    const activeWindow = MEAL_WINDOWS.find(window => {
+      return window.days.includes(currentDay) && 
+             currentTime >= window.start && 
+             currentTime <= window.end;
+    });
+    
+    setCurrentMealWindow(activeWindow);
   };
 
   const canGetMeal = () => {
-    return attendeeReadiness?.isReady && mealCount < MAX_DAILY_MEALS && currentMealWindow !== null;
+    if (!currentMealWindow) return { can: false, reason: "No active meal window" };
+    
+    const mealType = currentMealWindow.type as keyof typeof mealCounts;
+    const hasAlreadyEaten = mealCounts[mealType] > 0;
+    
+    if (hasAlreadyEaten) {
+      return { can: false, reason: `Already received ${currentMealWindow.label.toLowerCase()} today` };
+    }
+    
+    return { can: true, reason: `${currentMealWindow.label} available` };
   };
 
-  const handleMealScan = async (rfidData?: RfidTag) => {
-    const attendeeId = rfidData?.attendee_id || selectedRfid?.attendee_id;
-    if (!attendeeId || !currentMealWindow || !canGetMeal()) return;
+  const handleMealScan = async () => {
+    if (!attendeeReadiness?.isReady || !currentMealWindow) return;
+
+    const eligibility = canGetMeal();
+    if (!eligibility.can) {
+      toast({
+        title: "Meal Not Available",
+        description: eligibility.reason,
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsProcessing(true);
 
     try {
-      const transactionType = `meal_${currentMealWindow.type}` as 'meal_breakfast' | 'meal_lunch' | 'meal_dinner';
+      const transactionType = `meal_${currentMealWindow.type}` as const;
       
-      const { error } = await supabase
-        .from("station_transactions")
-        .insert({
-          attendee_id: attendeeId,
-          station_type: 'meal',
-          transaction_type: transactionType,
-          rfid_uid: rfidData?.uid || selectedRfid?.uid,
-          daily_count: mealCount + 1,
-          extra_data: { meal_type: currentMealWindow.type }
-        });
+      await recordTransaction({
+        transaction_type: transactionType,
+        daily_count: mealCounts[currentMealWindow.type as keyof typeof mealCounts] + 1
+      });
 
-      if (error) throw error;
+      // Update local count
+      setMealCounts(prev => ({
+        ...prev,
+        [currentMealWindow.type]: prev[currentMealWindow.type as keyof typeof prev] + 1
+      }));
 
-      setMealCount(prev => prev + 1);
       toast({
         title: "Meal Recorded",
-        description: `${currentMealWindow.label} meal recorded successfully`,
+        description: `${currentMealWindow.label} recorded for ${selectedRfid?.attendee?.first_name}`,
       });
     } catch (error) {
       console.error("Error recording meal:", error);
@@ -159,127 +138,77 @@ export default function MealStation() {
     }
   };
 
+  const eligibility = canGetMeal();
+
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/ranger")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Ranger Hub
-          </Button>
-          <h1 className="text-2xl font-bold">Meal Station</h1>
-        </div>
-
-        {/* Meal Window Status */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                <span className="font-medium">Today ({currentDay}):</span>
-                {currentMealWindow ? (
-                  <Badge variant="default">
-                    {currentMealWindow.label} ({currentMealWindow.start} - {currentMealWindow.end})
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary">No active meal window</Badge>
-                )}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Available meals today: {getAvailableMealsForToday().map(meal => meal.label).join(', ') || 'None'}
-              </div>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="text-center space-y-4">
+          {!attendeeReadiness?.isReady && attendeeReadiness && (
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
+              <p className="text-sm text-destructive font-medium">
+                {attendeeReadiness.message}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        {/* RFID Scanner */}
-        <RfidScanner
-          onScan={handleRfidScan}
-          stationType="meal"
-          disabled={isProcessing}
-          title="Meal Distribution"
-          placeholder="Select RFID tag..."
-        />
+          {/* Current Meal Window */}
+          <div className="p-4 bg-muted rounded-lg">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Clock className="h-5 w-5" />
+            </div>
+            {currentMealWindow ? (
+              <div>
+                <p className="font-medium text-lg">{currentMealWindow.label} Window</p>
+                <p className="text-sm text-muted-foreground">
+                  {currentMealWindow.start} - {currentMealWindow.end}
+                </p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No active meal window</p>
+            )}
+          </div>
 
-        {/* Meal Action */}
-        {selectedRfid && selectedRfid.attendee && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                {!attendeeReadiness?.isReady && attendeeReadiness && (
-                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
-                    <p className="text-sm text-destructive font-medium">
-                      {attendeeReadiness.message}
-                    </p>
-                  </div>
-                )}
-                
-                <div className="text-sm text-muted-foreground">
-                  Daily meals: <span className="font-bold">{mealCount}/{MAX_DAILY_MEALS}</span>
+          {/* Meal Counts */}
+          <div className="grid grid-cols-3 gap-2">
+            {Object.entries(mealCounts).map(([meal, count]) => (
+              <div key={meal} className="p-3 bg-muted rounded-lg text-center">
+                <div className="text-2xl font-bold text-primary">{count}</div>
+                <div className="text-xs text-muted-foreground capitalize">
+                  {meal}
                 </div>
-                
-                <Button
-                  onClick={() => handleMealScan()}
-                  disabled={isProcessing || !canGetMeal()}
-                  size="lg"
-                  className="w-full h-16 text-lg"
-                >
-                  {isProcessing ? (
-                    "Processing..."
-                  ) : !attendeeReadiness?.isReady ? (
-                    "Service Not Available"
-                  ) : !currentMealWindow ? (
-                    "No Active Meal Window"
-                  ) : mealCount >= MAX_DAILY_MEALS ? (
-                    "Daily Meal Limit Reached"
-                  ) : (
-                    <>
-                      <Utensils className="h-5 w-5 mr-2" />
-                      RECORD {currentMealWindow.label.toUpperCase()}
-                    </>
-                  )}
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            ))}
+          </div>
 
-        {/* Today's Meal Windows */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Today's Meal Schedule</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1 text-sm text-muted-foreground">
-              {getAvailableMealsForToday().length > 0 ? (
-                getAvailableMealsForToday().map((meal) => (
-                  <div key={meal.type} className="flex justify-between">
-                    <span>{meal.label}:</span>
-                    <span>{meal.start} - {meal.end}</span>
-                  </div>
-                ))
-              ) : (
-                <p>No meals available today</p>
-              )}
-            </div>
-            
-            {/* Event Schedule Overview */}
-            <div className="mt-4 pt-4 border-t">
-              <h5 className="font-medium mb-2 text-xs uppercase tracking-wide">Event Schedule</h5>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div><strong>Friday:</strong> Dinner (17:00-21:00)</div>
-                <div><strong>Saturday:</strong> Breakfast (06:00-10:00), Lunch (11:00-15:00), Dinner (17:00-21:00)</div>
-                <div><strong>Sunday:</strong> Breakfast (06:00-10:00)</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+          {/* Action Button */}
+          <Button
+            onClick={handleMealScan}
+            disabled={isProcessing || !attendeeReadiness?.isReady || !eligibility.can}
+            size="lg"
+            className="w-full h-16 text-lg"
+          >
+            {isProcessing ? (
+              "Processing..."
+            ) : !attendeeReadiness?.isReady ? (
+              "Service Not Available"
+            ) : !currentMealWindow ? (
+              "No Active Meal Window"
+            ) : !eligibility.can ? (
+              eligibility.reason
+            ) : (
+              <>
+                <Utensils className="h-5 w-5 mr-2" />
+                RECORD {currentMealWindow.label.toUpperCase()}
+              </>
+            )}
+          </Button>
+
+          <div className="text-center text-sm text-muted-foreground">
+            <p>One meal per window - breakfast, lunch, and dinner</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
