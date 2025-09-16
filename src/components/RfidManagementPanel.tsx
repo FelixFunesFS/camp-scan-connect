@@ -27,6 +27,7 @@ interface GenerationResult {
 
 export const RfidManagementPanel: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [stats, setStats] = useState<RfidStats | null>(null);
   const [lastGenerated, setLastGenerated] = useState<GeneratedRfid[]>([]);
   const { toast } = useToast();
@@ -63,6 +64,40 @@ export const RfidManagementPanel: React.FC = () => {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleClearMockRfids = async () => {
+    setIsClearing(true);
+    try {
+      console.log('Clearing all mock RFIDs...');
+
+      const { data, error } = await supabase.rpc('cleanup_mock_rfids');
+
+      if (error) throw error;
+
+      const result = data[0];
+      
+      toast({
+        title: "Mock RFIDs Cleared",
+        description: `Removed ${result.deleted_count} mock RFID tags`,
+      });
+
+      // Refresh stats and clear generated list
+      await loadCurrentStats();
+      setLastGenerated([]);
+
+      console.log(`Cleared ${result.deleted_count} mock RFIDs`);
+
+    } catch (error) {
+      console.error('Error clearing mock RFIDs:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to clear mock RFIDs",
+        variant: "destructive",
+      });
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -149,7 +184,7 @@ export const RfidManagementPanel: React.FC = () => {
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => handleBulkGenerate(50)}
-                disabled={isGenerating}
+                disabled={isGenerating || isClearing}
                 variant="outline"
               >
                 {isGenerating ? (
@@ -162,7 +197,7 @@ export const RfidManagementPanel: React.FC = () => {
               
               <Button
                 onClick={() => handleBulkGenerate(100)}
-                disabled={isGenerating}
+                disabled={isGenerating || isClearing}
               >
                 {isGenerating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -174,7 +209,7 @@ export const RfidManagementPanel: React.FC = () => {
               
               <Button
                 onClick={() => handleBulkGenerate(500)}
-                disabled={isGenerating}
+                disabled={isGenerating || isClearing}
                 variant="secondary"
               >
                 {isGenerating ? (
@@ -186,13 +221,30 @@ export const RfidManagementPanel: React.FC = () => {
               </Button>
             </div>
 
-            <Button
-              onClick={loadCurrentStats}
-              variant="ghost"
-              size="sm"
-            >
-              Refresh Statistics
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleClearMockRfids}
+                disabled={isGenerating || isClearing}
+                variant="destructive"
+                size="sm"
+              >
+                {isClearing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="h-4 w-4" />
+                )}
+                Clear All Mock RFIDs
+              </Button>
+
+              <Button
+                onClick={loadCurrentStats}
+                disabled={isGenerating || isClearing}
+                variant="ghost"
+                size="sm"
+              >
+                Refresh Statistics
+              </Button>
+            </div>
           </div>
 
           {/* Recently Generated */}
