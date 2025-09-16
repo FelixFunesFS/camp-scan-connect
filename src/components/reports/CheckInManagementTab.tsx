@@ -470,8 +470,28 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   
+  // Apply pagination properly for both views
   const paginatedData = isGroupedView 
-    ? (sortedAttendees as GroupedAttendee[])
+    ? (() => {
+        // For grouped view, flatten, paginate, then regroup
+        const allAttendees = (sortedAttendees as GroupedAttendee[]).reduce((acc, group) => [...acc, ...group.attendees], [] as EnhancedAttendee[]);
+        const paginatedAttendees = allAttendees.slice(startIndex, endIndex);
+        
+        // Regroup the paginated attendees
+        const regrouped = new Map<string, EnhancedAttendee[]>();
+        paginatedAttendees.forEach(attendee => {
+          const key = attendee.order_id || 'no-order';
+          if (!regrouped.has(key)) {
+            regrouped.set(key, []);
+          }
+          regrouped.get(key)!.push(attendee);
+        });
+        
+        return Array.from(regrouped.entries()).map(([orderId, attendees]) => ({
+          orderId: orderId === 'no-order' ? null : orderId,
+          attendees
+        }));
+      })()
     : (sortedAttendees as EnhancedAttendee[]).slice(startIndex, endIndex);
 
   // Sort handler

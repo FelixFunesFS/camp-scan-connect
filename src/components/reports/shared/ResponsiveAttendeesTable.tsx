@@ -535,9 +535,9 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                   defaultOpen={group.attendees.length <= 5}
                 >
                   {group.attendees.map((attendee) => (
-                    <tr key={attendee.id} className="border-b hover:bg-muted/50 ml-4">
+                    <tr key={attendee.id} className="border-b hover:bg-muted/50">
                       {visibleTableColumns.map((column) => (
-                        <td key={column.key} className="p-4 text-sm">
+                        <td key={column.key} className="p-3 text-sm">
                           {renderCellContent(column.key, attendee)}
                         </td>
                       ))}

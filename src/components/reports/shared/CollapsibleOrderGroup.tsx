@@ -23,23 +23,29 @@ export const CollapsibleOrderGroup: React.FC<CollapsibleOrderGroupProps> = ({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger asChild>
-        <div>
-          <OrderGroupHeader
-            orderId={orderId}
-            attendees={attendees}
-            isExpanded={isOpen}
-            onToggle={() => setIsOpen(!isOpen)}
-          />
-        </div>
-      </CollapsibleTrigger>
-      
-      <CollapsibleContent>
-        <div className="border-l-2 border-muted ml-4">
-          {children}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+    <>
+      <tr>
+        <td colSpan={visibleColumns.length} className="p-0">
+          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+            <CollapsibleTrigger asChild>
+              <div className="w-full">
+                <OrderGroupHeader
+                  orderId={orderId}
+                  attendees={attendees}
+                  isExpanded={isOpen}
+                  onToggle={() => setIsOpen(!isOpen)}
+                />
+              </div>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent>
+              <div className="bg-muted/10">
+                {children}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </td>
+      </tr>
+    </>
   );
 };
