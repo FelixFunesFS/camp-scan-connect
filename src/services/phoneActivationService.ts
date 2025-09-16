@@ -162,6 +162,28 @@ export class PhoneActivationService {
     }
   }
 
+  static async activateRemainingRfidsByPhone(
+    phone: string,
+    activationMethod: 'self_activated' | 'staff_assisted' = 'self_activated'
+  ): Promise<GroupActivationResult | null> {
+    try {
+      const { data, error } = await supabase.rpc('activate_remaining_rfids_by_phone', {
+        p_phone: phone,
+        p_activation_method: activationMethod
+      });
+
+      if (error) {
+        console.error('Error activating remaining RFIDs:', error);
+        throw new Error(`Failed to activate remaining RFIDs: ${error.message}`);
+      }
+
+      return data.length > 0 ? data[0] : null;
+    } catch (error) {
+      console.error('Remaining RFID activation error:', error);
+      throw error;
+    }
+  }
+
   static async deactivateAllRfids(reason?: string): Promise<number> {
     try {
       const { data, error } = await supabase

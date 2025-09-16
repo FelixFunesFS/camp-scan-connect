@@ -2,9 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Users, RotateCcw, Home, AlertTriangle } from "lucide-react";
+import { CheckCircle, Users, RotateCcw, Home, AlertTriangle, RefreshCw } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { MobileAttendeeCard } from "./MobileAttendeeCard";
+import { phoneActivationService, PhoneActivationService } from "@/services/phoneActivationService";
+import { useState } from "react";
 import type { GroupActivationResult } from "@/services/phoneActivationService";
 
 interface MobileActivationSuccessProps {
@@ -12,16 +14,51 @@ interface MobileActivationSuccessProps {
   activationResult: GroupActivationResult;
   onReset: () => void;
   onGoHome: () => void;
+  onUpdate?: (result: GroupActivationResult) => void;
 }
 
 export function MobileActivationSuccess({
   phoneNumber,
   activationResult,
   onReset,
-  onGoHome
+  onGoHome,
+  onUpdate
 }: MobileActivationSuccessProps) {
-  const newlyActivated = activationResult.activated_count - activationResult.already_active_count;
-  const alreadyActive = activationResult.already_active_count;
+  const [isActivatingRemaining, setIsActivatingRemaining] = useState(false);
+  
+  const newlyActivated = activationResult.attendee_details?.filter((attendee: any) => 
+    !attendee.was_already_active && attendee.can_use_services
+  ) || [];
+  
+  const alreadyActive = activationResult.attendee_details?.filter((attendee: any) => 
+    attendee.was_already_active
+  ) || [];
+
+  const noRfidAttendees = activationResult.attendee_details?.filter((attendee: any) => 
+    !attendee.has_rfid
+  ) || [];
+
+  const pendingRfidAttendees = activationResult.attendee_details?.filter((attendee: any) => 
+    attendee.has_rfid && !attendee.activated_at
+  ) || [];
+
+  const handleActivateRemaining = async () => {
+    if (pendingRfidAttendees.length === 0) return;
+    
+    setIsActivatingRemaining(true);
+    try {
+      const result = await PhoneActivationService.activateRemainingRfidsByPhone(phoneNumber);
+      if (result && onUpdate) {
+        onUpdate(result);
+      }
+    } catch (error) {
+      console.error('Error activating remaining RFIDs:', error);
+    } finally {
+      setIsActivatingRemaining(false);
+    }
+  };
+
+  const totalServiceReady = newlyActivated.length + alreadyActive.length;
 
   return (
     <div className="space-y-6">
@@ -50,7 +87,7 @@ export function MobileActivationSuccess({
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-success mb-1">
-              {newlyActivated}
+              {newlyActivated.length}
             </div>
             <div className="text-sm text-muted-foreground">
               Newly Activated
@@ -60,7 +97,7 @@ export function MobileActivationSuccess({
         <Card>
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-info mb-1">
-              {alreadyActive}
+              {alreadyActive.length}
             </div>
             <div className="text-sm text-muted-foreground">
               Already Active
@@ -73,7 +110,7 @@ export function MobileActivationSuccess({
       <div className="flex justify-center">
         <Badge className="bg-primary text-primary-foreground text-lg px-4 py-2">
           <Users className="h-5 w-5 mr-2" />
-          {activationResult.activated_count} of {activationResult.total_attendees} Total
+          {totalServiceReady} Service Ready of {activationResult.total_attendees} Total
         </Badge>
       </div>
 
@@ -81,15 +118,46 @@ export function MobileActivationSuccess({
       {activationResult.warnings && activationResult.warnings.length > 0 && (
         <Alert className="border-warning bg-warning/5">
           <AlertTriangle className="h-4 w-4 text-warning" />
-          <AlertDescription className="text-warning-foreground">
-            <div className="font-medium mb-2">⚠️ Service Access Warnings:</div>
-            <div className="space-y-1 text-sm">
-              {activationResult.warnings.map((warning, index) => (
-                <div key={index}>{warning}</div>
+          <AlertDescription>
+            <div className="space-y-1">
+              {activationResult.warnings.map((warning: string, index: number) => (
+                <div key={index} className="text-amber-800">
+                  {warning}
+                </div>
               ))}
             </div>
-            <div className="mt-2 text-xs opacity-75">
-              These attendees need RFID tags assigned at the Registration Station before they can use event services.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Activate Remaining RFIDs Alert */}
+      {pendingRfidAttendees.length > 0 && (
+        <Alert className="border-amber-300 bg-amber-50">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <div className="text-amber-800 font-medium">
+                {pendingRfidAttendees.length} attendee(s) with RFID can still be activated
+              </div>
+              <Button 
+                onClick={handleActivateRemaining}
+                disabled={isActivatingRemaining}
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
+                {isActivatingRemaining ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Activating...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Activate Remaining RFIDs
+                  </>
+                )}
+              </Button>
             </div>
           </AlertDescription>
         </Alert>
@@ -97,24 +165,86 @@ export function MobileActivationSuccess({
 
       {/* Attendee Details */}
       {activationResult.attendee_details && activationResult.attendee_details.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-medium text-center">Activated Attendees</h3>
-          <div className="space-y-2">
-            {activationResult.attendee_details.map((attendee: any, index: number) => (
-              <MobileAttendeeCard
-                key={index}
-                attendee={{
-                  name: attendee.name,
-                  order_id: attendee.order_id,
-                  rfid_uid: attendee.rfid_uid,
-                  is_activated: true,
-                  activated_at: attendee.activated_at,
-                }}
-                type={attendee.was_already_active ? 'companion' : 'direct'}
-                showDetails={false}
-              />
-            ))}
-          </div>
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-foreground">Attendee Details</h3>
+          
+          {/* Service Ready Attendees */}
+          {(newlyActivated.length > 0 || alreadyActive.length > 0) && (
+            <div className="space-y-2">
+              <h4 className="text-md font-medium text-green-700">✅ Service Ready</h4>
+              <div className="space-y-2">
+                {[...newlyActivated, ...alreadyActive].map((attendee: any, index: number) => (
+                  <MobileAttendeeCard
+                    key={`active-${index}`}
+                    attendee={{
+                      name: attendee.name,
+                      phone: phoneNumber,
+                      order_id: attendee.order_id,
+                      rfid_uid: attendee.rfid_uid,
+                      activated_at: attendee.activated_at,
+                      meal_plan: "Standard",
+                      is_activated: true
+                    }}
+                    type="direct"
+                    showDetails={false}
+                    onToggleDetails={() => {}}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pending RFID Attendees */}
+          {pendingRfidAttendees.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-md font-medium text-amber-700">⏳ Pending Activation</h4>
+              <div className="space-y-2">
+                {pendingRfidAttendees.map((attendee: any, index: number) => (
+                  <MobileAttendeeCard
+                    key={`pending-${index}`}
+                    attendee={{
+                      name: attendee.name,
+                      phone: phoneNumber,
+                      order_id: attendee.order_id,
+                      rfid_uid: attendee.rfid_uid,
+                      activated_at: null,
+                      meal_plan: "Standard",
+                      is_activated: false
+                    }}
+                    type="direct"
+                    showDetails={false}
+                    onToggleDetails={() => {}}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* No RFID Attendees */}
+          {noRfidAttendees.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-md font-medium text-red-700">❌ RFID Required</h4>
+              <div className="space-y-2">
+                {noRfidAttendees.map((attendee: any, index: number) => (
+                  <MobileAttendeeCard
+                    key={`no-rfid-${index}`}
+                    attendee={{
+                      name: attendee.name,
+                      phone: phoneNumber,
+                      order_id: attendee.order_id,
+                      rfid_uid: null,
+                      activated_at: null,
+                      meal_plan: "Standard",
+                      is_activated: false
+                    }}
+                    type="direct"
+                    showDetails={false}
+                    onToggleDetails={() => {}}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -432,6 +432,17 @@ export type Database = {
           warnings: string[]
         }[]
       }
+      activate_remaining_rfids_by_phone: {
+        Args: { p_activation_method?: string; p_phone: string }
+        Returns: {
+          activated_count: number
+          already_active_count: number
+          attendee_details: Json[]
+          order_id: string
+          total_attendees: number
+          warnings: string[]
+        }[]
+      }
       bulk_generate_mock_rfids: {
         Args: { p_limit?: number }
         Returns: {

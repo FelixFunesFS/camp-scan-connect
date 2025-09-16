@@ -267,6 +267,7 @@ export default function ActivationStation() {
                     activationResult={activationResult}
                     onReset={resetForm}
                     onGoHome={() => navigate("/")}
+                    onUpdate={(result) => setActivationResult(result)}
                   />
                 )}
               </CardContent>

@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, User, Phone, CreditCard, CheckCircle2, Clock } from "lucide-react";
+import { ChevronDown, ChevronUp, User, Phone, CreditCard, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 
 interface AttendeeData {
@@ -33,9 +33,34 @@ export function MobileAttendeeCard({
 }: MobileAttendeeCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const isActivated = attendee.is_activated || attendee.activated_at;
   const hasRfid = attendee.rfid_uid;
+  const isActivated = attendee.is_activated || attendee.activated_at;
   const isMockRfid = attendee.rfid_uid?.startsWith('MOCK');
+
+  const getActivationStatus = () => {
+    if (hasRfid && isActivated) {
+      return (
+        <Badge className="text-xs bg-green-100 text-green-800 border-green-200">
+          <CheckCircle2 className="h-3 w-3 mr-1" />
+          Active
+        </Badge>
+      );
+    }
+    if (!hasRfid) {
+      return (
+        <Badge variant="destructive" className="text-xs bg-red-100 text-red-800 border-red-200">
+          <AlertTriangle className="h-3 w-3 mr-1" />
+          No RFID
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-xs text-amber-700 border-amber-200 bg-amber-50">
+        <Clock className="h-3 w-3 mr-1" />
+        Pending
+      </Badge>
+    );
+  };
 
   return (
     <Card className={`transition-all duration-200 ${
@@ -59,17 +84,7 @@ export function MobileAttendeeCard({
               
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Activation Status */}
-                {isActivated ? (
-                  <Badge className="text-xs bg-green-100 text-green-800 border-green-200">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Active
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs text-amber-700 border-amber-200 bg-amber-50">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Pending
-                  </Badge>
-                )}
+                {getActivationStatus()}
 
                 {/* Meal Plan */}
                 <Badge variant="secondary" className="text-xs">
