@@ -9,22 +9,24 @@ import { ArrowLeft, Power, PowerOff, Phone, Users, CheckCircle, XCircle } from "
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { phoneActivationService, GroupActivationResult, PhoneActivationService } from "@/services/phoneActivationService";
+import { phoneActivationService, GroupActivationResult, PhoneActivationService, type PhoneLookupResult } from "@/services/phoneActivationService";
 
 export default function ActivationStation() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [activationResult, setActivationResult] = useState<GroupActivationResult | null>(null);
+  const [lookupResult, setLookupResult] = useState<PhoneLookupResult | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const [selectedRfid, setSelectedRfid] = useState("");
   const [activationStatus, setActivationStatus] = useState<string>('inactive');
   const navigate = useNavigate();
   const { toast } = useToast();
 
-const handlePhoneActivation = async () => {
-    if (!phoneNumber || phoneNumber.length !== 10) {
+  const handlePhoneLookup = async () => {
+    if (phoneNumber.length !== 10) {
       toast({
         title: "Invalid Phone Number",
-        description: "Please enter a 10-digit phone number.",
+        description: "Please enter a valid 10-digit phone number",
         variant: "destructive",
       });
       return;
@@ -32,32 +34,60 @@ const handlePhoneActivation = async () => {
 
     setIsProcessing(true);
     try {
-      const result = await PhoneActivationService.activateGroupByPhone(phoneNumber, 'self_activated');
+      const result = await PhoneActivationService.lookupPhonePreview(phoneNumber);
       
-      if (!result) {
+      if (result && result.attendee_count > 0) {
+        setLookupResult(result);
+        setShowPreview(true);
+      } else {
         toast({
-          title: "No Order Found",
-          description: "No order found for this phone number. Please check the number and try again.",
+          title: "No Attendees Found",
+          description: "No attendees found with this phone number",
           variant: "destructive",
         });
-        return;
       }
-
-      setActivationResult(result);
-      
-      // Show success message with details
-      const veteranCount = result.attendee_details?.filter(a => a.name.toLowerCase().includes('veteran')).length || 0;
-      const veteranMessage = veteranCount > 0 ? ` Thank you for your service!` : '';
-      
-      toast({
-        title: "Group Activated Successfully!",
-        description: `${result.activated_count} of ${result.total_attendees} members activated.${veteranMessage}`,
-      });
     } catch (error) {
-      console.error("Phone activation error:", error);
+      console.error('Lookup error:', error);
+      toast({
+        title: "Lookup Failed",
+        description: "There was an error looking up attendees. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmActivation = async () => {
+    if (!lookupResult) return;
+
+    setIsProcessing(true);
+    try {
+      const result = await PhoneActivationService.activateGroupByPhone(
+        phoneNumber,
+        'self_activated'
+      );
+
+      if (result) {
+        setActivationResult(result);
+        toast({
+          title: "Activation Successful!",
+          description: `Activated ${result.activated_count} attendee(s)`,
+        });
+        setShowPreview(false);
+        setLookupResult(null);
+      } else {
+        toast({
+          title: "Activation Failed",
+          description: "Unable to activate attendees",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Activation error:', error);
       toast({
         title: "Activation Failed",
-        description: "Failed to activate group. Please try again or contact staff.",
+        description: "There was an error activating your group. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -100,6 +130,8 @@ const handlePhoneActivation = async () => {
   const resetForm = () => {
     setPhoneNumber("");
     setActivationResult(null);
+    setLookupResult(null);
+    setShowPreview(false);
   };
 
   return (
@@ -134,55 +166,107 @@ const handlePhoneActivation = async () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {!activationResult ? (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Enter your phone number</Label>
-                      <InputOTP
-                        maxLength={10}
-                        value={phoneNumber}
-                        onChange={(value) => setPhoneNumber(value)}
-                      >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                        </InputOTPGroup>
-                        <InputOTPGroup>
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                        <InputOTPGroup>
-                          <InputOTPSlot index={6} />
-                          <InputOTPSlot index={7} />
-                          <InputOTPSlot index={8} />
-                          <InputOTPSlot index={9} />
-                        </InputOTPGroup>
-                      </InputOTP>
-                      <p className="text-sm text-muted-foreground">
-                        Enter the phone number used when registering for the event
-                      </p>
-                    </div>
+                  <div className="space-y-6">
+                    {!showPreview ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Enter your phone number</Label>
+                          <InputOTP
+                            maxLength={10}
+                            value={phoneNumber}
+                            onChange={(value) => setPhoneNumber(value)}
+                          >
+                            <InputOTPGroup>
+                              <InputOTPSlot index={0} />
+                              <InputOTPSlot index={1} />
+                              <InputOTPSlot index={2} />
+                            </InputOTPGroup>
+                            <InputOTPGroup>
+                              <InputOTPSlot index={3} />
+                              <InputOTPSlot index={4} />
+                              <InputOTPSlot index={5} />
+                            </InputOTPGroup>
+                            <InputOTPGroup>
+                              <InputOTPSlot index={6} />
+                              <InputOTPSlot index={7} />
+                              <InputOTPSlot index={8} />
+                              <InputOTPSlot index={9} />
+                            </InputOTPGroup>
+                          </InputOTP>
+                          <p className="text-sm text-muted-foreground">
+                            Enter the phone number used when registering for the event
+                          </p>
+                        </div>
 
-                    <Button
-                      onClick={handlePhoneActivation}
-                      disabled={isProcessing || phoneNumber.length !== 10}
-                      size="lg"
-                      className="w-full h-16 text-lg"
-                    >
-                      {isProcessing ? (
-                        <>
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
-                          Activating...
-                        </>
-                      ) : (
-                        <>
-                          <Power className="h-6 w-6 mr-3" />
-                          ACTIVATE MY GROUP
-                        </>
-                      )}
-                    </Button>
-                  </>
+                        <Button
+                          onClick={handlePhoneLookup}
+                          disabled={isProcessing || phoneNumber.length !== 10}
+                          size="lg"
+                          className="w-full h-16 text-lg"
+                        >
+                          {isProcessing ? (
+                            <>
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                              Looking up...
+                            </>
+                          ) : (
+                            <>
+                              <Users className="h-6 w-6 mr-3" />
+                              LOOK UP MY REGISTRATION
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                          <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                            Found {lookupResult?.attendee_count} {lookupResult?.attendee_count === 1 ? 'Person' : 'People'}
+                          </h3>
+                          <div className="space-y-2 text-blue-800">
+                            <p><strong>Registration Type:</strong> {lookupResult?.has_group_order ? 'Group Order' : 'Individual Registration(s)'}</p>
+                            {lookupResult?.order_id && (
+                              <p><strong>Order ID:</strong> {lookupResult.order_id}</p>
+                            )}
+                          </div>
+                          
+                          {lookupResult?.attendee_details && lookupResult.attendee_details.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="font-medium text-blue-900 mb-2">Attendees to activate:</h4>
+                              <ul className="space-y-1">
+                                {lookupResult.attendee_details.map((attendee: any, index: number) => (
+                                  <li key={index} className="text-sm">
+                                    {attendee.name}
+                                    {attendee.is_activated && " ✅ (Already Activated)"}
+                                    {attendee.rfid_uid && ` - RFID: ${attendee.rfid_uid}`}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-3">
+                          <Button 
+                            onClick={handleConfirmActivation}
+                            disabled={isProcessing}
+                            className="flex-1"
+                            size="lg"
+                          >
+                            {isProcessing ? "Activating..." : "Confirm Activation"}
+                          </Button>
+                          <Button 
+                            onClick={() => setShowPreview(false)}
+                            variant="outline"
+                            className="flex-1"
+                            size="lg"
+                          >
+                            Back
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     {/* Success Display */}
@@ -191,7 +275,7 @@ const handlePhoneActivation = async () => {
                       <div>
                         <h3 className="text-xl font-bold text-green-800">Activation Complete!</h3>
                         <p className="text-green-700">
-                          Order #{activationResult.order_id}
+                          Order #{activationResult.order_id || 'Individual'}
                         </p>
                         <div className="mt-2 text-lg">
                           <Badge variant="secondary" className="text-lg px-4 py-2">
@@ -269,6 +353,20 @@ const handlePhoneActivation = async () => {
                       <PowerOff className="h-5 w-5 mr-2" />
                       Sunday Mass Deactivation
                     </Button>
+                    
+                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Need full staff tools?</strong> Visit the{" "}
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-blue-600 underline"
+                          onClick={() => navigate("/staff-hub")}
+                        >
+                          Staff Hub
+                        </Button>
+                        {" "}for comprehensive activation and deactivation tools.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>

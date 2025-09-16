@@ -280,6 +280,13 @@ export function StaffActivationHub() {
               </TabsList>
 
               <TabsContent value="activation" className="mt-6">
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="font-semibold text-blue-900 mb-2">Phone Activation Available</h3>
+                  <p className="text-blue-800 text-sm">
+                    Staff can also use phone number lookup for activations. Enter a phone number to see 
+                    if it's an individual registration or group order before activating.
+                  </p>
+                </div>
                 <StaffActivationPanel staffId={staffId || undefined} />
               </TabsContent>
 

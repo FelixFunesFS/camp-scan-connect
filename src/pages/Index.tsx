@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, UserCheck, Scan, ShoppingCart, Users, Settings, Radio } from "lucide-react";
+import { Shield, UserCheck, Scan, ShoppingCart, Users, Settings, Radio, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
@@ -36,16 +36,6 @@ const Index = () => {
     title: "Headphones Station",
     description: "Silent disco equipment checkout",
     path: "/headphones-station"
-  }, {
-    id: "activation",
-    title: "Activation Station",
-    description: "RFID activation and deactivation",
-    path: "/activation"
-  }, {
-    id: "staff-hub",
-    title: "Staff Hub",
-    description: "Staff-assisted activation and deactivation tools",
-    path: "/staff-hub"
   }];
   return <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
       <div className="max-w-4xl mx-auto">
@@ -92,13 +82,58 @@ const Index = () => {
           </div>
         </div>
 
+        {/* Activation Tools */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+            <Zap className="h-5 w-5" />
+            Activation Tools
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/activation")}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-lg mb-2">Self-Service Activation</h3>
+                <p className="text-sm text-muted-foreground mb-3">Attendees activate their own wristbands using phone numbers</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/activation");
+                  }}
+                  className="w-full"
+                >
+                  Access Self-Service
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-blue-200 bg-blue-50/50" onClick={() => navigate("/staff-hub")}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-lg mb-2 text-blue-700">Staff Hub</h3>
+                <p className="text-sm text-muted-foreground mb-3">Comprehensive staff tools for activation, deactivation, and management</p>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/staff-hub");
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  Access Staff Tools
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         {/* Station Operations */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
             <Scan className="h-5 w-5" />
             Station Operations
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {stations.map(station => (
               <Card key={station.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardContent className="p-4">

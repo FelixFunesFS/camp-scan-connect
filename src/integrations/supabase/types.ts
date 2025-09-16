@@ -440,6 +440,15 @@ export type Database = {
         }
         Returns: number
       }
+      lookup_attendees_by_phone: {
+        Args: { p_phone: string }
+        Returns: {
+          attendee_count: number
+          attendee_details: Json[]
+          has_group_order: boolean
+          order_id: string
+        }[]
+      }
       normalize_phone: {
         Args: { phone_input: string }
         Returns: string

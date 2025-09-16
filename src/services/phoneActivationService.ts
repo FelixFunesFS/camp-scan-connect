@@ -8,6 +8,13 @@ export interface GroupActivationResult {
   attendee_details: any[];
 }
 
+export interface PhoneLookupResult {
+  attendee_count: number;
+  has_group_order: boolean;
+  order_id: string | null;
+  attendee_details: any[];
+}
+
 export class PhoneActivationService {
   static normalizePhone(phone: string): string {
     // Remove all non-digit characters and return last 10 digits
@@ -33,6 +40,24 @@ export class PhoneActivationService {
       return data.length > 0 ? data[0] : null;
     } catch (error) {
       console.error('Phone activation error:', error);
+      throw error;
+    }
+  }
+
+  static async lookupPhonePreview(phone: string): Promise<PhoneLookupResult | null> {
+    try {
+      const { data, error } = await supabase.rpc('lookup_attendees_by_phone', {
+        p_phone: phone
+      });
+
+      if (error) {
+        console.error('Error looking up phone preview:', error);
+        throw new Error(`Failed to lookup phone: ${error.message}`);
+      }
+
+      return data.length > 0 ? data[0] : null;
+    } catch (error) {
+      console.error('Phone preview lookup error:', error);
       throw error;
     }
   }
