@@ -51,9 +51,9 @@ export type Database = {
       }
       attendees: {
         Row: {
+          activated_at: string | null
           additional_guests: Json | null
           arrival_window: string | null
-          checked_in_at: string | null
           city: string | null
           country: string | null
           created_at: string
@@ -90,9 +90,9 @@ export type Database = {
           waiver_signed: boolean | null
         }
         Insert: {
+          activated_at?: string | null
           additional_guests?: Json | null
           arrival_window?: string | null
-          checked_in_at?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -129,9 +129,9 @@ export type Database = {
           waiver_signed?: boolean | null
         }
         Update: {
+          activated_at?: string | null
           additional_guests?: Json | null
           arrival_window?: string | null
-          checked_in_at?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -225,6 +225,8 @@ export type Database = {
       }
       rfid_tags: {
         Row: {
+          activated_at: string | null
+          activation_method: string | null
           attendee_id: string | null
           deactivated_at: string | null
           issued_at: string | null
@@ -233,6 +235,8 @@ export type Database = {
           uid: string
         }
         Insert: {
+          activated_at?: string | null
+          activation_method?: string | null
           attendee_id?: string | null
           deactivated_at?: string | null
           issued_at?: string | null
@@ -241,6 +245,8 @@ export type Database = {
           uid: string
         }
         Update: {
+          activated_at?: string | null
+          activation_method?: string | null
           attendee_id?: string | null
           deactivated_at?: string | null
           issued_at?: string | null
@@ -328,6 +334,7 @@ export type Database = {
       }
       station_transactions: {
         Row: {
+          activation_method: string | null
           attendee_id: string
           created_at: string
           current_status: string | null
@@ -340,6 +347,7 @@ export type Database = {
           transaction_type: Database["public"]["Enums"]["transaction_type"]
         }
         Insert: {
+          activation_method?: string | null
           attendee_id: string
           created_at?: string
           current_status?: string | null
@@ -352,6 +360,7 @@ export type Database = {
           transaction_type: Database["public"]["Enums"]["transaction_type"]
         }
         Update: {
+          activation_method?: string | null
           attendee_id?: string
           created_at?: string
           current_status?: string | null
@@ -401,6 +410,16 @@ export type Database = {
         Args: { p_sync_id: string; p_timeout_minutes?: number }
         Returns: string
       }
+      activate_group_by_phone: {
+        Args: { p_activation_method?: string; p_phone: string }
+        Returns: {
+          activated_count: number
+          already_active_count: number
+          attendee_details: Json[]
+          order_id: string
+          total_attendees: number
+        }[]
+      }
       can_start_sync: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -420,6 +439,10 @@ export type Database = {
           p_transaction_types: Database["public"]["Enums"]["transaction_type"][]
         }
         Returns: number
+      }
+      normalize_phone: {
+        Args: { phone_input: string }
+        Returns: string
       }
       release_sync_lock: {
         Args: { p_sync_id: string }
