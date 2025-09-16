@@ -53,12 +53,25 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const regfoxFormId = Deno.env.get('REGFOX_FORM_ID')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log('RegFox webhook received');
 
     const payload: RegFoxWebhookPayload = await req.json();
     console.log('Webhook payload:', payload);
+
+    // Validate form ID matches expected form
+    if (payload.formId && payload.formId.toString() !== regfoxFormId) {
+      console.log(`Form ID mismatch: received ${payload.formId}, expected ${regfoxFormId}`);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `Form ID mismatch: received ${payload.formId}, expected ${regfoxFormId}` 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Create sync log entry for webhook
     const { data: syncLog, error: syncLogError } = await supabase
