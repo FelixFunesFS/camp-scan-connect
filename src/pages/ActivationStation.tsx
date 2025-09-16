@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ArrowLeft, Power, PowerOff, Phone, Users, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Power, Smartphone, Shield, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { phoneActivationService, GroupActivationResult, PhoneActivationService, type PhoneLookupResult } from "@/services/phoneActivationService";
-import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import { RfidManagementPanel } from "@/components/RfidManagementPanel";
+import { MobilePhoneInput } from "@/components/MobilePhoneInput";
+import { MobileActivationPreview } from "@/components/MobileActivationPreview";
+import { MobileActivationSuccess } from "@/components/MobileActivationSuccess";
 
 export default function ActivationStation() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -19,16 +18,16 @@ export default function ActivationStation() {
   const [activationResult, setActivationResult] = useState<GroupActivationResult | null>(null);
   const [lookupResult, setLookupResult] = useState<PhoneLookupResult | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [selectedRfid, setSelectedRfid] = useState("");
-  const [activationStatus, setActivationStatus] = useState<string>('inactive');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const handlePhoneLookup = async () => {
-    if (phoneNumber.length !== 10) {
+    const validation = PhoneActivationService.validatePhone(phoneNumber);
+    if (!validation.isValid) {
       toast({
         title: "Invalid Phone Number",
-        description: "Please enter a valid 10-digit phone number",
+        description: validation.error,
         variant: "destructive",
       });
       return;
@@ -44,7 +43,7 @@ export default function ActivationStation() {
       } else {
         toast({
           title: "No Attendees Found",
-          description: "No attendees found with this phone number",
+          description: "No attendees found with this phone number. Please check the number and try again.",
           variant: "destructive",
         });
       }
@@ -52,7 +51,7 @@ export default function ActivationStation() {
       console.error('Lookup error:', error);
       toast({
         title: "Lookup Failed",
-        description: "There was an error looking up attendees. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error looking up attendees. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -60,44 +59,8 @@ export default function ActivationStation() {
     }
   };
 
-  const handleConfirmOrderActivation = async () => {
+  const handleActivatePhoneGroup = async () => {
     if (!lookupResult) return;
-
-    setIsProcessing(true);
-    try {
-      const result = await PhoneActivationService.activateEntireOrderByPhone(
-        phoneNumber,
-        'self_activated'
-      );
-
-      if (result) {
-        setActivationResult(result);
-        toast({
-          title: "Order Activation Successful!",
-          description: `Activated ${result.activated_count} attendee(s) from the entire order`,
-        });
-        setShowPreview(false);
-        setLookupResult(null);
-      } else {
-        toast({
-          title: "Order Activation Failed",
-          description: "Unable to activate entire order",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Order activation error:', error);
-      toast({
-        title: "Order Activation Failed",
-        description: "There was an error activating the entire order. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleConfirmActivation = async () => {
 
     setIsProcessing(true);
     try {
@@ -110,7 +73,7 @@ export default function ActivationStation() {
         setActivationResult(result);
         toast({
           title: "Activation Successful!",
-          description: `Activated ${result.activated_count} attendee(s)`,
+          description: `Activated ${result.activated_count - result.already_active_count} new attendee(s)`,
         });
         setShowPreview(false);
         setLookupResult(null);
@@ -133,12 +96,41 @@ export default function ActivationStation() {
     }
   };
 
-  const handleStaffActivation = async () => {
-    // Staff-assisted activation logic would go here
-    toast({
-      title: "Staff Mode",
-      description: "Staff-assisted activation coming soon.",
-    });
+  const handleActivateEntireOrder = async () => {
+    if (!lookupResult) return;
+
+    setIsProcessing(true);
+    try {
+      const result = await PhoneActivationService.activateEntireOrderByPhone(
+        phoneNumber,
+        'self_activated'
+      );
+
+      if (result) {
+        setActivationResult(result);
+        toast({
+          title: "Order Activation Successful!",
+          description: `Activated ${result.activated_count - result.already_active_count} new attendee(s) from the entire order`,
+        });
+        setShowPreview(false);
+        setLookupResult(null);
+      } else {
+        toast({
+          title: "Order Activation Failed",
+          description: "Unable to activate entire order",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Order activation error:', error);
+      toast({
+        title: "Order Activation Failed",
+        description: "There was an error activating the entire order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleMassDeactivation = async () => {
@@ -148,7 +140,7 @@ export default function ActivationStation() {
 
     setIsProcessing(true);
     try {
-      const count = await PhoneActivationService.deactivateAllRfids("Sunday mass deactivation");
+      const count = await PhoneActivationService.deactivateAllRfids("Mass deactivation via admin panel");
       toast({
         title: "Mass Deactivation Complete",
         description: `${count} RFID tags have been deactivated.`,
@@ -173,308 +165,141 @@ export default function ActivationStation() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
+    <div className="min-h-screen bg-background">
+      <div className="max-w-md mx-auto p-4 space-y-4 md:max-w-2xl">
+        {/* Mobile Header */}
         <div className="flex items-center justify-between">
           <Button 
-            variant="outline" 
+            variant="ghost" 
+            size="sm"
             onClick={() => navigate("/")}
-            className="flex items-center gap-2"
+            className="p-2"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Main Hub
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Activation Station</h1>
+          <h1 className="text-lg font-bold md:text-2xl">Activation Station</h1>
+          <div className="w-9" /> {/* Spacer for centering */}
         </div>
 
         <Tabs defaultValue="self-service" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="self-service">Phone Number Activation</TabsTrigger>
-            <TabsTrigger value="rfid">RFID Management</TabsTrigger>
-            <TabsTrigger value="admin">Admin Controls</TabsTrigger>
+          <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1 h-auto gap-1' : 'grid-cols-3'}`}>
+            <TabsTrigger 
+              value="self-service" 
+              className={`${isMobile ? 'justify-start text-sm py-3' : ''}`}
+            >
+              <Smartphone className="h-4 w-4 mr-2" />
+              Phone Activation
+            </TabsTrigger>
+            <TabsTrigger 
+              value="rfid"
+              className={`${isMobile ? 'justify-start text-sm py-3' : ''}`}
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              RFID Management
+            </TabsTrigger>
+            <TabsTrigger 
+              value="admin"
+              className={`${isMobile ? 'justify-start text-sm py-3' : ''}`}
+            >
+              <Power className="h-4 w-4 mr-2" />
+              Admin
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="self-service" className="space-y-6">
+          <TabsContent value="self-service" className="space-y-4 mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  Phone Number Activation
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Smartphone className="h-5 w-5" />
+                  Self-Service Activation
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {!activationResult ? (
-                  <div className="space-y-6">
+                  <>
                     {!showPreview ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">Enter your phone number</Label>
-                          <InputOTP
-                            maxLength={10}
-                            value={phoneNumber}
-                            onChange={(value) => setPhoneNumber(value)}
-                          >
-                            <InputOTPGroup>
-                              <InputOTPSlot index={0} />
-                              <InputOTPSlot index={1} />
-                              <InputOTPSlot index={2} />
-                            </InputOTPGroup>
-                            <InputOTPGroup>
-                              <InputOTPSlot index={3} />
-                              <InputOTPSlot index={4} />
-                              <InputOTPSlot index={5} />
-                            </InputOTPGroup>
-                            <InputOTPGroup>
-                              <InputOTPSlot index={6} />
-                              <InputOTPSlot index={7} />
-                              <InputOTPSlot index={8} />
-                              <InputOTPSlot index={9} />
-                            </InputOTPGroup>
-                          </InputOTP>
-                          <p className="text-sm text-muted-foreground">
-                            Enter the phone number used when registering for the event
-                          </p>
-                          {phoneNumber && phoneNumber.length > 0 && (
-                            <p className="text-sm font-medium text-primary">
-                              {formatPhoneNumber(phoneNumber)}
-                            </p>
-                          )}
-                        </div>
+                      <div className="space-y-6">
+                        <MobilePhoneInput
+                          value={phoneNumber}
+                          onChange={setPhoneNumber}
+                          disabled={isProcessing}
+                          onSubmit={handlePhoneLookup}
+                        />
 
                         <Button
                           onClick={handlePhoneLookup}
                           disabled={isProcessing || phoneNumber.length !== 10}
                           size="lg"
-                          className="w-full h-16 text-lg"
+                          className="w-full h-12 text-base font-medium"
                         >
                           {isProcessing ? (
-                            <>
-                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                               Looking up...
-                            </>
+                            </div>
                           ) : (
-                            <>
-                              <Users className="h-6 w-6 mr-3" />
-                              LOOK UP MY REGISTRATION
-                            </>
+                            "Look Up My Registration"
                           )}
                         </Button>
-                      </>
-                    ) : (
-                        <div className="space-y-6">
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                            <div className="mb-4">
-                              <h3 className="text-lg font-semibold text-blue-900">
-                                Phone: {formatPhoneNumber(phoneNumber)}
-                              </h3>
-                              <p className="text-blue-800">
-                                Found {lookupResult?.attendee_count} {lookupResult?.attendee_count === 1 ? 'Person' : 'People'}
-                              </p>
-                            </div>
-                            <div className="space-y-2 text-blue-800">
-                              <p><strong>Registration Type:</strong> {lookupResult?.has_group_order ? 'Group Order' : 'Individual Registration(s)'}</p>
-                              {lookupResult?.order_id && (
-                                <p><strong>Order ID:</strong> {lookupResult.order_id}</p>
-                              )}
-                            </div>
-                            
-                            {/* Show attendees with this phone number */}
-                            <div className="mt-4 space-y-2">
-                              <h4 className="font-semibold text-blue-900">Direct Phone Matches:</h4>
-                              <div className="space-y-1">
-                                {lookupResult?.attendee_details?.map((attendee: any, index: number) => (
-                                  <div key={index} className="flex items-center justify-between text-sm bg-white/50 p-2 rounded">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium">{attendee.name}</span>
-                                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                                        {formatMealPlan(attendee.meal_plan)}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {attendee.rfid_uid && (
-                                        <span className="text-xs bg-blue-200 px-2 py-1 rounded">
-                                          {attendee.rfid_uid.startsWith('MOCK') ? 'Mock RFID' : 'RFID'}: {attendee.rfid_uid}
-                                        </span>
-                                      )}
-                                      {attendee.is_activated ? (
-                                        <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">Already Active</span>
-                                      ) : (
-                                        <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">Pending</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Show order companions if any */}
-                            {lookupResult?.order_companions && lookupResult.order_companions.length > 0 && (
-                              <div className="mt-4 space-y-2">
-                                <h4 className="font-semibold text-blue-900">Order Companions (Different Phone Numbers):</h4>
-                                <div className="space-y-1">
-                                  {lookupResult.order_companions.map((companion: any, index: number) => (
-                                    <div key={index} className="flex items-center justify-between text-sm bg-orange-50/50 p-2 rounded border border-orange-200">
-                                      <div className="flex items-center gap-2">
-                                        <div>
-                                          <span className="font-medium">{companion.name}</span>
-                                          <span className="text-xs text-gray-600 ml-2">({formatPhoneNumber(companion.phone)})</span>
-                                        </div>
-                                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                                          {formatMealPlan(companion.meal_plan)}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        {companion.rfid_uid && (
-                                          <span className="text-xs bg-blue-200 px-2 py-1 rounded">
-                                            {companion.rfid_uid.startsWith('MOCK') ? 'Mock RFID' : 'RFID'}: {companion.rfid_uid}
-                                          </span>
-                                        )}
-                                        {companion.is_activated ? (
-                                          <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">Already Active</span>
-                                        ) : (
-                                          <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded">Order Companion</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="flex gap-3">
-                            <Button 
-                              onClick={handleConfirmActivation}
-                              disabled={isProcessing}
-                              className="flex-1"
-                              size="lg"
-                            >
-                              {isProcessing ? "Activating..." : "Activate Phone Group Only"}
-                            </Button>
-                            {lookupResult?.order_companions && lookupResult.order_companions.length > 0 && (
-                              <Button 
-                                onClick={handleConfirmOrderActivation}
-                                disabled={isProcessing}
-                                className="flex-1"
-                                size="lg"
-                                variant="secondary"
-                              >
-                                {isProcessing ? "Activating..." : "Activate Entire Order"}
-                              </Button>
-                            )}
-                          </div>
-                          <Button 
-                            onClick={() => setShowPreview(false)}
-                            variant="outline"
-                            className="w-full"
-                          >
-                            Back
-                          </Button>
-                        </div>
+                      </div>
+                    ) : lookupResult && (
+                      <MobileActivationPreview
+                        phoneNumber={phoneNumber}
+                        lookupResult={lookupResult}
+                        isProcessing={isProcessing}
+                        onActivatePhoneGroup={handleActivatePhoneGroup}
+                        onActivateEntireOrder={handleActivateEntireOrder}
+                        onBack={() => setShowPreview(false)}
+                      />
                     )}
-                  </div>
+                  </>
                 ) : (
-                  <div className="space-y-4">
-                    {/* Success Display */}
-                    <div className="text-center space-y-4 p-6 bg-green-50 border border-green-200 rounded-lg">
-                      <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
-                      <div>
-                        <h3 className="text-xl font-bold text-green-800">Activation Complete!</h3>
-                        <p className="text-green-700 font-medium">
-                          Phone: {formatPhoneNumber(phoneNumber)}
-                        </p>
-                        <p className="text-green-700">
-                          Order #{activationResult.order_id || 'Individual'}
-                        </p>
-                        <div className="mt-2 text-lg">
-                          <Badge variant="secondary" className="text-lg px-4 py-2">
-                            <Users className="h-4 w-4 mr-2" />
-                            {activationResult.activated_count} of {activationResult.total_attendees} Activated
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Activated Attendees List */}
-                    <div className="space-y-4">
-                      <h4 className="font-semibold text-green-800">Activated Attendees:</h4>
-                      <div className="space-y-2">
-                        {activationResult.attendee_details?.map((attendee: any, index: number) => (
-                          <div key={index} className="flex items-center justify-between bg-white/50 p-3 rounded-lg">
-                            <span className="font-medium">{attendee.name}</span>
-                            <div className="flex items-center gap-2">
-                              {attendee.rfid_uid ? (
-                                <span className={`text-xs px-2 py-1 rounded ${
-                                  attendee.rfid_uid.startsWith('MOCK') 
-                                    ? 'bg-blue-200 text-blue-800' 
-                                    : 'bg-green-200 text-green-800'
-                                }`}>
-                                  {attendee.rfid_uid.startsWith('MOCK') ? 'Mock RFID' : 'RFID'}: {attendee.rfid_uid}
-                                </span>
-                              ) : (
-                                <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded">
-                                  No RFID
-                                </span>
-                              )}
-                              {attendee.was_already_active ? (
-                                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">
-                                  Previously Active
-                                </span>
-                              ) : (
-                                <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">
-                                  Just Activated
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      {/* Show warning if some attendees don't have RFIDs */}
-                      {activationResult.attendee_details?.some((attendee: any) => !attendee.has_rfid) && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                          <p className="text-sm text-yellow-800">
-                            <strong>Note:</strong> Some attendees don't have RFID tags assigned yet. 
-                            Generate mock RFIDs for testing or assign real ones before the event.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <Button onClick={resetForm} variant="outline" className="w-full">
-                      Activate Another Group
-                    </Button>
-                  </div>
+                  <MobileActivationSuccess
+                    phoneNumber={phoneNumber}
+                    activationResult={activationResult}
+                    onReset={resetForm}
+                    onGoHome={() => navigate("/")}
+                  />
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="rfid" className="space-y-6">
+          <TabsContent value="rfid" className="mt-6">
             <RfidManagementPanel />
           </TabsContent>
 
-          <TabsContent value="admin" className="space-y-6">
+          <TabsContent value="admin" className="space-y-4 mt-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PowerOff className="h-5 w-5" />
-                  Admin Controls
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Power className="h-5 w-5" />
+                  Administrative Controls
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button
-                  onClick={handleMassDeactivation}
-                  disabled={isProcessing}
-                  variant="destructive"
-                  className="w-full"
-                >
-                  {isProcessing ? "Processing..." : "Mass Deactivate All RFIDs"}
-                </Button>
-                <p className="text-sm text-muted-foreground">
-                  This will deactivate all currently active RFID tags. Use this at the end of the event.
-                </p>
+                <div className="p-4 border border-warning/50 bg-warning/10 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-warning-foreground mb-1">
+                        Mass Deactivation
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        This will deactivate ALL active RFID tags in the system. This action cannot be undone.
+                      </p>
+                      <Button
+                        onClick={handleMassDeactivation}
+                        disabled={isProcessing}
+                        variant="destructive"
+                        size="lg"
+                        className="w-full"
+                      >
+                        {isProcessing ? "Deactivating..." : "Deactivate All RFIDs"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

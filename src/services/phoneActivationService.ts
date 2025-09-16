@@ -23,6 +23,39 @@ export class PhoneActivationService {
     return digits.slice(-10);
   }
 
+  static validatePhone(phone: string): { isValid: boolean; error?: string } {
+    const normalized = this.normalizePhone(phone);
+    
+    if (!phone.trim()) {
+      return { isValid: false, error: "Phone number is required" };
+    }
+    
+    if (normalized.length < 10) {
+      return { isValid: false, error: "Phone number must be 10 digits" };
+    }
+    
+    if (normalized.length > 10) {
+      return { isValid: false, error: "Phone number cannot exceed 10 digits" };
+    }
+    
+    // Basic US phone number validation
+    if (normalized.startsWith('0') || normalized.startsWith('1')) {
+      return { isValid: false, error: "Invalid phone number format" };
+    }
+    
+    return { isValid: true };
+  }
+
+  static formatPhoneForLookup(phone: string): string[] {
+    const normalized = this.normalizePhone(phone);
+    // Return multiple formats to handle edge cases
+    return [
+      normalized,                    // 5551234567
+      `1${normalized}`,             // 15551234567 (with country code)
+      `+1${normalized}`,            // +15551234567
+    ];
+  }
+
   static async activateGroupByPhone(
     phone: string,
     activationMethod: 'self_activated' | 'staff_assisted' = 'self_activated'
@@ -68,21 +101,35 @@ export class PhoneActivationService {
   }
 
   static async lookupPhonePreview(phone: string): Promise<PhoneLookupResult | null> {
-    try {
-      const { data, error } = await supabase.rpc('lookup_attendees_by_phone', {
-        p_phone: phone
-      });
-
-      if (error) {
-        console.error('Error looking up phone preview:', error);
-        throw new Error(`Failed to lookup phone: ${error.message}`);
-      }
-
-      return data.length > 0 ? data[0] : null;
-    } catch (error) {
-      console.error('Phone preview lookup error:', error);
-      throw error;
+    const validation = this.validatePhone(phone);
+    if (!validation.isValid) {
+      throw new Error(validation.error);
     }
+
+    const phoneFormats = this.formatPhoneForLookup(phone);
+    
+    // Try each phone format until we find a match
+    for (const phoneFormat of phoneFormats) {
+      try {
+        const { data, error } = await supabase.rpc('lookup_attendees_by_phone', {
+          p_phone: phoneFormat
+        });
+
+        if (error) {
+          console.warn(`Lookup failed for format ${phoneFormat}:`, error);
+          continue;
+        }
+
+        if (data && data.length > 0 && data[0].attendee_count > 0) {
+          return data[0];
+        }
+      } catch (error) {
+        console.warn(`Phone lookup error for format ${phoneFormat}:`, error);
+        continue;
+      }
+    }
+
+    return null;
   }
 
   static async lookupPhoneNumber(phone: string) {
