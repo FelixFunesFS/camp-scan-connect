@@ -60,8 +60,44 @@ export default function ActivationStation() {
     }
   };
 
-  const handleConfirmActivation = async () => {
+  const handleConfirmOrderActivation = async () => {
     if (!lookupResult) return;
+
+    setIsProcessing(true);
+    try {
+      const result = await PhoneActivationService.activateEntireOrderByPhone(
+        phoneNumber,
+        'self_activated'
+      );
+
+      if (result) {
+        setActivationResult(result);
+        toast({
+          title: "Order Activation Successful!",
+          description: `Activated ${result.activated_count} attendee(s) from the entire order`,
+        });
+        setShowPreview(false);
+        setLookupResult(null);
+      } else {
+        toast({
+          title: "Order Activation Failed",
+          description: "Unable to activate entire order",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Order activation error:', error);
+      toast({
+        title: "Order Activation Failed",
+        description: "There was an error activating the entire order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmActivation = async () => {
 
     setIsProcessing(true);
     try {
@@ -226,67 +262,106 @@ export default function ActivationStation() {
                         </Button>
                       </>
                     ) : (
-                      <div className="space-y-6">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                          <div className="mb-4">
-                            <h3 className="text-lg font-semibold text-blue-900">
-                              Phone: {formatPhoneNumber(phoneNumber)}
-                            </h3>
-                            <p className="text-blue-800">
-                              Found {lookupResult?.attendee_count} {lookupResult?.attendee_count === 1 ? 'Person' : 'People'}
-                            </p>
-                          </div>
-                          <div className="space-y-2 text-blue-800">
-                            <p><strong>Registration Type:</strong> {lookupResult?.has_group_order ? 'Group Order' : 'Individual Registration(s)'}</p>
-                            {lookupResult?.order_id && (
-                              <p><strong>Order ID:</strong> {lookupResult.order_id}</p>
+                        <div className="space-y-6">
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                            <div className="mb-4">
+                              <h3 className="text-lg font-semibold text-blue-900">
+                                Phone: {formatPhoneNumber(phoneNumber)}
+                              </h3>
+                              <p className="text-blue-800">
+                                Found {lookupResult?.attendee_count} {lookupResult?.attendee_count === 1 ? 'Person' : 'People'}
+                              </p>
+                            </div>
+                            <div className="space-y-2 text-blue-800">
+                              <p><strong>Registration Type:</strong> {lookupResult?.has_group_order ? 'Group Order' : 'Individual Registration(s)'}</p>
+                              {lookupResult?.order_id && (
+                                <p><strong>Order ID:</strong> {lookupResult.order_id}</p>
+                              )}
+                            </div>
+                            
+                            {/* Show attendees with this phone number */}
+                            <div className="mt-4 space-y-2">
+                              <h4 className="font-semibold text-blue-900">Direct Phone Matches:</h4>
+                              <div className="space-y-1">
+                                {lookupResult?.attendee_details?.map((attendee: any, index: number) => (
+                                  <div key={index} className="flex items-center justify-between text-sm bg-white/50 p-2 rounded">
+                                    <span className="font-medium">{attendee.name}</span>
+                                    <div className="flex items-center gap-2">
+                                      {attendee.rfid_uid && (
+                                        <span className="text-xs bg-blue-200 px-2 py-1 rounded">
+                                          {attendee.rfid_uid.startsWith('MOCK') ? 'Mock RFID' : 'RFID'}: {attendee.rfid_uid}
+                                        </span>
+                                      )}
+                                      {attendee.is_activated ? (
+                                        <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">Already Active</span>
+                                      ) : (
+                                        <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">Pending</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Show order companions if any */}
+                            {lookupResult?.order_companions && lookupResult.order_companions.length > 0 && (
+                              <div className="mt-4 space-y-2">
+                                <h4 className="font-semibold text-blue-900">Order Companions (Different Phone Numbers):</h4>
+                                <div className="space-y-1">
+                                  {lookupResult.order_companions.map((companion: any, index: number) => (
+                                    <div key={index} className="flex items-center justify-between text-sm bg-orange-50/50 p-2 rounded border border-orange-200">
+                                      <div>
+                                        <span className="font-medium">{companion.name}</span>
+                                        <span className="text-xs text-gray-600 ml-2">({formatPhoneNumber(companion.phone)})</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        {companion.rfid_uid && (
+                                          <span className="text-xs bg-blue-200 px-2 py-1 rounded">
+                                            {companion.rfid_uid.startsWith('MOCK') ? 'Mock RFID' : 'RFID'}: {companion.rfid_uid}
+                                          </span>
+                                        )}
+                                        {companion.is_activated ? (
+                                          <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">Already Active</span>
+                                        ) : (
+                                          <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded">Order Companion</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             )}
                           </div>
                           
-                          {/* Show all attendees in the group/lookup */}
-                          <div className="mt-4 space-y-2">
-                            <h4 className="font-semibold text-blue-900">Attendees to be activated:</h4>
-                            <div className="space-y-1">
-                              {lookupResult?.attendee_details?.map((attendee: any, index: number) => (
-                                <div key={index} className="flex items-center justify-between text-sm bg-white/50 p-2 rounded">
-                                  <span className="font-medium">{attendee.name}</span>
-                                  <div className="flex items-center gap-2">
-                                    {attendee.rfid_uid && (
-                                      <span className="text-xs bg-blue-200 px-2 py-1 rounded">
-                                        {attendee.rfid_uid.startsWith('MOCK') ? 'Mock RFID' : 'RFID'}: {attendee.rfid_uid}
-                                      </span>
-                                    )}
-                                    {attendee.is_activated ? (
-                                      <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">Already Active</span>
-                                    ) : (
-                                      <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">Pending</span>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="flex gap-3">
+                            <Button 
+                              onClick={handleConfirmActivation}
+                              disabled={isProcessing}
+                              className="flex-1"
+                              size="lg"
+                            >
+                              {isProcessing ? "Activating..." : "Activate Phone Group Only"}
+                            </Button>
+                            {lookupResult?.order_companions && lookupResult.order_companions.length > 0 && (
+                              <Button 
+                                onClick={handleConfirmOrderActivation}
+                                disabled={isProcessing}
+                                className="flex-1"
+                                size="lg"
+                                variant="secondary"
+                              >
+                                {isProcessing ? "Activating..." : "Activate Entire Order"}
+                              </Button>
+                            )}
                           </div>
-                        </div>
-                        
-                        <div className="flex gap-3">
-                          <Button 
-                            onClick={handleConfirmActivation}
-                            disabled={isProcessing}
-                            className="flex-1"
-                            size="lg"
-                          >
-                            {isProcessing ? "Activating..." : "Confirm Activation"}
-                          </Button>
                           <Button 
                             onClick={() => setShowPreview(false)}
                             variant="outline"
-                            className="flex-1"
-                            size="lg"
+                            className="w-full"
                           >
                             Back
                           </Button>
                         </div>
-                      </div>
                     )}
                   </div>
                 ) : (

@@ -410,6 +410,16 @@ export type Database = {
         Args: { p_sync_id: string; p_timeout_minutes?: number }
         Returns: string
       }
+      activate_entire_order_by_phone: {
+        Args: { p_activation_method?: string; p_phone: string }
+        Returns: {
+          activated_count: number
+          already_active_count: number
+          attendee_details: Json[]
+          order_id: string
+          total_attendees: number
+        }[]
+      }
       activate_group_by_phone: {
         Args: { p_activation_method?: string; p_phone: string }
         Returns: {
@@ -465,6 +475,7 @@ export type Database = {
           attendee_count: number
           attendee_details: Json[]
           has_group_order: boolean
+          order_companions: Json[]
           order_id: string
         }[]
       }

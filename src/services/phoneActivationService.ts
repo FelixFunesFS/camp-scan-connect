@@ -13,6 +13,7 @@ export interface PhoneLookupResult {
   has_group_order: boolean;
   order_id: string | null;
   attendee_details: any[];
+  order_companions: any[];
 }
 
 export class PhoneActivationService {
@@ -40,6 +41,28 @@ export class PhoneActivationService {
       return data.length > 0 ? data[0] : null;
     } catch (error) {
       console.error('Phone activation error:', error);
+      throw error;
+    }
+  }
+
+  static async activateEntireOrderByPhone(
+    phone: string,
+    activationMethod: 'self_activated' | 'staff_assisted' = 'self_activated'
+  ): Promise<GroupActivationResult | null> {
+    try {
+      const { data, error } = await supabase.rpc('activate_entire_order_by_phone', {
+        p_phone: phone,
+        p_activation_method: activationMethod
+      });
+
+      if (error) {
+        console.error('Error activating entire order:', error);
+        throw new Error(`Failed to activate entire order: ${error.message}`);
+      }
+
+      return data.length > 0 ? data[0] : null;
+    } catch (error) {
+      console.error('Order activation error:', error);
       throw error;
     }
   }
