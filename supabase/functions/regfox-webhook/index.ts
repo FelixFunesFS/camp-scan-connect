@@ -9,6 +9,7 @@ const corsHeaders = {
 interface RegFoxWebhookPayload {
   event?: string;
   eventType?: string;
+  formId?: number;
   data: {
     id?: string;
     firstName?: string;
@@ -18,6 +19,21 @@ interface RegFoxWebhookPayload {
     registrationPath?: string;
     registrationDate?: string;
     status?: string;
+    // Direct data array format (registrant_edit events)
+    data?: Array<{
+      key?: string;
+      label?: string;
+      value?: any;
+      type?: string;
+      first?: { value?: string };
+      last?: { value?: string };
+      street1?: { value?: string };
+      city?: { value?: string };
+      state?: { value?: string };
+      postalCode?: { value?: string };
+      country?: { value?: string };
+    }>;
+    orderId?: string;
     // New format fields
     registrants?: Array<{
       id: string;
@@ -62,11 +78,12 @@ serve(async (req) => {
     console.log('Webhook payload:', payload);
 
     // Validate form ID matches expected form
-    if (payload.formId && payload.formId.toString() !== regfoxFormId) {
-      console.log(`Form ID mismatch: received ${payload.formId}, expected ${regfoxFormId}`);
+    const formId = payload.formId || payload.data?.formId;
+    if (formId && formId.toString() !== regfoxFormId) {
+      console.log(`Form ID mismatch: received ${formId}, expected ${regfoxFormId}`);
       return new Response(JSON.stringify({ 
         success: false, 
-        error: `Form ID mismatch: received ${payload.formId}, expected ${regfoxFormId}` 
+        error: `Form ID mismatch: received ${formId}, expected ${regfoxFormId}` 
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -148,6 +165,94 @@ serve(async (req) => {
             country = payload.data.address.country || null;
           }
         } 
+        // Handle direct data array format (registrant_edit events)
+        else if (payload.data.data && Array.isArray(payload.data.data)) {
+          console.log('Processing direct data array format (registrant_edit)');
+          const formData = payload.data.data;
+          
+          // Extract name from name2 field
+          const nameField = formData.find(d => d.key === 'name2');
+          const firstName = nameField?.first?.value || 'Unknown';
+          const lastName = nameField?.last?.value || 'User';
+          
+          // Extract basic fields
+          const emailField = formData.find(d => d.key === 'email');
+          const phoneField = formData.find(d => d.key === 'phone');
+          const email = emailField?.value;
+          const phone = phoneField?.value;
+          
+          // Extract address from address field
+          const addressField = formData.find(d => d.key === 'address');
+          if (addressField) {
+            streetAddress = addressField.street1?.value || null;
+            city = addressField.city?.value || null;
+            state = addressField.state?.value || null;
+            postalCode = addressField.postalCode?.value || null;
+            country = addressField.country?.value || null;
+          }
+          
+          // Extract other personal info fields
+          const dobField = formData.find(d => d.key === 'dateOfBirth');
+          dateOfBirth = dobField?.value || null;
+          
+          const genderField = formData.find(d => d.key === 'gender');
+          gender = genderField?.value || null;
+          
+          const statusField = formData.find(d => d.key === 'status');
+          maritalStatus = statusField?.value || null;
+          
+          const veteranField = formData.find(d => d.key === 'areYouVeteran');
+          const isVeteranValue = veteranField?.value?.toLowerCase() === 'yes';
+          
+          const emergencyField = formData.find(d => d.key === 'emergencyContactNameNumber');
+          const emergencyContactCombined = emergencyField?.value || null;
+          if (emergencyContactCombined) {
+            const phoneRegex = /(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/;
+            const phoneMatch = emergencyContactCombined.match(phoneRegex);
+            
+            if (phoneMatch) {
+              emergencyContactPhone = phoneMatch[1];
+              emergencyContactName = emergencyContactCombined.replace(phoneMatch[1], '').trim().replace(/[,-]$/, '');
+            } else {
+              emergencyContactName = emergencyContactCombined;
+            }
+          }
+          
+          // Extract accommodation type for ticket type determination
+          const accommodationField = formData.find(d => 
+            d.label?.includes('Are you staying in a Tent, Van/Rooftop,  RV, Glamping Tent, or Cabin')
+          );
+          const accommodationType = accommodationField?.value?.toLowerCase() || '';
+          
+          if (accommodationType.includes('glamping')) {
+            ticketType = 'glamping';
+          } else if (accommodationType.includes('rv')) {
+            ticketType = 'rv_site';
+          } else if (accommodationType.includes('cabin')) {
+            ticketType = 'cabin';
+          } else {
+            ticketType = 'dry_site';
+          }
+          
+          // Store unhandled fields as custom fields
+          formData.forEach(field => {
+            if (field.key && field.value && 
+                !['name2', 'email', 'phone', 'address', 'dateOfBirth', 'gender', 'status', 
+                  'areYouVeteran', 'emergencyContactNameNumber', 'multipleChoice'].includes(field.key)) {
+              customFields[field.label || field.key] = field.value;
+            }
+          });
+
+          attendeeData = {
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            phone: phone || null,
+            regfox_id: payload.data.id,
+            order_id: payload.data.orderId || null
+          };
+          attendeeId = payload.data.id;
+        }
         // Handle new format (registrants array)
         else if (payload.data.registrants && payload.data.registrants.length > 0) {
           console.log('Processing new format with registrants');
@@ -268,6 +373,20 @@ serve(async (req) => {
             order_id: payload.data.id || null
           };
           attendeeId = registrant.id;
+        }
+        // If no attendee data extracted, log debug info and add error
+        else {
+          console.log('=== WEBHOOK EXTRACTION FAILURE DEBUG ===');
+          console.log('Event type:', eventType);
+          console.log('Payload data keys:', Object.keys(payload.data || {}));
+          console.log('Payload billing:', payload.data.billing);
+          console.log('Payload registrants:', payload.data.registrants);
+          console.log('Payload data.data:', payload.data.data);
+          console.log('Extracted attendeeId:', attendeeId);
+          console.log('Extracted attendeeData:', attendeeData);
+          console.log('Failed to extract attendee data from payload');
+          console.log('=== END EXTRACTION FAILURE DEBUG ===');
+          result.errors.push('Unable to extract attendee data from webhook payload');
         }
 
         if (attendeeData && attendeeId) {
