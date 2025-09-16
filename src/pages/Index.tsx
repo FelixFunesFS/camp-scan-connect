@@ -13,26 +13,12 @@ const Index = () => {
     color: "bg-primary text-primary-foreground",
     path: "/dashboard"
   }, {
-    id: "ranger",
-    title: "Ranger",
-    description: "Gate access control and security scanning",
-    icon: Radio,
-    color: "bg-secondary text-secondary-foreground",
-    path: "/ranger"
-  }, {
     id: "system",
     title: "System Validation",
     description: "Pre-event testing and system validation",
     icon: Settings,
     color: "bg-accent text-accent-foreground",
     path: "/system-validation"
-  }, {
-    id: "vendor",
-    title: "Vendor",
-    description: "Verify attendee eligibility for services",
-    icon: ShoppingCart,
-    color: "bg-muted text-muted-foreground",
-    path: "/vendor"
   }];
 
   const stations = [{
@@ -74,7 +60,7 @@ const Index = () => {
             <Users className="h-5 w-8" />
             Select Your Role
           </h2>
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {roles.map(role => {
             const Icon = role.icon;
             return <Card key={role.id} className="hover:shadow-lg transition-shadow cursor-pointer group">

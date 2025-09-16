@@ -9,7 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 
-import Ranger from "./pages/Ranger";
+
 import ActivationStation from "./pages/ActivationStation";
 import MealStation from "./pages/MealStation";
 import DrinksStation from "./pages/DrinksStation";
@@ -31,7 +31,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/reports" element={<Reports />} />
           
-          <Route path="/ranger" element={<Ranger />} />
+          
           <Route path="/activation" element={<ActivationStation />} />
           <Route path="/meal-station" element={<MealStation />} />
           <Route path="/drinks-station" element={<DrinksStation />} />

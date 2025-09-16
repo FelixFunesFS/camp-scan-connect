@@ -74,7 +74,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
     last_name: 'last_name',
     email: 'email',
     phone: 'phone',
-    checked_in_at: 'checked_in_at',
+    activated_at: 'activated_at',
     rfid_status: 'rfid_status',
     overall_status: 'overall_status',
     arrival_day: 'arrival_day',
@@ -200,11 +200,11 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         );
       
       case 'checked_in_at':
-        return attendee.checked_in_at ? (
+        return attendee.activated_at ? (
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-500" />
             <span className="text-sm">
-              {new Date(attendee.checked_in_at).toLocaleDateString()} {new Date(attendee.checked_in_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {new Date(attendee.activated_at).toLocaleDateString()} {new Date(attendee.activated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
         ) : (

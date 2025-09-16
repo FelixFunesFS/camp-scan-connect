@@ -25,20 +25,20 @@ export const OrderGroupHeader: React.FC<OrderGroupHeaderProps> = ({
   onToggle
 }) => {
   const totalAttendees = attendees.length;
-  const checkedInCount = attendees.filter(a => a.checked_in_at).length;
+  const activatedCount = attendees.filter(a => a.activated_at).length;
   const completeCount = attendees.filter(a => a.overall_status === 'complete').length;
   
   const getStatusSummary = () => {
     if (completeCount === totalAttendees) return "Complete";
-    if (checkedInCount === totalAttendees) return "All Checked In";
-    if (checkedInCount > 0) return "Partially Checked In";
+    if (activatedCount === totalAttendees) return "All Activated";
+    if (activatedCount > 0) return "Partially Activated";
     return "Pending";
   };
 
   const getStatusColor = () => {
     if (completeCount === totalAttendees) return "default";
-    if (checkedInCount === totalAttendees) return "secondary"; 
-    if (checkedInCount > 0) return "outline";
+    if (activatedCount === totalAttendees) return "secondary"; 
+    if (activatedCount > 0) return "outline";
     return "destructive";
   };
 
@@ -71,7 +71,7 @@ export const OrderGroupHeader: React.FC<OrderGroupHeaderProps> = ({
         
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <CheckCircle className="h-3 w-3" />
-          <span>{checkedInCount}/{totalAttendees} checked in</span>
+          <span>{activatedCount}/{totalAttendees} activated</span>
         </div>
 
         <Badge variant={getStatusColor()} className="text-xs">

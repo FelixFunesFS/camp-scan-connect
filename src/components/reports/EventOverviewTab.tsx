@@ -32,10 +32,10 @@ interface EventOverviewTabProps {
 
 interface OverviewStats {
   totalRegistered: number;
-  totalCheckedIn: number;
+  totalActivated: number;
   waiversSigned: number;
   waiversMissing: number;
-  checkInPercentage: number;
+  activationPercentage: number;
 }
 
 interface DailyCheckInData {
@@ -68,18 +68,18 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ isRefreshing
       if (attendeesError) throw attendeesError;
 
       const totalRegistered = attendees?.length || 0;
-      const checkedInAttendees = attendees?.filter(a => a.checked_in_at) || [];
-      const totalCheckedIn = checkedInAttendees.length;
+      const activatedAttendees = attendees?.filter(a => a.activated_at) || [];
+      const totalActivated = activatedAttendees.length;
       const waiversSigned = attendees?.filter(a => a.waiver_signed === true).length || 0;
       const waiversMissing = totalRegistered - waiversSigned;
-      const checkInPercentage = totalRegistered > 0 ? Math.round((totalCheckedIn / totalRegistered) * 100) : 0;
+      const activationPercentage = totalRegistered > 0 ? Math.round((totalActivated / totalRegistered) * 100) : 0;
 
       setStats({
         totalRegistered,
-        totalCheckedIn,
+        totalActivated,
         waiversSigned,
         waiversMissing,
-        checkInPercentage
+        activationPercentage
       });
 
       // Generate real daily check-in data from actual timestamps
@@ -87,9 +87,9 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ isRefreshing
       
       if (checkedInAttendees.length > 0) {
         // Group check-ins by date
-        const checkInsByDate = checkedInAttendees.reduce((acc, attendee) => {
-          if (attendee.checked_in_at) {
-            const date = new Date(attendee.checked_in_at).toISOString().split('T')[0];
+        const activationsByDate = activatedAttendees.reduce((acc, attendee) => {
+          if (attendee.activated_at) {
+            const date = new Date(attendee.activated_at).toISOString().split('T')[0];
             acc[date] = (acc[date] || 0) + 1;
           }
           return acc;

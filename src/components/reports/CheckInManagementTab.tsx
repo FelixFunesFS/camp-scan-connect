@@ -20,7 +20,7 @@ export interface EnhancedAttendee {
   order_id?: string;
   ticket_type: string;
   registration_status: string;
-  checked_in_at?: string;
+  activated_at?: string;
   waiver_signed?: boolean;
   rfid_uid?: string;
   rfid_status: string;
@@ -70,7 +70,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isGroupedView, setIsGroupedView] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    'first_name', 'last_name', 'email', 'overall_status', 'rfid_assignment', 'checked_in_at'
+    'first_name', 'last_name', 'email', 'overall_status', 'rfid_assignment', 'activated_at'
   ]);
 
   const { toast } = useToast();
@@ -87,7 +87,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'registration_status', label: 'Registration', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'rfid_assignment', label: 'RFID Assignment', desktop: true, width: 'min-w-48', sortable: false },
-    { key: 'checked_in_at', label: 'Check-in Time', desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'activated_at', label: 'Activation Time', desktop: true, width: 'min-w-32', sortable: true },
     { key: 'waiver_signed', label: 'Waiver', desktop: true, width: 'min-w-20' },
     { key: 'has_headphones', label: 'Headphones', desktop: true, width: 'min-w-24' },
     { key: 'bar_hits', label: 'Bar Visits', desktop: true, width: 'min-w-20' },
@@ -135,10 +135,10 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         ).length;
 
         let overall_status = 'pending';
-        if (attendee.checked_in_at && rfidTag?.status === 'active' && attendee.waiver_signed) {
+        if (attendee.activated_at && rfidTag?.status === 'active' && attendee.waiver_signed) {
           overall_status = 'complete';
-        } else if (attendee.checked_in_at) {
-          overall_status = 'Checked In';
+        } else if (attendee.activated_at) {
+          overall_status = 'Activated';
         } else if (rfidTag?.status === 'active') {
           overall_status = 'RFID Assigned';
         }
@@ -166,7 +166,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           is_duplicate,
           is_phone_duplicate,
           waiver_signed: attendee.waiver_signed ?? false,
-          checked_in_at: attendee.checked_in_at ?? null,
+          activated_at: attendee.activated_at ?? null,
           meal_plan: attendee.meal_plan || 'No',
           notes: attendee.notes || '',
           email: attendee.email || '',
@@ -260,9 +260,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         
         const attendeeValue = attendee[filter.key as keyof EnhancedAttendee];
         
-        if (filter.key === 'checked_in_at') {
-          const isCheckedIn = attendeeValue ? 'yes' : 'no';
-          if (isCheckedIn !== filter.value) return false;
+        if (filter.key === 'activated_at') {
+          const isActivated = attendeeValue ? 'yes' : 'no';
+          if (isActivated !== filter.value) return false;
         } else if (filter.key === 'waiver_signed') {
           const hasWaiver = attendeeValue ? 'yes' : 'no';
           if (hasWaiver !== filter.value) return false;
@@ -343,9 +343,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
               aValue = a.phone || '';
               bValue = b.phone || '';
               break;
-            case 'checked_in_at':
-              aValue = a.checked_in_at ? new Date(a.checked_in_at).getTime() : 0;
-              bValue = b.checked_in_at ? new Date(b.checked_in_at).getTime() : 0;
+            case 'activated_at':
+              aValue = a.activated_at ? new Date(a.activated_at).getTime() : 0;
+              bValue = b.activated_at ? new Date(b.activated_at).getTime() : 0;
               break;
             case 'rfid_status':
               aValue = a.rfid_status?.toLowerCase() || '';
@@ -413,9 +413,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
             aValue = a.phone || '';
             bValue = b.phone || '';
             break;
-          case 'checked_in_at':
-            aValue = a.checked_in_at ? new Date(a.checked_in_at).getTime() : 0;
-            bValue = b.checked_in_at ? new Date(b.checked_in_at).getTime() : 0;
+          case 'activated_at':
+            aValue = a.activated_at ? new Date(a.activated_at).getTime() : 0;
+            bValue = b.activated_at ? new Date(b.activated_at).getTime() : 0;
             break;
           case 'rfid_status':
             aValue = a.rfid_status?.toLowerCase() || '';
@@ -523,8 +523,8 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       }))
     },
     {
-      key: 'checked_in_at',
-      label: 'Check-in Status',
+      key: 'activated_at',
+      label: 'Activation Status',
       type: "select" as const,
       options: [
         { label: 'Checked In', value: 'yes' },
@@ -610,8 +610,8 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     'Overall Status': attendee.overall_status,
     'RFID Status': attendee.rfid_status,
     'RFID UID': attendee.rfid_uid || '',
-    'Checked In': attendee.checked_in_at ? 'Yes' : 'No',
-    'Check-in Time': attendee.checked_in_at || '',
+    'Activated': attendee.activated_at ? 'Yes' : 'No',
+    'Activation Time': attendee.activated_at || '',
     'Waiver Signed': attendee.waiver_signed ? 'Yes' : 'No',
     'Has Headphones': attendee.has_headphones ? 'Yes' : 'No',
     'Bar Visits': attendee.bar_hits || 0,

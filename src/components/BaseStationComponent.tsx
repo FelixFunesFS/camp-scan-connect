@@ -35,17 +35,8 @@ export function BaseStationComponent({ stationType, stationTitle, children }: Ba
   const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
     if (rfidData.attendee_id) {
-      // Check if attendee is ready for station services
-      const readiness = await rfidService.checkAttendeeReadiness(rfidData.attendee_id);
-      setAttendeeReadiness(readiness);
-      
-      if (!readiness.isReady) {
-        toast({
-          title: "Service Not Available",
-          description: readiness.message,
-          variant: "destructive",
-        });
-      }
+      // For the simplified workflow, we assume all activated RFIDs are ready
+      setAttendeeReadiness({ isReady: true, message: "Ready for service" });
     }
   };
 
@@ -106,7 +97,7 @@ export function BaseStationComponent({ stationType, stationTitle, children }: Ba
         />
 
         {/* Station-specific content */}
-        {selectedRfid && selectedRfid.attendee && children({
+        {selectedRfid && selectedRfid.attendee && attendeeReadiness?.isReady && children({
           selectedRfid,
           attendeeReadiness,
           isProcessing,
