@@ -151,9 +151,8 @@ export default function ActivationStation() {
         </div>
 
         <Tabs defaultValue="self-service" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="self-service">Self-Service</TabsTrigger>
-            <TabsTrigger value="staff">Staff Assisted</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-1">
+            <TabsTrigger value="self-service">Phone Number Activation</TabsTrigger>
           </TabsList>
 
           <TabsContent value="self-service" className="space-y-6">
@@ -314,61 +313,6 @@ export default function ActivationStation() {
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="staff" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Staff Assisted Mode
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center py-8 space-y-4">
-                  <p className="text-muted-foreground">
-                    Staff can help with individual activations and troubleshooting
-                  </p>
-                  
-                  <div className="space-y-4">
-                    <Button
-                      onClick={handleStaffActivation}
-                      disabled={isProcessing}
-                      size="lg"
-                      className="w-full"
-                      variant="outline"
-                    >
-                      Individual RFID Activation
-                    </Button>
-
-                    <Button
-                      onClick={handleMassDeactivation}
-                      disabled={isProcessing}
-                      size="lg"
-                      className="w-full"
-                      variant="destructive"
-                    >
-                      <PowerOff className="h-5 w-5 mr-2" />
-                      Sunday Mass Deactivation
-                    </Button>
-                    
-                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-800">
-                        <strong>Need full staff tools?</strong> Visit the{" "}
-                        <Button 
-                          variant="link" 
-                          className="p-0 h-auto text-blue-600 underline"
-                          onClick={() => navigate("/staff-hub")}
-                        >
-                          Staff Hub
-                        </Button>
-                        {" "}for comprehensive activation and deactivation tools.
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
