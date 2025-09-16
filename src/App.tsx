@@ -11,6 +11,7 @@ import Reports from "./pages/Reports";
 
 
 import ActivationStation from "./pages/ActivationStation";
+import { StaffActivationHub } from "./components/StaffActivationHub";
 import MealStation from "./pages/MealStation";
 import DrinksStation from "./pages/DrinksStation";
 import HeadphonesStation from "./pages/HeadphonesStation";
@@ -33,6 +34,7 @@ const App = () => (
           
           
           <Route path="/activation" element={<ActivationStation />} />
+          <Route path="/staff-hub" element={<StaffActivationHub />} />
           <Route path="/meal-station" element={<MealStation />} />
           <Route path="/drinks-station" element={<DrinksStation />} />
           <Route path="/headphones-station" element={<HeadphonesStation />} />

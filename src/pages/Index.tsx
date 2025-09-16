@@ -41,6 +41,11 @@ const Index = () => {
     title: "Activation Station",
     description: "RFID activation and deactivation",
     path: "/activation"
+  }, {
+    id: "staff-hub",
+    title: "Staff Hub",
+    description: "Staff-assisted activation and deactivation tools",
+    path: "/staff-hub"
   }];
   return <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
       <div className="max-w-4xl mx-auto">
