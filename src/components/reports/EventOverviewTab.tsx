@@ -48,10 +48,10 @@ interface DailyCheckInData {
 export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ isRefreshing }) => {
   const [stats, setStats] = useState<OverviewStats>({
     totalRegistered: 0,
-    totalCheckedIn: 0,
+    totalActivated: 0,
     waiversSigned: 0,
     waiversMissing: 0,
-    checkInPercentage: 0
+    activationPercentage: 0
   });
   const [dailyData, setDailyData] = useState<DailyCheckInData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,7 +85,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ isRefreshing
       // Generate real daily check-in data from actual timestamps
       const realDailyData: DailyCheckInData[] = [];
       
-      if (checkedInAttendees.length > 0) {
+      if (activatedAttendees.length > 0) {
         // Group check-ins by date
         const activationsByDate = activatedAttendees.reduce((acc, attendee) => {
           if (attendee.activated_at) {
@@ -96,15 +96,15 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ isRefreshing
         }, {} as Record<string, number>);
 
         // Convert to chart data format
-        Object.entries(checkInsByDate).forEach(([date, actual]) => {
+        Object.entries(activationsByDate).forEach(([date, actual]) => {
           const dateObj = new Date(date);
           const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
           
           realDailyData.push({
             date,
             day: dayName,
-            expected: actual, // Use actual as expected since we don't have expected data
-            actual
+            expected: actual as number, // Use actual as expected since we don't have expected data
+            actual: actual as number
           });
         });
 
@@ -162,8 +162,8 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ isRefreshing
 
   const exportData = [
     { metric: "Total Registered", value: stats.totalRegistered },
-    { metric: "Total Checked In", value: stats.totalCheckedIn },
-    { metric: "Check-in Percentage", value: `${stats.checkInPercentage}%` },
+    { metric: "Total Activated", value: stats.totalActivated },
+    { metric: "Activation Percentage", value: `${stats.activationPercentage}%` },
     { metric: "Waivers Signed", value: stats.waiversSigned },
     { metric: "Waivers Missing", value: stats.waiversMissing },
     ...dailyData.map(d => ({
@@ -199,19 +199,19 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ isRefreshing
           variant="default"
         />
         <ScoreCard
-          title="Total Checked In"
-          value={stats.totalCheckedIn}
-          subtitle={`${stats.checkInPercentage}% of total`}
+          title="Total Activated"
+          value={stats.totalActivated}
+          subtitle={`${stats.activationPercentage}% of total`}
           icon={UserCheck}
           isLoading={isLoading}
-          variant={stats.checkInPercentage > 70 ? "success" : stats.checkInPercentage > 40 ? "warning" : "error"}
+          variant={stats.activationPercentage > 70 ? "success" : stats.activationPercentage > 40 ? "warning" : "error"}
         />
         <ScoreCard
-          title="Check-In Rate"
-          value={`${stats.checkInPercentage}%`}
+          title="Activation Rate"
+          value={`${stats.activationPercentage}%`}
           icon={Clock}
           isLoading={isLoading}
-          variant={stats.checkInPercentage > 70 ? "success" : "warning"}
+          variant={stats.activationPercentage > 70 ? "success" : "warning"}
         />
         <ScoreCard
           title="Waivers Signed"
