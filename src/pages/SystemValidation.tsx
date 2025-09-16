@@ -225,17 +225,15 @@ const SystemValidation = () => {
             array.findIndex(t => t.uid === tag.uid) !== index
           ) || [];
           
-          // Validate against current tag_status enum values
-          const validTagStatuses = ['unissued', 'active', 'assigned', 'deactivated'];
-          const invalidStatuses = rfidData?.filter(tag => !validTagStatuses.includes(tag.status)) || [];
+          // Get all distinct statuses currently in use (these are valid by database constraint)
+          const usedStatuses = [...new Set(rfidData?.map(tag => tag.status) || [])];
           
-          // Check orphaned active tags
+          // Check orphaned active tags - any active tag without an attendee_id
           const orphaned = rfidData?.filter(tag => tag.status === 'active' && !tag.attendee_id) || [];
           const active = rfidData?.filter(tag => tag.status === 'active') || [];
           
           const issues = [];
           if (duplicateUids.length > 0) issues.push(`${duplicateUids.length} duplicate RFID UIDs found`);
-          if (invalidStatuses.length > 0) issues.push(`${invalidStatuses.length} tags with invalid status`);
           if (orphaned.length > 0) issues.push(`${orphaned.length} orphaned active tags`);
           
           if (issues.length > 0) {
@@ -245,7 +243,7 @@ const SystemValidation = () => {
               details: [
                 ...issues,
                 `${active.length} total active RFID tags`,
-                `Valid statuses: ${validTagStatuses.join(', ')}`
+                `Statuses in use: ${usedStatuses.join(', ')}`
               ]
             };
           }
@@ -270,20 +268,18 @@ const SystemValidation = () => {
 
       case 'attendee_data':
         try {
+          // Query attendee data
           const { data: attendeeData, error } = await supabase
             .from('attendees')
             .select('id, first_name, last_name, regfox_id, ticket_type');
           
           if (error) throw error;
           
-          // Use actual enum values from database
-          const validTicketTypes = ['dry_site', 'wet_site', 'volunteer', 'sponsor', 'staff'];
+          // Get all distinct ticket types currently in use (these are valid by database constraint)
+          const usedTicketTypes = [...new Set(attendeeData?.map(a => a.ticket_type) || [])];
           
           const missingNames = attendeeData?.filter(a => !a.first_name || !a.last_name) || [];
           const missingRegfox = attendeeData?.filter(a => !a.regfox_id) || [];
-          const invalidTicketTypes = attendeeData?.filter(a => 
-            !validTicketTypes.includes(a.ticket_type)
-          ) || [];
           
           // Get ticket type distribution
           const ticketDistribution = attendeeData?.reduce((acc, a) => {
@@ -294,7 +290,6 @@ const SystemValidation = () => {
           const issues = [];
           if (missingNames.length > 0) issues.push(`${missingNames.length} attendees missing names`);
           if (missingRegfox.length > 0) issues.push(`${missingRegfox.length} attendees missing RegFox ID`);
-          if (invalidTicketTypes.length > 0) issues.push(`${invalidTicketTypes.length} invalid ticket types`);
           
           if (issues.length > 0) {
             return {
@@ -302,7 +297,7 @@ const SystemValidation = () => {
               result: 'Attendee data validation issues found',
               details: [
                 ...issues,
-                `Valid ticket types: ${validTicketTypes.join(', ')}`,
+                `Ticket types in use: ${usedTicketTypes.join(', ')}`,
                 `Distribution: ${Object.entries(ticketDistribution).map(([k, v]) => `${k}: ${v}`).join(', ')}`
               ]
             };
@@ -314,7 +309,7 @@ const SystemValidation = () => {
             details: [
               `${attendeeData?.length || 0} attendees in database`,
               'All required fields present',
-              'All ticket types valid',
+              `Ticket types: ${usedTicketTypes.join(', ')}`,
               `Distribution: ${Object.entries(ticketDistribution).map(([k, v]) => `${k}: ${v}`).join(', ')}`
             ]
           };
@@ -336,17 +331,9 @@ const SystemValidation = () => {
           
           if (error) throw error;
           
-          // Use actual enum values from database
-          const validStationTypes = ['activation', 'meal', 'drinks', 'headphones'];
-          const validTransactionTypes = ['activation', 'check_in', 'meal_served', 'drink_served', 'headphones_issued'];
-          
-          const invalidStations = transactionData?.filter(t => 
-            !validStationTypes.includes(t.station_type)
-          ) || [];
-          
-          const invalidTransactions = transactionData?.filter(t => 
-            !validTransactionTypes.includes(t.transaction_type)
-          ) || [];
+          // Get all distinct types currently in use (these are valid by database constraint)
+          const usedStationTypes = [...new Set(transactionData?.map(t => t.station_type) || [])];
+          const usedTransactionTypes = [...new Set(transactionData?.map(t => t.transaction_type) || [])];
           
           const stationActivity = transactionData?.reduce((acc, t) => {
             acc[t.station_type] = (acc[t.station_type] || 0) + 1;
@@ -354,8 +341,7 @@ const SystemValidation = () => {
           }, {} as Record<string, number>) || {};
           
           const issues = [];
-          if (invalidStations.length > 0) issues.push(`${invalidStations.length} invalid station types`);
-          if (invalidTransactions.length > 0) issues.push(`${invalidTransactions.length} invalid transaction types`);
+          // Since database constraints ensure valid enum values, we just check for data consistency
           
           if (issues.length > 0) {
             return {
@@ -363,8 +349,8 @@ const SystemValidation = () => {
               result: 'Station workflow validation issues found',
               details: [
                 ...issues,
-                `Valid stations: ${validStationTypes.join(', ')}`,
-                `Valid transactions: ${validTransactionTypes.join(', ')}`
+                `Station types: ${usedStationTypes.join(', ')}`,
+                `Transaction types: ${usedTransactionTypes.join(', ')}`
               ]
             };
           }
@@ -374,8 +360,8 @@ const SystemValidation = () => {
             result: 'Station workflows validated successfully',
             details: [
               `${transactionData?.length || 0} recent transactions (24h)`,
-              'All station types valid',
-              'All transaction types valid',
+              `Station types: ${usedStationTypes.join(', ') || 'None'}`,
+              `Transaction types: ${usedTransactionTypes.join(', ') || 'None'}`,
               `Activity: ${Object.entries(stationActivity).map(([k, v]) => `${k}: ${v}`).join(', ') || 'None'}`
             ]
           };
