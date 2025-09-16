@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { phoneActivationService, GroupActivationResult, PhoneActivationService, type PhoneLookupResult } from "@/services/phoneActivationService";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { RfidManagementPanel } from "@/components/RfidManagementPanel";
 
 export default function ActivationStation() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -152,8 +153,10 @@ export default function ActivationStation() {
         </div>
 
         <Tabs defaultValue="self-service" className="w-full">
-          <TabsList className="grid w-full grid-cols-1">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="self-service">Phone Number Activation</TabsTrigger>
+            <TabsTrigger value="rfid">RFID Management</TabsTrigger>
+            <TabsTrigger value="admin">Admin Controls</TabsTrigger>
           </TabsList>
 
           <TabsContent value="self-service" className="space-y-6">
@@ -240,20 +243,29 @@ export default function ActivationStation() {
                             )}
                           </div>
                           
-                          {lookupResult?.attendee_details && lookupResult.attendee_details.length > 0 && (
-                            <div className="mt-4">
-                              <h4 className="font-medium text-blue-900 mb-2">Attendees to activate:</h4>
-                              <ul className="space-y-1">
-                                {lookupResult.attendee_details.map((attendee: any, index: number) => (
-                                  <li key={index} className="text-sm">
-                                    {attendee.name}
-                                    {attendee.is_activated && " ✅ (Already Activated)"}
-                                    {attendee.rfid_uid && ` - RFID: ${attendee.rfid_uid}`}
-                                  </li>
-                                ))}
-                              </ul>
+                          {/* Show all attendees in the group/lookup */}
+                          <div className="mt-4 space-y-2">
+                            <h4 className="font-semibold text-blue-900">Attendees to be activated:</h4>
+                            <div className="space-y-1">
+                              {lookupResult?.attendee_details?.map((attendee: any, index: number) => (
+                                <div key={index} className="flex items-center justify-between text-sm bg-white/50 p-2 rounded">
+                                  <span className="font-medium">{attendee.name}</span>
+                                  <div className="flex items-center gap-2">
+                                    {attendee.rfid_uid && (
+                                      <span className="text-xs bg-blue-200 px-2 py-1 rounded">
+                                        {attendee.rfid_uid.startsWith('MOCK') ? 'Mock RFID' : 'RFID'}: {attendee.rfid_uid}
+                                      </span>
+                                    )}
+                                    {attendee.is_activated ? (
+                                      <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">Already Active</span>
+                                    ) : (
+                                      <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">Pending</span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          )}
+                          </div>
                         </div>
                         
                         <div className="flex gap-3">
@@ -299,27 +311,50 @@ export default function ActivationStation() {
                       </div>
                     </div>
 
-                    {/* Group Members List */}
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">Group Members:</h4>
-                      {activationResult.attendee_details?.map((attendee, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                          <div>
-                            <p className="font-medium">{attendee.name}</p>
-                            <p className="text-sm text-muted-foreground">RFID: {attendee.rfid_uid}</p>
+                    {/* Activated Attendees List */}
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-green-800">Activated Attendees:</h4>
+                      <div className="space-y-2">
+                        {activationResult.attendee_details?.map((attendee: any, index: number) => (
+                          <div key={index} className="flex items-center justify-between bg-white/50 p-3 rounded-lg">
+                            <span className="font-medium">{attendee.name}</span>
+                            <div className="flex items-center gap-2">
+                              {attendee.rfid_uid ? (
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  attendee.rfid_uid.startsWith('MOCK') 
+                                    ? 'bg-blue-200 text-blue-800' 
+                                    : 'bg-green-200 text-green-800'
+                                }`}>
+                                  {attendee.rfid_uid.startsWith('MOCK') ? 'Mock RFID' : 'RFID'}: {attendee.rfid_uid}
+                                </span>
+                              ) : (
+                                <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded">
+                                  No RFID
+                                </span>
+                              )}
+                              {attendee.was_already_active ? (
+                                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">
+                                  Previously Active
+                                </span>
+                              ) : (
+                                <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">
+                                  Just Activated
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {attendee.was_already_active ? (
-                              <Badge variant="outline">Already Active</Badge>
-                            ) : (
-                              <Badge variant="default" className="bg-green-600">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Activated
-                              </Badge>
-                            )}
-                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Show warning if some attendees don't have RFIDs */}
+                      {activationResult.attendee_details?.some((attendee: any) => !attendee.has_rfid) && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <p className="text-sm text-yellow-800">
+                            <strong>Note:</strong> Some attendees don't have RFID tags assigned yet. 
+                            Generate mock RFIDs for testing or assign real ones before the event.
+                          </p>
                         </div>
-                      ))}
+                      )}
                     </div>
 
                     <Button onClick={resetForm} variant="outline" className="w-full">
@@ -327,6 +362,34 @@ export default function ActivationStation() {
                     </Button>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="rfid" className="space-y-6">
+            <RfidManagementPanel />
+          </TabsContent>
+
+          <TabsContent value="admin" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PowerOff className="h-5 w-5" />
+                  Admin Controls
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  onClick={handleMassDeactivation}
+                  disabled={isProcessing}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {isProcessing ? "Processing..." : "Mass Deactivate All RFIDs"}
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  This will deactivate all currently active RFID tags. Use this at the end of the event.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>

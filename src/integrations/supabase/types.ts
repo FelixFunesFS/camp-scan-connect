@@ -420,6 +420,14 @@ export type Database = {
           total_attendees: number
         }[]
       }
+      bulk_generate_mock_rfids: {
+        Args: { p_limit?: number }
+        Returns: {
+          attendee_id: string
+          attendee_name: string
+          generated_uid: string
+        }[]
+      }
       can_start_sync: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -431,6 +439,10 @@ export type Database = {
       cleanup_stuck_syncs: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      generate_mock_rfid_uid: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_daily_transaction_count: {
         Args: {
