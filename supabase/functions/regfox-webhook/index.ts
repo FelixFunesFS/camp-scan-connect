@@ -568,7 +568,7 @@ serve(async (req) => {
             custom_fields: customFields,
             
             waiver_signed: false,
-            checked_in_at: null,
+            activated_at: null,
             created_at: payload.data.registrationDate || payload.data.registrationTimestamp || new Date().toISOString()
           };
           

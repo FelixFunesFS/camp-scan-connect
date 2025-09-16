@@ -684,7 +684,7 @@ serve(async (req) => {
             custom_fields: customFields,
             
             waiver_signed: waiverSigned,
-            checked_in_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,
+            activated_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,
             notes: null, // Keep notes separate from emergency contact
             created_at: regfoxAttendee.dateCreated
           };
