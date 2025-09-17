@@ -459,7 +459,7 @@ export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshi
           </Card>
         </div>
 
-        {/* Package Status Breakdown */}
+        {/* Package Activation Status - Donut Chart */}
         <Card className="border-primary/20">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -490,28 +490,110 @@ export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshi
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] md:h-[380px] w-full">
-              <ChartContainer config={chartConfig}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Donut Chart */}
+              <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={packageChartData} 
-                    layout="horizontal"
-                    margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis type="number" tick={{ fontSize: 12 }} />
-                    <YAxis 
-                      type="category"
-                      dataKey="name" 
-                      tick={{ fontSize: 10 }}
-                      width={70}
+                  <PieChart>
+                    <Pie
+                      data={Object.entries(data.packageStats).flatMap(([type, stats]) => {
+                        const items = [];
+                        if (visibleSeries.active && stats.active > 0) {
+                          items.push({
+                            name: `${type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} - Active`,
+                            value: stats.active,
+                            fill: "hsl(var(--secondary))",
+                            packageType: type,
+                            status: 'active'
+                          });
+                        }
+                        if (visibleSeries.inactive && stats.inactive > 0) {
+                          items.push({
+                            name: `${type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} - Inactive`,
+                            value: stats.inactive,
+                            fill: "hsl(var(--muted-foreground))",
+                            packageType: type,
+                            status: 'inactive'
+                          });
+                        }
+                        return items;
+                      })}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={120}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {Object.entries(data.packageStats).flatMap(([type, stats]) => {
+                        const items = [];
+                        if (visibleSeries.active && stats.active > 0) {
+                          items.push(<Cell key={`${type}-active`} fill="hsl(var(--secondary))" />);
+                        }
+                        if (visibleSeries.inactive && stats.inactive > 0) {
+                          items.push(<Cell key={`${type}-inactive`} fill="hsl(var(--muted-foreground))" />);
+                        }
+                        return items;
+                      })}
+                    </Pie>
+                    <ChartTooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-background border rounded-lg shadow-lg p-3">
+                              <p className="font-medium">{data.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Count: {data.value}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    {visibleSeries.active && <Bar dataKey="active" stackId="a" fill="hsl(var(--secondary))" name="Active" />}
-                    {visibleSeries.inactive && <Bar dataKey="inactive" stackId="a" fill="hsl(var(--muted-foreground))" name="Inactive" />}
-                  </BarChart>
+                  </PieChart>
                 </ResponsiveContainer>
-              </ChartContainer>
+              </div>
+
+              {/* Legend/Stats */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm text-muted-foreground">Package Breakdown</h4>
+                <div className="space-y-3">
+                  {Object.entries(data.packageStats).map(([type, stats]) => {
+                    const utilization = stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0;
+                    return (
+                      <div key={type} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">
+                            {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {utilization}% active
+                          </span>
+                        </div>
+                        <div className="flex gap-2 text-xs">
+                          {visibleSeries.active && (
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 rounded-full bg-secondary"></div>
+                              <span>Active: {stats.active}</span>
+                            </div>
+                          )}
+                          {visibleSeries.inactive && (
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 rounded-full bg-muted-foreground"></div>
+                              <span>Inactive: {stats.inactive}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Total: {stats.total}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
