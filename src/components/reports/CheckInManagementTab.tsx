@@ -107,19 +107,107 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'actions', label: 'Actions', mobile: true, desktop: true, width: 'min-w-20', sortable: false }
   ];
 
-  // Data fetching - simplified for brevity
+  // Data fetching
   const fetchAttendees = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.from('attendees').select('*');
-      if (error) throw error;
       
-      // Process attendees data here...
-      const processedData = data || [];
-      setAttendees(processedData as EnhancedAttendee[]);
+      const { data: attendeesData, error: attendeesError } = await supabase
+        .from('attendees')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (attendeesError) throw attendeesError;
+
+      const { data: rfidData, error: rfidError } = await supabase
+        .from('rfid_tags')
+        .select('*');
+
+      if (rfidError) throw rfidError;
+
+      const { data: transactionData, error: transactionError } = await supabase
+        .from('station_transactions')
+        .select('*');
+
+      if (transactionError) throw transactionError;
+
+      // Calculate group sizes for order IDs
+      const orderSizes = new Map<string, number>();
+      attendeesData?.forEach(attendee => {
+        if (attendee.order_id && attendee.order_id.trim()) {
+          orderSizes.set(attendee.order_id, (orderSizes.get(attendee.order_id) || 0) + 1);
+        }
+      });
+
+      const processedAttendees: EnhancedAttendee[] = (attendeesData || []).map(attendee => {
+        const rfidTag = rfidData?.find(tag => tag.attendee_id === attendee.id);
+        const transactions = transactionData?.filter(t => t.attendee_id === attendee.id) || [];
+        
+        const has_headphones = transactions.some(t => 
+          t.station_type === 'headphones' && t.transaction_type === 'activate'
+        );
+        
+        const bar_hits = transactions.filter(t => 
+          t.station_type === 'drinks' && t.transaction_type === 'drink'
+        ).length;
+
+        // Determine RFID and overall status
+        const rfid_status = rfidTag?.status || 'unissued';
+        let overall_status = 'unassigned';
+        if (attendee.activated_at) {
+          overall_status = 'activated';
+        } else if (rfidTag?.status === 'assigned' || rfidTag?.status === 'active') {
+          overall_status = 'assigned';
+        }
+
+        const arrival_day = attendee.arrival_window === 'early' ? 'Thursday' : 'Friday';
+
+        const duplicateEmails = attendeesData?.filter(a => 
+          a.email && a.email === attendee.email && a.id !== attendee.id
+        ) || [];
+        const is_duplicate = duplicateEmails.length > 0;
+
+        const duplicatePhones = attendeesData?.filter(a => 
+          a.phone && a.phone === attendee.phone && a.id !== attendee.id
+        ) || [];
+        const is_phone_duplicate = duplicatePhones.length > 0;
+
+        // Calculate group information
+        const group_size = attendee.order_id ? orderSizes.get(attendee.order_id) || 1 : 1;
+        const is_group_order = group_size > 1;
+
+        return {
+          ...attendee,
+          rfid_uid: rfidTag?.uid || undefined,
+          rfid_status,
+          has_headphones,
+          bar_hits,
+          overall_status,
+          arrival_day,
+          is_duplicate,
+          is_phone_duplicate,
+          waiver_signed: attendee.waiver_signed ?? false,
+          activated_at: attendee.activated_at ?? undefined,
+          meal_plan: attendee.meal_plan || undefined,
+          notes: attendee.notes || undefined,
+          email: attendee.email || undefined,
+          phone: attendee.phone || undefined,
+          regfox_id: attendee.regfox_id || undefined,
+          registration_status: attendee.registration_status || 'registered',
+          group_size,
+          is_group_order
+        } as EnhancedAttendee;
+      });
+
+      setAttendees(processedAttendees);
+
     } catch (error) {
-      console.error("Error:", error);
-      toast({ title: "Error", description: "Failed to fetch data", variant: "destructive" });
+      console.error("Error fetching attendees:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch attendees data",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -128,12 +216,56 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   useEffect(() => { fetchAttendees(); }, []);
   useEffect(() => { if (isRefreshing) fetchAttendees(); }, [isRefreshing]);
 
+  // Set up real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('attendees-checkin-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'attendees'
+      }, () => {
+        fetchAttendees();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'rfid_tags'
+      }, () => {
+        fetchAttendees();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'station_transactions'
+      }, () => {
+        fetchAttendees();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // Quick filters
-  const quickFilters: QuickFilter[] = [
-    { id: "all", label: "All", count: attendees.length },
-    { id: "activated", label: "Activated", count: attendees.filter(a => a.activated_at).length },
-    { id: "unassigned", label: "Needs RFID", count: attendees.filter(a => a.rfid_status === 'unissued').length }
-  ];
+  const quickFilters: QuickFilter[] = useMemo(() => {
+    const totalCount = attendees.length;
+    const activatedCount = attendees.filter(a => a.activated_at).length;
+    const assignedCount = attendees.filter(a => a.rfid_status === 'assigned' || a.rfid_status === 'active').length;
+    const unassignedCount = attendees.filter(a => a.rfid_status === 'unissued').length;
+    const missingWaiverCount = attendees.filter(a => !a.waiver_signed).length;
+    const hasHeadphonesCount = attendees.filter(a => a.has_headphones).length;
+
+    return [
+      { id: "all", label: "All", count: totalCount },
+      { id: "activated", label: "Activated", count: activatedCount, color: "success" as const },
+      { id: "assigned", label: "RFID Assigned", count: assignedCount, color: "warning" as const },
+      { id: "unassigned", label: "Needs RFID", count: unassignedCount, color: "destructive" as const },
+      { id: "missing_waiver", label: "Missing Waiver", count: missingWaiverCount, color: "warning" as const },
+      { id: "has_headphones", label: "Has Headphones", count: hasHeadphonesCount }
+    ];
+  }, [attendees]);
 
   // Filter processed attendees
   const processedAttendees = useMemo(() => {
@@ -143,14 +275,17 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     if (activeQuickFilter && activeQuickFilter !== 'all') {
       switch (activeQuickFilter) {
         case 'activated': filtered = filtered.filter(a => a.activated_at); break;
+        case 'assigned': filtered = filtered.filter(a => a.rfid_status === 'assigned' || a.rfid_status === 'active'); break;
         case 'unassigned': filtered = filtered.filter(a => a.rfid_status === 'unissued'); break;
+        case 'missing_waiver': filtered = filtered.filter(a => !a.waiver_signed); break;
+        case 'has_headphones': filtered = filtered.filter(a => a.has_headphones); break;
       }
     }
     
     // Apply search
     if (searchTerm) {
       filtered = filtered.filter(a => 
-        [a.first_name, a.last_name, a.email, a.phone].some(field => 
+        [a.first_name, a.last_name, a.email, a.phone, a.regfox_id, a.order_id].some(field => 
           field?.toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
@@ -159,13 +294,35 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     return filtered;
   }, [attendees, searchTerm, activeQuickFilter]);
 
+  // Group attendees by order_id
+  const groupedAttendees: GroupedAttendee[] = useMemo(() => {
+    const groups = new Map<string, EnhancedAttendee[]>();
+    
+    processedAttendees.forEach(attendee => {
+      const key = attendee.order_id || 'no-order';
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(attendee);
+    });
+
+    return Array.from(groups.entries()).map(([orderId, attendees]) => ({
+      orderId: orderId === 'no-order' ? null : orderId,
+      attendees
+    }));
+  }, [processedAttendees]);
+
   const handleSort = (field: keyof EnhancedAttendee) => {
     setSortField(field);
     setSortDirection(sortField === field ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
   };
 
   return (
-    <GroupRfidProvider>
+    <GroupRfidProvider
+      groupedAttendees={isGroupedView ? groupedAttendees : processedAttendees}
+      isGroupedView={isGroupedView}
+      onRefresh={fetchAttendees}
+    >
       <div className="space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
@@ -196,10 +353,18 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
               {isGroupedView ? "Grouped View" : "Individual View"}
             </Button>
           </div>
+          
+          {!isMobile && (
+            <ColumnSelector
+              columns={allColumns}
+              visibleColumns={visibleColumns}
+              onVisibleColumnsChange={setVisibleColumns}
+            />
+          )}
         </div>
 
         <ResponsiveAttendeesTable
-          attendees={processedAttendees}
+          attendees={isGroupedView ? groupedAttendees : processedAttendees}
           columns={allColumns}
           visibleColumns={visibleColumns}
           currentPage={currentPage}
