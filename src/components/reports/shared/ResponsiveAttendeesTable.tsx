@@ -21,7 +21,8 @@ import {
   UserCheck,
   Users,
   Headphones,
-  Wine
+  Wine,
+  Eye
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EnhancedAttendee, TableColumn, GroupedAttendee } from "../CheckInManagementTab";
@@ -29,6 +30,7 @@ import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentC
 import { CollapsibleOrderGroup } from "./CollapsibleOrderGroup";
 import { useGroupRfid } from "@/components/GroupRfidProvider";
 import { KeyboardShortcutsHelper } from "@/components/KeyboardShortcutsHelper";
+import { Link } from "react-router-dom";
 
 interface ResponsiveAttendeesTableProps {
   attendees: GroupedAttendee[] | EnhancedAttendee[];
@@ -336,6 +338,16 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
           </span>
         ) : (
           <span className="text-muted-foreground">-</span>
+        );
+      case 'actions':
+        return (
+          <Link
+            to={`/attendee/${attendee.id}`}
+            className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+          >
+            <Eye className="h-3 w-3" />
+            View Details
+          </Link>
         );
       default:
         const value = attendee[columnKey as keyof EnhancedAttendee];

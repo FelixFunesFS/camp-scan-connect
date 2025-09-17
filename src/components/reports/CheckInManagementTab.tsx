@@ -74,7 +74,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isGroupedView, setIsGroupedView] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    'first_name', 'last_name', 'phone', 'email', 'ticket_type', 'arrival_day', 'rfid_status', 'rfid_assignment', 'activated_at'
+    'first_name', 'last_name', 'phone', 'email', 'ticket_type', 'arrival_day', 'rfid_status', 'rfid_assignment', 'activated_at', 'actions'
   ]);
 
   const { toast } = useToast();
@@ -99,7 +99,8 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'is_duplicate', label: 'Name Duplicate', desktop: true, width: 'min-w-24' },
     { key: 'is_phone_duplicate', label: 'Phone Duplicate', desktop: true, width: 'min-w-24' },
     { key: 'regfox_id', label: 'RegFox ID', desktop: true, width: 'min-w-24' },
-    { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-48' }
+    { key: 'notes', label: 'Notes', desktop: true, width: 'min-w-48' },
+    { key: 'actions', label: 'Actions', mobile: true, desktop: true, width: 'min-w-20', sortable: false }
   ];
 
   // Data fetching

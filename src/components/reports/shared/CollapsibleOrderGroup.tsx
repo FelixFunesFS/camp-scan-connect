@@ -29,17 +29,13 @@ export const CollapsibleOrderGroup: React.FC<CollapsibleOrderGroupProps> = ({
       <tr>
         <td colSpan={visibleColumns.length} className="p-0">
           <Collapsible open={open} onOpenChange={onToggle}>
-            <CollapsibleTrigger asChild>
-              <div className="w-full">
-                <OrderGroupHeader
-                  orderId={orderId}
-                  attendees={attendees}
-                  isExpanded={open}
-                  onToggle={onToggle}
-                  groupProgress={groupProgress}
-                />
-              </div>
-            </CollapsibleTrigger>
+            <OrderGroupHeader
+              orderId={orderId}
+              attendees={attendees}
+              isExpanded={open}
+              onToggle={onToggle}
+              groupProgress={groupProgress}
+            />
             
             <CollapsibleContent>
               <div className="bg-muted/10">
