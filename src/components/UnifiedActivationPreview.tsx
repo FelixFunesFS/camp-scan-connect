@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, Search, AlertCircle, CheckCircle2, Phone, Mail, User, Hash } from "lucide-react";
 import { MobileAttendeeCard } from "./MobileAttendeeCard";
+import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import type { UnifiedSearchResult } from "@/services/enhancedActivationService";
 
 interface UnifiedActivationPreviewProps {
@@ -87,26 +88,12 @@ export function UnifiedActivationPreview({
           </h4>
           <div className="space-y-2">
             {searchResult.attendee_details?.map((attendee: any, index: number) => (
-              <Card key={`direct-${index}`} className="p-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{attendee.name}</span>
-                      <Badge 
-                        variant={attendee.is_activated ? "default" : attendee.has_rfid ? "secondary" : "destructive"}
-                        className="text-xs"
-                      >
-                        {attendee.is_activated ? "Active" : attendee.has_rfid ? "Ready" : "No RFID"}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      {attendee.phone && <p>📞 {attendee.phone}</p>}
-                      {attendee.meal_plan && <p>🍽️ {attendee.meal_plan}</p>}
-                      {attendee.rfid_uid && <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>}
-                    </div>
-                  </div>
-                </div>
-              </Card>
+              <MobileAttendeeCard 
+                key={`direct-${index}`}
+                attendee={attendee}
+                type="direct"
+                showDetails={true}
+              />
             ))}
           </div>
         </div>
@@ -126,26 +113,12 @@ export function UnifiedActivationPreview({
           </p>
           <div className="space-y-2">
             {searchResult.order_companions?.map((companion: any, index: number) => (
-              <Card key={`companion-${index}`} className="p-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium">{companion.name}</span>
-                      <Badge 
-                        variant={companion.is_activated ? "default" : companion.has_rfid ? "secondary" : "destructive"}
-                        className="text-xs"
-                      >
-                        {companion.is_activated ? "Active" : companion.has_rfid ? "Ready" : "No RFID"}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      {companion.phone && <p>📞 {companion.phone}</p>}
-                      {companion.meal_plan && <p>🍽️ {companion.meal_plan}</p>}
-                      {companion.rfid_uid && <p className="font-mono text-xs">RFID: {companion.rfid_uid}</p>}
-                    </div>
-                  </div>
-                </div>
-              </Card>
+              <MobileAttendeeCard 
+                key={`companion-${index}`}
+                attendee={companion}
+                type="companion"
+                showDetails={true}
+              />
             ))}
           </div>
         </div>

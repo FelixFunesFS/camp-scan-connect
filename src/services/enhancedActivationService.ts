@@ -86,11 +86,11 @@ export class EnhancedActivationService {
    */
   static async searchByEmail(email: string): Promise<UnifiedSearchResult | null> {
     try {
-      // Find attendees with matching email
+      // Find attendees with matching email (partial match)
       const { data: attendeesData, error: attendeesError } = await supabase
         .from('attendees')
         .select('*')
-        .ilike('email', email.trim());
+        .ilike('email', `%${email.trim()}%`);
 
       if (attendeesError) throw attendeesError;
       if (!attendeesData || attendeesData.length === 0) return null;
