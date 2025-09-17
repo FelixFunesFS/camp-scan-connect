@@ -74,6 +74,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isGroupedView, setIsGroupedView] = useState(false);
+  const [isFullView, setIsFullView] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     'first_name', 'last_name', 'phone', 'email', 'ticket_type', 'arrival_day', 'rfid_status', 'rfid_assignment', 'activated_at', 'actions'
   ]);
@@ -481,10 +482,10 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   }, [groupedAttendees, processedAttendees, sortField, sortDirection, isGroupedView]);
 
   // Pagination
-  const itemsPerPage = 50;
   const totalItems = isGroupedView 
     ? (sortedAttendees as GroupedAttendee[]).reduce((sum, group) => sum + group.attendees.length, 0)
     : (sortedAttendees as EnhancedAttendee[]).length;
+  const itemsPerPage = isFullView ? totalItems : 50;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
@@ -704,6 +705,17 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
               >
                 {isGroupedView ? "Group View" : "Individual View"}
               </Button>
+              
+              <Button
+                variant={isFullView ? "default" : "outline"}
+                onClick={() => {
+                  setIsFullView(!isFullView);
+                  setCurrentPage(1);
+                }}
+                className="whitespace-nowrap"
+              >
+                {isFullView ? "Full View" : "Paginated"}
+              </Button>
             </div>
             
             <div className="flex gap-2">
@@ -742,6 +754,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           onPageChange={setCurrentPage}
           onRefresh={fetchAttendees}
           isGroupedView={isGroupedView}
+          isFullView={isFullView}
         />
           </GroupRfidProvider>
         </div>

@@ -46,6 +46,7 @@ interface ResponsiveAttendeesTableProps {
   onPageChange: (page: number) => void;
   onRefresh: () => void;
   isGroupedView?: boolean;
+  isFullView?: boolean;
 }
 
 export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> = ({
@@ -60,7 +61,8 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
   onSort,
   onPageChange,
   onRefresh,
-  isGroupedView = false
+  isGroupedView = false,
+  isFullView = false
 }) => {
   const isMobile = useIsMobile();
   
@@ -403,31 +405,33 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         </div>
         
         {/* Pagination Controls */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-          
-          <span className="text-xs">
-            Page {currentPage} of {totalPages}
-          </span>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        {!isFullView && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            
+            <span className="text-xs">
+              Page {currentPage} of {totalPages}
+            </span>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Group Management Controls */}
@@ -666,31 +670,40 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       )}
 
       {/* Pagination Controls (repeated at bottom) */}
-      <div className="flex justify-center items-center gap-2 pt-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Button>
-        
-        <span className="text-sm text-muted-foreground">
-          Page {currentPage} of {totalPages} • {totalAttendees} total attendees
-        </span>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      {!isFullView && (
+        <div className="flex justify-center items-center gap-2 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages} • {totalAttendees} total attendees
+          </span>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      {isFullView && (
+        <div className="flex justify-center pt-4">
+          <span className="text-sm text-muted-foreground">
+            Showing all {totalAttendees} attendees
+          </span>
+        </div>
+      )}
     </div>
   );
 };
