@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Circle, Clock, AlertTriangle, Zap, Users, Database, Search, BarChart3, FileText, Settings, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Circle, Clock, AlertTriangle, Zap, Users, Database, Search, BarChart3, FileText, Settings, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,6 +18,11 @@ interface ChecklistItem {
 
 const ChecklistPage: React.FC = () => {
   const navigate = useNavigate();
+  
+  const handleRefreshData = () => {
+    // Refresh checklist data - could trigger real-time updates
+    window.location.reload();
+  };
 
   const checklistItems: ChecklistItem[] = [
     // Core Features (Critical for MVP)
@@ -228,9 +233,19 @@ const ChecklistPage: React.FC = () => {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Clock className="h-5 w-5 text-blue-600" />
-                Time Investment
+              <CardTitle className="flex items-center justify-between text-lg">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  Time Investment
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleRefreshData}
+                  className="h-8 w-8 p-0"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>

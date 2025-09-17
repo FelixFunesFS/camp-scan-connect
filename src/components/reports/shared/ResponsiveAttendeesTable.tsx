@@ -27,7 +27,8 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EnhancedAttendee, TableColumn, GroupedAttendee } from "../CheckInManagementTab";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
-import { CollapsibleOrderGroup } from "./CollapsibleOrderGroup";
+import { GroupHeaderRow } from "./GroupHeaderRow";
+import { AttendeeRow } from "./AttendeeRow";
 import { useGroupRfid } from "@/components/GroupRfidProvider";
 import { KeyboardShortcutsHelper } from "@/components/KeyboardShortcutsHelper";
 import { Link } from "react-router-dom";
@@ -457,48 +458,75 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       {isMobile && (
         <div className="space-y-3">
           {isGroupedView && groupedData.length > 0 ? (
-            groupedData.map((group) => (
-              <Card key={group.orderId || 'no-order'} className="overflow-hidden">
-                <CardContent className="p-0">
-                  <CollapsibleOrderGroup
-                    orderId={group.orderId}
-                    attendees={group.attendees}
-                    columns={visibleMobileColumns}
-                    visibleColumns={visibleMobileColumns.map(col => col.key)}
-                    open={expandedGroups.has(group.orderId || 'no-order')}
-                    onToggle={() => toggleGroup(group.orderId || 'no-order')}
-                    groupProgress={getGroupProgress(group.orderId || 'no-order')}
-                  >
-                    <div className="divide-y">
-                      {group.attendees.map((attendee) => (
-                        <div key={attendee.id} className="p-4 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">
-                              {attendee.first_name} {attendee.last_name}
-                            </span>
-                            <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
-                              {attendee.overall_status}
+            groupedData.map((group) => {
+              const groupKey = group.orderId || 'no-order';
+              const isExpanded = expandedGroups.has(groupKey);
+              
+              return (
+                <Card key={groupKey} className="overflow-hidden">
+                  <CardContent className="p-0">
+                    {/* Group Header */}
+                    <div
+                      className="flex items-center justify-between p-3 bg-muted/30 border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => toggleGroup(groupKey)}
+                    >
+                      <div className="flex items-center gap-2 flex-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-1 h-auto"
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <div>
+                          <h3 className="font-medium text-base flex items-center gap-2">
+                            Order: {group.orderId || "No Order ID"}
+                            <Badge variant="outline" className="text-xs">
+                              <Users className="h-3 w-3 mr-1" />
+                              {group.attendees.length}
                             </Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 gap-2 text-sm">
-                            {visibleMobileColumns.map((column) => (
-                              <div key={column.key} className="flex justify-between items-center">
-                                <span className="text-muted-foreground font-medium">
-                                  {column.label}:
-                                </span>
-                                <div>{renderCellContent(attendee, column.key)}</div>
-                              </div>
-                            ))}
-                          </div>
+                          </h3>
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  </CollapsibleOrderGroup>
-                </CardContent>
-              </Card>
-            ))
+                    
+                    {/* Attendee Cards */}
+                    {isExpanded && (
+                      <div className="divide-y">
+                        {group.attendees.map((attendee) => (
+                          <div key={attendee.id} className="p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">
+                                {attendee.first_name} {attendee.last_name}
+                              </span>
+                              <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
+                                {attendee.overall_status}
+                              </Badge>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 gap-2 text-sm">
+                              {visibleMobileColumns.map((column) => (
+                                <div key={column.key} className="flex justify-between items-center">
+                                  <span className="text-muted-foreground font-medium">
+                                    {column.label}:
+                                  </span>
+                                  <div>{renderCellContent(attendee, column.key)}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
           ) : individualData.length > 0 ? (
             individualData.map((attendee) => (
               <Card key={attendee.id} className="overflow-hidden">
@@ -564,45 +592,46 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
               
               <tbody>
                 {isGroupedView && groupedData.length > 0 ? (
-                  groupedData.map((group) => (
-                    <CollapsibleOrderGroup
-                      key={group.orderId || 'no-order'}
-                      orderId={group.orderId}
-                      attendees={group.attendees}
-                      columns={visibleDesktopColumns}
-                      visibleColumns={visibleDesktopColumns.map(col => col.key)}
-                      open={expandedGroups.has(group.orderId || 'no-order')}
-                      onToggle={() => toggleGroup(group.orderId || 'no-order')}
-                      groupProgress={getGroupProgress(group.orderId || 'no-order')}
-                    >
-                      {group.attendees.map((attendee, attendeeIndex) => {
-                        // Calculate global row index across all groups
-                        const globalIndex = groupedData
-                          .slice(0, groupedData.findIndex(g => g.orderId === group.orderId))
-                          .reduce((sum, g) => sum + g.attendees.length, 0) + attendeeIndex;
-                        
-                        return (
-                          <tr
-                            key={attendee.id}
-                            className={`border-b last:border-b-0 hover:bg-accent/50 ${
-                              attendeeIndex % 2 === 0 ? 'bg-background' : 'bg-muted/20'
-                            }`}
-                            data-row-index={globalIndex}
-                            data-attendee-id={attendee.id}
-                          >
-                            {visibleDesktopColumns.map((column) => (
-                              <td
-                                key={column.key}
-                                className={`p-3 text-sm border-r last:border-r-0 align-top ${column.width || 'w-auto'}`}
-                              >
-                                {renderCellContent(attendee, column.key)}
-                              </td>
-                            ))}
-                          </tr>
-                        );
-                      })}
-                    </CollapsibleOrderGroup>
-                  ))
+                  groupedData.flatMap((group, groupIndex) => {
+                    const groupKey = group.orderId || 'no-order';
+                    const isExpanded = expandedGroups.has(groupKey);
+                    
+                    // Calculate starting row index for this group
+                    const baseRowIndex = groupedData
+                      .slice(0, groupIndex)
+                      .reduce((sum, g) => sum + g.attendees.length, 0);
+                    
+                    const rows = [
+                      // Group header row
+                      <GroupHeaderRow
+                        key={`header-${groupKey}`}
+                        orderId={group.orderId}
+                        attendees={group.attendees}
+                        isExpanded={isExpanded}
+                        onToggle={() => toggleGroup(groupKey)}
+                        groupProgress={getGroupProgress(groupKey)}
+                        colSpan={visibleDesktopColumns.length}
+                      />
+                    ];
+                    
+                    // Add attendee rows
+                    group.attendees.forEach((attendee, attendeeIndex) => {
+                      const rowIndex = baseRowIndex + attendeeIndex;
+                      rows.push(
+                        <AttendeeRow
+                          key={attendee.id}
+                          attendee={attendee}
+                          columns={visibleDesktopColumns}
+                          rowIndex={rowIndex}
+                          isEven={attendeeIndex % 2 === 0}
+                          isVisible={isExpanded}
+                          renderCellContent={renderCellContent}
+                        />
+                      );
+                    });
+                    
+                    return rows;
+                  })
                 ) : individualData.length > 0 ? (
                   individualData.map((attendee, index) => (
                     <tr
