@@ -188,11 +188,15 @@ export const useUnifiedRfidNavigation = ({
 
   // Start processing a specific group
   const startGroupProcessing = useCallback((groupId: string) => {
+    if (!isGroupedView) return;
+    
     // Expand the target group
     setExpandedGroups(prev => new Set(prev).add(groupId));
     
     // Find first unassigned attendee in group
-    const groupAttendees = groupedAttendees[groupId] || [];
+    const groups = groupedAttendees as GroupedAttendee[];
+    const group = groups.find(g => (g.orderId || 'no-order') === groupId);
+    const groupAttendees = group?.attendees || [];
     const firstUnassigned = groupAttendees.find(a => !a.rfid_uid || a.rfid_status === 'unissued');
     
     if (firstUnassigned) {
@@ -215,12 +219,15 @@ export const useUnifiedRfidNavigation = ({
         }, 100);
       }
     }
-  }, [groupedAttendees, focusableRows, onRowFocus]);
+  }, [groupedAttendees, focusableRows, onRowFocus, isGroupedView]);
 
   // Group management functions
   const expandAllGroups = useCallback(() => {
-    setExpandedGroups(new Set(Object.keys(groupedAttendees)));
-  }, [groupedAttendees]);
+    if (isGroupedView) {
+      const groups = groupedAttendees as GroupedAttendee[];
+      setExpandedGroups(new Set(groups.map(group => group.orderId || 'no-order')));
+    }
+  }, [groupedAttendees, isGroupedView]);
 
   const collapseAllGroups = useCallback(() => {
     setExpandedGroups(new Set());
@@ -240,11 +247,16 @@ export const useUnifiedRfidNavigation = ({
 
   // Get group assignment progress
   const getGroupProgress = useCallback((groupId: string) => {
-    const attendees = groupedAttendees[groupId] || [];
+    if (!isGroupedView) return { assigned: 0, total: 0, percentage: 0 };
+    
+    const groups = groupedAttendees as GroupedAttendee[];
+    const group = groups.find(g => (g.orderId || 'no-order') === groupId);
+    const attendees = group?.attendees || [];
+    
     const assigned = attendees.filter(a => a.rfid_uid && a.rfid_status !== 'unassigned').length;
     const total = attendees.length;
     return { assigned, total, percentage: total > 0 ? (assigned / total) * 100 : 0 };
-  }, [groupedAttendees]);
+  }, [groupedAttendees, isGroupedView]);
 
   return {
     navigateToRow,
@@ -259,6 +271,8 @@ export const useUnifiedRfidNavigation = ({
     getGroupProgress,
     currentAttendeeId: currentAttendeeIdRef.current,
     focusableRowCount: focusableRows.length,
-    totalRows: Object.values(groupedAttendees).flat().length
+    totalRows: isGroupedView 
+      ? (groupedAttendees as GroupedAttendee[]).reduce((sum, group) => sum + group.attendees.length, 0)
+      : (groupedAttendees as EnhancedAttendee[]).length
   };
 };

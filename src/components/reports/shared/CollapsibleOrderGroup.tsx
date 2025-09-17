@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { OrderGroupHeader } from "./OrderGroupHeader";
 import { EnhancedAttendee, TableColumn } from "../CheckInManagementTab";
@@ -9,7 +9,7 @@ interface CollapsibleOrderGroupProps {
   columns: TableColumn[];
   visibleColumns: string[];
   children: React.ReactNode;
-  defaultOpen?: boolean;
+  open: boolean;
   onToggle?: () => void;
   groupProgress?: { assigned: number; total: number; percentage: number };
 }
@@ -20,29 +20,22 @@ export const CollapsibleOrderGroup: React.FC<CollapsibleOrderGroupProps> = ({
   columns,
   visibleColumns,
   children,
-  defaultOpen = true,
+  open,
   onToggle,
   groupProgress
 }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  const handleToggle = () => {
-    setIsOpen(!isOpen);
-    onToggle?.();
-  };
-
   return (
     <>
       <tr>
         <td colSpan={visibleColumns.length} className="p-0">
-          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <Collapsible open={open} onOpenChange={onToggle}>
             <CollapsibleTrigger asChild>
               <div className="w-full">
                 <OrderGroupHeader
                   orderId={orderId}
                   attendees={attendees}
-                  isExpanded={isOpen}
-                  onToggle={handleToggle}
+                  isExpanded={open}
+                  onToggle={onToggle}
                   groupProgress={groupProgress}
                 />
               </div>

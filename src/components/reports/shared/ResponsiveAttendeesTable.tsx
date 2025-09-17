@@ -453,7 +453,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                     attendees={group.attendees}
                     columns={visibleMobileColumns}
                     visibleColumns={visibleMobileColumns.map(col => col.key)}
-                    defaultOpen={expandedGroups.has(group.orderId || 'no-order')}
+                    open={expandedGroups.has(group.orderId || 'no-order')}
                     onToggle={() => toggleGroup(group.orderId || 'no-order')}
                     groupProgress={getGroupProgress(group.orderId || 'no-order')}
                   >
@@ -525,9 +525,9 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       {/* Desktop Table View */}
       {!isMobile && (
         <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto relative">
             <table className="w-full border-collapse">
-              <thead className="bg-muted/50 sticky top-0 z-10">
+              <thead className="bg-muted/50 sticky top-0 z-20 border-b-2 border-border">
                 <tr className="border-b">
                   {visibleDesktopColumns.map((column) => (
                     <th
@@ -559,28 +559,36 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                       attendees={group.attendees}
                       columns={visibleDesktopColumns}
                       visibleColumns={visibleDesktopColumns.map(col => col.key)}
-                      defaultOpen={expandedGroups.has(group.orderId || 'no-order')}
+                      open={expandedGroups.has(group.orderId || 'no-order')}
                       onToggle={() => toggleGroup(group.orderId || 'no-order')}
                       groupProgress={getGroupProgress(group.orderId || 'no-order')}
                     >
-                      {group.attendees.map((attendee, attendeeIndex) => (
-                        <tr
-                          key={attendee.id}
-                          className={`border-b last:border-b-0 hover:bg-accent/50 ${
-                            attendeeIndex % 2 === 0 ? 'bg-background' : 'bg-muted/20'
-                          }`}
-                          data-row-index={attendeeIndex}
-                        >
-                          {visibleDesktopColumns.map((column) => (
-                            <td
-                              key={column.key}
-                              className={`p-3 text-sm border-r last:border-r-0 align-top ${column.width || 'w-auto'}`}
-                            >
-                              {renderCellContent(attendee, column.key)}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
+                      {group.attendees.map((attendee, attendeeIndex) => {
+                        // Calculate global row index across all groups
+                        const globalIndex = groupedData
+                          .slice(0, groupedData.findIndex(g => g.orderId === group.orderId))
+                          .reduce((sum, g) => sum + g.attendees.length, 0) + attendeeIndex;
+                        
+                        return (
+                          <tr
+                            key={attendee.id}
+                            className={`border-b last:border-b-0 hover:bg-accent/50 ${
+                              attendeeIndex % 2 === 0 ? 'bg-background' : 'bg-muted/20'
+                            }`}
+                            data-row-index={globalIndex}
+                            data-attendee-id={attendee.id}
+                          >
+                            {visibleDesktopColumns.map((column) => (
+                              <td
+                                key={column.key}
+                                className={`p-3 text-sm border-r last:border-r-0 align-top ${column.width || 'w-auto'}`}
+                              >
+                                {renderCellContent(attendee, column.key)}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
                     </CollapsibleOrderGroup>
                   ))
                 ) : individualData.length > 0 ? (
@@ -591,6 +599,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                         index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
                       }`}
                       data-row-index={index}
+                      data-attendee-id={attendee.id}
                     >
                       {visibleDesktopColumns.map((column) => (
                         <td
