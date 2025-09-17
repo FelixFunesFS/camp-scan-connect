@@ -82,6 +82,19 @@ interface ValidationTest {
 }
 
 const AdminHub = () => {
+  // Safety check for React availability
+  if (!React || !React.useState || !React.useEffect) {
+    console.error('React hooks not available in AdminHub');
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Loading AdminHub...</h1>
+          <p className="text-muted-foreground">Please wait while the application initializes.</p>
+        </div>
+      </div>
+    );
+  }
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [adminId, setAdminId] = useState<string>('');

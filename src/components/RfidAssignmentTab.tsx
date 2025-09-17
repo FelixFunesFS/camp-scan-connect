@@ -48,6 +48,17 @@ interface OrderGroup {
 }
 
 export const RfidAssignmentTab = () => {
+  // Safety check for React availability
+  if (!React || !React.useState || !React.useEffect) {
+    console.error('React hooks not available in RfidAssignmentTab');
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-bold mb-2">RFID Assignment Loading...</h2>
+        <p className="text-muted-foreground">Please wait while the component initializes.</p>
+      </div>
+    );
+  }
+
   const [attendees, setAttendees] = useState<AttendeeWithRfid[]>([]);
   const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
   const [loading, setLoading] = useState(true);
