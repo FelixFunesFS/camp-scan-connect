@@ -81,7 +81,7 @@ export const useUnifiedRfidNavigation = ({
     const targetAttendee = focusableRows[targetIndex];
     if (!targetAttendee) return;
 
-    // Auto-expand group if needed
+    // Auto-expand group if needed when in grouped view
     if (isGroupedView && targetAttendee.order_id) {
       const groupKey = targetAttendee.order_id;
       if (!expandedGroups.has(groupKey)) {
@@ -101,7 +101,7 @@ export const useUnifiedRfidNavigation = ({
         // Smooth scroll to element
         targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 50);
+    }, isGroupedView ? 100 : 50);
   }, [focusableRows, isGroupedView, expandedGroups, onRowFocus]);
 
   // Focus first unassigned row
