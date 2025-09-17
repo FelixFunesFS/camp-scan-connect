@@ -7,6 +7,7 @@ import type { ActiveFilter } from "./shared/FilterPanel";
 import { ColumnSelector } from "./shared/ColumnSelector";
 import { ExportButton } from "./shared/ExportButton";
 import { ResponsiveAttendeesTable } from "./shared/ResponsiveAttendeesTable";
+import { GroupRfidProvider } from "@/components/GroupRfidProvider";
 import { RegFoxTotalsComparison } from "./shared/RegFoxTotalsComparison";
 import { useToast } from "@/hooks/use-toast";
 

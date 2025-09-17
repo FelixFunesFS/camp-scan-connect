@@ -16,13 +16,15 @@ interface OrderGroupHeaderProps {
   attendees: EnhancedAttendee[];
   isExpanded: boolean;
   onToggle: () => void;
+  groupProgress?: { assigned: number; total: number; percentage: number };
 }
 
 export const OrderGroupHeader: React.FC<OrderGroupHeaderProps> = ({
   orderId,
   attendees,
   isExpanded,
-  onToggle
+  onToggle,
+  groupProgress
 }) => {
   const totalAttendees = attendees.length;
   const activatedCount = attendees.filter(a => a.activated_at).length;

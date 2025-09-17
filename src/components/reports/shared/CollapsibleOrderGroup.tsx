@@ -10,6 +10,8 @@ interface CollapsibleOrderGroupProps {
   visibleColumns: string[];
   children: React.ReactNode;
   defaultOpen?: boolean;
+  onToggle?: () => void;
+  groupProgress?: { assigned: number; total: number; percentage: number };
 }
 
 export const CollapsibleOrderGroup: React.FC<CollapsibleOrderGroupProps> = ({
@@ -18,9 +20,16 @@ export const CollapsibleOrderGroup: React.FC<CollapsibleOrderGroupProps> = ({
   columns,
   visibleColumns,
   children,
-  defaultOpen = false
+  defaultOpen = false,
+  onToggle,
+  groupProgress
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  const handleToggle = () => {
+    setIsOpen(!isOpen);
+    onToggle?.();
+  };
 
   return (
     <>
@@ -33,7 +42,8 @@ export const CollapsibleOrderGroup: React.FC<CollapsibleOrderGroupProps> = ({
                   orderId={orderId}
                   attendees={attendees}
                   isExpanded={isOpen}
-                  onToggle={() => setIsOpen(!isOpen)}
+                  onToggle={handleToggle}
+                  groupProgress={groupProgress}
                 />
               </div>
             </CollapsibleTrigger>

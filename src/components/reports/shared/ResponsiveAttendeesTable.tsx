@@ -25,50 +25,47 @@ import {
 import { RfidAssignmentCell } from "../../RfidAssignmentCell";
 import { EnhancedAttendee, TableColumn } from "../CheckInManagementTab";
 import { CollapsibleOrderGroup } from "./CollapsibleOrderGroup";
-
-interface GroupedAttendee {
-  orderId: string | null;
-  attendees: EnhancedAttendee[];
-}
+import { useGroupRfid } from "@/components/GroupRfidProvider";
 
 interface ResponsiveAttendeesTableProps {
-  attendees: EnhancedAttendee[];
-  groupedAttendees?: GroupedAttendee[];
-  isGroupedView?: boolean;
+  attendees: EnhancedAttendee[] | Record<string, EnhancedAttendee[]>;
   columns: TableColumn[];
   visibleColumns: string[];
-  isLoading: boolean;
   currentPage: number;
   totalPages: number;
   startIndex: number;
   endIndex: number;
-  totalCount: number;
   onPageChange: (page: number) => void;
   sortField: string;
   sortDirection: 'asc' | 'desc';
   onSort: (field: any) => void;
-  onRfidAssignmentChange?: () => void;
+  isGroupedView?: boolean;
+  onRefresh: () => void;
 }
 
 export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> = ({
   attendees,
-  groupedAttendees = [],
-  isGroupedView = false,
   columns,
   visibleColumns,
-  isLoading,
   currentPage,
   totalPages,
   startIndex,
   endIndex,
-  totalCount,
   onPageChange,
   sortField,
   sortDirection,
   onSort,
-  onRfidAssignmentChange
+  isGroupedView = false,
+  onRefresh
 }) => {
   const isMobile = useIsMobile();
+  const { 
+    navigateToRow, 
+    expandedGroups, 
+    toggleGroup, 
+    getGroupProgress,
+    isCapturingRfid 
+  } = useGroupRfid();
 
   const getSortableFieldMap = () => ({
     first_name: 'first_name',
@@ -308,40 +305,19 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         ) : '-';
       
       case 'rfid_assignment':
-        const rowIndex = isGroupedView ? 
-          // For grouped view, calculate cumulative index across all groups
-          groupedAttendees.slice(0, groupedAttendees.findIndex(g => g.attendees.some(a => a.id === attendee.id)))
-            .reduce((sum, g) => sum + g.attendees.length, 0) + 
-          groupedAttendees.find(g => g.attendees.some(a => a.id === attendee.id))?.attendees.findIndex(a => a.id === attendee.id) || 0
-          : attendees.findIndex(a => a.id === attendee.id);
-        
-        const totalRows = isGroupedView ? 
-          groupedAttendees.reduce((sum, g) => sum + g.attendees.length, 0) 
-          : attendees.length;
-
         return (
-          <RfidAssignmentCell
-            attendeeId={attendee.id}
-            currentRfidUid={attendee.rfid_uid}
-            currentRfidStatus={attendee.rfid_status}
-            attendeeName={`${attendee.first_name} ${attendee.last_name}`}
-            onAssignmentComplete={() => onRfidAssignmentChange?.()}
-            rowIndex={rowIndex}
-            totalRows={totalRows}
-            onNavigateRow={(direction) => {
-              const targetIndex = direction === 'up' ? rowIndex - 1 : rowIndex + 1;
-              if (targetIndex >= 0 && targetIndex < totalRows) {
-                // Focus the target row's RFID input
-                setTimeout(() => {
-                  const targetInput = document.querySelector(`[data-row-index="${targetIndex}"] input[data-rfid-input="true"]`) as HTMLInputElement;
-                  if (targetInput) {
-                    targetInput.focus();
-                    targetInput.select();
-                  }
-                }, 0);
-              }
-            }}
-          />
+          <div data-attendee-id={attendee.id}>
+            <RfidAssignmentCell
+              attendeeId={attendee.id}
+              currentRfidUid={attendee.rfid_uid}
+              currentRfidStatus={attendee.rfid_status}
+              attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+              onAssignmentComplete={onRefresh}
+              rowIndex={0}
+              totalRows={1}
+              onNavigateRow={navigateToRow}
+            />
+          </div>
         );
       
       case 'notes':
@@ -357,16 +333,16 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
     }
   };
 
-  if (isLoading) {
+  if (!Array.isArray(attendees) && !isGroupedView) {
     return (
       <div className="flex items-center justify-center h-32">
-        <div className="text-muted-foreground">Loading attendees...</div>
+        <div className="text-muted-foreground">Invalid attendees data.</div>
       </div>
     );
   }
 
-  const currentAttendees = isGroupedView ? groupedAttendees : attendees;
-  const hasData = isGroupedView ? groupedAttendees.length > 0 : attendees.length > 0;
+  const currentAttendees = isGroupedView ? attendees as Record<string, EnhancedAttendee[]> : attendees as EnhancedAttendee[];
+  const hasData = isGroupedView ? Object.keys(currentAttendees).length > 0 : (currentAttendees as EnhancedAttendee[]).length > 0;
 
   if (!hasData) {
     return (
@@ -421,22 +397,30 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         <div className="space-y-4">
           {isGroupedView ? (
             // Grouped mobile view
-            groupedAttendees.map((group) => (
-              <CollapsibleOrderGroup
-                key={group.orderId || 'no-order'}
-                orderId={group.orderId}
-                attendees={group.attendees}
-                columns={columns}
-                visibleColumns={visibleColumns}
-                defaultOpen={group.attendees.length <= 3}
-              >
-                <div className="space-y-2 pl-4">
-                  {group.attendees.map((attendee, attendeeIndex) => {
-                    const globalRowIndex = groupedAttendees.slice(0, groupedAttendees.findIndex(g => g === group))
-                      .reduce((sum, g) => sum + g.attendees.length, 0) + attendeeIndex;
-                    
-                    return (
-                      <Card key={attendee.id} className="shadow-sm" data-row-index={globalRowIndex}>
+            Object.entries(currentAttendees as Record<string, EnhancedAttendee[]>).map(([orderId, groupAttendees]) => {
+              const progress = getGroupProgress(orderId);
+              const isExpanded = expandedGroups.has(orderId);
+              
+              return (
+                <CollapsibleOrderGroup
+                  key={orderId || 'no-order'}
+                  orderId={orderId}
+                  attendees={groupAttendees}
+                  columns={columns}
+                  visibleColumns={visibleColumns}
+                  defaultOpen={isExpanded}
+                  onToggle={() => toggleGroup(orderId)}
+                  groupProgress={progress}
+                >
+                  <div className="space-y-2 pl-4">
+                    {isExpanded && groupAttendees.map((attendee, attendeeIndex) => (
+                      <Card 
+                        key={attendee.id} 
+                        className={`shadow-sm ${isCapturingRfid ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
+                        data-row-index={attendeeIndex}
+                        data-group-id={orderId}
+                        data-attendee-id={attendee.id}
+                      >
                         <CardContent className="p-4">
                           <div className="space-y-3">
                             {/* Primary Info */}
@@ -468,14 +452,14 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                                   </p>
                                 )}
                               </div>
-                              <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
-                                {attendee.overall_status}
+                              <Badge variant={getStatusColor(attendee.rfid_status)} className="text-xs">
+                                {attendee.rfid_status}
                               </Badge>
                             </div>
 
                             {visibleColumns.map((columnKey) => {
                               const column = columns.find(c => c.key === columnKey);
-                              if (!column || ['first_name', 'last_name', 'email', 'overall_status'].includes(columnKey)) return null;
+                              if (!column || ['first_name', 'last_name', 'email', 'rfid_status'].includes(columnKey)) return null;
                               
                               return (
                                 <div key={columnKey} className="flex items-center justify-between text-sm">
@@ -491,15 +475,20 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                           </div>
                         </CardContent>
                       </Card>
-                    );
-                  })}
-                </div>
-              </CollapsibleOrderGroup>
-            ))
+                    ))}
+                  </div>
+                </CollapsibleOrderGroup>
+              );
+            })
           ) : (
             // Individual mobile view
-            attendees.map((attendee, index) => (
-              <Card key={attendee.id} className="shadow-sm" data-row-index={index}>
+            (currentAttendees as EnhancedAttendee[]).map((attendee, index) => (
+              <Card 
+                key={attendee.id} 
+                className={`shadow-sm ${isCapturingRfid ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
+                data-row-index={index}
+                data-attendee-id={attendee.id}
+              >
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     {/* Primary Info */}
@@ -531,14 +520,14 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                           </p>
                         )}
                       </div>
-                      <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
-                        {attendee.overall_status}
+                      <Badge variant={getStatusColor(attendee.rfid_status)} className="text-xs">
+                        {attendee.rfid_status}
                       </Badge>
                     </div>
 
                     {visibleColumns.map((columnKey) => {
                       const column = columns.find(c => c.key === columnKey);
-                      if (!column || ['first_name', 'last_name', 'email', 'overall_status'].includes(columnKey)) return null;
+                      if (!column || ['first_name', 'last_name', 'email', 'rfid_status'].includes(columnKey)) return null;
                       
                       return (
                         <div key={columnKey} className="flex items-center justify-between text-sm">
@@ -559,11 +548,12 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         </div>
 
         {/* Mobile Pagination */}
-        <div className="flex justify-between items-center pt-4">
+        <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing {startIndex} to {endIndex} of {totalCount} attendees
+            Page {currentPage} of {totalPages}
           </p>
-          <div className="flex gap-2">
+          
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -572,6 +562,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
             >
               Previous
             </Button>
+            
             <Button
               variant="outline"
               size="sm"
@@ -589,19 +580,16 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
   // Desktop View
   return (
     <div className="space-y-4">
-      <div className="border rounded-lg overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b bg-muted/50">
+      <div className="border rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted/30">
+            <tr>
               {visibleTableColumns.map((column) => (
-                <th
-                  key={column.key}
-                  className={`text-left p-3 font-medium text-sm ${column.width || 'min-w-24'}`}
-                >
+                <th key={column.key} className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   {column.sortable ? (
                     <Button
                       variant="ghost"
-                      className="h-auto p-0 font-medium justify-start"
+                      className="h-auto p-0 font-medium hover:bg-transparent text-xs uppercase tracking-wider"
                       onClick={() => onSort(column.key)}
                     >
                       {column.label}
@@ -617,35 +605,52 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
           <tbody>
             {isGroupedView ? (
               // Grouped desktop view
-              groupedAttendees.map((group) => (
-                <CollapsibleOrderGroup
-                  key={group.orderId || 'no-order'}
-                  orderId={group.orderId}
-                  attendees={group.attendees}
-                  columns={columns}
-                  visibleColumns={visibleColumns}
-                  defaultOpen={group.attendees.length <= 5}
-                >
-                  {group.attendees.map((attendee, attendeeIndex) => {
-                    const globalRowIndex = groupedAttendees.slice(0, groupedAttendees.findIndex(g => g === group))
-                      .reduce((sum, g) => sum + g.attendees.length, 0) + attendeeIndex;
-                    
-                    return (
-                      <tr key={attendee.id} className="border-b hover:bg-muted/50" data-row-index={globalRowIndex}>
+              Object.entries(currentAttendees as Record<string, EnhancedAttendee[]>).map(([orderId, groupAttendees]) => {
+                const progress = getGroupProgress(orderId);
+                const isExpanded = expandedGroups.has(orderId);
+                
+                return (
+                  <CollapsibleOrderGroup
+                    key={orderId || 'no-order'}
+                    orderId={orderId}
+                    attendees={groupAttendees}
+                    columns={columns}
+                    visibleColumns={visibleColumns}
+                    defaultOpen={isExpanded}
+                    onToggle={() => toggleGroup(orderId)}
+                    groupProgress={progress}
+                  >
+                    {isExpanded && groupAttendees.map((attendee, attendeeIndex) => (
+                      <tr 
+                        key={attendee.id} 
+                        className={`border-b hover:bg-muted/50 transition-colors ${
+                          isCapturingRfid ? 'bg-primary/5 border-l-2 border-l-primary' : ''
+                        }`}
+                        data-row-index={attendeeIndex}
+                        data-group-id={orderId}
+                        data-attendee-id={attendee.id}
+                      >
                         {visibleTableColumns.map((column) => (
                           <td key={column.key} className="p-3 text-sm">
                             {renderCellContent(column.key, attendee)}
                           </td>
                         ))}
                       </tr>
-                    );
-                  })}
-                </CollapsibleOrderGroup>
-              ))
+                    ))}
+                  </CollapsibleOrderGroup>
+                );
+              })
             ) : (
               // Individual desktop view  
-              attendees.map((attendee, index) => (
-                <tr key={attendee.id} className="border-b hover:bg-muted/50" data-row-index={index}>
+              (currentAttendees as EnhancedAttendee[]).map((attendee, index) => (
+                <tr 
+                  key={attendee.id} 
+                  className={`border-b hover:bg-muted/50 transition-colors ${
+                    isCapturingRfid ? 'bg-primary/5 border-l-2 border-l-primary' : ''
+                  }`}
+                  data-row-index={index}
+                  data-attendee-id={attendee.id}
+                >
                   {visibleTableColumns.map((column) => (
                     <td key={column.key} className="p-3">
                       {renderCellContent(column.key, attendee)}
@@ -661,7 +666,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       {/* Desktop Pagination */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {startIndex} to {endIndex} of {totalCount} attendees
+          Showing {startIndex} to {endIndex} attendees
         </p>
         
         <div className="flex items-center gap-2">
