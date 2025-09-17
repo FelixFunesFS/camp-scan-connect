@@ -470,9 +470,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      cleanup_test_rfid_data: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       generate_mock_rfid_uid: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      generate_test_rfid_batch: {
+        Args: { count_requested?: number }
+        Returns: {
+          sequence_number: number
+          test_uid: string
+        }[]
       }
       get_daily_transaction_count: {
         Args: {
