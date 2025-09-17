@@ -140,6 +140,109 @@ serve(async (req) => {
         let emergencyContactName: string | null = null;
         let emergencyContactPhone: string | null = null;
         let customFields: Record<string, any> = {};
+        
+        // Initialize ticket type variable
+        let ticketType = 'dry_site';
+        
+        // Enhanced ticket type mapping to match database enum and sync function logic
+        const ticketTypeMap: Record<string, string> = {
+          'Premium Power Site': 'premium_power',
+          'Dry Site': 'dry_site',
+          'RV Site': 'rv_site',
+          'Glamping': 'glamping',
+          'Glamping Tent': 'glamping',
+          'Cabin': 'cabin',
+          'Day Pass': 'day_pass',
+          'Staff': 'staff',
+          'Vendor': 'vendor'
+        };
+
+        // Helper function to determine ticket type from RegFox data (matching sync function)
+        const determineTicketTypeFromPayload = (payloadData: any) => {
+          console.log('Webhook - Determining ticket type from payload data...');
+          
+          // Define accommodation field patterns and their corresponding ticket types
+          const accommodationMappings = [
+            { patterns: ['glamping'], ticketType: 'glamping' },
+            { patterns: ['rv', 'recreational vehicle'], ticketType: 'rv_site' },
+            { patterns: ['cabin', 'lodge'], ticketType: 'cabin' },
+            { patterns: ['tent', 'camping', 'dry'], ticketType: 'dry_site' }
+          ];
+          
+          // Check for accommodation type in registrant data
+          if (payloadData.registrants && payloadData.registrants.length > 0) {
+            const registrant = payloadData.registrants[0];
+            console.log('Webhook - Registrant data fields:', registrant.data?.map(d => `${d.fieldName}: ${d.fieldValue}`));
+            
+            // Primary accommodation field - This is the main field that determines accommodation type
+            const primaryAccommodationField = 'Are you staying in a Tent, Van/Rooftop,  RV, Glamping Tent, or Cabin??';
+            
+            for (const field of (registrant.data || [])) {
+              if (field.fieldName === primaryAccommodationField && field.fieldValue) {
+                const accommodationType = field.fieldValue.toLowerCase();
+                console.log(`Webhook - Primary accommodation field value: "${accommodationType}"`);
+                
+                if (accommodationType.includes('glamping')) {
+                  console.log('Webhook - Detected glamping from primary field');
+                  return 'glamping';
+                }
+                if (accommodationType.includes('rv')) {
+                  console.log('Webhook - Detected RV from primary field');
+                  return 'rv_site';
+                }
+                if (accommodationType.includes('cabin')) {
+                  console.log('Webhook - Detected cabin from primary field');
+                  return 'cabin';
+                }
+                if (accommodationType.includes('tent') || accommodationType.includes('van')) {
+                  console.log('Webhook - Detected tent/van from primary field');
+                  return 'dry_site';
+                }
+              }
+            }
+            
+            // Fallback: Check for registration options that indicate ticket type
+            const registrationFields = [
+              'RV Registration Options',
+              'Tent Registration Options', 
+              'Glamping Registration Options',
+              'Cabin Registration Options'
+            ];
+            
+            for (const field of (registrant.data || [])) {
+              if (field.fieldName && registrationFields.includes(field.fieldName) && field.fieldValue) {
+                console.log(`Webhook - Found registration option field: ${field.fieldName} = ${field.fieldValue}`);
+                
+                if (field.fieldName.includes('RV')) return 'rv_site';
+                if (field.fieldName.includes('Glamping')) return 'glamping';
+                if (field.fieldName.includes('Cabin')) return 'cabin';
+                if (field.fieldName.includes('Tent')) return 'dry_site';
+              }
+            }
+            
+            // Final fallback: Check multipleChoice field
+            for (const field of (registrant.data || [])) {
+              if (field.fieldName === 'multipleChoice' && field.fieldValue) {
+                const multipleChoice = field.fieldValue.toLowerCase();
+                console.log(`Webhook - MultipleChoice field value: "${multipleChoice}"`);
+                
+                if (multipleChoice.includes('glamping')) return 'glamping';
+                if (multipleChoice.includes('rv')) return 'rv_site';
+                if (multipleChoice.includes('cabin')) return 'cabin';
+                if (multipleChoice.includes('tent')) return 'dry_site';
+              }
+            }
+          }
+          
+          // Fallback to registration path mapping
+          if (payloadData.registrationPath && ticketTypeMap[payloadData.registrationPath]) {
+            console.log(`Webhook - Found ticket type from registration path: ${payloadData.registrationPath} -> ${ticketTypeMap[payloadData.registrationPath]}`);
+            return ticketTypeMap[payloadData.registrationPath];
+          }
+          
+          console.log('Webhook - No specific ticket type found, defaulting to dry_site');
+          return 'dry_site';
+        };
 
         // Handle original format (direct data structure)
         if (payload.data.firstName && payload.data.lastName) {
@@ -401,119 +504,6 @@ serve(async (req) => {
           console.log('Webhook tickets data:', JSON.stringify(payload.data.tickets, null, 2));
           console.log('Webhook full payload:', JSON.stringify(payload.data, null, 2));
           console.log('=== END WEBHOOK FIELD DISCOVERY ===');
-          // Enhanced ticket type mapping to match database enum and sync function logic
-          const ticketTypeMap: Record<string, string> = {
-            'Premium Power Site': 'premium_power',
-            'Dry Site': 'dry_site',
-            'RV Site': 'rv_site',
-            'Glamping': 'glamping',
-            'Glamping Tent': 'glamping',
-            'Cabin': 'cabin',
-            'Day Pass': 'day_pass',
-            'Staff': 'staff',
-            'Vendor': 'vendor'
-          };
-
-          // Enhanced ticket type determination logic matching sync function
-          let ticketType = 'dry_site';
-          
-          // Helper function to determine ticket type from RegFox data (matching sync function)
-          const determineTicketTypeFromPayload = (payloadData: any) => {
-            console.log('Webhook - Determining ticket type from payload data...');
-            
-            // Define accommodation field patterns and their corresponding ticket types
-            const accommodationMappings = [
-              { patterns: ['glamping'], ticketType: 'glamping' },
-              { patterns: ['rv', 'recreational vehicle'], ticketType: 'rv_site' },
-              { patterns: ['cabin', 'lodge'], ticketType: 'cabin' },
-              { patterns: ['tent', 'camping', 'dry'], ticketType: 'dry_site' }
-            ];
-            
-            // Check for accommodation type in registrant data
-            if (payloadData.registrants && payloadData.registrants.length > 0) {
-              const registrant = payloadData.registrants[0];
-              console.log('Webhook - Registrant data fields:', registrant.data?.map(d => `${d.fieldName}: ${d.fieldValue}`));
-              
-              // Primary accommodation field - This is the main field that determines accommodation type
-              const primaryAccommodationField = 'Are you staying in a Tent, Van/Rooftop,  RV, Glamping Tent, or Cabin??';
-              
-              for (const field of (registrant.data || [])) {
-                if (field.fieldName === primaryAccommodationField && field.fieldValue) {
-                  const accommodationType = field.fieldValue.toLowerCase();
-                  console.log(`Webhook - Primary accommodation field value: "${accommodationType}"`);
-                  
-                  if (accommodationType.includes('glamping')) {
-                    console.log('Webhook - Detected glamping from primary field');
-                    return 'glamping';
-                  }
-                  if (accommodationType.includes('rv')) {
-                    console.log('Webhook - Detected RV from primary field');
-                    return 'rv_site';
-                  }
-                  if (accommodationType.includes('cabin')) {
-                    console.log('Webhook - Detected cabin from primary field');
-                    return 'cabin';
-                  }
-                  if (accommodationType.includes('tent') || accommodationType.includes('van')) {
-                    console.log('Webhook - Detected tent/van from primary field');
-                    return 'dry_site';
-                  }
-                }
-              }
-              
-              // Fallback: Check for registration options that indicate ticket type
-              const registrationFields = [
-                'RV Registration Options',
-                'Tent Registration Options', 
-                'Glamping Registration Options',
-                'Cabin Registration Options'
-              ];
-              
-              for (const field of (registrant.data || [])) {
-                if (field.fieldName && registrationFields.includes(field.fieldName) && field.fieldValue) {
-                  console.log(`Webhook - Found registration option field: ${field.fieldName} = ${field.fieldValue}`);
-                  
-                  if (field.fieldName.includes('RV')) return 'rv_site';
-                  if (field.fieldName.includes('Glamping')) return 'glamping';
-                  if (field.fieldName.includes('Cabin')) return 'cabin';
-                  if (field.fieldName.includes('Tent')) return 'dry_site';
-                }
-              }
-              
-              // Final fallback: Check multipleChoice field
-              for (const field of (registrant.data || [])) {
-                if (field.fieldName === 'multipleChoice' && field.fieldValue) {
-                  const multipleChoice = field.fieldValue.toLowerCase();
-                  console.log(`Webhook - MultipleChoice field value: "${multipleChoice}"`);
-                  
-                  if (multipleChoice.includes('glamping')) return 'glamping';
-                  if (multipleChoice.includes('rv')) return 'rv_site';
-                  if (multipleChoice.includes('cabin')) return 'cabin';
-                  if (multipleChoice.includes('tent')) return 'dry_site';
-                }
-              }
-            }
-            
-            // Fallback to registration path mapping
-            if (payloadData.registrationPath && ticketTypeMap[payloadData.registrationPath]) {
-              console.log(`Webhook - Found ticket type from registration path: ${payloadData.registrationPath} -> ${ticketTypeMap[payloadData.registrationPath]}`);
-              return ticketTypeMap[payloadData.registrationPath];
-            }
-            
-            // Fallback to ticket mapping
-            if (payloadData.tickets && payloadData.tickets.length > 0) {
-              const ticket = payloadData.tickets[0];
-              const ticketLabel = ticket.ticketLabel || ticket.ticketKey || '';
-              if (ticketTypeMap[ticketLabel]) {
-                console.log(`Webhook - Found ticket type from ticket label: ${ticketLabel} -> ${ticketTypeMap[ticketLabel]}`);
-                return ticketTypeMap[ticketLabel];
-              }
-            }
-            
-            console.log('Webhook - No specific accommodation found, defaulting to dry_site');
-            return 'dry_site'; // Safe default
-          };
-
           ticketType = determineTicketTypeFromPayload(payload.data);
 
           // Helper function to detect veteran status
