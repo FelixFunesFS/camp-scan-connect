@@ -297,13 +297,13 @@ export const ChartCustomizer: React.FC<ChartCustomizerProps> = ({ onChartGenerat
                       <Label className="text-sm font-medium">Group By (Optional)</Label>
                       <Select 
                         value={chartConfig.groupBy || ''} 
-                        onValueChange={(value) => setChartConfig(prev => ({ ...prev, groupBy: value || undefined }))}
+                        onValueChange={(value) => setChartConfig(prev => ({ ...prev, groupBy: value === "none" ? undefined : value }))}
                       >
                         <SelectTrigger className="mt-2">
                           <SelectValue placeholder="Select grouping option" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No Grouping</SelectItem>
+                          <SelectItem value="none">No Grouping</SelectItem>
                           {selectedDataSource.groupOptions.map(option => (
                             <SelectItem key={option} value={option}>
                               {option.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
