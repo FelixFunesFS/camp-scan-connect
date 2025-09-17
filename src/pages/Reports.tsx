@@ -1,9 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Download, Calendar, Users, Package, Utensils, Activity, TrendingUp, Database, CheckSquare } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { EventOverviewTab } from "@/components/reports/EventOverviewTab";
 import { PackageUtilizationTab } from "@/components/reports/PackageUtilizationTab";
 import { CheckInManagementTab } from "@/components/reports/CheckInManagementTab";
