@@ -85,12 +85,12 @@ export function StaffActivationHub() {
 
   const handleStaffLogin = () => {
     // Simple staff code validation - in production, this would be more secure
-    if (staffCode.toLowerCase() === 'staff' || staffCode.toLowerCase() === 'admin') {
+    if (staffCode.toLowerCase() === 'mc2025') {
       setIsAuthenticated(true);
-      setStaffId(staffCode.toLowerCase());
+      setStaffId('MC2025');
       toast({
-        title: "Welcome, Staff Member",
-        description: "You now have access to staff tools",
+        title: "Welcome, MC2025 Staff",
+        description: "You now have access to event management tools",
       });
     } else {
       toast({
