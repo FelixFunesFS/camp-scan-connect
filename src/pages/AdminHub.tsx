@@ -55,6 +55,7 @@ import { FoodBeverageTab } from "@/components/reports/FoodBeverageTab";
 import { ActivitiesEquipmentTab } from "@/components/reports/ActivitiesEquipmentTab";
 import { SponsorImpactTab } from "@/components/reports/SponsorImpactTab";
 import { DataMigrationPanel } from "@/components/DataMigrationPanel";
+import { RfidAssignmentTab } from "@/components/RfidAssignmentTab";
 
 // Import Staff Management components
 import { StaffActivationPanel } from "@/components/StaffActivationPanel";
@@ -810,7 +811,13 @@ const AdminHub = () => {
       )
     },
     { 
-      id: 'checklist', 
+      id: 'rfid-assignment', 
+      label: 'RFID Assignment', 
+      icon: CreditCard, 
+      component: <RfidAssignmentTab />
+    },
+    { 
+      id: 'checklist',
       label: 'Project Status', 
       icon: CheckSquare, 
       component: (
