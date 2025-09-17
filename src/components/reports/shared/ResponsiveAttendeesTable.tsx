@@ -1,52 +1,48 @@
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   CheckCircle, 
   XCircle, 
   AlertCircle, 
   Clock, 
-  Headphones,
-  FileText,
-  User,
+  User, 
+  Phone, 
   Mail,
-  Phone,
-  Users,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Hash,
-  ShoppingCart,
-  Zap
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  UserCheck,
+  Users,
+  Headphones,
+  Wine
 } from "lucide-react";
-import { RfidAssignmentCell } from "../../RfidAssignmentCell";
-import { EnhancedRfidAssignmentCell } from "../../EnhancedRfidAssignmentCell";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { EnhancedAttendee, TableColumn, GroupedAttendee } from "../CheckInManagementTab";
+import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { CollapsibleOrderGroup } from "./CollapsibleOrderGroup";
 import { useGroupRfid } from "@/components/GroupRfidProvider";
 import { KeyboardShortcutsHelper } from "@/components/KeyboardShortcutsHelper";
 
 interface ResponsiveAttendeesTableProps {
-  attendees: EnhancedAttendee[] | Record<string, EnhancedAttendee[]>;
-  groupedAttendees?: GroupedAttendee[];
+  attendees: GroupedAttendee[] | EnhancedAttendee[];
   columns: TableColumn[];
   visibleColumns: string[];
   currentPage: number;
   totalPages: number;
-  totalCount: number;
-  startIndex: number;
-  endIndex: number;
-  onPageChange: (page: number) => void;
+  totalAttendees: number;
   sortField: string;
   sortDirection: 'asc' | 'desc';
-  onSort: (field: any) => void;
-  isGroupedView?: boolean;
-  isLoading?: boolean;
+  onSort: (field: keyof EnhancedAttendee) => void;
+  onPageChange: (page: number) => void;
   onRefresh: () => void;
+  isGroupedView?: boolean;
 }
 
 export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> = ({
@@ -55,128 +51,142 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
   visibleColumns,
   currentPage,
   totalPages,
-  startIndex,
-  endIndex,
-  onPageChange,
+  totalAttendees,
   sortField,
   sortDirection,
   onSort,
-  isGroupedView = false,
-  onRefresh
+  onPageChange,
+  onRefresh,
+  isGroupedView = false
 }) => {
   const isMobile = useIsMobile();
+  
   const { 
-    navigateToRow, 
     focusFirstUnassignedRow, 
-    focusLastUnassignedRow,
-    expandedGroups,
+    focusLastUnassignedRow, 
+    focusNextUnassigned,
     expandAllGroups,
     collapseAllGroups,
+    expandedGroups,
     toggleGroup,
-    getGroupProgress,
-    isCapturingRfid
+    getGroupProgress
   } = useGroupRfid();
 
-  // Enhanced keyboard navigation with unified system
+  // Enhanced keyboard event handler with cross-platform support
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Navigation for RFID inputs
-      if (e.target instanceof HTMLInputElement && e.target.dataset.rfidInput) {
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          navigateToRow('up');
-        } else if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          navigateToRow('down');
-        } else if (e.key === 'Home') {
-          e.preventDefault();
-          focusFirstUnassignedRow();
-        } else if (e.key === 'End') {
-          e.preventDefault();
-          focusLastUnassignedRow();
-        }
-      }
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
       
-      // Global shortcuts (only in grouped view)
-      if (isGroupedView) {
-        if (e.ctrlKey && e.key === 'e') {
-          e.preventDefault();
-          expandAllGroups();
-        } else if (e.ctrlKey && e.key === 'c') {
-          e.preventDefault();
-          collapseAllGroups();
-        }
-      }
+      // Only handle if we're not in an input field or if it's an RFID input
+      const isRfidInput = target.hasAttribute('data-rfid-input');
+      const isGeneralInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
       
-      // Universal shortcuts
-      if (e.key === 'Home' && !e.target) {
-        e.preventDefault();
-        focusFirstUnassignedRow();
-      } else if (e.key === 'End' && !e.target) {
-        e.preventDefault();
-        focusLastUnassignedRow();
+      if (isGeneralInput && !isRfidInput) return;
+
+      // Cross-platform modifier key detection
+      const modifierKey = e.ctrlKey || e.metaKey;
+
+      switch (e.key) {
+        case 'f':
+        case 'F':
+          if (modifierKey) {
+            e.preventDefault();
+            focusFirstUnassignedRow();
+          }
+          break;
+        case 'l':
+        case 'L':
+          if (modifierKey) {
+            e.preventDefault();
+            focusLastUnassignedRow();
+          }
+          break;
+        case 'g':
+        case 'G':
+          if (modifierKey) {
+            e.preventDefault();
+            focusNextUnassigned();
+          }
+          break;
+        case 'e':
+        case 'E':
+          if (modifierKey && isGroupedView) {
+            e.preventDefault();
+            expandAllGroups();
+          }
+          break;
+        case 'c':
+        case 'C':
+          if (modifierKey && isGroupedView) {
+            e.preventDefault();
+            collapseAllGroups();
+          }
+          break;
+        case 'T':
+          if (modifierKey && e.shiftKey) {
+            e.preventDefault();
+            // Trigger test RFID generation (handled by parent component)
+            document.dispatchEvent(new CustomEvent('generate-test-rfids'));
+          }
+          break;
+        case 'R':
+          if (modifierKey && e.shiftKey) {
+            e.preventDefault();
+            // Trigger test cleanup (handled by parent component)
+            document.dispatchEvent(new CustomEvent('cleanup-test-rfids'));
+          }
+          break;
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [navigateToRow, focusFirstUnassignedRow, focusLastUnassignedRow, isGroupedView, expandAllGroups, collapseAllGroups]);
-
-  const getSortableFieldMap = () => ({
-    first_name: 'first_name',
-    last_name: 'last_name',
-    email: 'email',
-    phone: 'phone',
-    activated_at: 'activated_at',
-    rfid_status: 'rfid_status',
-    overall_status: 'overall_status',
-    arrival_day: 'arrival_day',
-    meal_plan: 'meal_plan',
-    ticket_type: 'ticket_type',
-    registration_status: 'registration_status',
-    order_id: 'order_id'
-  });
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    focusFirstUnassignedRow, 
+    focusLastUnassignedRow, 
+    focusNextUnassigned,
+    expandAllGroups,
+    collapseAllGroups,
+    isGroupedView
+  ]);
 
   const getSortIcon = (field: string) => {
-    const sortableFields = getSortableFieldMap();
-    const actualField = sortableFields[field as keyof typeof sortableFields];
-    
-    if (sortField !== actualField) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3 w-3 text-muted-foreground" />;
     }
-    
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="ml-2 h-4 w-4" />
-      : <ArrowDown className="ml-2 h-4 w-4" />;
+    return sortDirection === 'asc' ? 
+      <ArrowUp className="h-3 w-3" /> : 
+      <ArrowDown className="h-3 w-3" />;
   };
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'activated': return 'default';      // Green - fully processed
-      case 'assigned': return 'secondary';     // Blue - RFID assigned, awaiting activation  
-      case 'unassigned': return 'destructive'; // Red - needs RFID assignment
+      case 'activated': return 'default';
+      case 'assigned': return 'secondary';
+      case 'unassigned': return 'outline';
       default: return 'outline';
     }
   };
 
   const getRegistrationStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'registered': return 'default';
+      case 'confirmed': return 'default';
+      case 'registered': return 'secondary';
       case 'cancelled': return 'destructive';
-      case 'waitlisted': return 'secondary';
+      case 'refunded': return 'outline';
       default: return 'outline';
     }
   };
 
   const getRfidStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'active': return 'default';        // Green - activated
-      case 'assigned': return 'secondary';    // Blue - manually assigned
-      case 'unissued': return 'destructive';  // Red - not assigned
+      case 'active': return 'default';
+      case 'assigned': return 'secondary';
+      case 'unissued': return 'outline';
       case 'lost': return 'destructive';
       case 'replaced': return 'outline';
       case 'deactivated': return 'destructive';
-      default: return 'destructive';          // Default to red for unassigned state
+      default: return 'outline';
     }
   };
 
@@ -184,582 +194,436 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
     return signed ? 'default' : 'destructive';
   };
 
-  const renderCellContent = (columnKey: string, attendee: EnhancedAttendee) => {
+  const renderCellContent = (attendee: EnhancedAttendee, columnKey: string) => {
     switch (columnKey) {
       case 'first_name':
         return (
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
-            <Link 
-              to={`/attendee/${attendee.id}`}
-              className="text-primary hover:underline cursor-pointer"
-            >
-              {attendee.first_name}
-            </Link>
-            {attendee.is_group_order && (
-              <Badge variant="outline" className="text-xs ml-2">
-                <Users className="h-3 w-3 mr-1" />
-                Group of {attendee.group_size}
-              </Badge>
-            )}
+            <span className="font-medium">{attendee.first_name}</span>
           </div>
         );
-      
       case 'last_name':
-        return (
-          <div className="flex items-center gap-2">
-            <Link 
-              to={`/attendee/${attendee.id}`}
-              className="text-primary hover:underline cursor-pointer"
-            >
-              {attendee.last_name}
-            </Link>
-            {attendee.is_group_order && (
-              <Badge variant="outline" className="text-xs">
-                <Users className="h-3 w-3 mr-1" />
-                {attendee.group_size}
-              </Badge>
-            )}
-          </div>
-        );
-      
+        return <span className="font-medium">{attendee.last_name}</span>;
       case 'email':
         return attendee.email ? (
           <div className="flex items-center gap-2">
             <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="truncate">{attendee.email}</span>
+            <span className="font-mono text-xs truncate max-w-[200px]">{attendee.email}</span>
           </div>
-        ) : '-';
-      
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        );
       case 'phone':
         return attendee.phone ? (
           <div className="flex items-center gap-2">
             <Phone className="h-4 w-4 text-muted-foreground" />
-            <span>{attendee.phone}</span>
+            <span className="font-mono text-xs">{attendee.phone}</span>
           </div>
-        ) : '-';
-      
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        );
       case 'order_id':
         return attendee.order_id ? (
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-            <span className="font-mono text-sm">{attendee.order_id}</span>
+          <div className="flex items-center gap-1">
+            <Users className="h-3 w-3 text-muted-foreground" />
+            <span className="font-mono text-xs">{attendee.order_id}</span>
+            {attendee.group_size && attendee.group_size > 1 && (
+              <Badge variant="outline" className="text-xs">
+                {attendee.group_size}
+              </Badge>
+            )}
           </div>
-        ) : '-';
-      
+        ) : (
+          <span className="text-muted-foreground">Individual</span>
+        );
       case 'ticket_type':
         return (
-          <Badge variant="outline" className="capitalize">
-            {attendee.ticket_type.replace('_', ' ')}
+          <Badge variant="outline" className="text-xs">
+            {attendee.ticket_type?.replace('_', ' ').toUpperCase()}
           </Badge>
         );
-      
       case 'meal_plan':
-        return attendee.meal_plan || 'No';
-      
+        return attendee.meal_plan || <span className="text-muted-foreground">-</span>;
       case 'registration_status':
         return (
-          <Badge variant={getRegistrationStatusColor(attendee.registration_status)} className="capitalize">
-            {attendee.registration_status}
+          <Badge variant={getRegistrationStatusColor(attendee.registration_status)} className="text-xs">
+            {attendee.registration_status?.charAt(0).toUpperCase() + attendee.registration_status?.slice(1)}
           </Badge>
         );
-      
-      case 'overall_status':
-        return (
-          <Badge variant={getStatusColor(attendee.overall_status)}>
-            {attendee.overall_status}
-          </Badge>
-        );
-      
       case 'rfid_status':
         return (
-          <Badge variant={getRfidStatusColor(attendee.rfid_status)} className="capitalize">
-            {attendee.rfid_status}
+          <Badge variant={getRfidStatusColor(attendee.rfid_status)} className="text-xs">
+            {attendee.rfid_status?.charAt(0).toUpperCase() + attendee.rfid_status?.slice(1)}
           </Badge>
         );
-      
+      case 'rfid_assignment':
+        return (
+          <EnhancedRfidAssignmentCell
+            attendeeId={attendee.id}
+            currentRfidUid={attendee.rfid_uid}
+            currentRfidStatus={attendee.rfid_status}
+            attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+            onAssignmentComplete={onRefresh}
+          />
+        );
       case 'activated_at':
         return attendee.activated_at ? (
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-500" />
-            <span className="text-sm">
-              {new Date(attendee.activated_at).toLocaleDateString()} {new Date(attendee.activated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <span className="text-xs">
+              {new Date(attendee.activated_at).toLocaleString()}
             </span>
           </div>
         ) : (
           <div className="flex items-center gap-2">
             <XCircle className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Not activated</span>
+            <span className="text-xs text-muted-foreground">Not activated</span>
           </div>
         );
-      
       case 'waiver_signed':
-        return attendee.waiver_signed ? (
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-500" />
-            <Badge variant={getWaiverStatusColor(true)}>Signed</Badge>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <XCircle className="h-4 w-4 text-red-500" />
-            <Badge variant={getWaiverStatusColor(false)}>Not Signed</Badge>
-          </div>
+        return (
+          <Badge variant={getWaiverStatusColor(attendee.waiver_signed ?? false)} className="text-xs">
+            {attendee.waiver_signed ? 'Signed' : 'Pending'}
+          </Badge>
         );
-      
       case 'has_headphones':
         return attendee.has_headphones ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Headphones className="h-4 w-4 text-green-500" />
-            <span>Yes</span>
+            <span className="text-xs">Yes</span>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <XCircle className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">No</span>
-          </div>
+          <span className="text-xs text-muted-foreground">No</span>
         );
-      
       case 'bar_hits':
         return (
-          <div className="flex items-center gap-2">
-            <Hash className="h-4 w-4 text-muted-foreground" />
-            <span>{attendee.bar_hits || 0}</span>
+          <div className="flex items-center gap-1">
+            <Wine className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs">{attendee.bar_hits || 0}</span>
           </div>
         );
-      
       case 'arrival_day':
         return (
-          <Badge variant="outline">
-            {attendee.arrival_day || 'Unknown'}
+          <Badge variant="outline" className="text-xs">
+            {attendee.arrival_day}
           </Badge>
         );
-      
       case 'is_duplicate':
         return attendee.is_duplicate ? (
-          <Badge variant="destructive">
+          <Badge variant="destructive" className="text-xs">
             <AlertCircle className="h-3 w-3 mr-1" />
             Duplicate
           </Badge>
-        ) : (
-          <span className="text-muted-foreground">No</span>
-        );
-      
+        ) : null;
       case 'is_phone_duplicate':
         return attendee.is_phone_duplicate ? (
-          <Badge variant="destructive">
+          <Badge variant="destructive" className="text-xs">
             <AlertCircle className="h-3 w-3 mr-1" />
-            Duplicate
+            Phone Dup
           </Badge>
-        ) : (
-          <span className="text-muted-foreground">No</span>
-        );
-      
+        ) : null;
       case 'regfox_id':
         return attendee.regfox_id ? (
-          <span className="font-mono text-sm">{attendee.regfox_id}</span>
-        ) : '-';
-      
-      case 'rfid_assignment':
-        return (
-          <div data-attendee-id={attendee.id}>
-            <EnhancedRfidAssignmentCell
-              attendeeId={attendee.id}
-              currentRfidUid={attendee.rfid_uid}
-              currentRfidStatus={attendee.rfid_status}
-              attendeeName={`${attendee.first_name} ${attendee.last_name}`}
-              onAssignmentComplete={onRefresh}
-              isGroupProcessing={isGroupedView}
-            />
-          </div>
+          <span className="font-mono text-xs">{attendee.regfox_id}</span>
+        ) : (
+          <span className="text-muted-foreground">-</span>
         );
-      
       case 'notes':
         return attendee.notes ? (
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <span className="truncate max-w-[200px]">{attendee.notes}</span>
-          </div>
-        ) : '-';
-      
+          <span className="text-xs truncate max-w-[150px]" title={attendee.notes}>
+            {attendee.notes}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        );
       default:
-        return '-';
+        const value = attendee[columnKey as keyof EnhancedAttendee];
+        return value ? String(value) : <span className="text-muted-foreground">-</span>;
     }
   };
 
-  if (!Array.isArray(attendees) && !isGroupedView) {
+  // Type-safe data access
+  const groupedData = isGroupedView ? (attendees as GroupedAttendee[]) : [];
+  const individualData = !isGroupedView ? (attendees as EnhancedAttendee[]) : [];
+
+  // If no attendees, show empty state
+  if (!attendees || (Array.isArray(attendees) && attendees.length === 0)) {
     return (
-      <div className="flex items-center justify-center h-32">
-        <div className="text-muted-foreground">Invalid attendees data.</div>
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">No attendees found matching the current filters.</p>
       </div>
     );
   }
 
-  const currentAttendees = isGroupedView ? attendees as Record<string, EnhancedAttendee[]> : attendees as EnhancedAttendee[];
-  const hasData = isGroupedView ? Object.keys(currentAttendees).length > 0 : (currentAttendees as EnhancedAttendee[]).length > 0;
-
-  if (!hasData) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <div className="text-muted-foreground">No attendees found.</div>
-      </div>
-    );
-  }
-
-  const visibleTableColumns = columns.filter(column => 
-    visibleColumns.includes(column.key) && column.desktop !== false
+  // Filter columns for mobile/desktop
+  const visibleMobileColumns = columns.filter(col => 
+    visibleColumns.includes(col.key) && col.mobile
+  );
+  
+  const visibleDesktopColumns = columns.filter(col => 
+    visibleColumns.includes(col.key) && col.desktop
   );
 
-  const getSortableFields = () => {
-    const sortableFieldMap = getSortableFieldMap();
-    return columns
-      .filter(col => col.sortable && visibleColumns.includes(col.key))
-      .map(col => ({
-        key: sortableFieldMap[col.key as keyof typeof sortableFieldMap] || col.key,
-        label: col.label
-      }));
-  };
-
-  if (isMobile) {
-    return (
-      <div className="space-y-4">
-        {/* Mobile Sort Control */}
+  return (
+    <div className="space-y-4">
+      <KeyboardShortcutsHelper isGroupedView={isGroupedView} />
+      
+      <div className="flex justify-between items-center text-sm text-muted-foreground">
+        <div>
+          {isGroupedView ? (
+            <span>
+              Showing {groupedData.length} groups with {groupedData.reduce((sum, group) => sum + group.attendees.length, 0)} attendees
+            </span>
+          ) : (
+            <span>
+              Showing {individualData.length} attendees
+            </span>
+          )}
+        </div>
+        
+        {/* Pagination Controls */}
         <div className="flex items-center gap-2">
-          <Select value={sortField} onValueChange={(value: string) => onSort(value)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by..." />
-            </SelectTrigger>
-            <SelectContent>
-              {getSortableFields().map((field) => (
-                <SelectItem key={field.key} value={field.key}>
-                  {field.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          
+          <span className="text-xs">
+            Page {currentPage} of {totalPages}
+          </span>
           
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onSort(sortField)}
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
           >
-            {sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+            Next
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+      </div>
 
-        {/* Mobile View */}
-        <div className="space-y-4">
+      {/* Group Management Controls */}
+      {isGroupedView && (
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={expandAllGroups}
+            className="text-xs"
+          >
+            <ChevronDown className="h-3 w-3 mr-1" />
+            Expand All ({groupedData.length} groups)
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={collapseAllGroups}
+            className="text-xs"
+          >
+            <ChevronUp className="h-3 w-3 mr-1" />
+            Collapse All
+          </Button>
+        </div>
+      )}
+
+      {/* Mobile Card View */}
+      {isMobile && (
+        <div className="space-y-3">
           {isGroupedView ? (
-            // Grouped mobile view
-            Object.entries(currentAttendees as Record<string, EnhancedAttendee[]>).map(([orderId, groupAttendees]) => {
-              const progress = getGroupProgress(orderId);
-              const isExpanded = expandedGroups.has(orderId);
-              
-              return (
-                <CollapsibleOrderGroup
-                  key={orderId || 'no-order'}
-                  orderId={orderId}
-                  attendees={groupAttendees}
-                  columns={columns}
-                  visibleColumns={visibleColumns}
-                  defaultOpen={isExpanded}
-                  onToggle={() => toggleGroup(orderId)}
-                  groupProgress={progress}
-                >
-                  <div className="space-y-2 pl-4">
-                    {isExpanded && groupAttendees.map((attendee, attendeeIndex) => (
-                      <Card 
-                        key={attendee.id} 
-                        className={`shadow-sm ${isCapturingRfid ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
-                        data-row-index={attendeeIndex}
-                        data-group-id={orderId}
-                        data-attendee-id={attendee.id}
-                      >
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            {/* Primary Info */}
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="font-medium text-base flex items-center gap-2">
-                                  <Link 
-                                    to={`/attendee/${attendee.id}`}
-                                    className="text-primary hover:underline cursor-pointer"
-                                  >
-                                    {attendee.first_name} {attendee.last_name}
-                                  </Link>
-                                  {attendee.is_group_order && (
-                                    <Badge variant="outline" className="text-xs">
-                                      <Users className="h-3 w-3 mr-1" />
-                                      Group of {attendee.group_size}
-                                    </Badge>
-                                  )}
-                                </h3>
-                                {attendee.email && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {attendee.email}
-                                  </p>
-                                )}
-                                {attendee.phone && (
-                                  <p className="text-sm text-muted-foreground">
-                                    <Phone className="h-3 w-3 inline mr-1" />
-                                    {attendee.phone}
-                                  </p>
-                                )}
-                              </div>
-                              <Badge variant={getStatusColor(attendee.rfid_status)} className="text-xs">
-                                {attendee.rfid_status}
-                              </Badge>
-                            </div>
-
-                            {visibleColumns.map((columnKey) => {
-                              const column = columns.find(c => c.key === columnKey);
-                              if (!column || ['first_name', 'last_name', 'email', 'rfid_status'].includes(columnKey)) return null;
-                              
-                              return (
-                                <div key={columnKey} className="flex items-center justify-between text-sm">
-                                  <span className="text-muted-foreground capitalize">
-                                    {column.label}:
-                                  </span>
-                                  <div className="max-w-[200px] truncate">
-                                    {renderCellContent(columnKey, attendee)}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CollapsibleOrderGroup>
-              );
-            })
-          ) : (
-            // Individual mobile view
-            (currentAttendees as EnhancedAttendee[]).map((attendee, index) => (
-              <Card 
-                key={attendee.id} 
-                className={`shadow-sm ${isCapturingRfid ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
-                data-row-index={index}
-                data-attendee-id={attendee.id}
-              >
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    {/* Primary Info */}
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium text-base flex items-center gap-2">
-                          <Link 
-                            to={`/attendee/${attendee.id}`}
-                            className="text-primary hover:underline cursor-pointer"
-                          >
-                            {attendee.first_name} {attendee.last_name}
-                          </Link>
-                          {attendee.is_group_order && (
-                            <Badge variant="outline" className="text-xs">
-                              <Users className="h-3 w-3 mr-1" />
-                              Group of {attendee.group_size}
+            groupedData.map((group) => (
+              <Card key={group.orderId || 'no-order'} className="overflow-hidden">
+                <CardContent className="p-0">
+                  <CollapsibleOrderGroup
+                    orderId={group.orderId}
+                    attendees={group.attendees}
+                    columns={visibleMobileColumns}
+                    visibleColumns={visibleMobileColumns.map(col => col.key)}
+                    defaultOpen={expandedGroups.has(group.orderId || 'no-order')}
+                    onToggle={() => toggleGroup(group.orderId || 'no-order')}
+                    groupProgress={getGroupProgress(group.orderId || 'no-order')}
+                  >
+                    <div className="divide-y">
+                      {group.attendees.map((attendee) => (
+                        <div key={attendee.id} className="p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">
+                              {attendee.first_name} {attendee.last_name}
+                            </span>
+                            <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
+                              {attendee.overall_status}
                             </Badge>
-                          )}
-                        </h3>
-                        {attendee.email && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {attendee.email}
-                          </p>
-                        )}
-                        {attendee.phone && (
-                          <p className="text-sm text-muted-foreground">
-                            <Phone className="h-3 w-3 inline mr-1" />
-                            {attendee.phone}
-                          </p>
-                        )}
-                      </div>
-                      <Badge variant={getStatusColor(attendee.rfid_status)} className="text-xs">
-                        {attendee.rfid_status}
-                      </Badge>
-                    </div>
-
-                    {visibleColumns.map((columnKey) => {
-                      const column = columns.find(c => c.key === columnKey);
-                      if (!column || ['first_name', 'last_name', 'email', 'rfid_status'].includes(columnKey)) return null;
-                      
-                      return (
-                        <div key={columnKey} className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground capitalize">
-                            {column.label}:
-                          </span>
-                          <div className="max-w-[200px] truncate">
-                            {renderCellContent(columnKey, attendee)}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 gap-2 text-sm">
+                            {visibleMobileColumns.map((column) => (
+                              <div key={column.key} className="flex justify-between items-center">
+                                <span className="text-muted-foreground font-medium">
+                                  {column.label}:
+                                </span>
+                                <div>{renderCellContent(attendee, column.key)}</div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
+                  </CollapsibleOrderGroup>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            individualData.map((attendee) => (
+              <Card key={attendee.id} className="overflow-hidden">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">
+                      {attendee.first_name} {attendee.last_name}
+                    </span>
+                    <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
+                      {attendee.overall_status}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-2 text-sm">
+                    {visibleMobileColumns.map((column) => (
+                      <div key={column.key} className="flex justify-between items-center">
+                        <span className="text-muted-foreground font-medium">
+                          {column.label}:
+                        </span>
+                        <div>{renderCellContent(attendee, column.key)}</div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
             ))
           )}
         </div>
+      )}
 
-        {/* Mobile Pagination */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
-          </p>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              Previous
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-
-        <KeyboardShortcutsHelper isGroupedView={isGroupedView} />
-      </div>
-    );
-  }
-
-  // Desktop View
-  return (
-    <div className="space-y-4">
-      <div className="border rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-border">
-          <thead className="bg-muted/30">
-            <tr>
-              {visibleTableColumns.map((column) => (
-                <th key={column.key} className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {column.sortable ? (
-                    <Button
-                      variant="ghost"
-                      className="h-auto p-0 font-medium hover:bg-transparent text-xs uppercase tracking-wider"
-                      onClick={() => onSort(column.key)}
+      {/* Desktop Table View */}
+      {!isMobile && (
+        <div className="border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-muted/50 border-b">
+                  {visibleDesktopColumns.map((column) => (
+                    <th
+                      key={column.key}
+                      className={`text-left p-3 font-medium text-sm border-r last:border-r-0 ${column.width || 'w-auto'}`}
                     >
-                      {column.label}
-                      {getSortIcon(column.key)}
-                    </Button>
-                  ) : (
-                    column.label
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {isGroupedView ? (
-              // Grouped desktop view
-              Object.entries(currentAttendees as Record<string, EnhancedAttendee[]>).map(([orderId, groupAttendees]) => {
-                const progress = getGroupProgress(orderId);
-                const isExpanded = expandedGroups.has(orderId);
-                
-                return (
-                  <CollapsibleOrderGroup
-                    key={orderId || 'no-order'}
-                    orderId={orderId}
-                    attendees={groupAttendees}
-                    columns={columns}
-                    visibleColumns={visibleColumns}
-                    defaultOpen={isExpanded}
-                    onToggle={() => toggleGroup(orderId)}
-                    groupProgress={progress}
-                  >
-                    {isExpanded && groupAttendees.map((attendee, attendeeIndex) => (
-                      <tr 
-                        key={attendee.id} 
-                        className={`border-b hover:bg-muted/50 transition-colors ${
-                          isCapturingRfid ? 'bg-primary/5 border-l-2 border-l-primary' : ''
-                        }`}
-                        data-row-index={attendeeIndex}
-                        data-group-id={orderId}
-                        data-attendee-id={attendee.id}
-                      >
-                        {visibleTableColumns.map((column) => (
-                          <td key={column.key} className="p-3 text-sm">
-                            {renderCellContent(column.key, attendee)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </CollapsibleOrderGroup>
-                );
-              })
-            ) : (
-              // Individual desktop view  
-              (currentAttendees as EnhancedAttendee[]).map((attendee, index) => (
-                <tr 
-                  key={attendee.id} 
-                  className={`border-b hover:bg-muted/50 transition-colors ${
-                    isCapturingRfid ? 'bg-primary/5 border-l-2 border-l-primary' : ''
-                  }`}
-                  data-row-index={index}
-                  data-attendee-id={attendee.id}
-                >
-                  {visibleTableColumns.map((column) => (
-                    <td key={column.key} className="p-3">
-                      {renderCellContent(column.key, attendee)}
-                    </td>
+                      <div className="flex items-center gap-2">
+                        {column.label}
+                        {column.sortable && (
+                          <button
+                            onClick={() => onSort(column.key as keyof EnhancedAttendee)}
+                            className="p-1 hover:bg-accent rounded"
+                          >
+                            {getSortIcon(column.key)}
+                          </button>
+                        )}
+                      </div>
+                    </th>
                   ))}
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Desktop Pagination */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {startIndex} to {endIndex} attendees
-        </p>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage <= 1}
-          >
-            Previous
-          </Button>
-          
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-            return (
-              <Button
-                key={pageNum}
-                variant={currentPage === pageNum ? "default" : "outline"}
-                size="sm"
-                onClick={() => onPageChange(pageNum)}
-              >
-                {pageNum}
-              </Button>
-            );
-          })}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage >= totalPages}
-          >
-            Next
-          </Button>
+              </thead>
+              
+              <tbody>
+                {isGroupedView ? (
+                  groupedData.map((group) => (
+                    <CollapsibleOrderGroup
+                      key={group.orderId || 'no-order'}
+                      orderId={group.orderId}
+                      attendees={group.attendees}
+                      columns={visibleDesktopColumns}
+                      visibleColumns={visibleDesktopColumns.map(col => col.key)}
+                      defaultOpen={expandedGroups.has(group.orderId || 'no-order')}
+                      onToggle={() => toggleGroup(group.orderId || 'no-order')}
+                      groupProgress={getGroupProgress(group.orderId || 'no-order')}
+                    >
+                      {group.attendees.map((attendee, attendeeIndex) => (
+                        <tr
+                          key={attendee.id}
+                          className={`border-b last:border-b-0 hover:bg-accent/50 ${
+                            attendeeIndex % 2 === 0 ? 'bg-background' : 'bg-muted/20'
+                          }`}
+                          data-row-index={attendeeIndex}
+                        >
+                          {visibleDesktopColumns.map((column) => (
+                            <td
+                              key={column.key}
+                              className={`p-3 text-sm border-r last:border-r-0 align-top ${column.width || 'w-auto'}`}
+                            >
+                              {renderCellContent(attendee, column.key)}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </CollapsibleOrderGroup>
+                  ))
+                ) : (
+                  individualData.map((attendee, index) => (
+                    <tr
+                      key={attendee.id}
+                      className={`border-b last:border-b-0 hover:bg-accent/50 ${
+                        index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
+                      }`}
+                      data-row-index={index}
+                    >
+                      {visibleDesktopColumns.map((column) => (
+                        <td
+                          key={column.key}
+                          className={`p-3 text-sm border-r last:border-r-0 align-top ${column.width || 'w-auto'}`}
+                        >
+                          {renderCellContent(attendee, column.key)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      <KeyboardShortcutsHelper isGroupedView={isGroupedView} />
+      {/* Pagination Controls (repeated at bottom) */}
+      <div className="flex justify-center items-center gap-2 pt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+        
+        <span className="text-sm text-muted-foreground">
+          Page {currentPage} of {totalPages} • {totalAttendees} total attendees
+        </span>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useCallback } from 'react';
-import { useRfidCapture } from '@/hooks/useRfidCapture';
 import { useUnifiedRfidNavigation } from '@/hooks/useUnifiedRfidNavigation';
-import { EnhancedAttendee } from '@/components/reports/CheckInManagementTab';
+import { useRfidCapture } from '@/hooks/useRfidCapture';
+import { EnhancedAttendee, GroupedAttendee } from './reports/CheckInManagementTab';
 import { useToast } from '@/hooks/use-toast';
 
 interface GroupRfidContextType {
@@ -24,7 +24,7 @@ const GroupRfidContext = createContext<GroupRfidContextType | null>(null);
 
 interface GroupRfidProviderProps {
   children: React.ReactNode;
-  groupedAttendees: Record<string, EnhancedAttendee[]>;
+  groupedAttendees: GroupedAttendee[] | EnhancedAttendee[];
   isGroupedView: boolean;
   onRefresh: () => void;
 }

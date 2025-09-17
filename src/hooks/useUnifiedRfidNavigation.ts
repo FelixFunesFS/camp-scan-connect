@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState, useMemo } from 'react';
-import { EnhancedAttendee } from '@/components/reports/CheckInManagementTab';
+import { EnhancedAttendee, GroupedAttendee } from '@/components/reports/CheckInManagementTab';
 
 interface UseUnifiedRfidNavigationOptions {
-  groupedAttendees: Record<string, EnhancedAttendee[]>;
+  groupedAttendees: GroupedAttendee[] | EnhancedAttendee[];
   isGroupedView: boolean;
   onRowFocus?: (rowIndex: number, attendeeId?: string) => void;
 }
@@ -14,23 +14,38 @@ export const useUnifiedRfidNavigation = ({
 }: UseUnifiedRfidNavigationOptions) => {
   const currentRowRef = useRef<number>(-1);
   const currentAttendeeIdRef = useRef<string>('');
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    // Start with all groups expanded by default
-    new Set(Object.keys(groupedAttendees))
-  );
+  
+  // Initialize expanded groups based on data structure
+  const initialExpandedGroups = useMemo(() => {
+    if (isGroupedView && Array.isArray(groupedAttendees)) {
+      const groups = groupedAttendees as GroupedAttendee[];
+      return new Set(groups.map(group => group.orderId || 'no-order'));
+    }
+    return new Set<string>();
+  }, [groupedAttendees, isGroupedView]);
+  
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(initialExpandedGroups);
 
   // Build a flat list of all attendees that can have RFID inputs (unassigned)
   const focusableRows = useMemo(() => {
     if (!isGroupedView) {
-      // Individual view - flat list of unassigned attendees
-      return Object.values(groupedAttendees)
-        .flat()
-        .filter(attendee => !attendee.rfid_uid || attendee.rfid_status === 'unassigned' || attendee.rfid_status === 'unissued');
+      // Individual view - flat array of attendees
+      const attendees = groupedAttendees as EnhancedAttendee[];
+      return attendees.filter(attendee => 
+        !attendee.rfid_uid || 
+        attendee.rfid_status === 'unassigned' || 
+        attendee.rfid_status === 'unissued'
+      );
     } else {
-      // Group view - all unassigned attendees from all groups
-      return Object.values(groupedAttendees)
-        .flat()
-        .filter(attendee => !attendee.rfid_uid || attendee.rfid_status === 'unassigned' || attendee.rfid_status === 'unissued');
+      // Group view - flatten all groups
+      const groups = groupedAttendees as GroupedAttendee[];
+      return groups
+        .flatMap(group => group.attendees)
+        .filter(attendee => 
+          !attendee.rfid_uid || 
+          attendee.rfid_status === 'unassigned' || 
+          attendee.rfid_status === 'unissued'
+        );
     }
   }, [groupedAttendees, isGroupedView]);
 

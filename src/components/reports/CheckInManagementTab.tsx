@@ -709,14 +709,11 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
             onClearAll={handleClearAllFilters}
           />
 
-          <GroupRfidProvider
-            groupedAttendees={groupedAttendees.reduce((acc, group) => {
-              acc[group.orderId || 'no-order'] = group.attendees;
-              return acc;
-            }, {} as Record<string, EnhancedAttendee[]>)}
-            isGroupedView={isGroupedView}
-            onRefresh={fetchAttendees}
-          >
+        <GroupRfidProvider
+          groupedAttendees={isGroupedView ? groupedAttendees : processedAttendees}
+          isGroupedView={isGroupedView}
+          onRefresh={fetchAttendees}
+        >
             <ResponsiveAttendeesTable
               attendees={isGroupedView 
                 ? groupedAttendees.reduce((acc, group) => {
