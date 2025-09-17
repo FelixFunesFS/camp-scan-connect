@@ -177,42 +177,17 @@ const Dashboard = () => {
                 <Power className="h-5 w-5" />
                 Administrative Controls
               </CardTitle>
-              <CardDescription>Critical system-wide operations and testing utilities</CardDescription>
+              <CardDescription>System testing and management utilities</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate("/rfid-testing")}
-                  className="gap-2"
-                >
-                  <TestTube className="h-4 w-4" />
-                  RFID Testing Hub
-                </Button>
-                
-                <div className="p-4 border border-destructive/50 bg-destructive/10 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-destructive-foreground mb-1">
-                        Mass Deactivation
-                      </h4>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Deactivate ALL active RFID tags system-wide. This action cannot be undone.
-                      </p>
-                      <Button
-                        onClick={handleMassDeactivation}
-                        disabled={isProcessing}
-                        variant="destructive"
-                        size="sm"
-                        className="w-full"
-                      >
-                        {isProcessing ? "Deactivating..." : "Deactivate All RFIDs"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <CardContent>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/rfid-testing")}
+                className="gap-2"
+              >
+                <TestTube className="h-4 w-4" />
+                RFID Testing Hub
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -243,6 +218,45 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Critical Operations - Positioned at Bottom for Safety */}
+        <div className="mt-12 pt-8 border-t-2 border-destructive/20">
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Critical Operations
+              </CardTitle>
+              <CardDescription className="text-destructive/80">
+                Dangerous system-wide operations that cannot be undone. Proceed with extreme caution.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="p-6 border-2 border-destructive bg-destructive/10 rounded-lg">
+                <div className="flex items-start gap-4">
+                  <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
+                  <div className="flex-1">
+                    <h4 className="font-bold text-destructive mb-2 text-lg">
+                      Mass RFID Deactivation
+                    </h4>
+                    <p className="text-destructive/90 mb-4 text-sm leading-relaxed">
+                      This will immediately deactivate ALL active RFID tags system-wide, affecting every attendee. 
+                      This action is irreversible and should only be used in emergency situations or at event conclusion.
+                    </p>
+                    <Button
+                      onClick={handleMassDeactivation}
+                      disabled={isProcessing}
+                      variant="destructive"
+                      className="w-full font-semibold"
+                    >
+                      {isProcessing ? "Deactivating All RFIDs..." : "⚠️ DEACTIVATE ALL RFID TAGS"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
