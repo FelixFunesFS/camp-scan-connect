@@ -1,18 +1,22 @@
 import React, { createContext, useContext, useCallback } from 'react';
 import { useRfidCapture } from '@/hooks/useRfidCapture';
-import { useGroupedRfidNavigation } from '@/hooks/useGroupedRfidNavigation';
+import { useUnifiedRfidNavigation } from '@/hooks/useUnifiedRfidNavigation';
 import { EnhancedAttendee } from '@/components/reports/CheckInManagementTab';
 import { useToast } from '@/hooks/use-toast';
 
 interface GroupRfidContextType {
   navigateToRow: (direction: 'up' | 'down') => void;
+  focusFirstUnassignedRow: () => void;
+  focusLastUnassignedRow: () => void;
   focusNextUnassigned: () => void;
   startGroupProcessing: (groupId: string) => void;
   expandedGroups: Set<string>;
+  expandAllGroups: () => void;
+  collapseAllGroups: () => void;
   toggleGroup: (groupId: string) => void;
   getGroupProgress: (groupId: string) => { assigned: number; total: number; percentage: number };
   isCapturingRfid: boolean;
-  capturedUid: string;
+  capturedUid: string | null;
   onRfidCapture: (uid: string) => void;
 }
 
@@ -35,12 +39,16 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
 
   const {
     navigateToRow,
+    focusFirstUnassignedRow,
+    focusLastUnassignedRow,
     focusNextUnassigned,
     startGroupProcessing,
     expandedGroups,
+    expandAllGroups,
+    collapseAllGroups,
     toggleGroup,
     getGroupProgress
-  } = useGroupedRfidNavigation({
+  } = useUnifiedRfidNavigation({
     groupedAttendees,
     isGroupedView,
     onRowFocus: (rowIndex, attendeeId) => {
@@ -86,9 +94,13 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
 
   const contextValue: GroupRfidContextType = {
     navigateToRow,
+    focusFirstUnassignedRow,
+    focusLastUnassignedRow,
     focusNextUnassigned,
     startGroupProcessing,
     expandedGroups,
+    expandAllGroups,
+    collapseAllGroups,
     toggleGroup,
     getGroupProgress,
     isCapturingRfid,

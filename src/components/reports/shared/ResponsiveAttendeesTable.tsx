@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,11 +67,60 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
   const isMobile = useIsMobile();
   const { 
     navigateToRow, 
-    expandedGroups, 
-    toggleGroup, 
+    focusFirstUnassignedRow, 
+    focusLastUnassignedRow,
+    expandedGroups,
+    expandAllGroups,
+    collapseAllGroups,
+    toggleGroup,
     getGroupProgress,
-    isCapturingRfid 
+    isCapturingRfid
   } = useGroupRfid();
+
+  // Enhanced keyboard navigation with unified system
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Navigation for RFID inputs
+      if (e.target instanceof HTMLInputElement && e.target.dataset.rfidInput) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          navigateToRow('up');
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          navigateToRow('down');
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          focusFirstUnassignedRow();
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          focusLastUnassignedRow();
+        }
+      }
+      
+      // Global shortcuts (only in grouped view)
+      if (isGroupedView) {
+        if (e.ctrlKey && e.key === 'e') {
+          e.preventDefault();
+          expandAllGroups();
+        } else if (e.ctrlKey && e.key === 'c') {
+          e.preventDefault();
+          collapseAllGroups();
+        }
+      }
+      
+      // Universal shortcuts
+      if (e.key === 'Home' && !e.target) {
+        e.preventDefault();
+        focusFirstUnassignedRow();
+      } else if (e.key === 'End' && !e.target) {
+        e.preventDefault();
+        focusLastUnassignedRow();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [navigateToRow, focusFirstUnassignedRow, focusLastUnassignedRow, isGroupedView, expandAllGroups, collapseAllGroups]);
 
   const getSortableFieldMap = () => ({
     first_name: 'first_name',

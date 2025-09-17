@@ -20,7 +20,7 @@ export const CollapsibleOrderGroup: React.FC<CollapsibleOrderGroupProps> = ({
   columns,
   visibleColumns,
   children,
-  defaultOpen = false,
+  defaultOpen = true,
   onToggle,
   groupProgress
 }) => {
