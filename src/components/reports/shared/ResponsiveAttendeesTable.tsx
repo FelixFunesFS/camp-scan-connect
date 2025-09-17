@@ -144,17 +144,31 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
             >
               {attendee.first_name}
             </Link>
+            {attendee.is_group_order && (
+              <Badge variant="outline" className="text-xs ml-2">
+                <Users className="h-3 w-3 mr-1" />
+                Group of {attendee.group_size}
+              </Badge>
+            )}
           </div>
         );
       
       case 'last_name':
         return (
-          <Link 
-            to={`/attendee/${attendee.id}`}
-            className="text-primary hover:underline cursor-pointer"
-          >
-            {attendee.last_name}
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link 
+              to={`/attendee/${attendee.id}`}
+              className="text-primary hover:underline cursor-pointer"
+            >
+              {attendee.last_name}
+            </Link>
+            {attendee.is_group_order && (
+              <Badge variant="outline" className="text-xs">
+                <Users className="h-3 w-3 mr-1" />
+                {attendee.group_size}
+              </Badge>
+            )}
+          </div>
         );
       
       case 'email':
@@ -212,7 +226,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
           </Badge>
         );
       
-      case 'checked_in_at':
+      case 'activated_at':
         return attendee.activated_at ? (
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-500" />
@@ -223,7 +237,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         ) : (
           <div className="flex items-center gap-2">
             <XCircle className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Not checked in</span>
+            <span className="text-muted-foreground">Not activated</span>
           </div>
         );
       
@@ -397,21 +411,33 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                         <div className="space-y-3">
                           {/* Primary Info */}
                           <div className="flex items-start justify-between">
-                            <div>
-                         <h3 className="font-medium text-base">
-                           <Link 
-                             to={`/attendee/${attendee.id}`}
-                             className="text-primary hover:underline cursor-pointer"
-                           >
-                             {attendee.first_name} {attendee.last_name}
-                           </Link>
-                         </h3>
-                              {attendee.email && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {attendee.email}
-                                </p>
-                              )}
-                            </div>
+                         <div>
+                          <h3 className="font-medium text-base flex items-center gap-2">
+                            <Link 
+                              to={`/attendee/${attendee.id}`}
+                              className="text-primary hover:underline cursor-pointer"
+                            >
+                              {attendee.first_name} {attendee.last_name}
+                            </Link>
+                            {attendee.is_group_order && (
+                              <Badge variant="outline" className="text-xs">
+                                <Users className="h-3 w-3 mr-1" />
+                                Group of {attendee.group_size}
+                              </Badge>
+                            )}
+                          </h3>
+                               {attendee.email && (
+                                 <p className="text-sm text-muted-foreground mt-1">
+                                   {attendee.email}
+                                 </p>
+                               )}
+                               {attendee.phone && (
+                                 <p className="text-sm text-muted-foreground">
+                                   <Phone className="h-3 w-3 inline mr-1" />
+                                   {attendee.phone}
+                                 </p>
+                               )}
+                             </div>
                             <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
                               {attendee.overall_status}
                             </Badge>
@@ -447,21 +473,33 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                   <div className="space-y-3">
                     {/* Primary Info */}
                     <div className="flex items-start justify-between">
-                      <div>
-                         <h3 className="font-medium text-base">
-                           <Link 
-                             to={`/attendee/${attendee.id}`}
-                             className="text-primary hover:underline cursor-pointer"
-                           >
-                             {attendee.first_name} {attendee.last_name}
-                           </Link>
-                         </h3>
-                        {attendee.email && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {attendee.email}
-                          </p>
-                        )}
-                      </div>
+                       <div>
+                          <h3 className="font-medium text-base flex items-center gap-2">
+                            <Link 
+                              to={`/attendee/${attendee.id}`}
+                              className="text-primary hover:underline cursor-pointer"
+                            >
+                              {attendee.first_name} {attendee.last_name}
+                            </Link>
+                            {attendee.is_group_order && (
+                              <Badge variant="outline" className="text-xs">
+                                <Users className="h-3 w-3 mr-1" />
+                                Group of {attendee.group_size}
+                              </Badge>
+                            )}
+                          </h3>
+                         {attendee.email && (
+                           <p className="text-sm text-muted-foreground mt-1">
+                             {attendee.email}
+                           </p>
+                         )}
+                         {attendee.phone && (
+                           <p className="text-sm text-muted-foreground">
+                             <Phone className="h-3 w-3 inline mr-1" />
+                             {attendee.phone}
+                           </p>
+                         )}
+                       </div>
                       <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
                         {attendee.overall_status}
                       </Badge>

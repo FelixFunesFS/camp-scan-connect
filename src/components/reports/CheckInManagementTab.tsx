@@ -7,6 +7,7 @@ import type { ActiveFilter } from "./shared/FilterPanel";
 import { ColumnSelector } from "./shared/ColumnSelector";
 import { ExportButton } from "./shared/ExportButton";
 import { ResponsiveAttendeesTable } from "./shared/ResponsiveAttendeesTable";
+import { RegFoxTotalsComparison } from "./shared/RegFoxTotalsComparison";
 import { useToast } from "@/hooks/use-toast";
 
 // Types
@@ -34,6 +35,8 @@ export interface EnhancedAttendee {
   notes?: string;
   created_at: string;
   updated_at: string;
+  group_size?: number;
+  is_group_order?: boolean;
 }
 
 export interface TableColumn {
@@ -70,7 +73,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isGroupedView, setIsGroupedView] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    'first_name', 'last_name', 'email', 'overall_status', 'rfid_assignment', 'activated_at'
+    'first_name', 'last_name', 'phone', 'email', 'ticket_type', 'arrival_day', 'overall_status', 'rfid_assignment', 'activated_at'
   ]);
 
   const { toast } = useToast();
@@ -122,6 +125,14 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
 
       if (transactionError) throw transactionError;
 
+      // Calculate group sizes for order IDs
+      const orderSizes = new Map<string, number>();
+      attendeesData.forEach(attendee => {
+        if (attendee.order_id && attendee.order_id.trim()) {
+          orderSizes.set(attendee.order_id, (orderSizes.get(attendee.order_id) || 0) + 1);
+        }
+      });
+
       const processedAttendees: EnhancedAttendee[] = attendeesData.map(attendee => {
         const rfidTag = rfidData?.find(tag => tag.attendee_id === attendee.id);
         const transactions = transactionData?.filter(t => t.attendee_id === attendee.id) || [];
@@ -155,6 +166,10 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
         );
         const is_phone_duplicate = duplicatePhones.length > 0;
 
+        // Calculate group information
+        const group_size = attendee.order_id ? orderSizes.get(attendee.order_id) || 1 : 1;
+        const is_group_order = group_size > 1;
+
         return {
           ...attendee,
           rfid_uid: rfidTag?.uid || null,
@@ -172,7 +187,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           email: attendee.email || '',
           phone: attendee.phone || '',
           regfox_id: attendee.regfox_id || '',
-          registration_status: attendee.registration_status || 'registered'
+          registration_status: attendee.registration_status || 'registered',
+          group_size,
+          is_group_order
         };
       });
 
@@ -652,6 +669,9 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
       </div>
 
       <div className="space-y-4">
+        {/* RegFox Totals Comparison */}
+        <RegFoxTotalsComparison onRefresh={fetchAttendees} />
+        
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex gap-2 items-center">
