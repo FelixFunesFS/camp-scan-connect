@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminHub from "./pages/AdminHub";
 import Reports from "./pages/Reports";
+import Auth from "./pages/Auth";
 
 import ActivationStation from "./pages/ActivationStation";
 import { StaffActivationHub } from "./components/StaffActivationHub";
@@ -25,6 +26,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<AdminHub />} />
           <Route path="/reports" element={<Reports />} />
           
@@ -34,12 +36,6 @@ const App = () => (
           <Route path="/drinks-station" element={<DrinksStation />} />
           <Route path="/headphones-station" element={<HeadphonesStation />} />
           <Route path="/attendee/:id" element={<AttendeeDetail />} />
-          
-          {/* Redirect deprecated routes to AdminHub */}
-          <Route path="/system-validation" element={<AdminHub />} />
-          <Route path="/rfid-testing" element={<AdminHub />} />
-          <Route path="/checklist" element={<AdminHub />} />
-          <Route path="/dashboard" element={<AdminHub />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
