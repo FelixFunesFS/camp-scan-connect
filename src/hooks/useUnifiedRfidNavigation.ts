@@ -37,9 +37,10 @@ export const useUnifiedRfidNavigation = ({
         attendee.rfid_status === 'unissued'
       );
     } else {
-      // Group view - flatten all groups
+      // Group view - only include attendees from expanded groups
       const groups = groupedAttendees as GroupedAttendee[];
       return groups
+        .filter(group => expandedGroups.has(group.orderId || 'no-order'))
         .flatMap(group => group.attendees)
         .filter(attendee => 
           !attendee.rfid_uid || 
@@ -47,7 +48,7 @@ export const useUnifiedRfidNavigation = ({
           attendee.rfid_status === 'unissued'
         );
     }
-  }, [groupedAttendees, isGroupedView]);
+  }, [groupedAttendees, isGroupedView, expandedGroups]);
 
   // Navigate between RFID input fields with arrow keys
   const navigateToRow = useCallback((direction: 'up' | 'down') => {
