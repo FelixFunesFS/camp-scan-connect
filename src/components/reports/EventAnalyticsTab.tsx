@@ -495,17 +495,17 @@ export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshi
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
                     data={packageChartData} 
-                    margin={{ top: 20, right: 20, left: 10, bottom: 80 }}
+                    layout="horizontal"
+                    margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis 
+                    <XAxis type="number" tick={{ fontSize: 12 }} />
+                    <YAxis 
+                      type="category"
                       dataKey="name" 
                       tick={{ fontSize: 10 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
+                      width={70}
                     />
-                    <YAxis tick={{ fontSize: 12 }} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     {visibleSeries.active && <Bar dataKey="active" stackId="a" fill="hsl(var(--secondary))" name="Active" />}
                     {visibleSeries.inactive && <Bar dataKey="inactive" stackId="a" fill="hsl(var(--muted-foreground))" name="Inactive" />}
