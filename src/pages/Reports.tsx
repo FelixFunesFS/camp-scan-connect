@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Download, Calendar, Users, Utensils, TrendingUp, CheckSquare, BarChart3 } from "lucide-react";
+import { RefreshCw, Download, Calendar, Users, Utensils, TrendingUp, BarChart3 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EventAnalyticsTab } from "@/components/reports/EventAnalyticsTab";
 import { AttendeeManagementTab } from "@/components/reports/AttendeeManagementTab";
@@ -45,15 +45,6 @@ const Reports = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => navigate('/admin')}
-                  variant="secondary"
-                  size="sm"
-                  className="gap-2"
-                >
-                  <CheckSquare className="h-4 w-4" />
-                  Admin Hub
-                </Button>
                 <Button
                   variant="outline"
                   size="sm"
