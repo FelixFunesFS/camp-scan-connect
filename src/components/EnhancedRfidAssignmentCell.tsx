@@ -182,9 +182,10 @@ export const EnhancedRfidAssignmentCell = ({
       await supabase
         .from('rfid_tags')
         .update({
-          status: 'deactivated',
-          deactivated_at: new Date().toISOString(),
-          reason: 'Manual deactivation'
+          status: 'unissued',
+          attendee_id: null,
+          deactivated_at: null,
+          reason: null
         })
         .eq('uid', currentRfidUid);
 
@@ -237,9 +238,6 @@ export const EnhancedRfidAssignmentCell = ({
       <div className="flex items-center gap-2">
         <div className="flex flex-col">
           <span className="font-mono text-sm">{currentRfidUid}</span>
-          <Badge variant={getRfidStatusColor(currentRfidStatus)} className="text-xs w-fit">
-            {currentRfidStatus}
-          </Badge>
         </div>
         <Button
           variant="outline"
@@ -247,6 +245,7 @@ export const EnhancedRfidAssignmentCell = ({
           onClick={handleDeactivateRfid}
           disabled={isProcessing}
           className="h-8 px-2"
+          title="Remove RFID assignment"
         >
           <X className="h-3 w-3" />
         </Button>

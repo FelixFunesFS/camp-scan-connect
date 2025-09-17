@@ -18,6 +18,7 @@ import HeadphonesStation from "./pages/HeadphonesStation";
 import SystemValidation from "./pages/SystemValidation";
 import RfidTestingHub from "./pages/RfidTestingHub";
 import AttendeeDetail from "./pages/AttendeeDetail";
+import ChecklistPage from "./pages/ChecklistPage";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/system-validation" element={<SystemValidation />} />
           <Route path="/rfid-testing" element={<RfidTestingHub />} />
           <Route path="/attendee/:id" element={<AttendeeDetail />} />
+          <Route path="/checklist" element={<ChecklistPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

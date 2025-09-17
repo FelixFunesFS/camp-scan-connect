@@ -525,14 +525,14 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       {/* Desktop Table View */}
       {!isMobile && (
         <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-muted/50 border-b">
+              <thead className="bg-muted/50 sticky top-0 z-10">
+                <tr className="border-b">
                   {visibleDesktopColumns.map((column) => (
                     <th
                       key={column.key}
-                      className={`text-left p-3 font-medium text-sm border-r last:border-r-0 ${column.width || 'w-auto'}`}
+                      className={`text-left p-3 font-medium text-sm border-r last:border-r-0 bg-muted/50 ${column.width || 'w-auto'}`}
                     >
                       <div className="flex items-center gap-2">
                         {column.label}

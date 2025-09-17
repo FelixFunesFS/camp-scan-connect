@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Download, Calendar, Users, Package, Utensils, Activity, TrendingUp, Database } from "lucide-react";
+import { RefreshCw, Download, Calendar, Users, Package, Utensils, Activity, TrendingUp, Database, CheckSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { EventOverviewTab } from "@/components/reports/EventOverviewTab";
 import { PackageUtilizationTab } from "@/components/reports/PackageUtilizationTab";
 import { CheckInManagementTab } from "@/components/reports/CheckInManagementTab";
@@ -13,6 +14,7 @@ import { DataMigrationPanel } from "@/components/DataMigrationPanel";
 
 const Reports = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
 
   const handleRefresh = async () => {
@@ -43,6 +45,15 @@ const Reports = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => navigate('/checklist')}
+                  variant="secondary"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  Project Checklist
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"

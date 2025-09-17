@@ -60,6 +60,7 @@ export const useUnifiedRfidNavigation = ({
     if (currentIndex === -1) currentIndex = 0;
 
     let targetIndex = currentIndex;
+    // Fixed: 'up' should go to previous row (higher in the table), 'down' to next row (lower in the table)
     if (direction === 'up' && currentIndex > 0) {
       targetIndex = currentIndex - 1;
     } else if (direction === 'down' && currentIndex < focusableRows.length - 1) {
