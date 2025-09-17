@@ -4,7 +4,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 // Force rebuild to fix TestTube import issue
-import { Users, UserCheck, AlertTriangle, Zap, LogOut, Download, TestTube, Power, ChevronDown } from "lucide-react";
+import { Users, UserCheck, AlertTriangle, HandHeart, LogOut, Download, TestTube, Power, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +18,7 @@ const Dashboard = () => {
     totalAttendees: 0,
     activeRFID: 0,
     totalScans: 0,
-    powerSites: 0
+    staffAssisted: 0
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -48,17 +48,19 @@ const Dashboard = () => {
         .from('scans')
         .select('*', { count: 'exact', head: true });
 
-      // Get power site attendees
-      const { count: powerCount } = await supabase
-        .from('attendees')
+      // Get staff-assisted activations today
+      const { count: staffAssistedCount } = await supabase
+        .from('station_transactions')
         .select('*', { count: 'exact', head: true })
-        .eq('ticket_type', 'premium_power');
+        .eq('activation_method', 'staff_assisted')
+        .eq('station_type', 'activation')
+        .gte('created_at', new Date().toISOString().split('T')[0]);
 
       setStats({
         totalAttendees: attendeeCount || 0,
         activeRFID: rfidCount || 0,
         totalScans: scanCount || 0,
-        powerSites: powerCount || 0
+        staffAssisted: staffAssistedCount || 0
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -126,10 +128,10 @@ const Dashboard = () => {
       color: "text-accent"
     },
     {
-      title: "Power Site Attendees",
-      value: stats.powerSites,
-      icon: Zap,
-      color: "text-muted-foreground"
+      title: "Staff Assisted Today",
+      value: stats.staffAssisted,
+      icon: HandHeart,
+      color: "text-amber-600"
     }
   ];
 
