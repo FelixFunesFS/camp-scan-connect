@@ -20,7 +20,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const role = location.state?.role || "ranger";
+  const role = location.state?.role || "admin";
 
   useEffect(() => {
     // Check if user is already logged in
@@ -29,12 +29,9 @@ const Auth = () => {
       if (user) {
         // Redirect based on role
         const roleRoutes = {
-          admin: "/dashboard",
-          checkin: "/check-in",
-          ranger: "/ranger",
-          vendor: "/vendor"
+          admin: "/admin"
         };
-        navigate(roleRoutes[role as keyof typeof roleRoutes] || "/ranger");
+        navigate(roleRoutes[role as keyof typeof roleRoutes] || "/");
       }
     };
     checkAuth();
@@ -80,12 +77,9 @@ const Auth = () => {
 
         // Redirect based on role
         const roleRoutes = {
-          admin: "/dashboard",
-          checkin: "/check-in",  
-          ranger: "/ranger",
-          vendor: "/vendor"
+          admin: "/admin"
         };
-        navigate(roleRoutes[role as keyof typeof roleRoutes] || "/ranger");
+        navigate(roleRoutes[role as keyof typeof roleRoutes] || "/");
       }
     } catch (error: any) {
       setError(error.message);
@@ -96,10 +90,7 @@ const Auth = () => {
 
   const getRoleInfo = (roleId: string) => {
     const roles = {
-      admin: { title: "Admin", color: "text-primary" },
-      checkin: { title: "Check-In", color: "text-secondary" },
-      ranger: { title: "Ranger", color: "text-accent" },
-      vendor: { title: "Vendor", color: "text-muted-foreground" }
+      admin: { title: "Admin", color: "text-primary" }
     };
     return roles[roleId as keyof typeof roles] || { title: "Staff", color: "text-foreground" };
   };
