@@ -7,18 +7,11 @@ const Index = () => {
   const navigate = useNavigate();
   const roles = [{
     id: "admin",
-    title: "Admin",
-    description: "Full system access, reports, and user management",
+    title: "Admin Hub",
+    description: "Complete administrative control with unified dashboard",
     icon: Shield,
     color: "bg-primary text-primary-foreground",
-    path: "/dashboard"
-  }, {
-    id: "system",
-    title: "System Validation",
-    description: "Pre-event testing and system validation",
-    icon: Settings,
-    color: "bg-accent text-accent-foreground",
-    path: "/system-validation"
+    path: "/admin"
   }];
 
   const stations = [{
@@ -67,14 +60,8 @@ const Index = () => {
                   </CardHeader>
                   <CardContent className="text-center">
                     <CardDescription className="mb-4">{role.description}</CardDescription>
-                    <Button variant="outline" size="sm" onClick={() => {
-                      if (role.id === 'admin') {
-                        navigate("/auth", { state: { role: role.id } });
-                      } else {
-                        navigate(role.path);
-                      }
-                    }} className="w-full">
-                      Continue as {role.title}
+                    <Button variant="outline" size="sm" onClick={() => navigate(role.path)} className="w-full">
+                      Access {role.title}
                     </Button>
                   </CardContent>
                 </Card>;
