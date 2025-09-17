@@ -709,24 +709,33 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
             onClearAll={handleClearAllFilters}
           />
 
-          <ResponsiveAttendeesTable
-            attendees={isGroupedView ? [] : (paginatedData as EnhancedAttendee[])}
-            groupedAttendees={isGroupedView ? (paginatedData as GroupedAttendee[]) : []}
+          <GroupRfidProvider
+            groupedAttendees={groupedAttendees.reduce((acc, group) => {
+              acc[group.orderId || 'no-order'] = group.attendees;
+              return acc;
+            }, {} as Record<string, EnhancedAttendee[]>)}
             isGroupedView={isGroupedView}
-            columns={allColumns}
-            visibleColumns={visibleColumns}
-            isLoading={isLoading}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            startIndex={startIndex + 1}
-            endIndex={endIndex}
-            totalCount={totalItems}
-            onPageChange={setCurrentPage}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            onSort={handleSort}
             onRefresh={fetchAttendees}
-          />
+          >
+            <ResponsiveAttendeesTable
+              attendees={isGroupedView ? [] : (paginatedData as EnhancedAttendee[])}
+              groupedAttendees={isGroupedView ? (paginatedData as GroupedAttendee[]) : []}
+              isGroupedView={isGroupedView}
+              columns={allColumns}
+              visibleColumns={visibleColumns}
+              isLoading={isLoading}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              startIndex={startIndex + 1}
+              endIndex={endIndex}
+              totalCount={totalItems}
+              onPageChange={setCurrentPage}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              onRefresh={fetchAttendees}
+            />
+          </GroupRfidProvider>
         </div>
       </div>
     </div>
