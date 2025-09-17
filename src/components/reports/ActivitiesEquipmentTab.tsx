@@ -12,7 +12,11 @@ import {
   TrendingUp,
   Clock,
   Plus,
-  Minus
+  Minus,
+  Edit2,
+  Trash2,
+  Save,
+  X
 } from "lucide-react";
 import {
   ChartContainer,
@@ -65,6 +69,10 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
   const [isLoading, setIsLoading] = useState(true);
   const [newActivity, setNewActivity] = useState({ name: '', participants: 0 });
   const [showAddActivity, setShowAddActivity] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', participants: 0 });
+  const [deletingActivity, setDeletingActivity] = useState<string | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   const fetchEquipmentData = async () => {
     try {
@@ -170,6 +178,66 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
       }
     } catch (error) {
       console.error("Error adding activity:", error);
+    }
+  };
+
+  const startEditing = (activity: ActivityData) => {
+    setEditingActivity(activity.id);
+    setEditForm({ name: activity.name, participants: activity.participant_count });
+  };
+
+  const cancelEditing = () => {
+    setEditingActivity(null);
+    setEditForm({ name: '', participants: 0 });
+  };
+
+  const saveActivity = async (activityId: string) => {
+    if (!editForm.name.trim() || editForm.participants <= 0) return;
+
+    try {
+      setIsActionLoading(true);
+      const { data: updatedActivity, error } = await supabase
+        .from('activities')
+        .update({
+          name: editForm.name,
+          participant_count: editForm.participants
+        })
+        .eq('id', activityId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (updatedActivity) {
+        setActivities(prev => prev.map(activity => 
+          activity.id === activityId ? updatedActivity : activity
+        ));
+        setEditingActivity(null);
+        setEditForm({ name: '', participants: 0 });
+      }
+    } catch (error) {
+      console.error("Error updating activity:", error);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const deleteActivity = async (activityId: string) => {
+    try {
+      setIsActionLoading(true);
+      const { error } = await supabase
+        .from('activities')
+        .delete()
+        .eq('id', activityId);
+
+      if (error) throw error;
+
+      setActivities(prev => prev.filter(activity => activity.id !== activityId));
+      setDeletingActivity(null);
+    } catch (error) {
+      console.error("Error deleting activity:", error);
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -429,16 +497,104 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
               
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {activities.slice(0, 10).map((activity) => (
-                  <div key={activity.id} className="flex justify-between items-center p-2 bg-muted/10 rounded">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{activity.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(activity.recorded_at).toLocaleDateString()}
+                  <div key={activity.id} className="flex justify-between items-center p-2 bg-muted/10 rounded group">
+                    {editingActivity === activity.id ? (
+                      // Edit mode
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={editForm.name}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                          className="text-sm h-8"
+                          placeholder="Activity name"
+                        />
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="number"
+                            value={editForm.participants || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, participants: parseInt(e.target.value) || 0 }))}
+                            className="text-sm h-8 w-24"
+                            placeholder="People"
+                          />
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              onClick={() => saveActivity(activity.id)}
+                              disabled={isActionLoading}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Save className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditing}
+                              disabled={isActionLoading}
+                              className="h-8 w-8 p-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-sm font-medium text-primary">
-                      {activity.participant_count} people
-                    </div>
+                    ) : deletingActivity === activity.id ? (
+                      // Delete confirmation mode
+                      <div className="flex-1 flex items-center justify-between">
+                        <span className="text-sm text-destructive">Delete this activity?</span>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteActivity(activity.id)}
+                            disabled={isActionLoading}
+                            className="h-8 px-3 text-xs"
+                          >
+                            Delete
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDeletingActivity(null)}
+                            disabled={isActionLoading}
+                            className="h-8 px-3 text-xs"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Normal view mode
+                      <>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{activity.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(activity.recorded_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium text-primary">
+                            {activity.participant_count} people
+                          </div>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => startEditing(activity)}
+                              className="h-8 w-8 p-0 hover:bg-primary/10"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setDeletingActivity(activity.id)}
+                              className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
                 {activities.length === 0 && (
