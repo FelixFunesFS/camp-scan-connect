@@ -9,6 +9,8 @@ import { EventAnalyticsTab } from "@/components/reports/EventAnalyticsTab";
 import { AttendeeManagementTab } from "@/components/reports/AttendeeManagementTab";
 import { OperationsTab } from "@/components/reports/OperationsTab";
 import { ExecutiveReportsTab } from "@/components/reports/ExecutiveReportsTab";
+import { ChartCustomizer } from "@/components/reports/ChartCustomizer";
+import { CustomDashboard } from "@/components/reports/CustomDashboard";
 import { MobileReportsNavigation } from "@/components/reports/shared/MobileReportsNavigation";
 
 const Reports = () => {
@@ -82,39 +84,32 @@ const Reports = () => {
         {/* Desktop Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {!isMobile && (
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-muted/50">
-              <TabsTrigger 
-                value="analytics" 
-                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">📊 Event Analytics</span>
-                <span className="sm:hidden">Analytics</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="attendees" 
-                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">👥 Attendee Mgmt</span>
-                <span className="sm:hidden">Attendees</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="operations" 
-                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Utensils className="h-4 w-4" />
-                <span className="hidden sm:inline">🍽️ Operations</span>
-                <span className="sm:hidden">Operations</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="executive" 
-                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <TrendingUp className="h-4 w-4" />
-                <span className="hidden sm:inline">📈 Executive</span>
-                <span className="sm:hidden">Executive</span>
-              </TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 bg-muted/50">
+                <TabsTrigger value="analytics" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  {!isMobile && "Event Analytics"}
+                  {isMobile && "Analytics"}
+                </TabsTrigger>
+                <TabsTrigger value="attendees" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  {!isMobile && "Attendee Management"}
+                  {isMobile && "Attendees"}
+                </TabsTrigger>
+                <TabsTrigger value="operations" className="gap-2">
+                  <Utensils className="h-4 w-4" />
+                  {!isMobile && "Operations"}
+                  {isMobile && "Operations"}
+                </TabsTrigger>
+                <TabsTrigger value="executive" className="gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  {!isMobile && "Executive Reports"}
+                  {isMobile && "Executive"}
+                </TabsTrigger>
+                <TabsTrigger value="custom" className="gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  {!isMobile && "Custom Dashboard"}
+                  {isMobile && "Custom"}
+                </TabsTrigger>
             </TabsList>
           )}
 
@@ -133,6 +128,10 @@ const Reports = () => {
 
             <TabsContent value="executive" className="space-y-4">
               <ExecutiveReportsTab isRefreshing={isRefreshing} />
+            </TabsContent>
+
+            <TabsContent value="custom" className="space-y-6">
+              <CustomDashboard isRefreshing={isRefreshing} />
             </TabsContent>
           </div>
         </Tabs>

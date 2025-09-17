@@ -383,7 +383,7 @@ export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshi
               </div>
             </CardHeader>
             <CardContent className="pb-4">
-              <div className="h-80 w-full">
+              <div className="h-[260px] md:h-[320px] w-full">
                 <ChartContainer config={chartConfig}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={filteredDailyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
@@ -430,7 +430,7 @@ export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshi
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-80 w-full">
+              <div className="h-[280px] md:h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -486,10 +486,10 @@ export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshi
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-80 w-full">
+            <div className="h-[260px] md:h-[340px] w-full">
               <ChartContainer config={chartConfig}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={packageChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart data={packageChartData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis 
                       dataKey="name" 
