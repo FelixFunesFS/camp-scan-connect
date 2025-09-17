@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 // Force rebuild to fix TestTube import issue
-import { Users, UserCheck, AlertTriangle, Zap, LogOut, Download, TestTube } from "lucide-react";
+import { Users, UserCheck, AlertTriangle, Zap, LogOut, Download, TestTube, Power } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { RegFoxSyncPanel } from "@/components/RegFoxSyncPanel";
 import { WebhookStatus } from "@/components/WebhookStatus";
 import { SystemCleanupStatus } from "@/components/SystemCleanupStatus";
+import { PhoneActivationService } from "@/services/phoneActivationService";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -19,6 +20,7 @@ const Dashboard = () => {
     powerSites: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -71,6 +73,35 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
+  };
+
+  const handleMassDeactivation = async () => {
+    if (!confirm("Are you sure you want to deactivate ALL RFID tags? This action cannot be undone and will affect all attendees.")) {
+      return;
+    }
+    
+    const confirmAgain = confirm("This will deactivate ALL active RFID tags system-wide. Type 'CONFIRM' if you're absolutely sure.");
+    if (!confirmAgain) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const count = await PhoneActivationService.deactivateAllRfids("Mass deactivation via admin dashboard");
+      toast({
+        title: "Mass Deactivation Complete",
+        description: `${count} RFID tags have been deactivated system-wide.`,
+      });
+    } catch (error) {
+      console.error("Mass deactivation error:", error);
+      toast({
+        title: "Deactivation Failed",
+        description: "Failed to perform mass deactivation. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const statCards = [
@@ -138,22 +169,50 @@ const Dashboard = () => {
         </div>
 
 
-        {/* Quick Actions */}
+        {/* Administrative Controls */}
         <div className="mb-6">
           <Card>
             <CardHeader>
-              <CardTitle>Development Tools</CardTitle>
-              <CardDescription>Testing and validation utilities</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Power className="h-5 w-5" />
+                Administrative Controls
+              </CardTitle>
+              <CardDescription>Critical system-wide operations and testing utilities</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button 
-                variant="outline" 
-                onClick={() => navigate("/rfid-testing")}
-                className="gap-2"
-              >
-                <TestTube className="h-4 w-4" />
-                RFID Testing Hub
-              </Button>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate("/rfid-testing")}
+                  className="gap-2"
+                >
+                  <TestTube className="h-4 w-4" />
+                  RFID Testing Hub
+                </Button>
+                
+                <div className="p-4 border border-destructive/50 bg-destructive/10 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-destructive-foreground mb-1">
+                        Mass Deactivation
+                      </h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Deactivate ALL active RFID tags system-wide. This action cannot be undone.
+                      </p>
+                      <Button
+                        onClick={handleMassDeactivation}
+                        disabled={isProcessing}
+                        variant="destructive"
+                        size="sm"
+                        className="w-full"
+                      >
+                        {isProcessing ? "Deactivating..." : "Deactivate All RFIDs"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

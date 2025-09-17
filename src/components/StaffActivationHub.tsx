@@ -15,12 +15,14 @@ import {
   BarChart3,
   Download,
   Users,
-  Clock
+  Clock,
+  Tag
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { StaffActivationPanel } from "@/components/StaffActivationPanel";
 import { StaffDeactivationPanel } from "@/components/StaffDeactivationPanel";
+import { RfidManagementPanel } from "@/components/RfidManagementPanel";
 import { rfidLookupService } from "@/services/rfidLookupService";
 
 interface StaffStats {
@@ -268,7 +270,7 @@ export function StaffActivationHub() {
           {/* Staff Tools */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="activation" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="activation" className="flex items-center gap-2">
                   <UserPlus className="h-4 w-4" />
                   Activation
@@ -276,6 +278,10 @@ export function StaffActivationHub() {
                 <TabsTrigger value="deactivation" className="flex items-center gap-2">
                   <UserMinus className="h-4 w-4" />
                   Deactivation
+                </TabsTrigger>
+                <TabsTrigger value="rfid-management" className="flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  RFID Management
                 </TabsTrigger>
               </TabsList>
 
@@ -292,6 +298,10 @@ export function StaffActivationHub() {
 
               <TabsContent value="deactivation" className="mt-6">
                 <StaffDeactivationPanel staffId={staffId || undefined} />
+              </TabsContent>
+
+              <TabsContent value="rfid-management" className="mt-6">
+                <RfidManagementPanel />
               </TabsContent>
             </Tabs>
           </div>
