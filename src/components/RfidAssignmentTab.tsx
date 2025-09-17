@@ -29,6 +29,8 @@ import {
   RotateCcw
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
+import { RfidTestingSection } from "@/components/RfidTestingSection";
+import { RfidBulkOperationsSection } from "@/components/RfidBulkOperationsSection";
 
 interface AttendeeWithRfid {
   id: string;
@@ -459,6 +461,12 @@ export const RfidAssignmentTab = () => {
           </div>
         )}
       </div>
+
+      {/* Testing & Development Tools */}
+      <RfidTestingSection />
+
+      {/* Bulk Operations */}
+      <RfidBulkOperationsSection staffId="MC2025" />
     </div>
   );
 };

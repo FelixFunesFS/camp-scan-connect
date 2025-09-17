@@ -15,14 +15,12 @@ import {
   BarChart3,
   Download,
   Users,
-  Clock,
-  Tag
+  Clock
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { StaffActivationPanel } from "@/components/StaffActivationPanel";
 import { StaffDeactivationPanel } from "@/components/StaffDeactivationPanel";
-import { RfidManagementPanel } from "@/components/RfidManagementPanel";
 import { rfidLookupService } from "@/services/rfidLookupService";
 
 interface StaffStats {
@@ -270,7 +268,7 @@ export function StaffActivationHub() {
           {/* Staff Tools */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="activation" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="activation" className="flex items-center gap-2">
                   <UserPlus className="h-4 w-4" />
                   Activation
@@ -278,10 +276,6 @@ export function StaffActivationHub() {
                 <TabsTrigger value="deactivation" className="flex items-center gap-2">
                   <UserMinus className="h-4 w-4" />
                   Deactivation
-                </TabsTrigger>
-                <TabsTrigger value="rfid-management" className="flex items-center gap-2">
-                  <Tag className="h-4 w-4" />
-                  RFID Management
                 </TabsTrigger>
               </TabsList>
 
@@ -297,11 +291,14 @@ export function StaffActivationHub() {
               </TabsContent>
 
               <TabsContent value="deactivation" className="mt-6">
+                <div className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <h3 className="font-semibold text-orange-900 mb-2">Individual Deactivation Only</h3>
+                  <p className="text-orange-800 text-sm">
+                    This panel handles individual RFID deactivations only. For bulk operations, 
+                    use the Bulk Operations section in the RFID Assignment tab.
+                  </p>
+                </div>
                 <StaffDeactivationPanel staffId={staffId || undefined} />
-              </TabsContent>
-
-              <TabsContent value="rfid-management" className="mt-6">
-                <RfidManagementPanel />
               </TabsContent>
             </Tabs>
           </div>

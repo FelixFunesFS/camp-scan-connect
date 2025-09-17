@@ -4,26 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   UserMinus, 
   Scan, 
   Search, 
-  CheckCircle, 
-  XCircle, 
   Users,
   Activity,
   AlertTriangle,
-  PowerOff
+  Clock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RfidScanner } from "@/components/RfidScanner";
-import { rfidLookupService, AttendeeSearchResult, BulkRfidOperation } from "@/services/rfidLookupService";
+import { rfidLookupService, AttendeeSearchResult } from "@/services/rfidLookupService";
 
 interface StaffDeactivationPanelProps {
   staffId?: string;
@@ -44,13 +39,11 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
   const [manualRfid, setManualRfid] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<AttendeeSearchResult[]>([]);
-  const [selectedAttendees, setSelectedAttendees] = useState<AttendeeSearchResult[]>([]);
   const [selectedReason, setSelectedReason] = useState("other");
   const [customReason, setCustomReason] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeRfids, setActiveRfids] = useState<AttendeeSearchResult[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [showMassDeactivation, setShowMassDeactivation] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,20 +60,32 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
   }, [searchQuery]);
 
   const loadActiveRfids = async () => {
-    const rfids = await rfidLookupService.getActiveRfids();
-    setActiveRfids(rfids);
+    try {
+      const rfids = await rfidLookupService.getActiveRfids();
+      setActiveRfids(rfids);
+    } catch (error) {
+      console.error('Error loading active RFIDs:', error);
+    }
   };
 
   const loadRecentActivity = async () => {
-    const activity = await rfidLookupService.getRecentStaffActivity(10);
-    setRecentActivity(activity.filter(a => a.transaction_type === 'deactivate'));
+    try {
+      const activity = await rfidLookupService.getRecentStaffActivity(10);
+      setRecentActivity(activity.filter(a => a.transaction_type === 'deactivate'));
+    } catch (error) {
+      console.error('Error loading recent activity:', error);
+    }
   };
 
   const performSearch = async () => {
-    const results = await rfidLookupService.searchAttendees(searchQuery);
-    // Filter to only active RFIDs
-    const activeResults = results.filter(r => r.rfid_status === 'active');
-    setSearchResults(activeResults);
+    try {
+      const results = await rfidLookupService.searchAttendees(searchQuery);
+      // Filter to only active RFIDs
+      const activeResults = results.filter(r => r.rfid_status === 'active');
+      setSearchResults(activeResults);
+    } catch (error) {
+      console.error('Error searching attendees:', error);
+    }
   };
 
   const getReasonText = () => {
@@ -134,94 +139,9 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
     setManualRfid("");
   };
 
-  const addToSelection = (attendee: AttendeeSearchResult) => {
-    if (selectedAttendees.find(a => a.id === attendee.id)) return;
-    
-    setSelectedAttendees(prev => [...prev, attendee]);
-    toast({
-      title: "Added to Selection",
-      description: `${attendee.first_name} ${attendee.last_name} added`,
-    });
-  };
-
-  const removeFromSelection = (attendeeId: string) => {
-    setSelectedAttendees(prev => prev.filter(a => a.id !== attendeeId));
-  };
-
-  const toggleAllSelection = () => {
-    if (selectedAttendees.length === activeRfids.length) {
-      setSelectedAttendees([]);
-    } else {
-      setSelectedAttendees([...activeRfids]);
-    }
-  };
-
-  const processBulkDeactivation = async () => {
-    if (selectedAttendees.length === 0) return;
-
-    setIsProcessing(true);
-    try {
-      const reason = getReasonText();
-      const operations: BulkRfidOperation[] = selectedAttendees
-        .filter(a => a.rfid_uid)
-        .map(a => ({
-          rfid_uid: a.rfid_uid!,
-          attendee_id: a.id,
-          operation: 'deactivate' as const,
-          reason: reason
-        }));
-
-      const result = await rfidLookupService.processBulkOperations(operations, staffId);
-      
-      toast({
-        title: "Bulk Deactivation Complete",
-        description: `${result.processed_count} deactivated, ${result.failed_count} failed`,
-        variant: result.success ? "default" : "destructive",
-      });
-
-      setSelectedAttendees([]);
-      loadActiveRfids();
-      loadRecentActivity();
-    } catch (error) {
-      toast({
-        title: "Bulk Operation Failed",
-        description: "Failed to process bulk deactivation",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleMassDeactivation = async () => {
-    setIsProcessing(true);
-    try {
-      const reason = getReasonText();
-      const result = await rfidLookupService.massDeactivateAll(reason, staffId);
-      
-      toast({
-        title: "Mass Deactivation Complete",
-        description: result.message,
-        variant: result.success ? "default" : "destructive",
-      });
-
-      loadActiveRfids();
-      loadRecentActivity();
-      setShowMassDeactivation(false);
-    } catch (error) {
-      toast({
-        title: "Mass Deactivation Failed",
-        description: "Failed to perform mass deactivation",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Stats and Controls */}
+      {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -292,7 +212,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
         onScan={handleRfidScan}
         stationType="activation"
         disabled={isProcessing}
-        title="Staff RFID Scanner (Deactivation)"
+        title="Staff RFID Scanner (Individual Deactivation)"
         showAttendeeInfo={true}
         autoTrigger={true}
       />
@@ -362,135 +282,19 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
                         {attendee.ticket_type} • RFID: {attendee.rfid_uid}
                       </p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => addToSelection(attendee)}
-                        disabled={selectedAttendees.find(a => a.id === attendee.id) !== undefined}
-                      >
-                        Add
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deactivateSingleRfid(attendee.rfid_uid!)}
-                        disabled={isProcessing}
-                      >
-                        Deactivate
-                      </Button>
-                    </div>
+                    <Button 
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => deactivateSingleRfid(attendee.rfid_uid!)}
+                      disabled={isProcessing}
+                    >
+                      Deactivate
+                    </Button>
                   </div>
                 ))}
               </div>
             </ScrollArea>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Bulk Operations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Bulk Operations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="select-all"
-                checked={selectedAttendees.length === activeRfids.length && activeRfids.length > 0}
-                onCheckedChange={toggleAllSelection}
-              />
-              <Label htmlFor="select-all">
-                Select All Active RFIDs ({activeRfids.length})
-              </Label>
-            </div>
-            <Badge variant="secondary">
-              {selectedAttendees.length} selected
-            </Badge>
-          </div>
-
-          {selectedAttendees.length > 0 && (
-            <div className="space-y-2">
-              <ScrollArea className="h-32 border rounded p-2">
-                <div className="space-y-1">
-                  {selectedAttendees.map((attendee) => (
-                    <div
-                      key={attendee.id}
-                      className="flex items-center justify-between text-sm p-1"
-                    >
-                      <span>
-                        {attendee.first_name} {attendee.last_name}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeFromSelection(attendee.id)}
-                      >
-                        <XCircle className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-              
-              <Button
-                onClick={processBulkDeactivation}
-                disabled={isProcessing}
-                variant="destructive"
-                className="w-full"
-              >
-                {isProcessing ? "Processing..." : `Deactivate ${selectedAttendees.length} RFIDs`}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Mass Deactivation */}
-      <Card className="border-destructive">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <PowerOff className="h-5 w-5" />
-            Mass Deactivation
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            This will deactivate ALL active RFID tags in the system. This action cannot be undone.
-          </p>
-          
-          <AlertDialog open={showMassDeactivation} onOpenChange={setShowMassDeactivation}>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="w-full">
-                <PowerOff className="h-4 w-4 mr-2" />
-                Mass Deactivate All RFIDs ({activeRfids.length})
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Mass Deactivation</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to deactivate all {activeRfids.length} active RFID tags? 
-                  This action cannot be undone and will affect all active attendees.
-                  <br /><br />
-                  Reason: <strong>{getReasonText()}</strong>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleMassDeactivation}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Confirm Deactivation
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </CardContent>
       </Card>
 
@@ -503,34 +307,57 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-32">
+          <ScrollArea className="h-64">
             <div className="space-y-2">
               {recentActivity.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-center justify-between p-2 text-sm"
+                  className="flex items-center justify-between p-2 border rounded-lg"
                 >
-                  <div className="flex items-center gap-2">
-                    <XCircle className="h-4 w-4 text-red-600" />
-                    <span>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">
                       {(activity.attendee as any)?.first_name} {(activity.attendee as any)?.last_name}
-                    </span>
-                    <Badge variant="outline" className="text-xs">
-                      {activity.extra_data?.reason || 'Unknown reason'}
-                    </Badge>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      RFID: {activity.rfid_uid}
+                    </p>
+                    {activity.extra_data?.reason && (
+                      <Badge variant="outline" className="text-xs mt-1">
+                        {activity.extra_data.reason}
+                      </Badge>
+                    )}
                   </div>
-                  <div className="text-muted-foreground">
-                    {new Date(activity.created_at).toLocaleTimeString()}
+                  <div className="text-right">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {new Date(activity.created_at).toLocaleTimeString()}
+                    </div>
                   </div>
                 </div>
               ))}
               {recentActivity.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
+                <p className="text-sm text-muted-foreground text-center py-8">
                   No recent deactivations
                 </p>
               )}
             </div>
           </ScrollArea>
+        </CardContent>
+      </Card>
+
+      {/* Info Box */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <UserMinus className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div>
+              <h4 className="font-semibold text-blue-900 mb-1">Individual Deactivation Only</h4>
+              <p className="text-sm text-blue-800">
+                This panel handles individual RFID deactivations. For bulk operations or mass deactivations, 
+                use the Bulk Operations section in the RFID Assignment tab.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
