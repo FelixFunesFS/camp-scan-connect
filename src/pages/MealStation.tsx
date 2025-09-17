@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Utensils, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BaseStationComponent, StationChildProps } from "@/components/BaseStationComponent";
+import { supabase } from "@/integrations/supabase/client";
 
 // Meal windows configuration
 const MEAL_WINDOWS = [
@@ -50,13 +51,33 @@ function MealContent({
 }: MealContentProps) {
   const [mealCounts, setMealCounts] = useState({ breakfast: 0, lunch: 0, dinner: 0 });
   const [currentMealWindow, setCurrentMealWindow] = useState<any>(null);
+  const [attendeeMealPlan, setAttendeeMealPlan] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedRfid && attendeeReadiness?.isReady) {
       loadMealCounts();
       checkCurrentMealWindow();
+      checkAttendeeMealPlan();
     }
   }, [selectedRfid, attendeeReadiness]);
+
+  const checkAttendeeMealPlan = async () => {
+    if (!selectedRfid?.attendee_id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('attendees')
+        .select('meal_plan')
+        .eq('id', selectedRfid.attendee_id)
+        .single();
+        
+      if (!error && data) {
+        setAttendeeMealPlan(data.meal_plan);
+      }
+    } catch (error) {
+      console.error('Error checking meal plan:', error);
+    }
+  };
 
   const loadMealCounts = async () => {
     const breakfast = await loadDailyCount(['meal_breakfast']);
@@ -81,7 +102,14 @@ function MealContent({
   };
 
   const canGetMeal = () => {
-    if (!currentMealWindow) return { can: false, reason: "No active meal window" };
+    // Check if attendee has a meal plan
+    if (!attendeeMealPlan || attendeeMealPlan === '0' || attendeeMealPlan === 'none') {
+      return { can: false, reason: "No meal plan - meals not included in ticket" };
+    }
+    
+    if (!currentMealWindow) {
+      return { can: false, reason: "No active meal window" };
+    }
     
     const mealType = currentMealWindow.type as keyof typeof mealCounts;
     const hasAlreadyEaten = mealCounts[mealType] > 0;

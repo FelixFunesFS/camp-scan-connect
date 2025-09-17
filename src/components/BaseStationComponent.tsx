@@ -35,8 +35,9 @@ export function BaseStationComponent({ stationType, stationTitle, children }: Ba
   const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);
     if (rfidData.attendee_id) {
-      // For the simplified workflow, we assume all activated RFIDs are ready
-      setAttendeeReadiness({ isReady: true, message: "Ready for service" });
+      // Use proper attendee readiness check instead of simplified logic
+      const readiness = await rfidService.checkAttendeeReadiness(rfidData.attendee_id);
+      setAttendeeReadiness(readiness);
     }
   };
 

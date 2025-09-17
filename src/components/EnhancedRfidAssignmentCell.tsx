@@ -6,6 +6,7 @@ import { Scan, Check, X, AlertCircle, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGroupRfid } from "@/components/GroupRfidProvider";
+import { useRfidCapture } from "@/hooks/useRfidCapture";
 
 interface EnhancedRfidAssignmentCellProps {
   attendeeId: string;
@@ -31,12 +32,30 @@ export const EnhancedRfidAssignmentCell = ({
   const { toast } = useToast();
   const { isCapturingRfid, focusNextUnassigned, navigateToRow } = useGroupRfid();
 
-  // Auto-focus input when component mounts or when processing starts
+  // Enhanced keyboard navigation with auto-focus and rapid scanning  
   useEffect(() => {
-    if (inputRef.current && !currentRfidUid && (isGroupProcessing || !currentRfidUid)) {
+    if (inputRef.current && !currentRfidUid && (!isGroupProcessing || !currentRfidUid)) {
       inputRef.current.focus();
     }
   }, [currentRfidUid, isGroupProcessing]);
+
+  // Use RFID capture hook for seamless scanning
+  const { isCapturing } = useRfidCapture({
+    onCapture: (uid: string) => {
+      if (!uid.trim()) return;
+      setUid(uid.trim());
+      
+      // Auto-assign after brief validation delay for seamless workflow
+      setTimeout(() => {
+        if (!currentRfidUid) {
+          handleAssignRfid();
+        }
+      }, 100);
+    },
+    enabled: !isProcessing && !currentRfidUid,
+    minLength: 6,
+    debounceMs: 50
+  });
 
   // Enhanced keyboard navigation with shortcuts
   useEffect(() => {
@@ -158,9 +177,11 @@ export const EnhancedRfidAssignmentCell = ({
       setUid("");
       onAssignmentComplete();
       
-      // In group processing mode, auto-advance immediately
+      // In group processing mode, auto-advance immediately for seamless workflow
       if (isGroupProcessing) {
-        setTimeout(focusNextUnassigned, 200);
+        setTimeout(() => {
+          focusNextUnassigned();
+        }, 150);
       }
     } catch (error) {
       console.error('RFID assignment error:', error);
