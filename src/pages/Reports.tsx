@@ -3,21 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Download, Calendar, Users, Package, Utensils, Activity, TrendingUp, Database, CheckSquare } from "lucide-react";
+import { RefreshCw, Download, Calendar, Users, Utensils, TrendingUp, CheckSquare, BarChart3 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { EventOverviewTab } from "@/components/reports/EventOverviewTab";
-import { PackageUtilizationTab } from "@/components/reports/PackageUtilizationTab";
-import { CheckInManagementTab } from "@/components/reports/CheckInManagementTab";
-import { FoodBeverageTab } from "@/components/reports/FoodBeverageTab";
-import { ActivitiesEquipmentTab } from "@/components/reports/ActivitiesEquipmentTab";
-import { SponsorImpactTab } from "@/components/reports/SponsorImpactTab";
-import { DataMigrationPanel } from "@/components/DataMigrationPanel";
+import { EventAnalyticsTab } from "@/components/reports/EventAnalyticsTab";
+import { AttendeeManagementTab } from "@/components/reports/AttendeeManagementTab";
+import { OperationsTab } from "@/components/reports/OperationsTab";
+import { ExecutiveReportsTab } from "@/components/reports/ExecutiveReportsTab";
 import { MobileReportsNavigation } from "@/components/reports/shared/MobileReportsNavigation";
 
 const Reports = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("analytics");
   const isMobile = useIsMobile();
 
   const handleRefresh = async () => {
@@ -94,93 +91,57 @@ const Reports = () => {
         {/* Desktop Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {!isMobile && (
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 bg-muted/50">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-muted/50">
               <TabsTrigger 
-                value="overview" 
+                value="analytics" 
+                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">📊 Event Analytics</span>
+                <span className="sm:hidden">Analytics</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="attendees" 
                 className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Event Overview</span>
-                <span className="sm:hidden">Overview</span>
+                <span className="hidden sm:inline">👥 Attendee Mgmt</span>
+                <span className="sm:hidden">Attendees</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="packages" 
-                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Package className="h-4 w-4" />
-                <span className="hidden sm:inline">Package Utilization</span>
-                <span className="sm:hidden">Packages</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="checkin" 
-                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Check-In Mgmt</span>
-                <span className="sm:hidden">Check-In</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="food" 
+                value="operations" 
                 className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Utensils className="h-4 w-4" />
-                <span className="hidden sm:inline">Food & Beverage</span>
-                <span className="sm:hidden">F&B</span>
+                <span className="hidden sm:inline">🍽️ Operations</span>
+                <span className="sm:hidden">Operations</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="activities" 
-                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline">Activities</span>
-                <span className="sm:hidden">Activities</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="sponsor" 
+                value="executive" 
                 className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <TrendingUp className="h-4 w-4" />
-                <span className="hidden sm:inline">Sponsor Impact</span>
-                <span className="sm:hidden">Sponsors</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="migration" 
-                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Database className="h-4 w-4" />
-                <span className="hidden sm:inline">Data Migration</span>
-                <span className="sm:hidden">Migration</span>
+                <span className="hidden sm:inline">📈 Executive</span>
+                <span className="sm:hidden">Executive</span>
               </TabsTrigger>
             </TabsList>
           )}
 
           <div className="mt-6">
-            <TabsContent value="overview" className="space-y-4">
-              <EventOverviewTab isRefreshing={isRefreshing} />
+            <TabsContent value="analytics" className="space-y-4">
+              <EventAnalyticsTab isRefreshing={isRefreshing} />
             </TabsContent>
 
-            <TabsContent value="packages" className="space-y-4">
-              <PackageUtilizationTab isRefreshing={isRefreshing} />
+            <TabsContent value="attendees" className="space-y-4">
+              <AttendeeManagementTab isRefreshing={isRefreshing} />
             </TabsContent>
 
-            <TabsContent value="checkin" className="space-y-4">
-              <CheckInManagementTab isRefreshing={isRefreshing} />
+            <TabsContent value="operations" className="space-y-4">
+              <OperationsTab isRefreshing={isRefreshing} />
             </TabsContent>
 
-            <TabsContent value="food" className="space-y-4">
-              <FoodBeverageTab isRefreshing={isRefreshing} />
-            </TabsContent>
-
-            <TabsContent value="activities" className="space-y-4">
-              <ActivitiesEquipmentTab isRefreshing={isRefreshing} />
-            </TabsContent>
-
-            <TabsContent value="sponsor" className="space-y-4">
-              <SponsorImpactTab isRefreshing={isRefreshing} />
-            </TabsContent>
-
-            <TabsContent value="migration" className="space-y-4">
-              <DataMigrationPanel />
+            <TabsContent value="executive" className="space-y-4">
+              <ExecutiveReportsTab isRefreshing={isRefreshing} />
             </TabsContent>
           </div>
         </Tabs>
