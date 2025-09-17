@@ -714,30 +714,20 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           isGroupedView={isGroupedView}
           onRefresh={fetchAttendees}
         >
-            <ResponsiveAttendeesTable
-              attendees={isGroupedView 
-                ? groupedAttendees.reduce((acc, group) => {
-                    acc[group.orderId || 'no-order'] = group.attendees;
-                    return acc;
-                  }, {} as Record<string, EnhancedAttendee[]>)
-                : (sortedAttendees as EnhancedAttendee[]).slice(startIndex, endIndex)
-              }
-              groupedAttendees={isGroupedView ? (paginatedData as GroupedAttendee[]) : []}
-              isGroupedView={isGroupedView}
-              columns={allColumns}
-              visibleColumns={visibleColumns}
-              isLoading={isLoading}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              startIndex={startIndex + 1}
-              endIndex={endIndex}
-              totalCount={totalItems}
-              onPageChange={setCurrentPage}
-              sortField={sortField}
-              sortDirection={sortDirection}
-              onSort={handleSort}
-              onRefresh={fetchAttendees}
-            />
+        <ResponsiveAttendeesTable
+          attendees={isGroupedView ? paginatedData as GroupedAttendee[] : paginatedData as EnhancedAttendee[]}
+          columns={allColumns}
+          visibleColumns={visibleColumns}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalAttendees={totalItems}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          onPageChange={setCurrentPage}
+          onRefresh={fetchAttendees}
+          isGroupedView={isGroupedView}
+        />
           </GroupRfidProvider>
         </div>
       </div>
