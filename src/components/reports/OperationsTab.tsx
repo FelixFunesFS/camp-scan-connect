@@ -601,10 +601,10 @@ export const OperationsTab: React.FC<OperationsTabProps> = ({ isRefreshing }) =>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-80 w-full">
+              <div className="h-[240px] md:h-[320px] w-full">
                 <ChartContainer config={chartConfig}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data.hourlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <AreaChart data={data.hourlyData} margin={{ top: 20, right: 20, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                       <XAxis 
                         dataKey="hour" 
@@ -673,10 +673,10 @@ export const OperationsTab: React.FC<OperationsTabProps> = ({ isRefreshing }) =>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-80 w-full">
+              <div className="h-[240px] md:h-[320px] w-full">
                 <ChartContainer config={chartConfig}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data.timelineData} margin={{ top: 20, right: 20, left: 10, bottom: 40 }}>
+                    <LineChart data={data.timelineData} margin={{ top: 20, right: 15, left: 5, bottom: 30 }}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                       <XAxis 
                         dataKey="time" 
