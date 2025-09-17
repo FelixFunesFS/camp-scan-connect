@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 // Force rebuild to fix TestTube import issue
-import { Users, UserCheck, AlertTriangle, Zap, LogOut, Download, TestTube, Power } from "lucide-react";
+import { Users, UserCheck, AlertTriangle, Zap, LogOut, Download, TestTube, Power, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +22,7 @@ const Dashboard = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -222,39 +224,52 @@ const Dashboard = () => {
         {/* Critical Operations - Positioned at Bottom for Safety */}
         <div className="mt-12 pt-8 border-t-2 border-destructive/20">
           <Card className="border-destructive/50 bg-destructive/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <AlertTriangle className="h-5 w-5" />
-                Critical Operations
-              </CardTitle>
-              <CardDescription className="text-destructive/80">
-                Dangerous system-wide operations that cannot be undone. Proceed with extreme caution.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-6 border-2 border-destructive bg-destructive/10 rounded-lg">
-                <div className="flex items-start gap-4">
-                  <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
-                  <div className="flex-1">
-                    <h4 className="font-bold text-destructive mb-2 text-lg">
-                      Mass RFID Deactivation
-                    </h4>
-                    <p className="text-destructive/90 mb-4 text-sm leading-relaxed">
-                      This will immediately deactivate ALL active RFID tags system-wide, affecting every attendee. 
-                      This action is irreversible and should only be used in emergency situations or at event conclusion.
-                    </p>
-                    <Button
-                      onClick={handleMassDeactivation}
-                      disabled={isProcessing}
-                      variant="destructive"
-                      className="w-full font-semibold"
-                    >
-                      {isProcessing ? "Deactivating All RFIDs..." : "⚠️ DEACTIVATE ALL RFID TAGS"}
-                    </Button>
+            <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  Critical Operations
+                </CardTitle>
+                <CardDescription className="text-destructive/80">
+                  Dangerous system-wide operations that cannot be undone. Click to reveal.
+                </CardDescription>
+                <CollapsibleTrigger className="w-full mt-4">
+                  <div className="flex items-center justify-center gap-2 p-3 border border-destructive/30 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    <span className="text-destructive font-medium">
+                      {isCollapsed ? "⚠️ Show Critical Operations" : "Hide Critical Operations"}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-destructive transition-transform ${isCollapsed ? "" : "rotate-180"}`} />
                   </div>
-                </div>
-              </div>
-            </CardContent>
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent>
+                  <div className="p-6 border-2 border-destructive bg-destructive/10 rounded-lg animate-accordion-down">
+                    <div className="flex items-start gap-4">
+                      <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <h4 className="font-bold text-destructive mb-2 text-lg">
+                          Mass RFID Deactivation
+                        </h4>
+                        <p className="text-destructive/90 mb-4 text-sm leading-relaxed">
+                          This will immediately deactivate ALL active RFID tags system-wide, affecting every attendee. 
+                          This action is irreversible and should only be used in emergency situations or at event conclusion.
+                        </p>
+                        <Button
+                          onClick={handleMassDeactivation}
+                          disabled={isProcessing}
+                          variant="destructive"
+                          className="w-full font-semibold"
+                        >
+                          {isProcessing ? "Deactivating All RFIDs..." : "⚠️ DEACTIVATE ALL RFID TAGS"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
         </div>
       </div>
