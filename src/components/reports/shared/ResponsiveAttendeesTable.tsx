@@ -343,12 +343,17 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
     }
   };
 
-  // Type-safe data access
-  const groupedData = isGroupedView ? (attendees as GroupedAttendee[]) : [];
-  const individualData = !isGroupedView ? (attendees as EnhancedAttendee[]) : [];
+  // Type-safe data access with proper guards
+  const groupedData: GroupedAttendee[] = isGroupedView && Array.isArray(attendees) 
+    ? (attendees as GroupedAttendee[]) 
+    : [];
+  
+  const individualData: EnhancedAttendee[] = !isGroupedView && Array.isArray(attendees)
+    ? (attendees as EnhancedAttendee[]) 
+    : [];
 
-  // If no attendees, show empty state
-  if (!attendees || (Array.isArray(attendees) && attendees.length === 0)) {
+  // If no attendees or invalid data, show empty state
+  if (!attendees || !Array.isArray(attendees) || attendees.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">No attendees found matching the current filters.</p>
@@ -371,14 +376,16 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       
       <div className="flex justify-between items-center text-sm text-muted-foreground">
         <div>
-          {isGroupedView ? (
+          {isGroupedView && groupedData.length > 0 ? (
             <span>
               Showing {groupedData.length} groups with {groupedData.reduce((sum, group) => sum + group.attendees.length, 0)} attendees
             </span>
-          ) : (
+          ) : individualData.length > 0 ? (
             <span>
               Showing {individualData.length} attendees
             </span>
+          ) : (
+            <span>No attendees to display</span>
           )}
         </div>
         
@@ -411,7 +418,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       </div>
 
       {/* Group Management Controls */}
-      {isGroupedView && (
+      {isGroupedView && groupedData.length > 0 && (
         <div className="flex gap-2 mb-4">
           <Button
             variant="outline"
@@ -437,7 +444,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       {/* Mobile Card View */}
       {isMobile && (
         <div className="space-y-3">
-          {isGroupedView ? (
+          {isGroupedView && groupedData.length > 0 ? (
             groupedData.map((group) => (
               <Card key={group.orderId || 'no-order'} className="overflow-hidden">
                 <CardContent className="p-0">
@@ -480,7 +487,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                 </CardContent>
               </Card>
             ))
-          ) : (
+          ) : individualData.length > 0 ? (
             individualData.map((attendee) => (
               <Card key={attendee.id} className="overflow-hidden">
                 <CardContent className="p-4 space-y-3">
@@ -507,6 +514,10 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                 </CardContent>
               </Card>
             ))
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              No attendees to display
+            </div>
           )}
         </div>
       )}
@@ -540,7 +551,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
               </thead>
               
               <tbody>
-                {isGroupedView ? (
+                {isGroupedView && groupedData.length > 0 ? (
                   groupedData.map((group) => (
                     <CollapsibleOrderGroup
                       key={group.orderId || 'no-order'}
@@ -572,7 +583,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                       ))}
                     </CollapsibleOrderGroup>
                   ))
-                ) : (
+                ) : individualData.length > 0 ? (
                   individualData.map((attendee, index) => (
                     <tr
                       key={attendee.id}
@@ -589,8 +600,14 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                           {renderCellContent(attendee, column.key)}
                         </td>
                       ))}
-                    </tr>
-                  ))
+                      </tr>
+                    ))
+                ) : (
+                  <tr>
+                    <td colSpan={visibleDesktopColumns.length} className="text-center py-8 text-muted-foreground">
+                      No attendees to display
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
