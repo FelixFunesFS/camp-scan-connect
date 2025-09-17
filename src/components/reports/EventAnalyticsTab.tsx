@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScoreCard } from "./shared/ScoreCard";
 import { ExportButton } from "./shared/ExportButton";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { ResponsiveChartContainer } from "./shared/ResponsiveChartContainer";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Users, 
@@ -51,7 +51,6 @@ interface AnalyticsData {
 }
 
 export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshing }) => {
-  const isMobile = useIsMobile();
   const [data, setData] = useState<AnalyticsData>({
     totalRegistered: 0,
     totalActivated: 0,
@@ -488,32 +487,20 @@ export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshi
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] md:h-[380px] w-full">
-              <ChartContainer config={chartConfig}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={packageChartData} 
-                    margin={isMobile 
-                      ? { top: 15, right: 10, left: 5, bottom: 60 } 
-                      : { top: 20, right: 20, left: 10, bottom: 80 }
-                    }
-                  >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fontSize: isMobile ? 9 : 10 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={isMobile ? 50 : 60}
-                    />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    {visibleSeries.active && <Bar dataKey="active" stackId="a" fill="hsl(var(--secondary))" name="Active" />}
-                    {visibleSeries.inactive && <Bar dataKey="inactive" stackId="a" fill="hsl(var(--muted-foreground))" name="Inactive" />}
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </div>
+            <ResponsiveChartContainer
+              data={packageChartData}
+              chartType="bar"
+              showTooltip={true}
+            >
+              <BarChart data={packageChartData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                {visibleSeries.active && <Bar dataKey="active" stackId="a" fill="hsl(var(--secondary))" name="Active" />}
+                {visibleSeries.inactive && <Bar dataKey="inactive" stackId="a" fill="hsl(var(--muted-foreground))" name="Inactive" />}
+              </BarChart>
+            </ResponsiveChartContainer>
           </CardContent>
         </Card>
 
