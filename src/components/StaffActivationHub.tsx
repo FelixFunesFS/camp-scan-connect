@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,33 +17,63 @@ import {
   Download,
   Users,
   Clock,
-  Search,
-  Scan,
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  Phone,
   UserCheck,
-  CheckCircle2,
-  Smartphone,
-  AlertCircle
+  CheckCircle2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { RfidScanner } from "@/components/RfidScanner";
-import { MobileAttendeeCard } from "@/components/MobileAttendeeCard";
-import { MobileActivationPreview } from "@/components/MobileActivationPreview";
-import { rfidLookupService, AttendeeSearchResult } from "@/services/rfidLookupService";
-import { PhoneActivationService, type PhoneLookupResult, type GroupActivationResult } from "@/services/phoneActivationService";
-import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { UnifiedSearchFilter, QuickFilter } from "@/components/reports/shared/UnifiedSearchFilter";
+import { MobileAttendeeCard } from "@/components/reports/shared/MobileAttendeeCard";
+import { rfidLookupService } from "@/services/rfidLookupService";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+// Enhanced attendee interface matching AttendeeManagementTab
+export interface EnhancedAttendee {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  regfox_id?: string;
+  order_id?: string;
+  ticket_type: string;
+  registration_status: string;
+  activated_at?: string;
+  waiver_signed?: boolean;
+  rfid_uid?: string;
+  rfid_status: string;
+  has_headphones?: boolean;
+  bar_hits?: number;
+  overall_status: string;
+  arrival_day?: string;
+  is_duplicate?: boolean;
+  is_phone_duplicate?: boolean;
+  meal_plan?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  group_size?: number;
+  is_group_order?: boolean;
+}
+
+export interface TableColumn {
+  key: string;
+  label: string;
+  mobile?: boolean;
+  desktop?: boolean;
+  width?: string;
+  sortable?: boolean;
+}
 
 interface StaffStats {
   totalActive: number;
   todayDeactivations: number;
   todayActivations: number;
 }
-
-type SearchType = 'general' | 'phone' | 'order_id' | 'email';
 
 const DEACTIVATION_REASONS = [
   { value: "lost", label: "Lost RFID" },
@@ -66,16 +97,17 @@ export function StaffActivationHub() {
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   
-  // Active attendee search state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<AttendeeSearchResult[]>([]);
-  const [activeRfids, setActiveRfids] = useState<AttendeeSearchResult[]>([]);
-  const [searchType, setSearchType] = useState<SearchType>('general');
-  
-  // Phone activation workflow state
-  const [phoneLookupResult, setPhoneLookupResult] = useState<PhoneLookupResult | null>(null);
-  const [showActivationPreview, setShowActivationPreview] = useState(false);
-  const [activationProcessing, setActivationProcessing] = useState(false);
+  // Enhanced attendee management state (from AttendeeManagementTab)
+  const [attendees, setAttendees] = useState<EnhancedAttendee[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeQuickFilter, setActiveQuickFilter] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [visibleColumns] = useState<string[]>([
+    'first_name', 'last_name', 'phone', 'email', 'ticket_type', 'rfid_status', 'overall_status', 'actions'
+  ]);
   
   // Deactivation section state
   const [isDeactivationOpen, setIsDeactivationOpen] = useState(false);
@@ -87,32 +119,139 @@ export function StaffActivationHub() {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+
+  // Table columns configuration for staff use
+  const allColumns: TableColumn[] = [
+    { key: 'first_name', label: 'Name', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'email', label: 'Email', mobile: true, desktop: true, width: 'min-w-48', sortable: true },
+    { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'ticket_type', label: 'Ticket Type', desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'actions', label: 'Actions', mobile: true, desktop: true, width: 'min-w-32', sortable: false }
+  ];
 
   useEffect(() => {
     if (isAuthenticated) {
+      fetchAttendees();
       loadDashboardData();
       // Refresh data every 30 seconds
-      const interval = setInterval(loadDashboardData, 30000);
+      const interval = setInterval(() => {
+        fetchAttendees();
+        loadDashboardData();
+      }, 30000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (searchQuery.length >= 2) {
-      performAttendeeSearch();
-    } else {
-      setSearchResults([]);
+  // Enhanced attendee data fetching (from AttendeeManagementTab)
+  const fetchAttendees = async () => {
+    try {
+      setIsLoading(true);
+      
+      const { data: attendeesData, error: attendeesError } = await supabase
+        .from('attendees')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (attendeesError) throw attendeesError;
+
+      const { data: rfidData, error: rfidError } = await supabase
+        .from('rfid_tags')
+        .select('*');
+
+      if (rfidError) throw rfidError;
+
+      const { data: transactionData, error: transactionError } = await supabase
+        .from('station_transactions')
+        .select('*');
+
+      if (transactionError) throw transactionError;
+
+      // Calculate group sizes for order IDs
+      const orderSizes = new Map<string, number>();
+      attendeesData?.forEach(attendee => {
+        if (attendee.order_id && attendee.order_id.trim()) {
+          orderSizes.set(attendee.order_id, (orderSizes.get(attendee.order_id) || 0) + 1);
+        }
+      });
+
+      const processedAttendees: EnhancedAttendee[] = (attendeesData || []).map(attendee => {
+        const rfidTag = rfidData?.find(tag => tag.attendee_id === attendee.id);
+        const transactions = transactionData?.filter(t => t.attendee_id === attendee.id) || [];
+        
+        const has_headphones = transactions.some(t => 
+          t.station_type === 'headphones' && t.transaction_type === 'activate'
+        );
+        
+        const bar_hits = transactions.filter(t => 
+          t.station_type === 'drinks' && t.transaction_type === 'drink'
+        ).length;
+
+        const rfid_status = rfidTag?.status || 'unissued';
+        let overall_status = 'unassigned';
+        if (attendee.activated_at) {
+          overall_status = 'activated';
+        } else if (rfidTag?.status === 'assigned' || rfidTag?.status === 'active') {
+          overall_status = 'assigned';
+        }
+
+        const arrival_day = attendee.arrival_window === 'early' ? 'Thursday' : 'Friday';
+
+        const duplicateEmails = attendeesData?.filter(a => 
+          a.email && a.email === attendee.email && a.id !== attendee.id
+        ) || [];
+        const is_duplicate = duplicateEmails.length > 0;
+
+        const duplicatePhones = attendeesData?.filter(a => 
+          a.phone && a.phone === attendee.phone && a.id !== attendee.id
+        ) || [];
+        const is_phone_duplicate = duplicatePhones.length > 0;
+
+        const group_size = attendee.order_id ? orderSizes.get(attendee.order_id) || 1 : 1;
+        const is_group_order = group_size > 1;
+
+        return {
+          ...attendee,
+          rfid_uid: rfidTag?.uid || undefined,
+          rfid_status,
+          has_headphones,
+          bar_hits,
+          overall_status,
+          arrival_day,
+          is_duplicate,
+          is_phone_duplicate,
+          waiver_signed: attendee.waiver_signed ?? false,
+          activated_at: attendee.activated_at ?? undefined,
+          meal_plan: attendee.meal_plan || undefined,
+          notes: attendee.notes || undefined,
+          email: attendee.email || undefined,
+          phone: attendee.phone || undefined,
+          regfox_id: attendee.regfox_id || undefined,
+          registration_status: attendee.registration_status || 'registered',
+          group_size,
+          is_group_order
+        } as EnhancedAttendee;
+      });
+
+      setAttendees(processedAttendees);
+
+    } catch (error) {
+      console.error("Error fetching attendees:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch attendees data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-  }, [searchQuery]);
+  };
 
   const loadDashboardData = async () => {
     try {
-      const [activeRfidsData, recentActivityData] = await Promise.all([
-        rfidLookupService.getActiveRfids(),
-        rfidLookupService.getRecentStaffActivity(20)
-      ]);
-
-      setActiveRfids(activeRfidsData);
+      const recentActivityData = await rfidLookupService.getRecentStaffActivity(20);
 
       // Calculate today's stats
       const today = new Date().toDateString();
@@ -122,9 +261,12 @@ export function StaffActivationHub() {
 
       const todayDeactivations = todayActivity.filter(a => a.transaction_type === 'deactivate').length;
       const todayActivations = todayActivity.filter(a => a.transaction_type === 'activate').length;
+      
+      // Get total active from attendees data
+      const totalActive = attendees.filter(a => a.overall_status === 'activated').length;
 
       setStats({
-        totalActive: activeRfidsData.length,
+        totalActive,
         todayDeactivations,
         todayActivations
       });
@@ -139,143 +281,171 @@ export function StaffActivationHub() {
     }
   };
 
-  const performAttendeeSearch = async () => {
-    try {
-      const detectedType = detectSearchType(searchQuery);
-      setSearchType(detectedType);
-      
-      if (detectedType === 'phone') {
-        await handlePhoneSearch(searchQuery);
-      } else {
-        const results = await rfidLookupService.searchAttendees(searchQuery);
-        // Show all attendees for activation, not just active ones
-        setSearchResults(results);
-        setPhoneLookupResult(null); // Clear phone results when doing general search
+  // Real-time subscription setup
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const channel = supabase
+      .channel('staff-hub-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'attendees'
+      }, () => {
+        fetchAttendees();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'rfid_tags'
+      }, () => {
+        fetchAttendees();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'station_transactions'
+      }, () => {
+        fetchAttendees();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthenticated]);
+
+  // Quick filters for staff use
+  const quickFilters: QuickFilter[] = useMemo(() => {
+    const totalCount = attendees.length;
+    const activatedCount = attendees.filter(a => a.activated_at).length;
+    const assignedCount = attendees.filter(a => a.rfid_status === 'assigned' || a.rfid_status === 'active').length;
+    const unassignedCount = attendees.filter(a => a.rfid_status === 'unissued').length;
+
+    return [
+      { id: "all", label: "All Attendees", count: totalCount },
+      { id: "activated", label: "Activated", count: activatedCount, color: "success" as const },
+      { id: "assigned", label: "RFID Assigned", count: assignedCount, color: "warning" as const },
+      { id: "unassigned", label: "Needs RFID", count: unassignedCount, color: "destructive" as const }
+    ];
+  }, [attendees]);
+
+  // Filter processed attendees
+  const processedAttendees = useMemo(() => {
+    let filtered = [...attendees];
+    
+    // Apply quick filter
+    if (activeQuickFilter && activeQuickFilter !== 'all') {
+      switch (activeQuickFilter) {
+        case 'activated': filtered = filtered.filter(a => a.activated_at); break;
+        case 'assigned': filtered = filtered.filter(a => a.rfid_status === 'assigned' || a.rfid_status === 'active'); break;
+        case 'unassigned': filtered = filtered.filter(a => a.rfid_status === 'unissued'); break;
       }
-    } catch (error) {
-      console.error('Error searching attendees:', error);
-      toast({
-        title: "Search Error",
-        description: "Failed to search attendees",
-        variant: "destructive",
-      });
     }
+    
+    // Apply search
+    if (searchTerm) {
+      filtered = filtered.filter(a => 
+        [a.first_name, a.last_name, a.email, a.phone, a.regfox_id, a.order_id].some(field => 
+          field?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+    
+    return filtered;
+  }, [attendees, searchTerm, activeQuickFilter]);
+
+  const handleSort = (field: keyof EnhancedAttendee) => {
+    setSortField(field);
+    setSortDirection(sortField === field ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
   };
 
-  // Helper functions for search and activation
-  const detectSearchType = (query: string): SearchType => {
-    const trimmed = query.trim();
-    
-    // Phone number detection (10+ digits with optional formatting)
-    const phonePattern = /^[\+]?[1]?[\s\-\.\(\)]?[\d\s\-\.\(\)]{10,}$/;
-    if (phonePattern.test(trimmed)) {
-      return 'phone';
-    }
-    
-    // Order ID detection (alphanumeric, often with dashes or underscores)
-    const orderPattern = /^[A-Za-z0-9\-_]{6,}$/;
-    if (orderPattern.test(trimmed) && !trimmed.includes('@')) {
-      return 'order_id';
-    }
-    
-    // Email detection
-    if (trimmed.includes('@') && trimmed.includes('.')) {
-      return 'email';
-    }
-    
-    return 'general';
-  };
-
-  const handlePhoneSearch = async (phone: string) => {
+  // Activation handlers
+  const handleIndividualActivation = async (attendeeId: string) => {
     try {
-      setActivationProcessing(true);
-      const result = await PhoneActivationService.lookupPhonePreview(phone);
-      if (result) {
-        setPhoneLookupResult(result);
-        setSearchResults([]); // Clear general search results
-      } else {
-        setPhoneLookupResult(null);
+      const attendee = attendees.find(a => a.id === attendeeId);
+      if (!attendee) return;
+
+      if (!attendee.rfid_uid) {
         toast({
-          title: "No Results",
-          description: "No attendees found for this phone number",
-          variant: "default",
+          title: "Cannot Activate",
+          description: "Attendee needs an RFID tag assigned first",
+          variant: "destructive",
         });
+        return;
       }
-    } catch (error) {
-      console.error('Phone search error:', error);
-      toast({
-        title: "Phone Search Error",
-        description: error instanceof Error ? error.message : "Failed to search phone number",
-        variant: "destructive",
-      });
-    } finally {
-      setActivationProcessing(false);
-    }
-  };
 
-  const handlePhoneActivation = async () => {
-    if (!phoneLookupResult) return;
-    
-    try {
-      setActivationProcessing(true);
-      const result = await PhoneActivationService.activateGroupByPhone(searchQuery, 'staff_assisted');
+      const result = await rfidLookupService.activateRfid(attendee.rfid_uid, staffId || undefined);
       
-      if (result) {
+      if (result.success) {
         toast({
           title: "Activation Successful",
-          description: `Activated ${result.activated_count} of ${result.total_attendees} attendees`,
+          description: `${attendee.first_name} ${attendee.last_name} has been activated`,
         });
-        loadDashboardData(); // Refresh data
-        setPhoneLookupResult(null);
-        setSearchQuery("");
-      }
-    } catch (error) {
-      console.error('Phone activation error:', error);
-      toast({
-        title: "Activation Failed",
-        description: error instanceof Error ? error.message : "Failed to activate group",
-        variant: "destructive",
-      });
-    } finally {
-      setActivationProcessing(false);
-    }
-  };
-
-  const handleEntireOrderActivation = async () => {
-    if (!phoneLookupResult) return;
-    
-    try {
-      setActivationProcessing(true);
-      const result = await PhoneActivationService.activateEntireOrderByPhone(searchQuery, 'staff_assisted');
-      
-      if (result) {
+        fetchAttendees(); // Refresh data
+        loadDashboardData();
+      } else {
         toast({
-          title: "Order Activation Successful",
-          description: `Activated ${result.activated_count} of ${result.total_attendees} people in the order`,
+          title: "Activation Failed",
+          description: result.message,
+          variant: "destructive",
         });
-        loadDashboardData(); // Refresh data
-        setPhoneLookupResult(null);
-        setSearchQuery("");
       }
     } catch (error) {
-      console.error('Order activation error:', error);
+      console.error('Individual activation error:', error);
       toast({
-        title: "Order Activation Failed",
-        description: error instanceof Error ? error.message : "Failed to activate entire order",
+        title: "Activation Error",
+        description: "Failed to activate attendee",
         variant: "destructive",
       });
-    } finally {
-      setActivationProcessing(false);
     }
   };
 
-  const handleIndividualActivation = async (attendeeId: string) => {
-    // Individual activation logic would be implemented here
-    // This could involve activating a single attendee's RFID
-    toast({
-      title: "Individual Activation",
-      description: "Individual activation feature coming soon",
-    });
+  const handleGroupActivation = async (orderAttendees: EnhancedAttendee[]) => {
+    try {
+      const activatableAttendees = orderAttendees.filter(a => a.rfid_uid && !a.activated_at);
+      
+      if (activatableAttendees.length === 0) {
+        toast({
+          title: "No Attendees to Activate",
+          description: "All attendees in this group are already activated or missing RFID tags",
+          variant: "default",
+        });
+        return;
+      }
+
+      let successCount = 0;
+      let failureCount = 0;
+
+      for (const attendee of activatableAttendees) {
+        try {
+          const result = await rfidLookupService.activateRfid(attendee.rfid_uid!, staffId || undefined);
+          if (result.success) {
+            successCount++;
+          } else {
+            failureCount++;
+          }
+        } catch {
+          failureCount++;
+        }
+      }
+
+      toast({
+        title: "Group Activation Complete",
+        description: `Activated ${successCount} attendees${failureCount > 0 ? `, ${failureCount} failed` : ''}`,
+        variant: failureCount === 0 ? "default" : "destructive",
+      });
+      
+      fetchAttendees(); // Refresh data
+      loadDashboardData();
+    } catch (error) {
+      console.error('Group activation error:', error);
+      toast({
+        title: "Group Activation Error",
+        description: "Failed to activate group",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleStaffLogin = () => {
@@ -454,143 +624,203 @@ export function StaffActivationHub() {
           </div>
         </div>
 
-        {/* Multi-Criteria Search Interface */}
+        {/* Enhanced Search Interface */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
+              <UserCheck className="h-5 w-5" />
               Search & Activate Attendees
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="relative">
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, email, phone number, or order ID..."
-                className="pr-10"
-              />
-              {searchType === 'phone' && (
-                <Phone className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-              )}
-              {activationProcessing && (
-                <div className="absolute right-3 top-3 animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-              )}
-            </div>
-            
-            {/* Search Type Indicator */}
-            {searchQuery.length >= 2 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Badge variant="outline" className="text-xs">
-                  {searchType === 'phone' ? '📞 Phone Search' : 
-                   searchType === 'order_id' ? '📄 Order ID Search' :
-                   searchType === 'email' ? '📧 Email Search' : '🔍 General Search'}
-                </Badge>
-              </div>
-            )}
-            
-            {/* Phone Lookup Results with Activation */}
-            {phoneLookupResult && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                  <Smartphone className="h-4 w-4" />
-                  Phone Lookup Results
-                </div>
-                <MobileActivationPreview
-                  phoneNumber={searchQuery}
-                  lookupResult={phoneLookupResult}
-                  isProcessing={activationProcessing}
-                  onActivatePhoneGroup={handlePhoneActivation}
-                  onActivateEntireOrder={handleEntireOrderActivation}
-                  onBack={() => {
-                    setPhoneLookupResult(null);
-                    setSearchQuery("");
-                  }}
-                />
-              </div>
-            )}
-            
-            {/* General Search Results with Rich Display */}
-            {searchResults.length > 0 && !phoneLookupResult && (
+            <UnifiedSearchFilter
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              quickFilters={quickFilters}
+              activeQuickFilter={activeQuickFilter}
+              onQuickFilterChange={setActiveQuickFilter}
+              placeholder="Search by name, email, phone, or order ID..."
+            />
+
+            {/* Enhanced Search Results */}
+            {processedAttendees.length > 0 ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Found {searchResults.length} {searchResults.length === 1 ? 'attendee' : 'attendees'}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Found {processedAttendees.length} attendee{processedAttendees.length !== 1 ? 's' : ''}
+                  </p>
                 </div>
-                <ScrollArea className="max-h-96">
-                  <div className="space-y-3">
-                    {searchResults.map((attendee) => (
-                      <Card key={attendee.id} className="transition-all duration-200 hover:shadow-md">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="font-medium">
-                                  {attendee.first_name} {attendee.last_name}
-                                </span>
-                                {attendee.is_veteran && (
-                                  <Badge variant="secondary" className="text-xs">Veteran</Badge>
-                                )}
+                
+                {/* Mobile and Desktop Attendee Display */}
+                {isMobile ? (
+                  <ScrollArea className="max-h-96">
+                    <div className="space-y-3">
+                      {processedAttendees.map((attendee) => (
+                        <Card key={attendee.id} className="transition-all duration-200 hover:shadow-md">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="font-medium">
+                                    {attendee.first_name} {attendee.last_name}
+                                  </span>
+                                </div>
+                                
+                                <div className="space-y-1 text-sm text-muted-foreground">
+                                  <p>{attendee.email}</p>
+                                  <p>{attendee.ticket_type}</p>
+                                  {attendee.rfid_uid && (
+                                    <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
+                                  )}
+                                  {attendee.order_id && (
+                                    <p className="font-mono text-xs">Order: {attendee.order_id}</p>
+                                  )}
+                                </div>
                               </div>
                               
-                              <div className="space-y-1 text-sm text-muted-foreground">
-                                <p>{attendee.email}</p>
-                                <p>{attendee.ticket_type}</p>
-                                {attendee.rfid_uid && (
-                                  <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
-                                )}
-                                {attendee.order_id && (
-                                  <p className="font-mono text-xs">Order: {attendee.order_id}</p>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-col items-end gap-2">
-                              {/* Status Badge */}
-                              <Badge 
-                                variant={
-                                  attendee.rfid_status === 'active' && attendee.activated_at ? 'default' :
-                                  attendee.rfid_status === 'assigned' ? 'secondary' : 
-                                  'destructive'
-                                }
-                                className="text-xs"
-                              >
-                                {attendee.rfid_status === 'active' && attendee.activated_at ? (
-                                  <><CheckCircle2 className="h-3 w-3 mr-1" />Active</>
-                                ) : attendee.rfid_status === 'assigned' ? (
-                                  <><Clock className="h-3 w-3 mr-1" />Pending</>
-                                ) : (
-                                  <><AlertTriangle className="h-3 w-3 mr-1" />No RFID</>
-                                )}
-                              </Badge>
-                              
-                              {/* Activation Button */}
-                              {attendee.rfid_uid && !attendee.activated_at && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleIndividualActivation(attendee.id)}
+                              <div className="flex flex-col items-end gap-2">
+                                {/* Status Badge */}
+                                <Badge 
+                                  variant={
+                                    attendee.overall_status === 'activated' ? 'default' :
+                                    attendee.overall_status === 'assigned' ? 'secondary' : 
+                                    'destructive'
+                                  }
                                   className="text-xs"
-                                  disabled={activationProcessing}
                                 >
-                                  <UserCheck className="h-3 w-3 mr-1" />
-                                  Activate
-                                </Button>
-                              )}
+                                  {attendee.overall_status === 'activated' ? (
+                                    <><CheckCircle2 className="h-3 w-3 mr-1" />Active</>
+                                  ) : attendee.overall_status === 'assigned' ? (
+                                    <><Clock className="h-3 w-3 mr-1" />Pending</>
+                                  ) : (
+                                    <><AlertTriangle className="h-3 w-3 mr-1" />No RFID</>
+                                  )}
+                                </Badge>
+                                
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                  {attendee.rfid_uid && !attendee.activated_at && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleIndividualActivation(attendee.id)}
+                                      className="text-xs"
+                                    >
+                                      <UserCheck className="h-3 w-3 mr-1" />
+                                      Activate
+                                    </Button>
+                                  )}
+                                  {attendee.is_group_order && attendee.order_id && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        const orderAttendees = attendees.filter(a => a.order_id === attendee.order_id);
+                                        handleGroupActivation(orderAttendees);
+                                      }}
+                                      className="text-xs"
+                                    >
+                                      <Users className="h-3 w-3 mr-1" />
+                                      Group
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b bg-muted/30">
+                            {allColumns.filter(col => col.desktop && visibleColumns.includes(col.key)).map((column) => (
+                              <th key={column.key} className="p-3 text-left text-sm font-medium">
+                                <div className="flex items-center gap-2">
+                                  {column.label}
+                                  {column.sortable && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleSort(column.key as keyof EnhancedAttendee)}
+                                      className="h-4 w-4 p-0"
+                                    >
+                                      ↕
+                                    </Button>
+                                  )}
+                                </div>
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {processedAttendees.map((attendee, index) => (
+                            <tr key={attendee.id} className={`border-b hover:bg-accent/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
+                              <td className="p-3 text-sm">{attendee.first_name} {attendee.last_name}</td>
+                              <td className="p-3 text-sm">{attendee.email}</td>
+                              <td className="p-3 text-sm">{attendee.phone}</td>
+                              <td className="p-3 text-sm">{attendee.ticket_type}</td>
+                              <td className="p-3 text-sm">
+                                <Badge variant={
+                                  attendee.overall_status === 'activated' ? 'default' :
+                                  attendee.overall_status === 'assigned' ? 'secondary' : 'destructive'
+                                }>
+                                  {attendee.overall_status === 'activated' ? 'Active' :
+                                   attendee.overall_status === 'assigned' ? 'Pending' : 'No RFID'}
+                                </Badge>
+                              </td>
+                              <td className="p-3 text-sm">
+                                <Badge variant={
+                                  attendee.rfid_status === 'active' ? 'default' :
+                                  attendee.rfid_status === 'assigned' ? 'secondary' : 'destructive'
+                                }>
+                                  {attendee.rfid_status}
+                                </Badge>
+                              </td>
+                              <td className="p-3 text-sm">
+                                <div className="flex gap-2">
+                                  {attendee.rfid_uid && !attendee.activated_at && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleIndividualActivation(attendee.id)}
+                                      className="text-xs"
+                                    >
+                                      <UserCheck className="h-3 w-3 mr-1" />
+                                      Activate
+                                    </Button>
+                                  )}
+                                  {attendee.is_group_order && attendee.order_id && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        const orderAttendees = attendees.filter(a => a.order_id === attendee.order_id);
+                                        handleGroupActivation(orderAttendees);
+                                      }}
+                                      className="text-xs"
+                                    >
+                                      <Users className="h-3 w-3 mr-1" />
+                                      Group
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </ScrollArea>
+                )}
               </div>
-            )}
-
-            {/* No Results Message */}
-            {searchQuery.length >= 2 && searchResults.length === 0 && !phoneLookupResult && !activationProcessing && (
+            ) : (
               <div className="text-center py-8 text-muted-foreground">
-                <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No attendees found matching "{searchQuery}"</p>
-                <p className="text-sm mt-1">Try searching by name, email, phone, or order ID</p>
+                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No attendees found</p>
+                <p className="text-sm mt-1">Try adjusting your search criteria</p>
               </div>
             )}
           </CardContent>
