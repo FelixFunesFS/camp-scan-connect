@@ -21,7 +21,9 @@ import {
   ChevronDown,
   ChevronRight,
   UserCheck,
-  CheckCircle2
+  CheckCircle2,
+  Search,
+  Zap
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +31,8 @@ import { RfidScanner } from "@/components/RfidScanner";
 import { UnifiedSearchFilter, QuickFilter } from "@/components/reports/shared/UnifiedSearchFilter";
 import { MobileAttendeeCard } from "@/components/reports/shared/MobileAttendeeCard";
 import { rfidLookupService } from "@/services/rfidLookupService";
+import { enhancedActivationService, UnifiedSearchResult, EnhancedActivationService } from "@/services/enhancedActivationService";
+import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Enhanced attendee interface matching AttendeeManagementTab
@@ -108,6 +112,13 @@ export function StaffActivationHub() {
   const [visibleColumns] = useState<string[]>([
     'first_name', 'last_name', 'phone', 'email', 'ticket_type', 'rfid_status', 'overall_status', 'actions'
   ]);
+  
+  // Unified activation section state
+  const [unifiedSearchQuery, setUnifiedSearchQuery] = useState("");
+  const [unifiedSearchResult, setUnifiedSearchResult] = useState<UnifiedSearchResult | null>(null);
+  const [showUnifiedPreview, setShowUnifiedPreview] = useState(false);
+  const [isUnifiedProcessing, setIsUnifiedProcessing] = useState(false);
+  const [isUnifiedSearching, setIsUnifiedSearching] = useState(false);
   
   // Deactivation section state
   const [isDeactivationOpen, setIsDeactivationOpen] = useState(false);
@@ -523,6 +534,117 @@ export function StaffActivationHub() {
     setManualRfid("");
   };
 
+  // Unified activation handlers
+  const handleUnifiedSearch = async () => {
+    if (!unifiedSearchQuery.trim()) return;
+    
+    setIsUnifiedSearching(true);
+    try {
+      const result = await EnhancedActivationService.unifiedSearch(unifiedSearchQuery);
+      
+      if (result) {
+        setUnifiedSearchResult(result);
+        setShowUnifiedPreview(true);
+      } else {
+        toast({
+          title: "No Results",
+          description: "No attendees found for this search query",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Unified search error:', error);
+      toast({
+        title: "Search Error",
+        description: "Failed to search attendees",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUnifiedSearching(false);
+    }
+  };
+
+  const handleUnifiedActivateSearchGroup = async () => {
+    if (!unifiedSearchResult) return;
+
+    setIsUnifiedProcessing(true);
+    try {
+      const result = await EnhancedActivationService.activateSearchGroup(
+        unifiedSearchResult,
+        staffId || undefined
+      );
+
+      toast({
+        title: "Group Activation Complete",
+        description: `Activated ${result.activated_count} attendees${
+          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
+        }`,
+        variant: result.warnings && result.warnings.length > 0 ? "default" : "default",
+      });
+
+      // Reset unified search state
+      setShowUnifiedPreview(false);
+      setUnifiedSearchQuery("");
+      setUnifiedSearchResult(null);
+
+      // Refresh data
+      fetchAttendees();
+      loadDashboardData();
+    } catch (error) {
+      console.error('Group activation error:', error);
+      toast({
+        title: "Activation Failed",
+        description: "Failed to activate group",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUnifiedProcessing(false);
+    }
+  };
+
+  const handleUnifiedActivateEntireOrder = async () => {
+    if (!unifiedSearchResult) return;
+
+    setIsUnifiedProcessing(true);
+    try {
+      const result = await EnhancedActivationService.activateEntireOrder(
+        unifiedSearchResult,
+        staffId || undefined
+      );
+
+      toast({
+        title: "Order Activation Complete",
+        description: `Activated ${result.activated_count} out of ${result.total_attendees} attendees${
+          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
+        }`,
+        variant: "default",
+      });
+
+      // Reset unified search state
+      setShowUnifiedPreview(false);
+      setUnifiedSearchQuery("");
+      setUnifiedSearchResult(null);
+
+      // Refresh data
+      fetchAttendees();
+      loadDashboardData();
+    } catch (error) {
+      console.error('Order activation error:', error);
+      toast({
+        title: "Activation Failed",
+        description: "Failed to activate entire order",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUnifiedProcessing(false);
+    }
+  };
+
+  const handleUnifiedBack = () => {
+    setShowUnifiedPreview(false);
+    setUnifiedSearchResult(null);
+  };
+
   const exportActivity = () => {
     const csvContent = [
       ['Time', 'Name', 'Action', 'RFID', 'Reason'].join(','),
@@ -624,12 +746,88 @@ export function StaffActivationHub() {
           </div>
         </div>
 
-        {/* Enhanced Search Interface */}
+        {/* Unified Multi-Criteria Activation Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Smart Activation Search
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!showUnifiedPreview ? (
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search by name, email, phone, or order ID to activate..."
+                      value={unifiedSearchQuery}
+                      onChange={(e) => setUnifiedSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleUnifiedSearch()}
+                      disabled={isUnifiedSearching}
+                      className="h-12 text-base"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleUnifiedSearch}
+                    disabled={!unifiedSearchQuery.trim() || isUnifiedSearching}
+                    size="lg"
+                    className="h-12 px-6"
+                  >
+                    {isUnifiedSearching ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <><Search className="h-4 w-4 mr-2" />Search</>
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="text-sm text-muted-foreground">
+                  <p className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    Automatically detects search type and shows group context for activation
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs">📞</Badge>
+                      Phone numbers
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs">📧</Badge>
+                      Email addresses
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs">#</Badge>
+                      Order IDs
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs">👤</Badge>
+                      Names
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              unifiedSearchResult && (
+                <UnifiedActivationPreview
+                  searchQuery={unifiedSearchQuery}
+                  searchResult={unifiedSearchResult}
+                  isProcessing={isUnifiedProcessing}
+                  onActivateSearchGroup={handleUnifiedActivateSearchGroup}
+                  onActivateEntireOrder={handleUnifiedActivateEntireOrder}
+                  onBack={handleUnifiedBack}
+                />
+              )
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Individual Search & Management */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserCheck className="h-5 w-5" />
-              Search & Activate Attendees
+              Individual Search & Management
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -639,7 +837,7 @@ export function StaffActivationHub() {
               quickFilters={quickFilters}
               activeQuickFilter={activeQuickFilter}
               onQuickFilterChange={setActiveQuickFilter}
-              placeholder="Search by name, email, phone, or order ID..."
+              placeholder="Search attendees for detailed management..."
             />
 
             {/* Enhanced Search Results */}
@@ -1031,52 +1229,6 @@ export function StaffActivationHub() {
                   </CardContent>
                 </Card>
 
-                {/* Recent Deactivations */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Recent Deactivations
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-32">
-                      <div className="space-y-2">
-                        {deactivationActivity.map((activity) => (
-                          <div
-                            key={activity.id}
-                            className="flex items-center justify-between p-2 border rounded-lg"
-                          >
-                            <div className="flex-1">
-                              <p className="font-medium text-sm">
-                                {(activity.attendee as any)?.first_name} {(activity.attendee as any)?.last_name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                RFID: {activity.rfid_uid}
-                              </p>
-                              {activity.extra_data?.reason && (
-                                <Badge variant="outline" className="text-xs mt-1">
-                                  {activity.extra_data.reason}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {new Date(activity.created_at).toLocaleTimeString()}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {deactivationActivity.length === 0 && (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            No recent deactivations
-                          </p>
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
               </CardContent>
             </CollapsibleContent>
           </Card>
