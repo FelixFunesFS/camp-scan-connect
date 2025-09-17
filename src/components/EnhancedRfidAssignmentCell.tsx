@@ -13,9 +13,6 @@ interface EnhancedRfidAssignmentCellProps {
   currentRfidStatus?: string;
   attendeeName: string;
   onAssignmentComplete: () => void;
-  rowIndex?: number;
-  totalRows?: number;
-  onNavigateRow?: (direction: 'up' | 'down') => void;
   isGroupProcessing?: boolean;
 }
 
@@ -25,9 +22,6 @@ export const EnhancedRfidAssignmentCell = ({
   currentRfidStatus,
   attendeeName,
   onAssignmentComplete,
-  rowIndex,
-  totalRows,
-  onNavigateRow,
   isGroupProcessing = false
 }: EnhancedRfidAssignmentCellProps) => {
   const [uid, setUid] = useState("");
@@ -35,7 +29,7 @@ export const EnhancedRfidAssignmentCell = ({
   const [validationError, setValidationError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { isCapturingRfid, focusNextUnassigned } = useGroupRfid();
+  const { isCapturingRfid, focusNextUnassigned, navigateToRow } = useGroupRfid();
 
   // Auto-focus input when component mounts or when processing starts
   useEffect(() => {
@@ -51,12 +45,12 @@ export const EnhancedRfidAssignmentCell = ({
         if (e.key === 'Enter' && uid.trim()) {
           e.preventDefault();
           handleAssignRfid();
-        } else if (e.key === 'ArrowUp' && onNavigateRow) {
+        } else if (e.key === 'ArrowUp') {
           e.preventDefault();
-          onNavigateRow('up');
-        } else if (e.key === 'ArrowDown' && onNavigateRow) {
+          navigateToRow('up');
+        } else if (e.key === 'ArrowDown') {
           e.preventDefault();
-          onNavigateRow('down');
+          navigateToRow('down');
         } else if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
           e.preventDefault();
           focusNextUnassigned();
@@ -70,7 +64,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [uid, onNavigateRow, focusNextUnassigned]);
+  }, [uid, navigateToRow, focusNextUnassigned]);
 
   const validateRfidUid = async (rfidUid: string): Promise<boolean> => {
     if (!rfidUid.trim()) {
@@ -273,7 +267,7 @@ export const EnhancedRfidAssignmentCell = ({
           className={`font-mono text-sm rfid-input ${validationError ? 'border-destructive' : ''} ${isGroupProcessing ? 'border-primary/30' : ''}`}
           disabled={isProcessing}
           data-rfid-input="true"
-          data-row-index={rowIndex}
+          data-attendee-id={attendeeId}
         />
         {validationError && (
           <div className="flex items-center gap-1 mt-1 text-xs text-destructive">

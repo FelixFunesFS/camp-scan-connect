@@ -368,9 +368,6 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
               currentRfidStatus={attendee.rfid_status}
               attendeeName={`${attendee.first_name} ${attendee.last_name}`}
               onAssignmentComplete={onRefresh}
-              rowIndex={0}
-              totalRows={1}
-              onNavigateRow={navigateToRow}
               isGroupProcessing={isGroupedView}
             />
           </div>

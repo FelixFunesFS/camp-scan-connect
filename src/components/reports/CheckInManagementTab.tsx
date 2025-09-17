@@ -723,7 +723,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
                     acc[group.orderId || 'no-order'] = group.attendees;
                     return acc;
                   }, {} as Record<string, EnhancedAttendee[]>)
-                : (paginatedData as EnhancedAttendee[])
+                : (sortedAttendees as EnhancedAttendee[]).slice(startIndex, endIndex)
               }
               groupedAttendees={isGroupedView ? (paginatedData as GroupedAttendee[]) : []}
               isGroupedView={isGroupedView}
