@@ -186,11 +186,11 @@ const Dashboard = () => {
             <CardContent>
               <Button 
                 variant="outline" 
-                onClick={() => navigate("/rfid-testing")}
+                onClick={() => navigate("/admin")}
                 className="gap-2"
               >
                 <TestTube className="h-4 w-4" />
-                RFID Testing Hub
+                Admin Hub
               </Button>
             </CardContent>
           </Card>

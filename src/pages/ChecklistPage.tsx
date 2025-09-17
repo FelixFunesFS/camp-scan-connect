@@ -201,9 +201,9 @@ const ChecklistPage: React.FC = () => {
       <div className="container mx-auto p-6 max-w-6xl">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" onClick={() => navigate('/reports')} className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/admin')} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Reports
+            Back to Admin Hub
           </Button>
           <div>
             <h1 className="text-3xl font-bold">RFID Management System Checklist</h1>
@@ -419,7 +419,7 @@ const ChecklistPage: React.FC = () => {
                 <ol className="space-y-2 text-sm">
                   <li className="flex gap-2">
                     <span className="font-mono bg-muted px-1 rounded text-xs">1</span>
-                    Navigate to Reports → Check-in Management
+                    Navigate to Admin Hub → Reports → Check-in Management
                   </li>
                   <li className="flex gap-2">
                     <span className="font-mono bg-muted px-1 rounded text-xs">2</span>

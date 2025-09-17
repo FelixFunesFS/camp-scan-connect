@@ -46,13 +46,13 @@ const Reports = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => navigate('/checklist')}
+                  onClick={() => navigate('/admin')}
                   variant="secondary"
                   size="sm"
                   className="gap-2"
                 >
                   <CheckSquare className="h-4 w-4" />
-                  Project Checklist
+                  Admin Hub
                 </Button>
                 <Button
                   variant="outline"
