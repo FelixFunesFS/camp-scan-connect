@@ -20,17 +20,29 @@ import {
   Scan,
   AlertTriangle,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Phone,
+  UserCheck,
+  CheckCircle2,
+  Smartphone,
+  AlertCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { RfidScanner } from "@/components/RfidScanner";
+import { MobileAttendeeCard } from "@/components/MobileAttendeeCard";
+import { MobileActivationPreview } from "@/components/MobileActivationPreview";
 import { rfidLookupService, AttendeeSearchResult } from "@/services/rfidLookupService";
+import { PhoneActivationService, type PhoneLookupResult, type GroupActivationResult } from "@/services/phoneActivationService";
+import { formatPhoneNumber } from "@/lib/phoneUtils";
 
 interface StaffStats {
   totalActive: number;
   todayDeactivations: number;
+  todayActivations: number;
 }
+
+type SearchType = 'general' | 'phone' | 'order_id' | 'email';
 
 const DEACTIVATION_REASONS = [
   { value: "lost", label: "Lost RFID" },
@@ -49,7 +61,8 @@ export function StaffActivationHub() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [stats, setStats] = useState<StaffStats>({
     totalActive: 0,
-    todayDeactivations: 0
+    todayDeactivations: 0,
+    todayActivations: 0
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   
@@ -57,6 +70,12 @@ export function StaffActivationHub() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<AttendeeSearchResult[]>([]);
   const [activeRfids, setActiveRfids] = useState<AttendeeSearchResult[]>([]);
+  const [searchType, setSearchType] = useState<SearchType>('general');
+  
+  // Phone activation workflow state
+  const [phoneLookupResult, setPhoneLookupResult] = useState<PhoneLookupResult | null>(null);
+  const [showActivationPreview, setShowActivationPreview] = useState(false);
+  const [activationProcessing, setActivationProcessing] = useState(false);
   
   // Deactivation section state
   const [isDeactivationOpen, setIsDeactivationOpen] = useState(false);
@@ -102,10 +121,12 @@ export function StaffActivationHub() {
       );
 
       const todayDeactivations = todayActivity.filter(a => a.transaction_type === 'deactivate').length;
+      const todayActivations = todayActivity.filter(a => a.transaction_type === 'activate').length;
 
       setStats({
         totalActive: activeRfidsData.length,
-        todayDeactivations
+        todayDeactivations,
+        todayActivations
       });
 
       setRecentActivity(recentActivityData);
@@ -120,13 +141,141 @@ export function StaffActivationHub() {
 
   const performAttendeeSearch = async () => {
     try {
-      const results = await rfidLookupService.searchAttendees(searchQuery);
-      // Filter to only active RFIDs
-      const activeResults = results.filter(r => r.rfid_status === 'active');
-      setSearchResults(activeResults);
+      const detectedType = detectSearchType(searchQuery);
+      setSearchType(detectedType);
+      
+      if (detectedType === 'phone') {
+        await handlePhoneSearch(searchQuery);
+      } else {
+        const results = await rfidLookupService.searchAttendees(searchQuery);
+        // Show all attendees for activation, not just active ones
+        setSearchResults(results);
+        setPhoneLookupResult(null); // Clear phone results when doing general search
+      }
     } catch (error) {
       console.error('Error searching attendees:', error);
+      toast({
+        title: "Search Error",
+        description: "Failed to search attendees",
+        variant: "destructive",
+      });
     }
+  };
+
+  // Helper functions for search and activation
+  const detectSearchType = (query: string): SearchType => {
+    const trimmed = query.trim();
+    
+    // Phone number detection (10+ digits with optional formatting)
+    const phonePattern = /^[\+]?[1]?[\s\-\.\(\)]?[\d\s\-\.\(\)]{10,}$/;
+    if (phonePattern.test(trimmed)) {
+      return 'phone';
+    }
+    
+    // Order ID detection (alphanumeric, often with dashes or underscores)
+    const orderPattern = /^[A-Za-z0-9\-_]{6,}$/;
+    if (orderPattern.test(trimmed) && !trimmed.includes('@')) {
+      return 'order_id';
+    }
+    
+    // Email detection
+    if (trimmed.includes('@') && trimmed.includes('.')) {
+      return 'email';
+    }
+    
+    return 'general';
+  };
+
+  const handlePhoneSearch = async (phone: string) => {
+    try {
+      setActivationProcessing(true);
+      const result = await PhoneActivationService.lookupPhonePreview(phone);
+      if (result) {
+        setPhoneLookupResult(result);
+        setSearchResults([]); // Clear general search results
+      } else {
+        setPhoneLookupResult(null);
+        toast({
+          title: "No Results",
+          description: "No attendees found for this phone number",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error('Phone search error:', error);
+      toast({
+        title: "Phone Search Error",
+        description: error instanceof Error ? error.message : "Failed to search phone number",
+        variant: "destructive",
+      });
+    } finally {
+      setActivationProcessing(false);
+    }
+  };
+
+  const handlePhoneActivation = async () => {
+    if (!phoneLookupResult) return;
+    
+    try {
+      setActivationProcessing(true);
+      const result = await PhoneActivationService.activateGroupByPhone(searchQuery, 'staff_assisted');
+      
+      if (result) {
+        toast({
+          title: "Activation Successful",
+          description: `Activated ${result.activated_count} of ${result.total_attendees} attendees`,
+        });
+        loadDashboardData(); // Refresh data
+        setPhoneLookupResult(null);
+        setSearchQuery("");
+      }
+    } catch (error) {
+      console.error('Phone activation error:', error);
+      toast({
+        title: "Activation Failed",
+        description: error instanceof Error ? error.message : "Failed to activate group",
+        variant: "destructive",
+      });
+    } finally {
+      setActivationProcessing(false);
+    }
+  };
+
+  const handleEntireOrderActivation = async () => {
+    if (!phoneLookupResult) return;
+    
+    try {
+      setActivationProcessing(true);
+      const result = await PhoneActivationService.activateEntireOrderByPhone(searchQuery, 'staff_assisted');
+      
+      if (result) {
+        toast({
+          title: "Order Activation Successful",
+          description: `Activated ${result.activated_count} of ${result.total_attendees} people in the order`,
+        });
+        loadDashboardData(); // Refresh data
+        setPhoneLookupResult(null);
+        setSearchQuery("");
+      }
+    } catch (error) {
+      console.error('Order activation error:', error);
+      toast({
+        title: "Order Activation Failed",
+        description: error instanceof Error ? error.message : "Failed to activate entire order",
+        variant: "destructive",
+      });
+    } finally {
+      setActivationProcessing(false);
+    }
+  };
+
+  const handleIndividualActivation = async (attendeeId: string) => {
+    // Individual activation logic would be implemented here
+    // This could involve activating a single attendee's RFID
+    toast({
+      title: "Individual Activation",
+      description: "Individual activation feature coming soon",
+    });
   };
 
   const handleStaffLogin = () => {
@@ -305,63 +454,247 @@ export function StaffActivationHub() {
           </div>
         </div>
 
-        {/* Active Attendees Search - Primary Interface */}
+        {/* Multi-Criteria Search Interface */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
-              Search Active Attendees
+              Search & Activate Attendees
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, email, phone, or order ID..."
-            />
+            <div className="relative">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, email, phone number, or order ID..."
+                className="pr-10"
+              />
+              {searchType === 'phone' && (
+                <Phone className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+              )}
+              {activationProcessing && (
+                <div className="absolute right-3 top-3 animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              )}
+            </div>
             
-            {searchResults.length > 0 && (
-              <ScrollArea className="h-64">
-                <div className="space-y-2">
-                  {searchResults.map((attendee) => (
-                    <div
-                      key={attendee.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          {attendee.first_name} {attendee.last_name}
-                          {attendee.is_veteran && (
-                            <Badge variant="secondary" className="ml-2">Veteran</Badge>
-                          )}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {attendee.email} • {attendee.ticket_type}
-                        </p>
-                        <p className="text-xs text-muted-foreground font-mono">
-                          RFID: {attendee.rfid_uid}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-green-600">
-                          Active
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+            {/* Search Type Indicator */}
+            {searchQuery.length >= 2 && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="outline" className="text-xs">
+                  {searchType === 'phone' ? '📞 Phone Search' : 
+                   searchType === 'order_id' ? '📄 Order ID Search' :
+                   searchType === 'email' ? '📧 Email Search' : '🔍 General Search'}
+                </Badge>
+              </div>
+            )}
+            
+            {/* Phone Lookup Results with Activation */}
+            {phoneLookupResult && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <Smartphone className="h-4 w-4" />
+                  Phone Lookup Results
                 </div>
-              </ScrollArea>
+                <MobileActivationPreview
+                  phoneNumber={searchQuery}
+                  lookupResult={phoneLookupResult}
+                  isProcessing={activationProcessing}
+                  onActivatePhoneGroup={handlePhoneActivation}
+                  onActivateEntireOrder={handleEntireOrderActivation}
+                  onBack={() => {
+                    setPhoneLookupResult(null);
+                    setSearchQuery("");
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* General Search Results with Rich Display */}
+            {searchResults.length > 0 && !phoneLookupResult && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Found {searchResults.length} {searchResults.length === 1 ? 'attendee' : 'attendees'}</h4>
+                </div>
+                <ScrollArea className="max-h-96">
+                  <div className="space-y-3">
+                    {searchResults.map((attendee) => (
+                      <Card key={attendee.id} className="transition-all duration-200 hover:shadow-md">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-medium">
+                                  {attendee.first_name} {attendee.last_name}
+                                </span>
+                                {attendee.is_veteran && (
+                                  <Badge variant="secondary" className="text-xs">Veteran</Badge>
+                                )}
+                              </div>
+                              
+                              <div className="space-y-1 text-sm text-muted-foreground">
+                                <p>{attendee.email}</p>
+                                <p>{attendee.ticket_type}</p>
+                                {attendee.rfid_uid && (
+                                  <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
+                                )}
+                                {attendee.order_id && (
+                                  <p className="font-mono text-xs">Order: {attendee.order_id}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-col items-end gap-2">
+                              {/* Status Badge */}
+                              <Badge 
+                                variant={
+                                  attendee.rfid_status === 'active' && attendee.activated_at ? 'default' :
+                                  attendee.rfid_status === 'assigned' ? 'secondary' : 
+                                  'destructive'
+                                }
+                                className="text-xs"
+                              >
+                                {attendee.rfid_status === 'active' && attendee.activated_at ? (
+                                  <><CheckCircle2 className="h-3 w-3 mr-1" />Active</>
+                                ) : attendee.rfid_status === 'assigned' ? (
+                                  <><Clock className="h-3 w-3 mr-1" />Pending</>
+                                ) : (
+                                  <><AlertTriangle className="h-3 w-3 mr-1" />No RFID</>
+                                )}
+                              </Badge>
+                              
+                              {/* Activation Button */}
+                              {attendee.rfid_uid && !attendee.activated_at && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleIndividualActivation(attendee.id)}
+                                  className="text-xs"
+                                  disabled={activationProcessing}
+                                >
+                                  <UserCheck className="h-3 w-3 mr-1" />
+                                  Activate
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             )}
 
-            {searchQuery.length >= 2 && searchResults.length === 0 && (
+            {/* No Results Message */}
+            {searchQuery.length >= 2 && searchResults.length === 0 && !phoneLookupResult && !activationProcessing && (
               <div className="text-center py-8 text-muted-foreground">
-                No active attendees found matching "{searchQuery}"
+                <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No attendees found matching "{searchQuery}"</p>
+                <p className="text-sm mt-1">Try searching by name, email, phone, or order ID</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Individual Deactivation Tools - Collapsible Section */}
+        {/* Summary Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Users className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.totalActive}</p>
+                  <p className="text-sm text-muted-foreground">Active RFIDs</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <UserCheck className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.todayActivations}</p>
+                  <p className="text-sm text-muted-foreground">Today's Activations</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <UserMinus className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stats.todayDeactivations}</p>
+                  <p className="text-sm text-muted-foreground">Today's Deactivations</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Recent Staff Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-48">
+              <div className="space-y-2">
+                {recentActivity.slice(0, 10).map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-2 border rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">
+                        {(activity.attendee as any)?.first_name} {(activity.attendee as any)?.last_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {activity.transaction_type === 'activate' ? 'Activated' : 'Deactivated'} • RFID: {activity.rfid_uid}
+                      </p>
+                      {activity.extra_data?.reason && (
+                        <Badge variant="outline" className="text-xs mt-1">
+                          {activity.extra_data.reason}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <Badge 
+                        variant={activity.transaction_type === 'activate' ? 'default' : 'destructive'}
+                        className="text-xs mb-1"
+                      >
+                        {activity.transaction_type}
+                      </Badge>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {new Date(activity.created_at).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {recentActivity.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No recent activity
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Individual Deactivation Tools - Moved to Bottom */}
         <Collapsible open={isDeactivationOpen} onOpenChange={setIsDeactivationOpen}>
           <Card>
             <CollapsibleTrigger asChild>
@@ -383,7 +716,7 @@ export function StaffActivationHub() {
               <CardContent className="space-y-6">
                 <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
                   <p className="text-orange-800 text-sm">
-                    This section handles individual RFID deactivations only.
+                    This section handles individual RFID deactivations only. Use the search interface above for activations.
                   </p>
                 </div>
 
@@ -477,7 +810,7 @@ export function StaffActivationHub() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-48">
+                    <ScrollArea className="h-32">
                       <div className="space-y-2">
                         {deactivationActivity.map((activity) => (
                           <div
@@ -506,7 +839,7 @@ export function StaffActivationHub() {
                           </div>
                         ))}
                         {deactivationActivity.length === 0 && (
-                          <p className="text-sm text-muted-foreground text-center py-8">
+                          <p className="text-sm text-muted-foreground text-center py-4">
                             No recent deactivations
                           </p>
                         )}
@@ -518,85 +851,6 @@ export function StaffActivationHub() {
             </CollapsibleContent>
           </Card>
         </Collapsible>
-
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Active RFIDs</p>
-                  <p className="text-2xl font-bold text-primary">{stats.totalActive}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-red-500/20 bg-red-50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <UserMinus className="h-5 w-5 text-red-600" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Today's Deactivations</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.todayDeactivations}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Recent Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-64">
-              <div className="space-y-2">
-                {recentActivity.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">
-                        {(activity.attendee as any)?.first_name} {(activity.attendee as any)?.last_name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {activity.transaction_type === 'activate' ? 'Activated' : 'Deactivated'} • RFID: {activity.rfid_uid}
-                      </p>
-                      {activity.extra_data?.reason && (
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {activity.extra_data.reason}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <Badge 
-                        variant={activity.transaction_type === 'activate' ? 'default' : 'destructive'}
-                        className="text-xs mb-1"
-                      >
-                        {activity.transaction_type}
-                      </Badge>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {new Date(activity.created_at).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {recentActivity.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No recent activity
-                  </p>
-                )}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
