@@ -23,16 +23,18 @@ import {
   ShoppingCart
 } from "lucide-react";
 import { RfidAssignmentCell } from "../../RfidAssignmentCell";
-import { EnhancedAttendee, TableColumn } from "../CheckInManagementTab";
+import { EnhancedAttendee, TableColumn, GroupedAttendee } from "../CheckInManagementTab";
 import { CollapsibleOrderGroup } from "./CollapsibleOrderGroup";
 import { useGroupRfid } from "@/components/GroupRfidProvider";
 
 interface ResponsiveAttendeesTableProps {
   attendees: EnhancedAttendee[] | Record<string, EnhancedAttendee[]>;
+  groupedAttendees?: GroupedAttendee[];
   columns: TableColumn[];
   visibleColumns: string[];
   currentPage: number;
   totalPages: number;
+  totalCount: number;
   startIndex: number;
   endIndex: number;
   onPageChange: (page: number) => void;
@@ -40,6 +42,7 @@ interface ResponsiveAttendeesTableProps {
   sortDirection: 'asc' | 'desc';
   onSort: (field: any) => void;
   isGroupedView?: boolean;
+  isLoading?: boolean;
   onRefresh: () => void;
 }
 

@@ -53,7 +53,7 @@ interface CheckInManagementTabProps {
   isRefreshing: boolean;
 }
 
-interface GroupedAttendee {
+export interface GroupedAttendee {
   orderId: string | null;
   attendees: EnhancedAttendee[];
 }
@@ -725,6 +725,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
+            onRefresh={fetchAttendees}
           />
         </div>
       </div>

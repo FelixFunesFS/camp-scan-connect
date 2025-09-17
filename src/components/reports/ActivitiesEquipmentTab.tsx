@@ -249,7 +249,7 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
   ];
 
   return (
-    <div className="space-y-6" data-export-target>
+    <div className="space-y-8" data-export-target>
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -302,11 +302,11 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
             Headphone Activity Timeline
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="h-80 w-full">
+        <CardContent className="pb-8">
+          <div className="h-80 w-full mb-4">
             <ChartContainer config={chartConfig}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timelineData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <LineChart data={timelineData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                   <XAxis 
                     dataKey="time" 
