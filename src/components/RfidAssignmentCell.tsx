@@ -168,14 +168,26 @@ export const RfidAssignmentCell = ({
 
     setIsProcessing(true);
     try {
+      // Set RFID back to unissued state and clear attendee assignment
       await supabase
         .from('rfid_tags')
         .update({
-          status: 'deactivated',
-          deactivated_at: new Date().toISOString(),
-          reason: 'Manual deactivation'
+          status: 'unissued',
+          attendee_id: null,
+          deactivated_at: null,
+          reason: null,
+          activated_at: null,
+          activation_method: null
         })
         .eq('uid', currentRfidUid);
+
+      // Reset attendee activation status since they no longer have an RFID
+      await supabase
+        .from('attendees')
+        .update({
+          activated_at: null
+        })
+        .eq('id', attendeeId);
 
       // Log deactivation transaction
       const { error: transactionError } = await supabase
@@ -196,16 +208,16 @@ export const RfidAssignmentCell = ({
       }
 
       toast({
-        title: "RFID Deactivated",
-        description: `UID ${currentRfidUid} has been deactivated`,
+        title: "RFID Cleared",
+        description: `UID ${currentRfidUid} has been cleared and is now unassigned`,
       });
 
       onAssignmentComplete();
     } catch (error) {
       console.error('RFID deactivation error:', error);
       toast({
-        title: "Deactivation Failed",
-        description: "Failed to deactivate RFID. Please try again.",
+        title: "Clear Failed",
+        description: "Failed to clear RFID. Please try again.",
         variant: "destructive"
       });
     } finally {

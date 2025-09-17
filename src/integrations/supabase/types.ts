@@ -459,6 +459,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_generated_rfids: {
+        Args: { p_format?: string }
+        Returns: {
+          cleared_attendee_ids: string[]
+          deleted_count: number
+        }[]
+      }
       cleanup_mock_rfids: {
         Args: Record<PropertyKey, never>
         Returns: {

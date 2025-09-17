@@ -8,8 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface RfidStats {
   total_attendees: number;
-  attendees_with_rfids: number;
-  attendees_without_rfids: number;
+  unassigned_attendees: number;
+  assigned_attendees: number;
+  active_attendees: number;
 }
 
 interface GeneratedRfid {
@@ -28,6 +29,9 @@ interface GenerationResult {
 export const RfidManagementPanel: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isClearingMock, setIsClearingMock] = useState(false);
+  const [isClearingRfid, setIsClearingRfid] = useState(false);
+  const [isClearingTest, setIsClearingTest] = useState(false);
   const [stats, setStats] = useState<RfidStats | null>(null);
   const [lastGenerated, setLastGenerated] = useState<GeneratedRfid[]>([]);
   const { toast } = useToast();
@@ -67,39 +71,46 @@ export const RfidManagementPanel: React.FC = () => {
     }
   };
 
-  const handleClearMockRfids = async () => {
-    setIsClearing(true);
+  const handleClearRfids = async (format: string, setLoadingState: (loading: boolean) => void) => {
+    setLoadingState(true);
     try {
-      console.log('Clearing all mock RFIDs...');
+      console.log(`Clearing ${format} RFIDs...`);
 
-      const { data, error } = await supabase.rpc('cleanup_mock_rfids');
+      const { data, error } = await supabase.rpc('cleanup_generated_rfids', { p_format: format });
 
       if (error) throw error;
 
       const result = data[0];
       
       toast({
-        title: "Mock RFIDs Cleared",
-        description: `Removed ${result.deleted_count} mock RFID tags`,
+        title: `${format} RFIDs Cleared`,
+        description: `Reset ${result.deleted_count} RFID assignments`,
       });
 
-      // Refresh stats and clear generated list
+      // Refresh stats and clear generated list if needed
       await loadCurrentStats();
-      setLastGenerated([]);
+      if (format === 'MOCK' || format === 'ALL') {
+        setLastGenerated([]);
+      }
 
-      console.log(`Cleared ${result.deleted_count} mock RFIDs`);
+      console.log(`Cleared ${result.deleted_count} ${format} RFIDs`);
 
     } catch (error) {
-      console.error('Error clearing mock RFIDs:', error);
+      console.error(`Error clearing ${format} RFIDs:`, error);
       toast({
         title: "Error",
-        description: error.message || "Failed to clear mock RFIDs",
+        description: error.message || `Failed to clear ${format} RFIDs`,
         variant: "destructive",
       });
     } finally {
-      setIsClearing(false);
+      setLoadingState(false);
     }
   };
+
+  const handleClearMockRfids = () => handleClearRfids('MOCK', setIsClearingMock);
+  const handleClearRfidRfids = () => handleClearRfids('RFID', setIsClearingRfid);
+  const handleClearTestRfids = () => handleClearRfids('TEST', setIsClearingTest);
+  const handleClearAllRfids = () => handleClearRfids('ALL', setIsClearing);
 
   const loadCurrentStats = async () => {
     try {
@@ -107,20 +118,36 @@ export const RfidManagementPanel: React.FC = () => {
         .from('attendees')
         .select('*', { count: 'exact', head: true });
 
-      const { data: attendeesWithRfids } = await supabase
+      // Get attendees with assigned RFIDs (status = 'assigned')
+      const { data: assignedRfids } = await supabase
         .from('attendees')
         .select(`
           id,
           rfid_tags!inner(uid, status)
-        `);
+        `)
+        .eq('rfid_tags.status', 'assigned');
 
-      const withRfids = attendeesWithRfids?.length || 0;
+      // Get attendees with active RFIDs (status = 'active' AND attendee activated_at is not null)
+      const { data: activeRfids } = await supabase
+        .from('attendees')
+        .select(`
+          id,
+          activated_at,
+          rfid_tags!inner(uid, status)
+        `)
+        .eq('rfid_tags.status', 'active')
+        .not('activated_at', 'is', null);
+
       const total = totalAttendees || 0;
+      const assigned = assignedRfids?.length || 0;
+      const active = activeRfids?.length || 0;
+      const unassigned = total - assigned - active;
 
       setStats({
         total_attendees: total,
-        attendees_with_rfids: withRfids,
-        attendees_without_rfids: total - withRfids
+        unassigned_attendees: unassigned,
+        assigned_attendees: assigned,
+        active_attendees: active
       });
 
     } catch (error) {
@@ -152,7 +179,7 @@ export const RfidManagementPanel: React.FC = () => {
         <CardContent className="space-y-6">
           {/* Statistics */}
           {stats && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-blue-600" />
@@ -161,20 +188,28 @@ export const RfidManagementPanel: React.FC = () => {
                 <p className="text-2xl font-bold text-blue-700">{stats.total_attendees}</p>
               </div>
               
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2">
-                  <Tag className="h-5 w-5 text-green-600" />
-                  <span className="font-semibold text-green-900">With RFIDs</span>
-                </div>
-                <p className="text-2xl font-bold text-green-700">{stats.attendees_with_rfids}</p>
-              </div>
-              
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                 <div className="flex items-center gap-2">
                   <Zap className="h-5 w-5 text-orange-600" />
-                  <span className="font-semibold text-orange-900">Need RFIDs</span>
+                  <span className="font-semibold text-orange-900">Unassigned</span>
                 </div>
-                <p className="text-2xl font-bold text-orange-700">{stats.attendees_without_rfids}</p>
+                <p className="text-2xl font-bold text-orange-700">{stats.unassigned_attendees}</p>
+              </div>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-5 w-5 text-yellow-600" />
+                  <span className="font-semibold text-yellow-900">Assigned RFIDs</span>
+                </div>
+                <p className="text-2xl font-bold text-yellow-700">{stats.assigned_attendees}</p>
+              </div>
+              
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-green-600" />
+                  <span className="font-semibold text-green-900">Active</span>
+                </div>
+                <p className="text-2xl font-bold text-green-700">{stats.active_attendees}</p>
               </div>
             </div>
           )}
@@ -221,29 +256,75 @@ export const RfidManagementPanel: React.FC = () => {
               </Button>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={handleClearMockRfids}
-                disabled={isGenerating || isClearing}
-                variant="destructive"
-                size="sm"
-              >
-                {isClearing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Zap className="h-4 w-4" />
-                )}
-                Clear All Mock RFIDs
-              </Button>
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={handleClearMockRfids}
+                  disabled={isGenerating || isClearingMock}
+                  variant="destructive"
+                  size="sm"
+                >
+                  {isClearingMock ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  Clear MOCK RFIDs
+                </Button>
 
-              <Button
-                onClick={loadCurrentStats}
-                disabled={isGenerating || isClearing}
-                variant="ghost"
-                size="sm"
-              >
-                Refresh Statistics
-              </Button>
+                <Button
+                  onClick={handleClearRfidRfids}
+                  disabled={isGenerating || isClearingRfid}
+                  variant="destructive"
+                  size="sm"
+                >
+                  {isClearingRfid ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  Clear RFID Tags
+                </Button>
+
+                <Button
+                  onClick={handleClearTestRfids}
+                  disabled={isGenerating || isClearingTest}
+                  variant="destructive"
+                  size="sm"
+                >
+                  {isClearingTest ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  Clear TEST RFIDs
+                </Button>
+
+                <Button
+                  onClick={handleClearAllRfids}
+                  disabled={isGenerating || isClearing}
+                  variant="destructive"
+                  size="sm"
+                >
+                  {isClearing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  Clear ALL Generated
+                </Button>
+              </div>
+
+              <div className="flex justify-center">
+                <Button
+                  onClick={loadCurrentStats}
+                  disabled={isGenerating || isClearing || isClearingMock || isClearingRfid || isClearingTest}
+                  variant="ghost"
+                  size="sm"
+                >
+                  Refresh Statistics
+                </Button>
+              </div>
             </div>
           </div>
 
