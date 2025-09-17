@@ -636,8 +636,7 @@ export function StaffActivationHub() {
           <CardContent>
             <div className="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
               <p className="text-orange-800 text-sm">
-                This section handles individual RFID deactivations only. For bulk operations, 
-                use the Bulk Operations section in the RFID Assignment tab.
+                This section handles individual RFID deactivations only.
               </p>
             </div>
             <StaffDeactivationPanel staffId={staffId || undefined} />
