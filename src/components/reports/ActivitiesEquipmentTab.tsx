@@ -222,10 +222,13 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
       color: "hsl(var(--primary))",
     },
     checkins: {
-      label: "Check-ins",
+      label: "Check-ins", 
       color: "hsl(var(--secondary))",
     },
   };
+
+  // Memoize timeline data to prevent unnecessary re-renders
+  const memoizedTimelineData = React.useMemo(() => timelineData, [timelineData]);
 
   const utilizationRate = equipmentStats.totalHeadphones > 0 
     ? Math.round((equipmentStats.headphonesCheckedOut / equipmentStats.totalHeadphones) * 100)
@@ -302,25 +305,49 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
             Headphone Activity Timeline
           </CardTitle>
         </CardHeader>
-        <CardContent className="pb-8">
-          <div className="h-80 w-full mb-4">
-            <ChartContainer config={chartConfig}>
+        <CardContent className="pb-4">
+          {isLoading ? (
+            <div className="h-[300px] md:h-[400px] w-full flex items-center justify-center bg-muted/20 rounded-lg">
+              <div className="text-sm text-muted-foreground">Loading chart...</div>
+            </div>
+          ) : (
+            <ChartContainer config={chartConfig} className="h-[300px] md:h-[400px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timelineData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <LineChart 
+                  data={memoizedTimelineData} 
+                  margin={{ 
+                    top: 20, 
+                    right: 20, 
+                    left: 10, 
+                    bottom: 40 
+                  }}
+                >
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    opacity={0.3}
+                    className="stroke-muted"
+                  />
                   <XAxis 
                     dataKey="time" 
-                    tick={{ fontSize: 10 }}
-                    interval={2}
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    interval={window.innerWidth < 768 ? 4 : 2}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
                   />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <YAxis 
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />}
+                    cursor={{ stroke: 'hsl(var(--muted))', strokeWidth: 1 }}
+                  />
                   <Line
                     type="monotone"
                     dataKey="checkouts"
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
-                    dot={{ r: 4 }}
+                    dot={{ r: 3, fill: 'hsl(var(--primary))', strokeWidth: 0 }}
+                    activeDot={{ r: 4, fill: 'hsl(var(--primary))' }}
                     name="Check-outs"
                   />
                   <Line
@@ -328,13 +355,14 @@ export const ActivitiesEquipmentTab: React.FC<ActivitiesEquipmentTabProps> = ({ 
                     dataKey="checkins"
                     stroke="hsl(var(--secondary))"
                     strokeWidth={2}
-                    dot={{ r: 4 }}
+                    dot={{ r: 3, fill: 'hsl(var(--secondary))', strokeWidth: 0 }}
+                    activeDot={{ r: 4, fill: 'hsl(var(--secondary))' }}
                     name="Check-ins"
                   />
                 </LineChart>
               </ResponsiveContainer>
             </ChartContainer>
-          </div>
+          )}
         </CardContent>
       </Card>
 
