@@ -19,6 +19,7 @@ import {
 import { RfidAssignmentTab } from "@/components/RfidAssignmentTab";
 import { StaffActivationHub } from "@/components/StaffActivationHub";
 import { MobileAdminNavigation } from "@/components/MobileAdminNavigation";
+import Reports from "./Reports";
 
 const AdminHub = () => {
   try {
@@ -165,19 +166,7 @@ const AdminHub = () => {
         id: 'reports', 
         label: 'Reports', 
         icon: FileText, 
-        component: (
-          <div className="mobile-container">
-            <Card className="mobile-card">
-              <CardHeader>
-                <CardTitle className="mobile-title">Reports Dashboard</CardTitle>
-                <CardDescription>Event analytics and management insights</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Reports functionality will be integrated here.</p>
-              </CardContent>
-            </Card>
-          </div>
-        )
+        component: <Reports />
       },
       { 
         id: 'staff', 

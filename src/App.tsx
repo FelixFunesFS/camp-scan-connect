@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminHub from "./pages/AdminHub";
+import Reports from "./pages/Reports";
 
 import ActivationStation from "./pages/ActivationStation";
 import { StaffActivationHub } from "./components/StaffActivationHub";
@@ -25,6 +26,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminHub />} />
+          <Route path="/reports" element={<Reports />} />
           
           <Route path="/activation" element={<ActivationStation />} />
           <Route path="/staff-hub" element={<StaffActivationHub />} />
@@ -34,7 +36,6 @@ const App = () => (
           <Route path="/attendee/:id" element={<AttendeeDetail />} />
           
           {/* Redirect deprecated routes to AdminHub */}
-          <Route path="/reports" element={<AdminHub />} />
           <Route path="/system-validation" element={<AdminHub />} />
           <Route path="/rfid-testing" element={<AdminHub />} />
           <Route path="/checklist" element={<AdminHub />} />
