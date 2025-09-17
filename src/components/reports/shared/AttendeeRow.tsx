@@ -1,5 +1,5 @@
 import React from "react";
-import { TableColumn, EnhancedAttendee } from "../CheckInManagementTab";
+import { TableColumn, EnhancedAttendee } from "../AttendeeManagementTab";
 
 interface AttendeeRowProps {
   attendee: EnhancedAttendee;

@@ -25,7 +25,7 @@ import {
   Eye
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { EnhancedAttendee, TableColumn, GroupedAttendee } from "../CheckInManagementTab";
+import { EnhancedAttendee, TableColumn, GroupedAttendee } from "../AttendeeManagementTab";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { GroupHeaderRow } from "./GroupHeaderRow";
 import { AttendeeRow } from "./AttendeeRow";

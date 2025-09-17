@@ -13,7 +13,49 @@ import { RegFoxTotalsComparison } from "./shared/RegFoxTotalsComparison";
 import { UnifiedSearchFilter, QuickFilter } from "./shared/UnifiedSearchFilter";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
-import type { EnhancedAttendee, TableColumn, GroupedAttendee } from "./CheckInManagementTab";
+
+// Types - defined locally to avoid circular imports
+export interface EnhancedAttendee {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  regfox_id?: string;
+  order_id?: string;
+  ticket_type: string;
+  registration_status: string;
+  activated_at?: string;
+  waiver_signed?: boolean;
+  rfid_uid?: string;
+  rfid_status: string;
+  has_headphones?: boolean;
+  bar_hits?: number;
+  overall_status: string;
+  arrival_day?: string;
+  is_duplicate?: boolean;
+  is_phone_duplicate?: boolean;
+  meal_plan?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  group_size?: number;
+  is_group_order?: boolean;
+}
+
+export interface TableColumn {
+  key: string;
+  label: string;
+  mobile?: boolean;
+  desktop?: boolean;
+  width?: string;
+  sortable?: boolean;
+}
+
+export interface GroupedAttendee {
+  orderId: string | null;
+  attendees: EnhancedAttendee[];
+}
 
 interface AttendeeManagementTabProps {
   isRefreshing: boolean;

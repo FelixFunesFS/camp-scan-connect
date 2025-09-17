@@ -19,7 +19,7 @@ import {
   FileText,
   Users
 } from "lucide-react";
-import { EnhancedAttendee } from "../CheckInManagementTab";
+import { EnhancedAttendee } from "../AttendeeManagementTab";
 import { Link } from "react-router-dom";
 
 interface MobileAttendeeCardProps {

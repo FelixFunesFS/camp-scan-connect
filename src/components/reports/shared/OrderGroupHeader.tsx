@@ -3,7 +3,7 @@ import { ChevronRight, ChevronDown, Users, Hash, Play, Target } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { EnhancedAttendee } from "../CheckInManagementTab";
+import { EnhancedAttendee } from "../AttendeeManagementTab";
 import { useGroupRfid } from "@/components/GroupRfidProvider";
 
 interface OrderGroupHeaderProps {

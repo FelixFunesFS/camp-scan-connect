@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Settings, Eye, EyeOff } from "lucide-react";
-import { TableColumn } from "../CheckInManagementTab";
+import { TableColumn } from "../AttendeeManagementTab";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ColumnSelectorProps {
