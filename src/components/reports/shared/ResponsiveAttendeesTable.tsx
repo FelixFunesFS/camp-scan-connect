@@ -29,6 +29,7 @@ import { EnhancedAttendee, TableColumn, GroupedAttendee } from "../CheckInManage
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { GroupHeaderRow } from "./GroupHeaderRow";
 import { AttendeeRow } from "./AttendeeRow";
+import { MobileAttendeeCard } from "./MobileAttendeeCard";
 import { useGroupRfid } from "@/components/GroupRfidProvider";
 import { KeyboardShortcutsHelper } from "@/components/KeyboardShortcutsHelper";
 import { Link } from "react-router-dom";
@@ -498,31 +499,15 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                       </div>
                     </div>
                     
-                    {/* Attendee Cards */}
+                    {/* Group Attendees */}
                     {isExpanded && (
                       <div className="divide-y">
                         {group.attendees.map((attendee) => (
-                          <div key={attendee.id} className="p-4 space-y-3">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">
-                                {attendee.first_name} {attendee.last_name}
-                              </span>
-                              <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
-                                {attendee.overall_status}
-                              </Badge>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 gap-2 text-sm">
-                              {visibleMobileColumns.map((column) => (
-                                <div key={column.key} className="flex justify-between items-center">
-                                  <span className="text-muted-foreground font-medium">
-                                    {column.label}:
-                                  </span>
-                                  <div>{renderCellContent(attendee, column.key)}</div>
-                                </div>
-                              ))}
-                            </div>
+                          <div key={attendee.id} className="p-3">
+                            <MobileAttendeeCard 
+                              attendee={attendee} 
+                              onRefresh={onRefresh}
+                            />
                           </div>
                         ))}
                       </div>
@@ -533,34 +518,15 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
             })
           ) : individualData.length > 0 ? (
             individualData.map((attendee) => (
-              <Card key={attendee.id} className="overflow-hidden">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">
-                      {attendee.first_name} {attendee.last_name}
-                    </span>
-                    <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
-                      {attendee.overall_status}
-                    </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-2 text-sm">
-                    {visibleMobileColumns.map((column) => (
-                      <div key={column.key} className="flex justify-between items-center">
-                        <span className="text-muted-foreground font-medium">
-                          {column.label}:
-                        </span>
-                        <div>{renderCellContent(attendee, column.key)}</div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <MobileAttendeeCard 
+                key={attendee.id}
+                attendee={attendee} 
+                onRefresh={onRefresh}
+              />
             ))
           ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              No attendees to display
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No attendees found matching the current filters.</p>
             </div>
           )}
         </div>

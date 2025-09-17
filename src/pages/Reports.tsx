@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Download, Calendar, Users, Package, Utensils, Activity, TrendingUp, Database, CheckSquare } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { EventOverviewTab } from "@/components/reports/EventOverviewTab";
 import { PackageUtilizationTab } from "@/components/reports/PackageUtilizationTab";
 import { CheckInManagementTab } from "@/components/reports/CheckInManagementTab";
@@ -11,11 +12,13 @@ import { FoodBeverageTab } from "@/components/reports/FoodBeverageTab";
 import { ActivitiesEquipmentTab } from "@/components/reports/ActivitiesEquipmentTab";
 import { SponsorImpactTab } from "@/components/reports/SponsorImpactTab";
 import { DataMigrationPanel } from "@/components/DataMigrationPanel";
+import { MobileReportsNavigation } from "@/components/reports/shared/MobileReportsNavigation";
 
 const Reports = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const isMobile = useIsMobile();
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -78,66 +81,78 @@ const Reports = () => {
           </CardHeader>
         </Card>
 
-        {/* Tabs */}
+        {/* Mobile Navigation */}
+        {isMobile && (
+          <div className="mb-6">
+            <MobileReportsNavigation
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
+          </div>
+        )}
+
+        {/* Desktop Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 bg-muted/50">
-            <TabsTrigger 
-              value="overview" 
-              className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Event Overview</span>
-              <span className="sm:hidden">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="packages" 
-              className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Package Utilization</span>
-              <span className="sm:hidden">Packages</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="checkin" 
-              className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Check-In Mgmt</span>
-              <span className="sm:hidden">Check-In</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="food" 
-              className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <Utensils className="h-4 w-4" />
-              <span className="hidden sm:inline">Food & Beverage</span>
-              <span className="sm:hidden">F&B</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="activities" 
-              className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Activities</span>
-              <span className="sm:hidden">Activities</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="sponsor" 
-              className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Sponsor Impact</span>
-              <span className="sm:hidden">Sponsors</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="migration" 
-              className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              <Database className="h-4 w-4" />
-              <span className="hidden sm:inline">Data Migration</span>
-              <span className="sm:hidden">Migration</span>
-            </TabsTrigger>
-          </TabsList>
+          {!isMobile && (
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 bg-muted/50">
+              <TabsTrigger 
+                value="overview" 
+                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Event Overview</span>
+                <span className="sm:hidden">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="packages" 
+                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <Package className="h-4 w-4" />
+                <span className="hidden sm:inline">Package Utilization</span>
+                <span className="sm:hidden">Packages</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="checkin" 
+                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Check-In Mgmt</span>
+                <span className="sm:hidden">Check-In</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="food" 
+                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <Utensils className="h-4 w-4" />
+                <span className="hidden sm:inline">Food & Beverage</span>
+                <span className="sm:hidden">F&B</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="activities" 
+                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <Activity className="h-4 w-4" />
+                <span className="hidden sm:inline">Activities</span>
+                <span className="sm:hidden">Activities</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="sponsor" 
+                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <TrendingUp className="h-4 w-4" />
+                <span className="hidden sm:inline">Sponsor Impact</span>
+                <span className="sm:hidden">Sponsors</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="migration" 
+                className="flex items-center gap-2 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <Database className="h-4 w-4" />
+                <span className="hidden sm:inline">Data Migration</span>
+                <span className="sm:hidden">Migration</span>
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           <div className="mt-6">
             <TabsContent value="overview" className="space-y-4">
