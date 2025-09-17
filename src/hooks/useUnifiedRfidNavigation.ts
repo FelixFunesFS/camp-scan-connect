@@ -34,7 +34,9 @@ export const useUnifiedRfidNavigation = ({
       return attendees.filter(attendee => 
         !attendee.rfid_uid || 
         attendee.rfid_status === 'unassigned' || 
-        attendee.rfid_status === 'unissued'
+        attendee.rfid_status === 'unissued' ||
+        attendee.rfid_status === null ||
+        attendee.rfid_status === undefined
       );
     } else {
       // Group view - only include attendees from expanded groups
@@ -45,7 +47,9 @@ export const useUnifiedRfidNavigation = ({
         .filter(attendee => 
           !attendee.rfid_uid || 
           attendee.rfid_status === 'unassigned' || 
-          attendee.rfid_status === 'unissued'
+          attendee.rfid_status === 'unissued' ||
+          attendee.rfid_status === null ||
+          attendee.rfid_status === undefined
         );
     }
   }, [groupedAttendees, isGroupedView, expandedGroups]);
@@ -198,7 +202,13 @@ export const useUnifiedRfidNavigation = ({
     const groups = groupedAttendees as GroupedAttendee[];
     const group = groups.find(g => (g.orderId || 'no-order') === groupId);
     const groupAttendees = group?.attendees || [];
-    const firstUnassigned = groupAttendees.find(a => !a.rfid_uid || a.rfid_status === 'unissued');
+    const firstUnassigned = groupAttendees.find(a => 
+      !a.rfid_uid || 
+      a.rfid_status === 'unissued' ||
+      a.rfid_status === 'unassigned' ||
+      a.rfid_status === null ||
+      a.rfid_status === undefined
+    );
     
     if (firstUnassigned) {
       const rowIndex = focusableRows.findIndex(attendee => attendee.id === firstUnassigned.id);
@@ -254,7 +264,13 @@ export const useUnifiedRfidNavigation = ({
     const group = groups.find(g => (g.orderId || 'no-order') === groupId);
     const attendees = group?.attendees || [];
     
-    const assigned = attendees.filter(a => a.rfid_uid && a.rfid_status !== 'unassigned').length;
+    const assigned = attendees.filter(a => 
+      a.rfid_uid && 
+      a.rfid_status !== 'unassigned' && 
+      a.rfid_status !== 'unissued' &&
+      a.rfid_status !== null &&
+      a.rfid_status !== undefined
+    ).length;
     const total = attendees.length;
     return { assigned, total, percentage: total > 0 ? (assigned / total) * 100 : 0 };
   }, [groupedAttendees, isGroupedView]);
