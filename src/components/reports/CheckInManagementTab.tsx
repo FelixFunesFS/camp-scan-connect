@@ -718,7 +718,13 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
             onRefresh={fetchAttendees}
           >
             <ResponsiveAttendeesTable
-              attendees={isGroupedView ? [] : (paginatedData as EnhancedAttendee[])}
+              attendees={isGroupedView 
+                ? groupedAttendees.reduce((acc, group) => {
+                    acc[group.orderId || 'no-order'] = group.attendees;
+                    return acc;
+                  }, {} as Record<string, EnhancedAttendee[]>)
+                : (paginatedData as EnhancedAttendee[])
+              }
               groupedAttendees={isGroupedView ? (paginatedData as GroupedAttendee[]) : []}
               isGroupedView={isGroupedView}
               columns={allColumns}
