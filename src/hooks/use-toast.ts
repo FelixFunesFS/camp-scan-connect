@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "react";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
@@ -164,6 +164,16 @@ function toast({ ...props }: Toast) {
 }
 
 function useToast() {
+  // Safety check for React availability
+  if (!React || !React.useState || !React.useEffect) {
+    console.error('React hooks not available in useToast');
+    return {
+      toasts: [],
+      toast,
+      dismiss: () => {},
+    };
+  }
+
   const [state, setState] = React.useState<State>(memoryState);
 
   React.useEffect(() => {
