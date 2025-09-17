@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   CreditCard, 
   BarChart3, 
@@ -12,9 +13,12 @@ import {
   EyeOff,
   LogOut,
   Users,
-  FileText
+  FileText,
+  Shield
 } from "lucide-react";
 import { RfidAssignmentTab } from "@/components/RfidAssignmentTab";
+import { StaffActivationHub } from "@/components/StaffActivationHub";
+import { MobileAdminNavigation } from "@/components/MobileAdminNavigation";
 
 const AdminHub = () => {
   try {
@@ -36,6 +40,7 @@ const AdminHub = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [activeTab, setActiveTab] = useState('dashboard');
     const { toast } = useToast();
+    const isMobile = useIsMobile();
 
     const handleAdminLogin = () => {
       if (adminCode.toLowerCase() === 'admin2025') {
@@ -64,10 +69,13 @@ const AdminHub = () => {
 
     if (!isAuthenticated) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center mobile-container">
           <Card className="w-full max-w-md">
             <CardHeader className="space-y-1 text-center">
-              <CardTitle className="text-2xl font-bold">Admin Hub</CardTitle>
+              <CardTitle className="mobile-title flex items-center justify-center gap-2">
+                <Shield className="h-6 w-6" />
+                Admin Hub
+              </CardTitle>
               <CardDescription>Enter admin code to access dashboard</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -81,11 +89,12 @@ const AdminHub = () => {
                     onChange={(e) => setAdminCode(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
                     placeholder="Enter admin code"
+                    className="touch-target"
                   />
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1 touch-target"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -94,7 +103,7 @@ const AdminHub = () => {
               </div>
               <Button 
                 onClick={handleAdminLogin} 
-                className="w-full"
+                className="w-full touch-target"
                 disabled={!adminCode}
               >
                 Access Admin Hub
@@ -105,23 +114,44 @@ const AdminHub = () => {
       );
     }
 
-    // Simplified tabs for core functionality
+    // Core admin functionality tabs
     const tabs = [
       { 
         id: 'dashboard', 
         label: 'Dashboard', 
         icon: BarChart3, 
         component: (
-          <div className="p-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Admin Dashboard</CardTitle>
-                <CardDescription>System overview and management tools</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Welcome to the Admin Hub. Use the tabs above to navigate to different tools.</p>
-              </CardContent>
-            </Card>
+          <div className="mobile-container">
+            <div className="mobile-stack">
+              <Card className="mobile-card">
+                <CardHeader>
+                  <CardTitle className="mobile-title">Admin Dashboard</CardTitle>
+                  <CardDescription>System overview and management tools</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="mobile-grid gap-4">
+                    <Card className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="mobile-subtitle">System Status</p>
+                          <p className="text-sm text-muted-foreground">All systems operational</p>
+                        </div>
+                      </div>
+                    </Card>
+                    <Card className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <p className="mobile-subtitle">Active Users</p>
+                          <p className="text-sm text-muted-foreground">Staff and admin access</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )
       },
@@ -136,14 +166,14 @@ const AdminHub = () => {
         label: 'Reports', 
         icon: FileText, 
         component: (
-          <div className="p-6">
-            <Card>
+          <div className="mobile-container">
+            <Card className="mobile-card">
               <CardHeader>
-                <CardTitle>Reports Dashboard</CardTitle>
+                <CardTitle className="mobile-title">Reports Dashboard</CardTitle>
                 <CardDescription>Event analytics and management insights</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Reports functionality coming soon.</p>
+                <p className="text-muted-foreground">Reports functionality will be integrated here.</p>
               </CardContent>
             </Card>
           </div>
@@ -153,63 +183,65 @@ const AdminHub = () => {
         id: 'staff', 
         label: 'Staff Tools', 
         icon: Users, 
-        component: (
-          <div className="p-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Staff Management</CardTitle>
-                <CardDescription>Staff activation and management tools</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Staff tools coming soon.</p>
-              </CardContent>
-            </Card>
-          </div>
-        )
+        component: <StaffActivationHub />
       }
     ];
 
     return (
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex h-16 items-center justify-between">
+        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+          <div className="mobile-container flex h-14 md:h-16 items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold">Admin Hub</h1>
+              {isMobile && (
+                <MobileAdminNavigation 
+                  activeTab={activeTab} 
+                  onTabChange={setActiveTab} 
+                />
+              )}
+              <h1 className="mobile-title flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                {isMobile ? "Admin" : "Admin Hub"}
+              </h1>
             </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
+            <Button variant="outline" size="sm" onClick={handleLogout} className="touch-target">
               <LogOut className="h-4 w-4 mr-2" />
-              Logout
+              {isMobile ? "" : "Logout"}
             </Button>
           </div>
         </header>
 
-        {/* Main Content */}
-        <div className="container mx-auto p-6">
-          {/* Tab Navigation */}
-          <div className="flex gap-2 mb-6">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <Button
-                  key={tab.id}
-                  variant={activeTab === tab.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveTab(tab.id)}
-                  className="flex items-center gap-2"
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                </Button>
-              );
-            })}
+        {/* Desktop Tab Navigation */}
+        {!isMobile && (
+          <div className="border-b bg-muted/30">
+            <div className="container mx-auto">
+              <div className="flex gap-1 overflow-x-auto py-2">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <Button
+                      key={tab.id}
+                      variant={activeTab === tab.id ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setActiveTab(tab.id)}
+                      className="flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <Icon className="h-4 w-4" />
+                      {tab.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
+        )}
 
-          {/* Tab Content */}
-          <div className="min-h-[600px]">
+        {/* Main Content */}
+        <main className="flex-1">
+          <div className="min-h-[calc(100vh-120px)]">
             {tabs.find(tab => tab.id === activeTab)?.component}
           </div>
-        </div>
+        </main>
       </div>
     );
 
