@@ -74,6 +74,20 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      spacing: {
+        'touch': 'var(--touch-target)',
+        'mobile': 'var(--mobile-padding)',
+        'mobile-gap': 'var(--mobile-gap)',
+      },
+      fontSize: {
+        'xs': 'var(--text-xs)',
+        'sm': 'var(--text-sm)', 
+        'base': 'var(--text-base)',
+        'lg': 'var(--text-lg)',
+        'xl': 'var(--text-xl)',
+        '2xl': 'var(--text-2xl)',
+        '3xl': 'var(--text-3xl)',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

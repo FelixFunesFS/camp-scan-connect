@@ -1,51 +1,68 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
 import { 
+  Users, 
+  CreditCard, 
+  Zap, 
+  HelpCircle, 
   Shield, 
-  ArrowLeft, 
-  LogOut, 
-  BarChart3, 
   Settings, 
-  TestTube, 
-  FileText,
-  Users,
+  BarChart3, 
+  CheckSquare,
+  Eye,
+  EyeOff,
+  Menu,
+  LogOut,
+  ArrowLeft,
   UserCheck,
   AlertTriangle,
   HandHeart,
-  Power,
   ChevronDown,
-  Download,
   RefreshCw,
   CheckCircle,
   XCircle,
   Clock,
   Database,
-  Wifi,
-  Play
+  Play,
+  FileText
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { PhoneActivationService } from "@/services/phoneActivationService";
 
-// Import existing components that will become tabs
+// Import existing components
 import { RegFoxSyncPanel } from "@/components/RegFoxSyncPanel";
 import { WebhookStatus } from "@/components/WebhookStatus";
 import { SystemCleanupStatus } from "@/components/SystemCleanupStatus";
 
+interface ValidationTest {
+  id: string;
+  name: string;
+  description: string;
+  status: 'pending' | 'running' | 'passed' | 'failed';
+}
+
 const AdminHub = () => {
-  const [adminCode, setAdminCode] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [adminId, setAdminId] = useState<string | null>(null);
-  
+  const [adminCode, setAdminCode] = useState('');
+  const [adminId, setAdminId] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
+
   // Dashboard states
   const [stats, setStats] = useState({
     totalAttendees: 0,
@@ -58,13 +75,6 @@ const AdminHub = () => {
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   // System validation states
-  interface ValidationTest {
-    id: string;
-    name: string;
-    description: string;
-    status: 'pending' | 'running' | 'passed' | 'failed';
-  }
-
   const [validationTests, setValidationTests] = useState<ValidationTest[]>([
     {
       id: 'database_connection',
@@ -94,9 +104,6 @@ const AdminHub = () => {
   const [validationProgress, setValidationProgress] = useState(0);
   const [isRunningValidation, setIsRunningValidation] = useState(false);
 
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
   useEffect(() => {
     if (isAuthenticated) {
       loadDashboardStats();
@@ -122,8 +129,8 @@ const AdminHub = () => {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setAdminId(null);
-    setAdminCode("");
+    setAdminId('');
+    setAdminCode('');
     toast({
       title: "Logged Out",
       description: "Admin session ended successfully",
@@ -240,13 +247,13 @@ const AdminHub = () => {
   const getTestStatusIcon = (status: string) => {
     switch (status) {
       case 'passed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-4 w-4 text-success" />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-600" />;
+        return <XCircle className="h-4 w-4 text-destructive" />;
       case 'running':
-        return <RefreshCw className="h-4 w-4 text-blue-600 animate-spin" />;
+        return <RefreshCw className="h-4 w-4 text-primary animate-spin" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -266,341 +273,397 @@ const AdminHub = () => {
     {
       title: "Total Scans Today",
       value: stats.totalScans,
-      icon: AlertTriangle,
+      icon: Zap,
       color: "text-accent"
     },
     {
       title: "Staff Assisted Today",
       value: stats.staffAssisted,
       icon: HandHeart,
-      color: "text-amber-600"
+      color: "text-warning"
     }
   ];
 
-  // Login screen
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-md mx-auto mt-20">
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2">
-                <Shield className="h-6 w-6" />
-                Admin Access Required
-              </CardTitle>
-              <CardDescription>
-                Enter the admin code to access administrative functions
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="admin-code">Admin Code</Label>
-                <Input
-                  id="admin-code"
-                  type="password"
-                  value={adminCode}
-                  onChange={(e) => setAdminCode(e.target.value)}
-                  placeholder="Enter admin code..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
-                />
-              </div>
-              
-              <Button 
-                onClick={handleAdminLogin}
-                disabled={!adminCode.trim()}
-                className="w-full"
-              >
-                Access Admin Hub
-              </Button>
-              
-              <div className="text-center">
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate("/")}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Main Hub
-                </Button>
-              </div>
-            </CardContent>
+  const tabs = [
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: BarChart3, 
+      component: (
+        <div className="space-y-4 sm:space-y-6">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {statCards.map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <Card key={stat.title} className="p-4 sm:p-6">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
+                    <CardTitle className="text-sm font-medium">
+                      {stat.title}
+                    </CardTitle>
+                    <Icon className={`h-4 w-4 ${stat.color}`} />
+                  </CardHeader>
+                  <CardContent className="p-0 pt-2">
+                    <div className="text-2xl font-bold">
+                      {isLoading ? "..." : stat.value}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* System Status */}
+          <SystemCleanupStatus />
+
+          {/* RegFox Integration Panel */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <RegFoxSyncPanel />
+            <WebhookStatus />
+          </div>
+
+          {/* Critical Operations */}
+          <Card className="border-destructive/50 bg-destructive/5">
+            <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  Critical Operations
+                </CardTitle>
+                <CardDescription className="text-destructive/80">
+                  Dangerous system-wide operations that cannot be undone. Click to reveal.
+                </CardDescription>
+                <CollapsibleTrigger className="w-full mt-4">
+                  <div className="flex items-center justify-center gap-2 p-3 border border-destructive/30 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors min-h-[44px]">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    <span className="text-destructive font-medium">
+                      {isCollapsed ? "⚠️ Show Critical Operations" : "Hide Critical Operations"}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-destructive transition-transform ${isCollapsed ? "" : "rotate-180"}`} />
+                  </div>
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent>
+                  <div className="p-4 sm:p-6 border-2 border-destructive bg-destructive/10 rounded-lg">
+                    <div className="flex flex-col sm:flex-row items-start gap-4">
+                      <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0" />
+                      <div className="flex-1 w-full">
+                        <h4 className="font-bold text-destructive mb-2 text-lg">
+                          Mass RFID Deactivation
+                        </h4>
+                        <p className="text-destructive/90 mb-4 text-sm leading-relaxed">
+                          This will immediately deactivate ALL active RFID tags system-wide, affecting every attendee. 
+                          This action is irreversible and should only be used in emergency situations or at event conclusion.
+                        </p>
+                        <Button
+                          onClick={handleMassDeactivation}
+                          disabled={isProcessing}
+                          variant="destructive"
+                          className="w-full font-semibold min-h-[44px]"
+                        >
+                          {isProcessing ? "Deactivating All RFIDs..." : "⚠️ DEACTIVATE ALL RFID TAGS"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
         </div>
+      )
+    },
+    { 
+      id: 'system', 
+      label: 'System Management', 
+      icon: Settings, 
+      component: (
+        <div className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            {/* System Validation */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <span className="flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    System Validation
+                  </span>
+                  <Button 
+                    onClick={runSystemValidation}
+                    disabled={isRunningValidation}
+                    size="sm"
+                    className="min-h-[44px] w-full sm:w-auto"
+                  >
+                    {isRunningValidation ? (
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Play className="h-4 w-4 mr-2" />
+                    )}
+                    Run Tests
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isRunningValidation && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progress</span>
+                      <span>{Math.round(validationProgress)}%</span>
+                    </div>
+                    <Progress value={validationProgress} className="w-full" />
+                  </div>
+                )}
+                
+                <div className="space-y-3">
+                  {validationTests.map((test) => (
+                    <div key={test.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card">
+                      {getTestStatusIcon(test.status)}
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{test.name}</div>
+                        <div className="text-xs text-muted-foreground">{test.description}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* RFID Testing Hub Link */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  RFID Testing Hub
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Access advanced RFID testing tools and generate synthetic tags for testing purposes.
+                </p>
+                <Button 
+                  onClick={() => navigate('/rfid-testing')}
+                  className="w-full min-h-[44px]"
+                  variant="outline"
+                >
+                  Open RFID Testing Hub
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )
+    },
+    { 
+      id: 'reports', 
+      label: 'Reports', 
+      icon: FileText, 
+      component: (
+        <Card>
+          <CardHeader>
+            <CardTitle>Reports Dashboard</CardTitle>
+            <CardDescription>
+              Comprehensive reporting and analytics
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-muted-foreground py-8">
+              Reports functionality will be integrated here
+            </p>
+          </CardContent>
+        </Card>
+      )
+    },
+    { 
+      id: 'checklist', 
+      label: 'Project Status', 
+      icon: CheckSquare, 
+      component: (
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Checklist</CardTitle>
+            <CardDescription>
+              Track project completion status and milestones
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-muted-foreground py-8">
+              Project checklist functionality will be integrated here
+            </p>
+          </CardContent>
+        </Card>
+      )
+    }
+  ];
+
+  const TabNavigation = () => (
+    <div className="space-y-2">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => {
+              setActiveTab(tab.id);
+              if (isMobile) setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors min-h-[44px] ${
+              activeTab === tab.id 
+                ? 'bg-primary text-primary-foreground' 
+                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Icon className="h-5 w-5 shrink-0" />
+            <span className="font-medium">{tab.label}</span>
+          </button>
+        );
+      })}
+      <div className="border-t border-border pt-2 mt-4">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors hover:bg-destructive/10 text-destructive hover:text-destructive min-h-[44px]"
+        >
+          <LogOut className="h-5 w-5 shrink-0" />
+          <span className="font-medium">Logout</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+              <Shield className="h-6 w-6" />
+              Admin Access
+            </CardTitle>
+            <CardDescription>
+              Enter the admin code to access the system
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="adminCode">Admin Code</Label>
+              <div className="relative">
+                <Input
+                  id="adminCode"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter admin code"
+                  value={adminCode}
+                  onChange={(e) => setAdminCode(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
+                  className="pr-10 min-h-[44px]"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 px-0"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+            <Button 
+              onClick={handleAdminLogin}
+              className="w-full min-h-[44px]"
+              disabled={!adminCode.trim()}
+            >
+              Access Admin Panel
+            </Button>
+            <div className="text-center">
+              <Button 
+                variant="outline"
+                onClick={() => navigate("/")}
+                className="flex items-center gap-2 min-h-[44px]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Main Hub
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  // Main admin interface
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/")}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Main Hub
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-primary">Admin Hub</h1>
-              <p className="text-muted-foreground">Melanated Campout 2025 - Administrative Control</p>
-            </div>
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Shield className="h-3 w-3" />
-              Admin: {adminId}
-            </Badge>
-          </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
-        </div>
-
-        {/* Main Tabs Interface */}
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="system" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              System Management
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="status" className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Project Status
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Dashboard Tab */}
-          <TabsContent value="dashboard" className="space-y-6">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {statCards.map((stat) => {
-                const Icon = stat.icon;
-                return (
-                  <Card key={stat.title}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        {stat.title}
-                      </CardTitle>
-                      <Icon className={`h-4 w-4 ${stat.color}`} />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {isLoading ? "..." : stat.value}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {/* System Status */}
-            <SystemCleanupStatus />
-
-            {/* RegFox Integration Panel */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RegFoxSyncPanel />
-              <WebhookStatus />
-            </div>
-
-            {/* Critical Operations */}
-            <Card className="border-destructive/50 bg-destructive/5">
-              <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="h-5 w-5" />
-                    Critical Operations
-                  </CardTitle>
-                  <CardDescription className="text-destructive/80">
-                    Dangerous system-wide operations that cannot be undone. Click to reveal.
-                  </CardDescription>
-                  <CollapsibleTrigger className="w-full mt-4">
-                    <div className="flex items-center justify-center gap-2 p-3 border border-destructive/30 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors">
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                      <span className="text-destructive font-medium">
-                        {isCollapsed ? "⚠️ Show Critical Operations" : "Hide Critical Operations"}
-                      </span>
-                      <ChevronDown className={`h-4 w-4 text-destructive transition-transform ${isCollapsed ? "" : "rotate-180"}`} />
-                    </div>
-                  </CollapsibleTrigger>
-                </CardHeader>
-                <CollapsibleContent>
-                  <CardContent>
-                    <div className="p-6 border-2 border-destructive bg-destructive/10 rounded-lg">
-                      <div className="flex items-start gap-4">
-                        <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
-                        <div className="flex-1">
-                          <h4 className="font-bold text-destructive mb-2 text-lg">
-                            Mass RFID Deactivation
-                          </h4>
-                          <p className="text-destructive/90 mb-4 text-sm leading-relaxed">
-                            This will immediately deactivate ALL active RFID tags system-wide, affecting every attendee. 
-                            This action is irreversible and should only be used in emergency situations or at event conclusion.
-                          </p>
-                          <Button
-                            onClick={handleMassDeactivation}
-                            disabled={isProcessing}
-                            variant="destructive"
-                            className="w-full font-semibold"
-                          >
-                            {isProcessing ? "Deactivating All RFIDs..." : "⚠️ DEACTIVATE ALL RFID TAGS"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          </TabsContent>
-
-          {/* System Management Tab */}
-          <TabsContent value="system" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* System Validation */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Database className="h-5 w-5" />
-                      System Validation
-                    </span>
-                    <Button 
-                      onClick={runSystemValidation}
-                      disabled={isRunningValidation}
-                      size="sm"
-                    >
-                      {isRunningValidation ? (
-                        <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Play className="h-4 w-4 mr-2" />
-                      )}
-                      Run Tests
+    <div className="min-h-screen bg-background">
+      {/* Mobile Header */}
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="px-4 py-3 sm:px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {isMobile && (
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-2 min-h-[44px] min-w-[44px]">
+                      <Menu className="h-5 w-5" />
                     </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {isRunningValidation && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Running validation tests...</span>
-                        <span>{Math.round(validationProgress)}%</span>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-80 p-0">
+                    <div className="p-6">
+                      <div className="flex items-center gap-3 mb-6">
+                        <Shield className="h-6 w-6 text-primary" />
+                        <h2 className="text-lg font-semibold">Admin Panel</h2>
                       </div>
-                      <Progress value={validationProgress} className="h-2" />
+                      <TabNavigation />
                     </div>
-                  )}
-                  
-                  <div className="space-y-3">
-                    {validationTests.map((test) => (
-                      <div key={test.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                        {getTestStatusIcon(test.status)}
-                        <div className="flex-1">
-                          <div className="font-medium">{test.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {test.description}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* RFID Testing Hub */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TestTube className="h-5 w-5" />
-                    RFID Testing Hub
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-muted-foreground text-sm">
-                    Access the comprehensive RFID testing framework for synthetic testing and performance analysis.
-                  </p>
-                  <Button 
-                    onClick={() => navigate("/rfid-testing")}
-                    className="w-full gap-2"
-                  >
-                    <TestTube className="h-4 w-4" />
-                    Open RFID Testing Hub
-                  </Button>
-                </CardContent>
-              </Card>
+                  </SheetContent>
+                </Sheet>
+              )}
+              <Shield className="h-6 w-6 text-primary" />
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold">Admin Dashboard</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                  Melanated Campout 2025
+                </p>
+              </div>
             </div>
-          </TabsContent>
+            <div className="flex items-center gap-2">
+              {!isMobile && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Shield className="h-3 w-3" />
+                  {adminId}
+                </Badge>
+              )}
+              {!isMobile && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleLogout}
+                  className="ml-2 min-h-[44px]"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
 
-          {/* Reports Tab */}
-          <TabsContent value="reports" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Reports Dashboard
-                </CardTitle>
-                <CardDescription>
-                  Access comprehensive reporting and analytics dashboard
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-muted-foreground">
-                    The reports dashboard provides detailed analytics on attendee management, 
-                    RFID assignments, station utilization, and comprehensive event oversight.
-                  </p>
-                  <Button 
-                    onClick={() => navigate("/reports")}
-                    className="w-full gap-2"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Open Reports Dashboard
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+      <div className="flex min-h-screen">
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <aside className="w-64 border-r bg-card/30 p-6">
+            <TabNavigation />
+          </aside>
+        )}
 
-          {/* Project Status Tab */}
-          <TabsContent value="status" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  Project Checklist & Status
-                </CardTitle>
-                <CardDescription>
-                  Complete project status and feature implementation progress
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-muted-foreground">
-                    Track development progress, feature completion status, and system readiness 
-                    for the Melanated Campout 2025 event.
-                  </p>
-                  <Button 
-                    onClick={() => navigate("/checklist")}
-                    className="w-full gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    View Project Checklist
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Main Content */}
+        <main className="flex-1 p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            {tabs.find(tab => tab.id === activeTab)?.component}
+          </div>
+        </main>
       </div>
     </div>
   );
