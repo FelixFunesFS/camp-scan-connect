@@ -18,6 +18,7 @@ export const useRfidCapture = ({
 
   const handleCapture = useCallback((uid: string) => {
     setCapturedUid(uid);
+    setIsCapturing(true);
     onCapture(uid);
     
     // Reset capture state after debounce period
@@ -52,7 +53,6 @@ export const useRfidCapture = ({
       if (event.key === 'Enter') {
         if (inputBuffer.length >= minLength) {
           event.preventDefault();
-          setIsCapturing(true);
           handleCapture(inputBuffer.trim());
         }
         inputBuffer = '';
@@ -63,22 +63,23 @@ export const useRfidCapture = ({
       if (event.key.length === 1) {
         inputBuffer += event.key;
         
+        // Auto-trigger for RFID assignment mode - faster response for seamless scanning
+        if (inputBuffer.length >= minLength && inputBuffer.length <= 20) {
+          // Reduced timeout for faster RFID assignment workflow
+          timeout = setTimeout(() => {
+            if (inputBuffer.length >= minLength) {
+              handleCapture(inputBuffer.trim());
+              inputBuffer = '';
+            }
+          }, 200); // Much faster for pre-event assignment
+        }
+        
         // Auto-trigger if buffer gets very long (some readers don't send Enter)
         if (inputBuffer.length > 20) {
-          setIsCapturing(true);
           handleCapture(inputBuffer.trim());
           inputBuffer = '';
           return;
         }
-
-        // Set timeout to clear buffer if no more input
-        timeout = setTimeout(() => {
-          if (inputBuffer.length >= minLength) {
-            setIsCapturing(true);
-            handleCapture(inputBuffer.trim());
-          }
-          inputBuffer = '';
-        }, 500);
       }
     };
 

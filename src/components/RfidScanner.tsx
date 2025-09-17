@@ -57,7 +57,7 @@ export const RfidScanner = ({
           attendee_id,
           attendee:attendees(first_name, last_name, ticket_type)
         `)
-        .eq('status', 'active');
+        .in('status', ['active', 'assigned']);
 
       if (error) throw error;
       setAvailableRfids(data || []);
@@ -103,7 +103,7 @@ export const RfidScanner = ({
             attendee:attendees(first_name, last_name, ticket_type)
           `)
           .eq('uid', scannedUid)
-          .eq('status', 'active')
+          .in('status', ['active', 'assigned'])
           .single();
 
         if (data && !error) {
