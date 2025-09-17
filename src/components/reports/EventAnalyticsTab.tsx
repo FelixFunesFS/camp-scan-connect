@@ -51,6 +51,7 @@ interface AnalyticsData {
 }
 
 export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshing }) => {
+  console.log("EventAnalyticsTab rendering...");
   const [data, setData] = useState<AnalyticsData>({
     totalRegistered: 0,
     totalActivated: 0,
@@ -202,6 +203,8 @@ export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshi
     ...(visibleSeries.active && { active: stats.active }),
     ...(visibleSeries.inactive && { inactive: stats.inactive })
   }));
+
+  console.log("Package chart data:", packageChartData, "Visible series:", visibleSeries);
 
   const pieData = Object.entries(data.packageStats).map(([type, stats], index) => ({
     name: type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -487,20 +490,29 @@ export const EventAnalyticsTab: React.FC<EventAnalyticsTabProps> = ({ isRefreshi
             </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveChartContainer
-              data={packageChartData}
-              chartType="bar"
-              showTooltip={true}
-            >
-              <BarChart data={packageChartData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                {visibleSeries.active && <Bar dataKey="active" stackId="a" fill="hsl(var(--secondary))" name="Active" />}
-                {visibleSeries.inactive && <Bar dataKey="inactive" stackId="a" fill="hsl(var(--muted-foreground))" name="Inactive" />}
-              </BarChart>
-            </ResponsiveChartContainer>
+            <div className="h-[300px] md:h-[380px] w-full">
+              <ChartContainer config={chartConfig}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={packageChartData} 
+                    margin={{ top: 20, right: 20, left: 10, bottom: 80 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 10 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    {visibleSeries.active && <Bar dataKey="active" stackId="a" fill="hsl(var(--secondary))" name="Active" />}
+                    {visibleSeries.inactive && <Bar dataKey="inactive" stackId="a" fill="hsl(var(--muted-foreground))" name="Inactive" />}
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
