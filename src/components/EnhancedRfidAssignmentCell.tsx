@@ -1,20 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Scan, Check, X, AlertCircle, Zap } from "lucide-react";
+import { Check, X, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useGroupRfid } from "@/components/GroupRfidProvider";
-import { useRfidCapture } from "@/hooks/useRfidCapture";
 
 interface EnhancedRfidAssignmentCellProps {
   attendeeId: string;
-  currentRfidUid?: string;
-  currentRfidStatus?: string;
+  currentRfidUid?: string | null;
+  currentRfidStatus?: string | null;
   attendeeName: string;
   onAssignmentComplete: () => void;
-  isGroupProcessing?: boolean;
 }
 
 export const EnhancedRfidAssignmentCell = ({ 
@@ -22,101 +19,110 @@ export const EnhancedRfidAssignmentCell = ({
   currentRfidUid, 
   currentRfidStatus,
   attendeeName,
-  onAssignmentComplete,
-  isGroupProcessing = false
+  onAssignmentComplete
 }: EnhancedRfidAssignmentCellProps) => {
   const [uid, setUid] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [validationError, setValidationError] = useState("");
+  const [isValidating, setIsValidating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { isCapturingRfid, focusNextUnassigned, navigateToRow } = useGroupRfid();
 
-  // Enhanced keyboard navigation with auto-focus and rapid scanning  
+  // Auto-focus input when component mounts or when becomes active
   useEffect(() => {
-    if (inputRef.current && !currentRfidUid && (!isGroupProcessing || !currentRfidUid)) {
+    if (inputRef.current && !currentRfidUid) {
       inputRef.current.focus();
     }
-  }, [currentRfidUid, isGroupProcessing]);
+  }, [currentRfidUid]);
 
-  // Use RFID capture hook for seamless scanning
-  const { isCapturing } = useRfidCapture({
-    onCapture: (uid: string) => {
-      if (!uid.trim()) return;
-      setUid(uid.trim());
-      
-      // Auto-assign after brief validation delay for seamless workflow
-      setTimeout(() => {
-        if (!currentRfidUid) {
-          handleAssignRfid();
-        }
-      }, 100);
-    },
-    enabled: !isProcessing && !currentRfidUid,
-    minLength: 6,
-    debounceMs: 50
-  });
-
-  // Enhanced keyboard navigation with shortcuts
+  // Enhanced keyboard handling with better navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target === inputRef.current) {
-        if (e.key === 'Enter' && uid.trim()) {
-          e.preventDefault();
-          handleAssignRfid();
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          navigateToRow('up');
-        } else if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          navigateToRow('down');
-        } else if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
-          e.preventDefault();
-          focusNextUnassigned();
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          setUid("");
-          setValidationError("");
+        switch (e.key) {
+          case 'Enter':
+            if (uid.trim() && !validationError && !isProcessing) {
+              e.preventDefault();
+              handleAssignRfid();
+            }
+            break;
+          case 'ArrowUp':
+          case 'ArrowDown':
+            // Let arrow navigation be handled by parent component
+            break;
+          case 'Escape':
+            e.preventDefault();
+            setUid("");
+            setValidationError("");
+            inputRef.current?.blur();
+            break;
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [uid, navigateToRow, focusNextUnassigned]);
+  }, [uid, validationError, isProcessing]);
+
+  // Real-time validation with debouncing
+  useEffect(() => {
+    if (!uid.trim()) {
+      setValidationError("");
+      return;
+    }
+
+    const validateTimeout = setTimeout(async () => {
+      await validateRfidUid(uid.trim());
+    }, 300); // Debounce validation
+
+    return () => clearTimeout(validateTimeout);
+  }, [uid, attendeeId]);
 
   const validateRfidUid = async (rfidUid: string): Promise<boolean> => {
-    if (!rfidUid.trim()) {
-      setValidationError("RFID UID cannot be empty");
+    if (!rfidUid) {
+      setValidationError("");
       return false;
     }
 
-    // Check if UID already exists and is assigned to another attendee
-    const { data: existingTag } = await supabase
-      .from('rfid_tags')
-      .select('attendee_id, attendee:attendees(first_name, last_name)')
-      .eq('uid', rfidUid.trim())
-      .single();
+    setIsValidating(true);
+    
+    try {
+      // Check if UID already exists and is assigned to another attendee
+      const { data: existingTag } = await supabase
+        .from('rfid_tags')
+        .select('attendee_id, attendee:attendees(first_name, last_name)')
+        .eq('uid', rfidUid)
+        .single();
 
-    if (existingTag && existingTag.attendee_id && existingTag.attendee_id !== attendeeId) {
-      const assignedAttendee = existingTag.attendee as any;
-      setValidationError(`Already assigned to ${assignedAttendee?.first_name} ${assignedAttendee?.last_name}`);
-      return false;
+      if (existingTag && existingTag.attendee_id && existingTag.attendee_id !== attendeeId) {
+        const assignedAttendee = existingTag.attendee as any;
+        setValidationError(`Already assigned to ${assignedAttendee?.first_name} ${assignedAttendee?.last_name}`);
+        return false;
+      }
+
+      setValidationError("");
+      return true;
+    } catch (error) {
+      // No existing record found - UID is available
+      setValidationError("");
+      return true;
+    } finally {
+      setIsValidating(false);
     }
-
-    setValidationError("");
-    return true;
   };
 
   const handleAssignRfid = async () => {
-    if (!uid.trim()) return;
-
-    const isValid = await validateRfidUid(uid);
-    if (!isValid) return;
+    if (!uid.trim() || validationError || isProcessing) return;
 
     setIsProcessing(true);
     
     try {
+      // Validate one more time before assignment
+      const isValid = await validateRfidUid(uid.trim());
+      if (!isValid && validationError) {
+        return;
+      }
+
       // Check if attendee already has an assigned or active RFID
       const { data: existingRfid } = await supabase
         .from('rfid_tags')
@@ -132,7 +138,7 @@ export const EnhancedRfidAssignmentCell = ({
           .update({ 
             status: 'replaced',
             deactivated_at: new Date().toISOString(),
-            reason: 'Manual reassignment'
+            reason: 'Manual reassignment via assignment station'
           })
           .eq('uid', existingRfid.uid);
       }
@@ -140,7 +146,7 @@ export const EnhancedRfidAssignmentCell = ({
       // Check if the new RFID UID exists in the system
       const { data: tagExists } = await supabase
         .from('rfid_tags')
-        .select('uid')
+        .select('uid, status')
         .eq('uid', uid.trim())
         .single();
 
@@ -168,21 +174,38 @@ export const EnhancedRfidAssignmentCell = ({
           .eq('uid', uid.trim());
       }
 
+      // Log assignment transaction
+      await supabase
+        .from('station_transactions')
+        .insert({
+          attendee_id: attendeeId,
+          rfid_uid: uid.trim(),
+          station_type: 'activation',
+          transaction_type: 'activate',
+          activation_method: 'pre_assignment',
+          extra_data: {
+            assignment_source: 'assignment_station',
+            previous_rfid: existingRfid?.uid || null
+          }
+        });
+
       toast({
         title: "RFID Assigned Successfully",
-        description: `UID ${uid.trim()} assigned to ${attendeeName}`,
-        duration: 1500
+        description: `${uid.trim()} → ${attendeeName}`,
       });
 
       setUid("");
       onAssignmentComplete();
       
-      // In group processing mode, auto-advance immediately for seamless workflow
-      if (isGroupProcessing) {
-        setTimeout(() => {
-          focusNextUnassigned();
-        }, 150);
-      }
+      // Auto-focus next unassigned field after brief delay
+      setTimeout(() => {
+        const nextInput = document.querySelector('input[data-rfid-input="true"]:not([value])') as HTMLInputElement;
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.select();
+        }
+      }, 200);
+
     } catch (error) {
       console.error('RFID assignment error:', error);
       toast({
@@ -195,7 +218,7 @@ export const EnhancedRfidAssignmentCell = ({
     }
   };
 
-  const handleDeactivateRfid = async () => {
+  const handleClearRfid = async () => {
     if (!currentRfidUid) return;
 
     setIsProcessing(true);
@@ -206,19 +229,15 @@ export const EnhancedRfidAssignmentCell = ({
         .update({
           status: 'unissued',
           attendee_id: null,
-          deactivated_at: null,
-          reason: null,
-          activated_at: null,
-          activation_method: null
+          deactivated_at: new Date().toISOString(),
+          reason: 'Cleared via assignment station'
         })
         .eq('uid', currentRfidUid);
 
-      // Reset attendee activation status since they no longer have an RFID
+      // Reset attendee activation status
       await supabase
         .from('attendees')
-        .update({
-          activated_at: null
-        })
+        .update({ activated_at: null })
         .eq('id', attendeeId);
 
       // Log deactivation transaction
@@ -231,21 +250,21 @@ export const EnhancedRfidAssignmentCell = ({
           transaction_type: 'deactivate',
           current_status: 'inactive',
           extra_data: {
-            deactivation_method: 'manual'
+            deactivation_method: 'assignment_station_clear'
           }
         });
 
       toast({
         title: "RFID Cleared",
-        description: `UID ${currentRfidUid} has been cleared and is now unassigned`,
+        description: `${currentRfidUid} has been unassigned from ${attendeeName}`,
       });
 
       onAssignmentComplete();
     } catch (error) {
-      console.error('RFID deactivation error:', error);
+      console.error('RFID clear error:', error);
       toast({
         title: "Clear Failed",
-        description: "Failed to clear RFID. Please try again.",
+        description: "Failed to clear RFID assignment.",
         variant: "destructive"
       });
     } finally {
@@ -265,71 +284,77 @@ export const EnhancedRfidAssignmentCell = ({
     }
   };
 
+  // Show assigned RFID with clear button
   if (currentRfidUid && (currentRfidStatus === 'active' || currentRfidStatus === 'assigned')) {
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex flex-col">
-          <span className="font-mono text-sm">{currentRfidUid}</span>
+      <div className="flex items-center gap-2 min-w-[250px]">
+        <div className="flex flex-col flex-1">
+          <span className="font-mono text-sm font-medium">{currentRfidUid}</span>
+          <Badge variant={getRfidStatusColor(currentRfidStatus)} className="text-xs w-fit mt-1">
+            {currentRfidStatus}
+          </Badge>
         </div>
         <Button
           variant="outline"
           size="sm"
-          onClick={handleDeactivateRfid}
+          onClick={handleClearRfid}
           disabled={isProcessing}
-          className="h-8 px-2"
-          title="Remove RFID assignment"
+          className="h-8 px-3"
         >
-          <X className="h-3 w-3" />
+          {isProcessing ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <X className="h-3 w-3" />
+          )}
         </Button>
       </div>
     );
   }
 
+  // Show assignment input for unassigned attendees
   return (
-    <div className={`flex items-center gap-2 min-w-[200px] ${isGroupProcessing ? 'bg-primary/5 rounded-md p-1' : ''}`}>
+    <div className="flex items-start gap-2 min-w-[250px]">
       <div className="flex-1">
         <Input
           ref={inputRef}
           type="text"
           value={uid}
           onChange={(e) => setUid(e.target.value)}
-          onBlur={() => uid.trim() && validateRfidUid(uid)}
-          placeholder={isGroupProcessing ? "Scan RFID (Ctrl+G: next)" : "Scan or enter UID (↑↓ navigate)"}
-          className={`font-mono text-sm rfid-input ${validationError ? 'border-destructive' : ''} ${isGroupProcessing ? 'border-primary/30' : ''}`}
+          placeholder="Scan RFID or enter UID"
+          className={`font-mono text-sm rfid-input ${validationError ? 'border-destructive' : ''}`}
           disabled={isProcessing}
           data-rfid-input="true"
           data-attendee-id={attendeeId}
         />
-        {validationError && (
-          <div className="flex items-center gap-1 mt-1 text-xs text-destructive">
-            <AlertCircle className="h-3 w-3" />
-            {validationError}
+        {(validationError || isValidating) && (
+          <div className="flex items-center gap-1 mt-1 text-xs">
+            {isValidating ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                <span className="text-muted-foreground">Validating...</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-3 w-3 text-destructive" />
+                <span className="text-destructive">{validationError}</span>
+              </>
+            )}
           </div>
         )}
       </div>
       <Button
-        variant={isGroupProcessing ? "default" : "outline"}
+        variant="outline"
         size="sm"
         onClick={handleAssignRfid}
-        disabled={!uid.trim() || isProcessing || !!validationError}
-        className={`h-8 px-2 ${isGroupProcessing ? 'bg-primary hover:bg-primary/90' : ''}`}
+        disabled={!uid.trim() || !!validationError || isProcessing || isValidating}
+        className="h-8 px-3"
       >
         {isProcessing ? (
-          <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent" />
-        ) : isGroupProcessing ? (
-          <Zap className="h-3 w-3" />
+          <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
           <Check className="h-3 w-3" />
         )}
       </Button>
-      {isCapturingRfid && (
-        <div className="absolute -top-1 -right-1">
-          <Badge variant="default" className="text-xs animate-pulse">
-            <Scan className="h-2 w-2 mr-1" />
-            Scanning
-          </Badge>
-        </div>
-      )}
     </div>
   );
 };
