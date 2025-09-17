@@ -73,7 +73,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isGroupedView, setIsGroupedView] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    'first_name', 'last_name', 'phone', 'email', 'ticket_type', 'arrival_day', 'overall_status', 'rfid_assignment', 'activated_at'
+    'first_name', 'last_name', 'phone', 'email', 'ticket_type', 'arrival_day', 'rfid_status', 'rfid_assignment', 'activated_at'
   ]);
 
   const { toast } = useToast();
@@ -88,7 +88,7 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
     { key: 'ticket_type', label: 'Ticket Type', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'meal_plan', label: 'Meal Plan', desktop: true, width: 'min-w-20', sortable: true },
     { key: 'registration_status', label: 'Registration', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
-    { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'rfid_assignment', label: 'RFID Assignment', desktop: true, width: 'min-w-48', sortable: false },
     { key: 'activated_at', label: 'Activation Time', desktop: true, width: 'min-w-32', sortable: true },
     { key: 'waiver_signed', label: 'Waiver', desktop: true, width: 'min-w-20' },
@@ -145,13 +145,12 @@ export const CheckInManagementTab: React.FC<CheckInManagementTabProps> = ({ isRe
           t.station_type === 'drinks' && t.transaction_type === 'drink'
         ).length;
 
-        let overall_status = 'pending';
-        if (attendee.activated_at && rfidTag?.status === 'active' && attendee.waiver_signed) {
-          overall_status = 'complete';
-        } else if (attendee.activated_at) {
-          overall_status = 'Activated';
-        } else if (rfidTag?.status === 'active') {
-          overall_status = 'RFID Assigned';
+        // Simplified status based on RFID and activation state
+        let overall_status = 'unassigned';
+        if (attendee.activated_at) {
+          overall_status = 'activated';
+        } else if (rfidTag?.status === 'assigned' || rfidTag?.status === 'active') {
+          overall_status = 'assigned';
         }
 
         const arrival_day = attendee.arrival_window === 'early' ? 'Thursday' : 'Friday';

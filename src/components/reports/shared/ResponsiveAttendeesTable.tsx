@@ -100,10 +100,9 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'complete': return 'default';
-      case 'checked in': return 'secondary';
-      case 'rfid assigned': return 'outline';
-      case 'pending': return 'destructive';
+      case 'activated': return 'default';      // Green - fully processed
+      case 'assigned': return 'secondary';     // Blue - RFID assigned, awaiting activation  
+      case 'unassigned': return 'destructive'; // Red - needs RFID assignment
       default: return 'outline';
     }
   };
@@ -119,12 +118,13 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
 
   const getRfidStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'active': return 'default';
-      case 'unissued': return 'secondary';
+      case 'active': return 'default';        // Green - activated
+      case 'assigned': return 'secondary';    // Blue - manually assigned
+      case 'unissued': return 'destructive';  // Red - not assigned
       case 'lost': return 'destructive';
       case 'replaced': return 'outline';
       case 'deactivated': return 'destructive';
-      default: return 'outline';
+      default: return 'destructive';          // Default to red for unassigned state
     }
   };
 
@@ -308,6 +308,17 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
         ) : '-';
       
       case 'rfid_assignment':
+        const rowIndex = isGroupedView ? 
+          // For grouped view, calculate cumulative index across all groups
+          groupedAttendees.slice(0, groupedAttendees.findIndex(g => g.attendees.some(a => a.id === attendee.id)))
+            .reduce((sum, g) => sum + g.attendees.length, 0) + 
+          groupedAttendees.find(g => g.attendees.some(a => a.id === attendee.id))?.attendees.findIndex(a => a.id === attendee.id) || 0
+          : attendees.findIndex(a => a.id === attendee.id);
+        
+        const totalRows = isGroupedView ? 
+          groupedAttendees.reduce((sum, g) => sum + g.attendees.length, 0) 
+          : attendees.length;
+
         return (
           <RfidAssignmentCell
             attendeeId={attendee.id}
@@ -315,6 +326,21 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
             currentRfidStatus={attendee.rfid_status}
             attendeeName={`${attendee.first_name} ${attendee.last_name}`}
             onAssignmentComplete={() => onRfidAssignmentChange?.()}
+            rowIndex={rowIndex}
+            totalRows={totalRows}
+            onNavigateRow={(direction) => {
+              const targetIndex = direction === 'up' ? rowIndex - 1 : rowIndex + 1;
+              if (targetIndex >= 0 && targetIndex < totalRows) {
+                // Focus the target row's RFID input
+                setTimeout(() => {
+                  const targetInput = document.querySelector(`[data-row-index="${targetIndex}"] input[data-rfid-input="true"]`) as HTMLInputElement;
+                  if (targetInput) {
+                    targetInput.focus();
+                    targetInput.select();
+                  }
+                }, 0);
+              }
+            }}
           />
         );
       
@@ -405,101 +431,106 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                 defaultOpen={group.attendees.length <= 3}
               >
                 <div className="space-y-2 pl-4">
-                  {group.attendees.map((attendee) => (
-                    <Card key={attendee.id} className="shadow-sm">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {/* Primary Info */}
-                          <div className="flex items-start justify-between">
-                         <div>
-                          <h3 className="font-medium text-base flex items-center gap-2">
-                            <Link 
-                              to={`/attendee/${attendee.id}`}
-                              className="text-primary hover:underline cursor-pointer"
-                            >
-                              {attendee.first_name} {attendee.last_name}
-                            </Link>
-                            {attendee.is_group_order && (
-                              <Badge variant="outline" className="text-xs">
-                                <Users className="h-3 w-3 mr-1" />
-                                Group of {attendee.group_size}
-                              </Badge>
-                            )}
-                          </h3>
-                               {attendee.email && (
-                                 <p className="text-sm text-muted-foreground mt-1">
-                                   {attendee.email}
-                                 </p>
-                               )}
-                               {attendee.phone && (
-                                 <p className="text-sm text-muted-foreground">
-                                   <Phone className="h-3 w-3 inline mr-1" />
-                                   {attendee.phone}
-                                 </p>
-                               )}
-                             </div>
-                            <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
-                              {attendee.overall_status}
-                            </Badge>
-                          </div>
-
-                          {visibleColumns.map((columnKey) => {
-                            const column = columns.find(c => c.key === columnKey);
-                            if (!column || ['first_name', 'last_name', 'email', 'overall_status'].includes(columnKey)) return null;
-                            
-                            return (
-                              <div key={columnKey} className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground capitalize">
-                                  {column.label}:
-                                </span>
-                                <div className="max-w-[200px] truncate">
-                                  {renderCellContent(columnKey, attendee)}
-                                </div>
+                  {group.attendees.map((attendee, attendeeIndex) => {
+                    const globalRowIndex = groupedAttendees.slice(0, groupedAttendees.findIndex(g => g === group))
+                      .reduce((sum, g) => sum + g.attendees.length, 0) + attendeeIndex;
+                    
+                    return (
+                      <Card key={attendee.id} className="shadow-sm" data-row-index={globalRowIndex}>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {/* Primary Info */}
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-medium text-base flex items-center gap-2">
+                                  <Link 
+                                    to={`/attendee/${attendee.id}`}
+                                    className="text-primary hover:underline cursor-pointer"
+                                  >
+                                    {attendee.first_name} {attendee.last_name}
+                                  </Link>
+                                  {attendee.is_group_order && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <Users className="h-3 w-3 mr-1" />
+                                      Group of {attendee.group_size}
+                                    </Badge>
+                                  )}
+                                </h3>
+                                {attendee.email && (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {attendee.email}
+                                  </p>
+                                )}
+                                {attendee.phone && (
+                                  <p className="text-sm text-muted-foreground">
+                                    <Phone className="h-3 w-3 inline mr-1" />
+                                    {attendee.phone}
+                                  </p>
+                                )}
                               </div>
-                            );
-                          })}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                              <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
+                                {attendee.overall_status}
+                              </Badge>
+                            </div>
+
+                            {visibleColumns.map((columnKey) => {
+                              const column = columns.find(c => c.key === columnKey);
+                              if (!column || ['first_name', 'last_name', 'email', 'overall_status'].includes(columnKey)) return null;
+                              
+                              return (
+                                <div key={columnKey} className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground capitalize">
+                                    {column.label}:
+                                  </span>
+                                  <div className="max-w-[200px] truncate">
+                                    {renderCellContent(columnKey, attendee)}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </CollapsibleOrderGroup>
             ))
           ) : (
             // Individual mobile view
-            attendees.map((attendee) => (
-              <Card key={attendee.id} className="shadow-sm">
+            attendees.map((attendee, index) => (
+              <Card key={attendee.id} className="shadow-sm" data-row-index={index}>
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     {/* Primary Info */}
                     <div className="flex items-start justify-between">
-                       <div>
-                          <h3 className="font-medium text-base flex items-center gap-2">
-                            <Link 
-                              to={`/attendee/${attendee.id}`}
-                              className="text-primary hover:underline cursor-pointer"
-                            >
-                              {attendee.first_name} {attendee.last_name}
-                            </Link>
-                            {attendee.is_group_order && (
-                              <Badge variant="outline" className="text-xs">
-                                <Users className="h-3 w-3 mr-1" />
-                                Group of {attendee.group_size}
-                              </Badge>
-                            )}
-                          </h3>
-                         {attendee.email && (
-                           <p className="text-sm text-muted-foreground mt-1">
-                             {attendee.email}
-                           </p>
-                         )}
-                         {attendee.phone && (
-                           <p className="text-sm text-muted-foreground">
-                             <Phone className="h-3 w-3 inline mr-1" />
-                             {attendee.phone}
-                           </p>
-                         )}
-                       </div>
+                      <div>
+                        <h3 className="font-medium text-base flex items-center gap-2">
+                          <Link 
+                            to={`/attendee/${attendee.id}`}
+                            className="text-primary hover:underline cursor-pointer"
+                          >
+                            {attendee.first_name} {attendee.last_name}
+                          </Link>
+                          {attendee.is_group_order && (
+                            <Badge variant="outline" className="text-xs">
+                              <Users className="h-3 w-3 mr-1" />
+                              Group of {attendee.group_size}
+                            </Badge>
+                          )}
+                        </h3>
+                        {attendee.email && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {attendee.email}
+                          </p>
+                        )}
+                        {attendee.phone && (
+                          <p className="text-sm text-muted-foreground">
+                            <Phone className="h-3 w-3 inline mr-1" />
+                            {attendee.phone}
+                          </p>
+                        )}
+                      </div>
                       <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
                         {attendee.overall_status}
                       </Badge>
@@ -595,21 +626,26 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                   visibleColumns={visibleColumns}
                   defaultOpen={group.attendees.length <= 5}
                 >
-                  {group.attendees.map((attendee) => (
-                    <tr key={attendee.id} className="border-b hover:bg-muted/50">
-                      {visibleTableColumns.map((column) => (
-                        <td key={column.key} className="p-3 text-sm">
-                          {renderCellContent(column.key, attendee)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {group.attendees.map((attendee, attendeeIndex) => {
+                    const globalRowIndex = groupedAttendees.slice(0, groupedAttendees.findIndex(g => g === group))
+                      .reduce((sum, g) => sum + g.attendees.length, 0) + attendeeIndex;
+                    
+                    return (
+                      <tr key={attendee.id} className="border-b hover:bg-muted/50" data-row-index={globalRowIndex}>
+                        {visibleTableColumns.map((column) => (
+                          <td key={column.key} className="p-3 text-sm">
+                            {renderCellContent(column.key, attendee)}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </CollapsibleOrderGroup>
               ))
             ) : (
               // Individual desktop view  
-              attendees.map((attendee) => (
-                <tr key={attendee.id} className="border-b hover:bg-muted/50">
+              attendees.map((attendee, index) => (
+                <tr key={attendee.id} className="border-b hover:bg-muted/50" data-row-index={index}>
                   {visibleTableColumns.map((column) => (
                     <td key={column.key} className="p-3">
                       {renderCellContent(column.key, attendee)}

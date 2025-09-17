@@ -12,6 +12,9 @@ interface RfidAssignmentCellProps {
   currentRfidStatus?: string;
   attendeeName: string;
   onAssignmentComplete: () => void;
+  rowIndex?: number;
+  totalRows?: number;
+  onNavigateRow?: (direction: 'up' | 'down') => void;
 }
 
 export const RfidAssignmentCell = ({ 
@@ -19,7 +22,10 @@ export const RfidAssignmentCell = ({
   currentRfidUid, 
   currentRfidStatus,
   attendeeName,
-  onAssignmentComplete 
+  onAssignmentComplete,
+  rowIndex,
+  totalRows,
+  onNavigateRow
 }: RfidAssignmentCellProps) => {
   const [uid, setUid] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -34,18 +40,26 @@ export const RfidAssignmentCell = ({
     }
   }, [currentRfidUid]);
 
-  // Listen for RFID reader input (typically ends with Enter)
+  // Listen for RFID reader input and keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target === inputRef.current && e.key === 'Enter' && uid.trim()) {
-        e.preventDefault();
-        handleAssignRfid();
+      if (e.target === inputRef.current) {
+        if (e.key === 'Enter' && uid.trim()) {
+          e.preventDefault();
+          handleAssignRfid();
+        } else if (e.key === 'ArrowUp' && onNavigateRow) {
+          e.preventDefault();
+          onNavigateRow('up');
+        } else if (e.key === 'ArrowDown' && onNavigateRow) {
+          e.preventDefault();
+          onNavigateRow('down');
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [uid]);
+  }, [uid, onNavigateRow]);
 
   const validateRfidUid = async (rfidUid: string): Promise<boolean> => {
     if (!rfidUid.trim()) {
@@ -242,9 +256,11 @@ export const RfidAssignmentCell = ({
           value={uid}
           onChange={(e) => setUid(e.target.value)}
           onBlur={() => uid.trim() && validateRfidUid(uid)}
-          placeholder="Scan or enter UID"
-          className={`font-mono text-sm ${validationError ? 'border-destructive' : ''}`}
+          placeholder="Scan or enter UID (↑↓ navigate)"
+          className={`font-mono text-sm rfid-input ${validationError ? 'border-destructive' : ''}`}
           disabled={isProcessing}
+          data-rfid-input="true"
+          data-row-index={rowIndex}
         />
         {validationError && (
           <div className="flex items-center gap-1 mt-1 text-xs text-destructive">
