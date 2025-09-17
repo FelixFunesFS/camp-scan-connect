@@ -236,7 +236,7 @@ const ChecklistPage: React.FC = () => {
               <CardTitle className="flex items-center justify-between text-lg">
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-blue-600" />
-                  Time Investment
+                  Development Time Investment
                 </div>
                 <Button 
                   variant="ghost" 
@@ -249,9 +249,12 @@ const ChecklistPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold">{completedHours}h completed</div>
-                <div className="text-sm text-muted-foreground">of {totalEstimatedHours}h estimated total</div>
+              <div className="space-y-2">
+                <div className="text-2xl font-bold">36.5h total</div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div>Sept 13-17, 2025: 32h intensive development</div>
+                  <div>Current session: 4.5h enhancements</div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -271,6 +274,58 @@ const ChecklistPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Development Timeline */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Development Timeline
+            </CardTitle>
+            <CardDescription>
+              Actual time investment breakdown from project inception
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-green-50 dark:bg-green-950/20">
+                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold">Intensive Development Phase</h3>
+                    <Badge className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                      Sept 13-17, 2025
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      32 hours
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Core system architecture, RFID management, station systems, reports dashboard, mobile activation, and comprehensive testing
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-blue-50 dark:bg-blue-950/20">
+                <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold">Current Enhancement Session</h3>
+                    <Badge variant="secondary" className="text-xs">
+                      Today
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      4.5 hours
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Feature refinements, documentation updates, and system optimizations
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Feature Categories */}
         <div className="space-y-8">
