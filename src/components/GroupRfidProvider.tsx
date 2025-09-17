@@ -37,6 +37,33 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
 }) => {
   const { toast } = useToast();
 
+  // Add error handling for hook usage
+  let navigationHooks;
+  try {
+    navigationHooks = useUnifiedRfidNavigation({
+      groupedAttendees,
+      isGroupedView,
+      onRowFocus: (rowIndex, attendeeId) => {
+        // Optional: Add visual feedback for focused row
+      }
+    });
+  } catch (error) {
+    console.error("Error in useUnifiedRfidNavigation:", error);
+    // Provide fallback values
+    navigationHooks = {
+      navigateToRow: () => {},
+      focusFirstUnassignedRow: () => {},
+      focusLastUnassignedRow: () => {},
+      focusNextUnassigned: () => {},
+      startGroupProcessing: () => {},
+      expandedGroups: new Set<string>(),
+      expandAllGroups: () => {},
+      collapseAllGroups: () => {},
+      toggleGroup: () => {},
+      getGroupProgress: () => ({ assigned: 0, total: 0, percentage: 0 })
+    };
+  }
+
   const {
     navigateToRow,
     focusFirstUnassignedRow,
@@ -48,13 +75,7 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
     collapseAllGroups,
     toggleGroup,
     getGroupProgress
-  } = useUnifiedRfidNavigation({
-    groupedAttendees,
-    isGroupedView,
-    onRowFocus: (rowIndex, attendeeId) => {
-      // Optional: Add visual feedback for focused row
-    }
-  });
+  } = navigationHooks;
 
   const handleRfidCapture = useCallback((uid: string) => {
     // Find the currently focused RFID input and populate it
