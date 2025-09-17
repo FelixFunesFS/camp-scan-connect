@@ -20,12 +20,15 @@ import {
   ArrowUp,
   ArrowDown,
   Hash,
-  ShoppingCart
+  ShoppingCart,
+  Zap
 } from "lucide-react";
 import { RfidAssignmentCell } from "../../RfidAssignmentCell";
+import { EnhancedRfidAssignmentCell } from "../../EnhancedRfidAssignmentCell";
 import { EnhancedAttendee, TableColumn, GroupedAttendee } from "../CheckInManagementTab";
 import { CollapsibleOrderGroup } from "./CollapsibleOrderGroup";
 import { useGroupRfid } from "@/components/GroupRfidProvider";
+import { KeyboardShortcutsHelper } from "@/components/KeyboardShortcutsHelper";
 
 interface ResponsiveAttendeesTableProps {
   attendees: EnhancedAttendee[] | Record<string, EnhancedAttendee[]>;
@@ -310,7 +313,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       case 'rfid_assignment':
         return (
           <div data-attendee-id={attendee.id}>
-            <RfidAssignmentCell
+            <EnhancedRfidAssignmentCell
               attendeeId={attendee.id}
               currentRfidUid={attendee.rfid_uid}
               currentRfidStatus={attendee.rfid_status}
@@ -319,6 +322,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
               rowIndex={0}
               totalRows={1}
               onNavigateRow={navigateToRow}
+              isGroupProcessing={isGroupedView}
             />
           </div>
         );
@@ -576,6 +580,8 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
             </Button>
           </div>
         </div>
+
+        <KeyboardShortcutsHelper isGroupedView={isGroupedView} />
       </div>
     );
   }
@@ -706,6 +712,8 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
           </Button>
         </div>
       </div>
+
+      <KeyboardShortcutsHelper isGroupedView={isGroupedView} />
     </div>
   );
 };

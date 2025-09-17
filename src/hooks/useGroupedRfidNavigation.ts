@@ -88,50 +88,137 @@ export const useGroupedRfidNavigation = ({
     const focusableRows = buildFocusableRows();
     if (focusableRows.length === 0) return;
 
-    // Find first unassigned in current group, then other groups
-    const currentAttendeeRow = focusableRows.find(row => 
-      row.attendeeId === currentAttendeeIdRef.current
-    );
+    let nextIndex = currentRowRef.current + 1;
     
-    let nextRow = focusableRows[0]; // Default to first
-    
-    if (currentAttendeeRow) {
-      // Look for next unassigned in same group first
-      const sameGroupRows = focusableRows.filter(row => 
-        row.groupId === currentAttendeeRow.groupId
-      );
-      const currentIndexInGroup = sameGroupRows.findIndex(row => 
-        row.attendeeId === currentAttendeeIdRef.current
+    // If we're in grouped view, try to find the next unassigned in the current group first
+    if (isGroupedView && currentAttendeeIdRef.current) {
+      const currentGroup = Object.entries(groupedAttendees).find(([_, attendees]) => 
+        attendees.some(a => a.id === currentAttendeeIdRef.current)
       );
       
-      if (currentIndexInGroup >= 0 && currentIndexInGroup < sameGroupRows.length - 1) {
-        nextRow = sameGroupRows[currentIndexInGroup + 1];
-      } else {
-        // Move to next group's first unassigned
-        const currentGroupIndex = Object.keys(groupedAttendees).indexOf(currentAttendeeRow.groupId);
-        const groupKeys = Object.keys(groupedAttendees);
+      if (currentGroup) {
+        const [currentGroupId, currentGroupAttendees] = currentGroup;
         
-        for (let i = currentGroupIndex + 1; i < groupKeys.length; i++) {
-          const groupRows = focusableRows.filter(row => row.groupId === groupKeys[i]);
-          if (groupRows.length > 0) {
-            nextRow = groupRows[0];
-            break;
+        // Auto-expand current group if collapsed
+        if (!expandedGroups.has(currentGroupId)) {
+          setExpandedGroups(prev => new Set(prev).add(currentGroupId));
+        }
+        
+        if (expandedGroups.has(currentGroupId) || !expandedGroups.has(currentGroupId)) {
+          // Find next unassigned in current group
+          const currentAttendeeIndex = currentGroupAttendees.findIndex(a => a.id === currentAttendeeIdRef.current);
+          const nextUnassignedInGroup = currentGroupAttendees
+            .slice(currentAttendeeIndex + 1)
+            .find(a => !a.rfid_uid || a.rfid_status === 'unissued');
+            
+          if (nextUnassignedInGroup) {
+            const nextRowIndex = focusableRows.findIndex(row => row.attendeeId === nextUnassignedInGroup.id);
+            if (nextRowIndex >= 0) {
+              nextIndex = nextRowIndex;
+            }
+          } else {
+            // No more unassigned in current group, find next incomplete group
+            const nextIncompleteGroup = Object.entries(groupedAttendees).find(([groupId, attendees]) => 
+              groupId !== currentGroupId && 
+              attendees.some(a => !a.rfid_uid || a.rfid_status === 'unissued')
+            );
+            
+            if (nextIncompleteGroup) {
+              const [nextGroupId, nextGroupAttendees] = nextIncompleteGroup;
+              // Auto-expand next group
+              setExpandedGroups(prev => new Set(prev).add(nextGroupId));
+              
+              // Find first unassigned in next group
+              const firstUnassigned = nextGroupAttendees.find(a => !a.rfid_uid || a.rfid_status === 'unissued');
+              if (firstUnassigned) {
+                const nextRowIndex = focusableRows.findIndex(row => row.attendeeId === firstUnassigned.id);
+                if (nextRowIndex >= 0) {
+                  nextIndex = nextRowIndex;
+                }
+              }
+            }
           }
         }
       }
     }
-
-    const targetInput = document.querySelector(
-      `[data-attendee-id="${nextRow.attendeeId}"] input[data-rfid-input="true"]`
-    ) as HTMLInputElement;
     
-    if (targetInput) {
-      targetInput.focus();
-      targetInput.select();
-      currentAttendeeIdRef.current = nextRow.attendeeId;
-      onRowFocus?.(0, nextRow.attendeeId);
+    // If no next unassigned in current group, find globally
+    if (nextIndex >= focusableRows.length) {
+      // Find the next unassigned attendee in focusableRows
+      for (let i = currentRowRef.current + 1; i < focusableRows.length; i++) {
+        const row = focusableRows[i];
+        const attendee = Object.values(groupedAttendees).flat().find(a => a.id === row.attendeeId);
+        if (attendee && (!attendee.rfid_uid || attendee.rfid_status === 'unissued')) {
+          nextIndex = i;
+          break;
+        }
+      }
+      
+      if (nextIndex >= focusableRows.length) {
+        // Wrap around to beginning
+        for (let i = 0; i < focusableRows.length; i++) {
+          const row = focusableRows[i];
+          const attendee = Object.values(groupedAttendees).flat().find(a => a.id === row.attendeeId);
+          if (attendee && (!attendee.rfid_uid || attendee.rfid_status === 'unissued')) {
+            nextIndex = i;
+            break;
+          }
+        }
+        if (nextIndex >= focusableRows.length) return; // No unassigned attendees found
+      }
     }
-  }, [buildFocusableRows, groupedAttendees, onRowFocus]);
+    
+    const targetRow = focusableRows[nextIndex];
+    currentRowRef.current = nextIndex;
+    currentAttendeeIdRef.current = targetRow.attendeeId;
+    
+    onRowFocus?.(nextIndex, targetRow.attendeeId);
+    
+    // Focus the DOM element with shorter delay for faster workflow
+    setTimeout(() => {
+      const targetElement = document.querySelector(
+        `[data-attendee-id="${targetRow.attendeeId}"] input[data-rfid-input="true"]`
+      ) as HTMLInputElement;
+      
+      if (targetElement) {
+        targetElement.focus();
+        targetElement.select();
+      }
+    }, 50);
+  }, [buildFocusableRows, isGroupedView, groupedAttendees, expandedGroups, onRowFocus]);
+
+  const startGroupProcessing = useCallback((groupId: string) => {
+    // Expand the target group
+    setExpandedGroups(prev => new Set(prev).add(groupId));
+    
+    // Find first unassigned attendee in group
+    const groupAttendees = groupedAttendees[groupId] || [];
+    const firstUnassigned = groupAttendees.find(a => !a.rfid_uid || a.rfid_status === 'unissued');
+    
+    if (firstUnassigned) {
+      const focusableRows = buildFocusableRows();
+      const rowIndex = focusableRows.findIndex(row => row.attendeeId === firstUnassigned.id);
+      
+      if (rowIndex >= 0) {
+        currentRowRef.current = rowIndex;
+        currentAttendeeIdRef.current = firstUnassigned.id;
+        
+        onRowFocus?.(rowIndex, firstUnassigned.id);
+        
+        // Focus the input with a short delay
+        setTimeout(() => {
+          const targetElement = document.querySelector(
+            `[data-attendee-id="${firstUnassigned.id}"] input[data-rfid-input="true"]`
+          ) as HTMLInputElement;
+          
+          if (targetElement) {
+            targetElement.focus();
+            targetElement.select();
+          }
+        }, 100);
+      }
+    }
+  }, [groupedAttendees, buildFocusableRows, onRowFocus]);
 
   const expandGroup = useCallback((groupId: string) => {
     setExpandedGroups(prev => new Set([...prev, groupId]));
@@ -168,6 +255,7 @@ export const useGroupedRfidNavigation = ({
   return {
     navigateToRow,
     focusNextUnassigned,
+    startGroupProcessing,
     expandedGroups,
     expandGroup,
     collapseGroup,

@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 interface GroupRfidContextType {
   navigateToRow: (direction: 'up' | 'down') => void;
   focusNextUnassigned: () => void;
+  startGroupProcessing: (groupId: string) => void;
   expandedGroups: Set<string>;
   toggleGroup: (groupId: string) => void;
   getGroupProgress: (groupId: string) => { assigned: number; total: number; percentage: number };
@@ -35,6 +36,7 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
   const {
     navigateToRow,
     focusNextUnassigned,
+    startGroupProcessing,
     expandedGroups,
     toggleGroup,
     getGroupProgress
@@ -65,10 +67,10 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
         duration: 2000
       });
 
-      // Auto-advance to next unassigned after a brief delay
+      // Auto-advance to next unassigned after a brief delay (reduced for faster workflow)
       setTimeout(() => {
         focusNextUnassigned();
-      }, 1500);
+      }, 500);
     }
   }, [focusNextUnassigned, toast]);
 
@@ -85,6 +87,7 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
   const contextValue: GroupRfidContextType = {
     navigateToRow,
     focusNextUnassigned,
+    startGroupProcessing,
     expandedGroups,
     toggleGroup,
     getGroupProgress,

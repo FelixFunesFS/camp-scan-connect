@@ -1,15 +1,10 @@
 import React from "react";
+import { ChevronRight, ChevronDown, Users, Hash, Play, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  ChevronDown, 
-  ChevronRight, 
-  Users, 
-  CheckCircle, 
-  Clock, 
-  ShoppingCart 
-} from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { EnhancedAttendee } from "../CheckInManagementTab";
+import { useGroupRfid } from "@/components/GroupRfidProvider";
 
 interface OrderGroupHeaderProps {
   orderId: string | null;
@@ -26,59 +21,100 @@ export const OrderGroupHeader: React.FC<OrderGroupHeaderProps> = ({
   onToggle,
   groupProgress
 }) => {
+  const { startGroupProcessing } = useGroupRfid();
   const totalAttendees = attendees.length;
   const activatedCount = attendees.filter(a => a.activated_at).length;
   const completeCount = attendees.filter(a => a.overall_status === 'complete').length;
   
   const getStatusSummary = () => {
+    if (groupProgress) {
+      const { assigned, total, percentage } = groupProgress;
+      if (percentage === 100) return "Complete";
+      if (assigned > 0) return `In Progress (${assigned}/${total})`;
+      return "Pending";
+    }
+    
     if (completeCount === totalAttendees) return "Complete";
-    if (activatedCount === totalAttendees) return "All Activated";
-    if (activatedCount > 0) return "Partially Activated";
+    if (activatedCount > 0) return "In Progress";
     return "Pending";
   };
 
   const getStatusColor = () => {
-    if (completeCount === totalAttendees) return "default";
-    if (activatedCount === totalAttendees) return "secondary"; 
-    if (activatedCount > 0) return "outline";
-    return "destructive";
+    const status = getStatusSummary();
+    if (status === "Complete") return "default";
+    if (status.includes("In Progress")) return "secondary";
+    return "outline";
+  };
+
+  const hasUnassigned = attendees.some(a => !a.rfid_uid || a.rfid_status === 'unissued');
+  
+  const handleStartProcessing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (orderId && hasUnassigned) {
+      startGroupProcessing(orderId);
+      if (!isExpanded) {
+        onToggle();
+      }
+    }
   };
 
   return (
     <div className="flex items-center justify-between p-3 bg-muted/30 border-b hover:bg-muted/50 transition-colors">
-      <Button
-        variant="ghost"
-        onClick={onToggle}
-        className="flex items-center gap-2 h-auto p-0 hover:bg-transparent"
-      >
-        {isExpanded ? (
-          <ChevronDown className="h-4 w-4" />
-        ) : (
-          <ChevronRight className="h-4 w-4" />
-        )}
-        
-        <div className="flex items-center gap-2">
-          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          <span className="font-medium">
-            {orderId || "No Order ID"}
-          </span>
-        </div>
-      </Button>
+      <div className="flex items-center gap-2 flex-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-1 h-auto"
+          onClick={onToggle}
+        >
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+        </Button>
 
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Users className="h-3 w-3" />
-          <span>{totalAttendees} attendee{totalAttendees !== 1 ? 's' : ''}</span>
+        <div className="flex items-center gap-3 flex-1">
+          <div>
+            <h3 className="font-medium text-base flex items-center gap-2">
+              Order: {orderId || "No Order ID"}
+              <Badge variant="outline" className="text-xs">
+                <Users className="h-3 w-3 mr-1" />
+                {totalAttendees}
+              </Badge>
+            </h3>
+          </div>
+          
+          <div className="flex items-center gap-2 ml-auto">
+            {hasUnassigned && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStartProcessing}
+                className="flex items-center gap-1 h-7 px-2 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
+              >
+                <Play className="h-3 w-3" />
+                Start Processing
+              </Button>
+            )}
+            
+            <Badge variant={getStatusColor()}>
+              {getStatusSummary()}
+            </Badge>
+            
+            {groupProgress && (
+              <div className="flex items-center gap-2 min-w-[120px]">
+                <Progress 
+                  value={groupProgress.percentage} 
+                  className="w-20 h-2" 
+                />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {groupProgress.assigned}/{groupProgress.total}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-        
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <CheckCircle className="h-3 w-3" />
-          <span>{activatedCount}/{totalAttendees} activated</span>
-        </div>
-
-        <Badge variant={getStatusColor()} className="text-xs">
-          {getStatusSummary()}
-        </Badge>
       </div>
     </div>
   );
