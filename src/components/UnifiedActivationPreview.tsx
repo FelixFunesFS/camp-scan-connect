@@ -22,6 +22,7 @@ interface UnifiedActivationPreviewProps {
   onActivateSearchGroup: (notifications: AttendeeNotification[]) => void;
   onActivateEntireOrder: (notifications: AttendeeNotification[]) => void;
   onBack: () => void;
+  onRefreshResults: () => Promise<void>;
   attendeeNotifications?: AttendeeNotification[];
 }
 
@@ -32,6 +33,7 @@ export function UnifiedActivationPreview({
   onActivateSearchGroup,
   onActivateEntireOrder,
   onBack,
+  onRefreshResults,
   attendeeNotifications = []
 }: UnifiedActivationPreviewProps) {
   const [localNotifications, setLocalNotifications] = useState<AttendeeNotification[]>(attendeeNotifications);
@@ -78,12 +80,20 @@ export function UnifiedActivationPreview({
     setLocalNotifications(prev => prev.filter(n => n.attendeeId !== attendeeId));
   };
 
-  const handleActivateSearchGroup = () => {
+  const handleActivateSearchGroup = async () => {
     onActivateSearchGroup(localNotifications);
+    // Refresh results after a short delay to allow database updates
+    setTimeout(async () => {
+      await onRefreshResults();
+    }, 1000);
   };
 
-  const handleActivateEntireOrder = () => {
+  const handleActivateEntireOrder = async () => {
     onActivateEntireOrder(localNotifications);
+    // Refresh results after a short delay to allow database updates
+    setTimeout(async () => {
+      await onRefreshResults();
+    }, 1000);
   };
 
   return (

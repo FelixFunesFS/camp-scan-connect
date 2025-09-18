@@ -430,7 +430,21 @@ export function StaffActivationHub() {
     setSortDirection(sortField === field ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
   };
 
-  // Enhanced activation handlers with edge case functions
+  // Refresh unified search results after activation
+  const refreshUnifiedSearchResults = async () => {
+    if (unifiedSearchQuery && unifiedSearchQuery.trim()) {
+      try {
+        setIsUnifiedSearching(true);
+        const result = await EnhancedActivationService.unifiedSearch(unifiedSearchQuery.trim());
+        setUnifiedSearchResult(result);
+      } catch (error) {
+        console.error('Error refreshing search results:', error);
+      } finally {
+        setIsUnifiedSearching(false);
+      }
+    }
+  };
+
   // Enhanced activation handlers with edge case functions
   const handleIndividualActivation = async (attendeeId: string) => {
     try {
@@ -455,6 +469,10 @@ export function StaffActivationHub() {
         });
         fetchAttendees(); // Refresh data
         loadDashboardData();
+        // Also refresh unified search results if we're in that view
+        if (showUnifiedPreview) {
+          await refreshUnifiedSearchResults();
+        }
       } else {
         toast({
           title: "Activation Failed",
@@ -510,6 +528,10 @@ export function StaffActivationHub() {
 
       fetchAttendees();
       loadDashboardData();
+      // Also refresh unified search results if we're in that view
+      if (showUnifiedPreview) {
+        await refreshUnifiedSearchResults();
+      }
     } catch (error) {
       console.error('Remaining activation error:', error);
       toast({
@@ -559,6 +581,10 @@ export function StaffActivationHub() {
       
       fetchAttendees(); // Refresh data
       loadDashboardData();
+      // Also refresh unified search results if we're in that view
+      if (showUnifiedPreview) {
+        await refreshUnifiedSearchResults();
+      }
     } catch (error) {
       console.error('Group activation error:', error);
       toast({
@@ -759,6 +785,8 @@ export function StaffActivationHub() {
       // Refresh data
       fetchAttendees();
       loadDashboardData();
+      // Also refresh unified search results
+      await refreshUnifiedSearchResults();
     } catch (error) {
       console.error('Group activation error:', error);
       
@@ -829,6 +857,8 @@ export function StaffActivationHub() {
       // Refresh data
       fetchAttendees();
       loadDashboardData();
+      // Also refresh unified search results  
+      await refreshUnifiedSearchResults();
     } catch (error) {
       console.error('Order activation error:', error);
       toast({
@@ -1018,6 +1048,7 @@ export function StaffActivationHub() {
                   onActivateSearchGroup={handleUnifiedActivateSearchGroup}
                   onActivateEntireOrder={handleUnifiedActivateEntireOrder}
                   onBack={handleUnifiedBack}
+                  onRefreshResults={refreshUnifiedSearchResults}
                   attendeeNotifications={attendeeNotifications}
                 />
               )
