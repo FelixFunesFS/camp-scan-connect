@@ -194,7 +194,7 @@ export const RfidAssignmentTab = () => {
       setTimeout(() => {
         const nextInput = document.querySelector('input[data-rfid-input="true"]:not([value])') as HTMLInputElement;
         if (nextInput) {
-          nextInput.focus();
+          nextInput.focus({ preventScroll: true });
           nextInput.select();
         }
       }, 500);
@@ -219,7 +219,7 @@ export const RfidAssignmentTab = () => {
     setTimeout(() => {
       const firstInput = document.querySelector('input[data-rfid-input="true"]:not([value])') as HTMLInputElement;
       if (firstInput) {
-        firstInput.focus();
+        firstInput.focus({ preventScroll: true });
         firstInput.select();
       }
     }, 200);
@@ -294,118 +294,42 @@ export const RfidAssignmentTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card className="border-primary/20">
-        <CardHeader>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-xl text-primary flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                RFID Assignment Station
-              </CardTitle>
-              <p className="text-muted-foreground text-sm">
-                Rapid USB reader workflow for event bag RFID assignment
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              {/* Search */}
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search attendees, orders, RFID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-                {searchTerm && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-                    onClick={() => setSearchTerm('')}
-                  >
-                    ×
-                  </Button>
-                )}
-              </div>
-              
-              {/* View Mode Toggle */}
-              <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'groups' | 'individual')}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="groups" className="flex items-center gap-2">
-                    <Grid className="h-4 w-4" />
-                    Groups
-                  </TabsTrigger>
-                  <TabsTrigger value="individual" className="flex items-center gap-2">
-                    <List className="h-4 w-4" />
-                    Individual
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-              
-              {/* Settings */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <TestTube className="h-4 w-4" />
-                  <Label htmlFor="test-mode">Test Mode</Label>
-                  <Switch
-                    id="test-mode"
-                    checked={testModeEnabled}
-                    onCheckedChange={setTestModeEnabled}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <SkipForward className="h-4 w-4" />
-                  <Label htmlFor="auto-advance">Auto Advance</Label>
-                  <Switch
-                    id="auto-advance"
-                    checked={autoAdvanceEnabled}
-                    onCheckedChange={setAutoAdvanceEnabled}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Progress Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{attendees.length}</div>
-            <p className="text-xs text-muted-foreground">Total Attendees</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-warning">
-              {attendees.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned').length}
-            </div>
-            <p className="text-xs text-muted-foreground">Unassigned</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-success">
-              {attendees.filter(a => a.rfid_uid && a.rfid_status === 'assigned').length}
-            </div>
-            <p className="text-xs text-muted-foreground">Assigned</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{orderGroups.length}</div>
-            <p className="text-xs text-muted-foreground">All Orders</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{Math.round(totalProgress)}%</div>
-            <p className="text-xs text-muted-foreground">Assignment Progress</p>
-            <Progress value={totalProgress} className="mt-2 h-2" />
-          </CardContent>
-        </Card>
+      {/* Search and View Toggle - Top Section */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        {/* Search */}
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search attendees, orders, RFID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              onClick={() => setSearchTerm('')}
+            >
+              ×
+            </Button>
+          )}
+        </div>
+        
+        {/* View Mode Toggle */}
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'groups' | 'individual')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="groups" className="flex items-center gap-2">
+              <Grid className="h-4 w-4" />
+              Groups
+            </TabsTrigger>
+            <TabsTrigger value="individual" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              Individual
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Search Results Info */}
@@ -437,35 +361,7 @@ export const RfidAssignmentTab = () => {
         </Alert>
       )}
 
-      {/* Keyboard Shortcuts */}
-      <Card className="border-muted">
-        <CardContent className="pt-4">
-          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+G</kbd>
-              <span>Focus first unassigned</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+S</kbd>
-              <span>Skip current</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Space</kbd>
-              <span>Toggle auto-advance</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Esc</kbd>
-              <span>Reset focus</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">↑↓</kbd>
-              <span>Navigate rows</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main Content Views */}
+      {/* Main Content Views - Middle Section */}
       <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'groups' | 'individual')}>
         <TabsContent value="groups" className="space-y-4">
           {/* Group Order View */}
@@ -482,7 +378,7 @@ export const RfidAssignmentTab = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Incomplete Groups First */}
               {incompleteGroups.length > 0 && (
                 <div className="space-y-3">
@@ -555,6 +451,114 @@ export const RfidAssignmentTab = () => {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Bottom Section - Settings, Progress Overview, and Tools */}
+      <Separator />
+      
+      {/* RFID Assignment Station Header */}
+      <Card className="border-primary/20">
+        <CardHeader>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-xl text-primary flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                RFID Assignment Station
+              </CardTitle>
+              <p className="text-muted-foreground text-sm">
+                Rapid USB reader workflow for event bag RFID assignment
+              </p>
+            </div>
+            {/* Settings */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <TestTube className="h-4 w-4" />
+                <Label htmlFor="test-mode-bottom">Test Mode</Label>
+                <Switch
+                  id="test-mode-bottom"
+                  checked={testModeEnabled}
+                  onCheckedChange={setTestModeEnabled}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <SkipForward className="h-4 w-4" />
+                <Label htmlFor="auto-advance-bottom">Auto Advance</Label>
+                <Switch
+                  id="auto-advance-bottom"
+                  checked={autoAdvanceEnabled}  
+                  onCheckedChange={setAutoAdvanceEnabled}
+                />
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Progress Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{attendees.length}</div>
+            <p className="text-xs text-muted-foreground">Total Attendees</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-warning">
+              {attendees.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Unassigned</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-success">
+              {attendees.filter(a => a.rfid_uid && a.rfid_status === 'assigned').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Assigned</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{orderGroups.length}</div>
+            <p className="text-xs text-muted-foreground">All Orders</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{Math.round(totalProgress)}%</div>
+            <p className="text-xs text-muted-foreground">Assignment Progress</p>
+            <Progress value={totalProgress} className="mt-2 h-2" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Keyboard Shortcuts */}
+      <Card className="border-muted">
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+G</kbd>
+              <span>Focus first unassigned</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+S</kbd>
+              <span>Skip current</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Space</kbd>
+              <span>Toggle auto-advance</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Esc</kbd>
+              <span>Reset focus</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">↑↓</kbd>
+              <span>Navigate rows</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Testing & Development Tools */}
       <RfidTestingSection />
