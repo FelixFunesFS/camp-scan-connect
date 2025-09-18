@@ -1,10 +1,9 @@
 import React from "react";
-import { ChevronRight, ChevronDown, Users, Hash, Play, Target } from "lucide-react";
+import { ChevronRight, ChevronDown, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { EnhancedAttendee } from "../AttendeeManagementTab";
-import { useGroupRfid } from "@/components/GroupRfidProvider";
 
 interface OrderGroupHeaderProps {
   orderId: string | null;
@@ -21,7 +20,6 @@ export const OrderGroupHeader: React.FC<OrderGroupHeaderProps> = ({
   onToggle,
   groupProgress
 }) => {
-  const { startGroupProcessing } = useGroupRfid();
   const totalAttendees = attendees.length;
   const activatedCount = attendees.filter(a => a.activated_at).length;
   const completeCount = attendees.filter(a => a.overall_status === 'complete').length;
@@ -44,18 +42,6 @@ export const OrderGroupHeader: React.FC<OrderGroupHeaderProps> = ({
     if (status === "Complete") return "default";
     if (status.includes("In Progress")) return "secondary";
     return "outline";
-  };
-
-  const hasUnassigned = attendees.some(a => !a.rfid_uid || a.rfid_status === 'unissued');
-  
-  const handleStartProcessing = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (orderId && hasUnassigned) {
-      startGroupProcessing(orderId);
-      if (!isExpanded) {
-        onToggle();
-      }
-    }
   };
 
   return (
@@ -86,18 +72,6 @@ export const OrderGroupHeader: React.FC<OrderGroupHeaderProps> = ({
           </div>
           
           <div className="flex items-center gap-2 ml-auto">
-            {hasUnassigned && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleStartProcessing}
-                className="flex items-center gap-1 h-7 px-2 text-xs bg-primary/5 hover:bg-primary/10 border-primary/20"
-              >
-                <Play className="h-3 w-3" />
-                Start Processing
-              </Button>
-            )}
-            
             <Badge variant={getStatusColor()}>
               {getStatusSummary()}
             </Badge>

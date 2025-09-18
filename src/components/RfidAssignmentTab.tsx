@@ -15,16 +15,12 @@ import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Users, 
-  Play, 
-  Pause, 
   ChevronDown, 
   ChevronRight, 
   TestTube, 
   CheckCircle, 
   AlertTriangle, 
   Zap,
-  ArrowUp,
-  ArrowDown,
   SkipForward,
   RotateCcw
 } from "lucide-react";
@@ -64,10 +60,8 @@ export const RfidAssignmentTab = () => {
   const [attendees, setAttendees] = useState<AttendeeWithRfid[]>([]);
   const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [testModeEnabled, setTestModeEnabled] = useState(false);
   const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
-  const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [totalProgress, setTotalProgress] = useState(0);
   const { toast } = useToast();
 
@@ -82,7 +76,7 @@ export const RfidAssignmentTab = () => {
           first_name,
           last_name,
           order_id,
-          rfid_tags!inner(uid, status)
+          rfid_tags(uid, status)
         `)
         .order('order_id', { ascending: true })
         .order('first_name', { ascending: true });
@@ -200,37 +194,16 @@ export const RfidAssignmentTab = () => {
       debounceMs: 50, // Faster for assignment workflow
   });
 
-  // Start group processing
-  const startGroupProcessing = useCallback((groupId: string) => {
-    setCurrentGroupId(groupId);
-    setIsProcessing(true);
-    setExpandedGroups(prev => new Set(prev).add(groupId));
-    
-    // Focus first unassigned in group
+  // Focus first unassigned attendee overall
+  const focusFirstUnassigned = useCallback(() => {
     setTimeout(() => {
-      const firstInput = document.querySelector(`[data-group="${groupId}"] input[data-rfid-input="true"]:not([value])`) as HTMLInputElement;
+      const firstInput = document.querySelector('input[data-rfid-input="true"]:not([value])') as HTMLInputElement;
       if (firstInput) {
         firstInput.focus();
         firstInput.select();
       }
     }, 200);
-    
-    toast({
-      title: "Group Processing Started",
-      description: `Processing order: ${groupId}`,
-    });
-  }, [toast]);
-
-  // Stop processing
-  const stopProcessing = useCallback(() => {
-    setCurrentGroupId(null);
-    setIsProcessing(false);
-    
-    toast({
-      title: "Processing Stopped",
-      description: "RFID assignment workflow paused",
-    });
-  }, [toast]);
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -239,11 +212,8 @@ export const RfidAssignmentTab = () => {
         switch (e.key.toLowerCase()) {
           case 'g':
             e.preventDefault();
-            // Jump to next incomplete group
-            const incompleteGroup = orderGroups.find(g => g.progress < 100);
-            if (incompleteGroup) {
-              startGroupProcessing(incompleteGroup.orderId);
-            }
+            // Focus first unassigned RFID input
+            focusFirstUnassigned();
             break;
           case ' ':
             e.preventDefault();
@@ -261,18 +231,35 @@ export const RfidAssignmentTab = () => {
             break;
         }
       } else if (e.key === 'Escape') {
-        stopProcessing();
+        // Reset focus to first unassigned
+        focusFirstUnassigned();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [orderGroups, startGroupProcessing, stopProcessing]);
+  }, [focusFirstUnassigned]);
 
-  // Load data on mount
+  // Load data on mount and auto-expand incomplete groups
   useEffect(() => {
     loadAttendees();
   }, [loadAttendees]);
+
+  // Auto-expand incomplete groups and focus first unassigned
+  useEffect(() => {
+    if (orderGroups.length > 0) {
+      // Expand all incomplete groups
+      const incompleteGroupIds = orderGroups
+        .filter(g => g.progress < 100)
+        .map(g => g.orderId);
+      
+      if (incompleteGroupIds.length > 0) {
+        setExpandedGroups(new Set(incompleteGroupIds));
+        // Focus first unassigned input
+        focusFirstUnassigned();
+      }
+    }
+  }, [orderGroups, focusFirstUnassigned]);
 
   if (loading) {
     return (
@@ -369,7 +356,7 @@ export const RfidAssignmentTab = () => {
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+G</kbd>
-              <span>Next incomplete group</span>
+              <span>Focus first unassigned</span>
             </div>
             <div className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+S</kbd>
@@ -381,7 +368,7 @@ export const RfidAssignmentTab = () => {
             </div>
             <div className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Esc</kbd>
-              <span>Stop processing</span>
+              <span>Reset focus</span>
             </div>
             <div className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-muted rounded text-xs">↑↓</kbd>
@@ -404,10 +391,6 @@ export const RfidAssignmentTab = () => {
               <GroupCard
                 key={group.orderId}
                 group={group}
-                isActive={currentGroupId === group.orderId}
-                onStartProcessing={startGroupProcessing}
-                onStopProcessing={stopProcessing}
-                isProcessing={isProcessing}
                 expandedGroups={expandedGroups}
                 toggleGroup={(groupId) => {
                   setExpandedGroups(prev => {
@@ -438,10 +421,6 @@ export const RfidAssignmentTab = () => {
               <GroupCard
                 key={group.orderId}
                 group={group}
-                isActive={false}
-                onStartProcessing={startGroupProcessing}
-                onStopProcessing={stopProcessing}
-                isProcessing={false}
                 expandedGroups={expandedGroups}
                 toggleGroup={(groupId) => {
                   setExpandedGroups(prev => {
@@ -474,10 +453,6 @@ export const RfidAssignmentTab = () => {
 // Group Card Component
 interface GroupCardProps {
   group: OrderGroup;
-  isActive: boolean;
-  isProcessing: boolean;
-  onStartProcessing: (groupId: string) => void;
-  onStopProcessing: () => void;
   expandedGroups: Set<string>;
   toggleGroup: (groupId: string) => void;
   onRefresh: () => void;
@@ -486,10 +461,6 @@ interface GroupCardProps {
 
 const GroupCard: React.FC<GroupCardProps> = ({
   group,
-  isActive,
-  isProcessing,
-  onStartProcessing,
-  onStopProcessing,
   expandedGroups,
   toggleGroup,
   onRefresh,
@@ -498,7 +469,7 @@ const GroupCard: React.FC<GroupCardProps> = ({
   const isExpanded = expandedGroups.has(group.orderId);
   
   return (
-    <Card className={`${isActive ? 'border-primary bg-primary/5' : ''} ${isCompleted ? 'border-success/50 bg-success/5' : ''}`}>
+    <Card className={`${isCompleted ? 'border-success/50 bg-success/5' : ''}`}>
       <Collapsible open={isExpanded} onOpenChange={() => toggleGroup(group.orderId)}>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
@@ -514,44 +485,12 @@ const GroupCard: React.FC<GroupCardProps> = ({
                       {group.assignedCount}/{group.totalCount} assigned
                     </Badge>
                     {isCompleted && <Badge variant="default" className="bg-success text-success-foreground">Completed</Badge>}
-                    {isActive && <Badge variant="default" className="bg-primary text-primary-foreground">Active</Badge>}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-sm font-medium">{Math.round(group.progress)}%</div>
-                  <Progress value={group.progress} className="w-20 h-2" />
-                </div>
-                {!isCompleted && (
-                  <div className="flex gap-2">
-                    {isActive ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onStopProcessing();
-                        }}
-                        disabled={!isProcessing}
-                      >
-                        <Pause className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onStartProcessing(group.orderId);
-                        }}
-                        disabled={isProcessing}
-                      >
-                        <Play className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                )}
+              <div className="text-right">
+                <div className="text-sm font-medium">{Math.round(group.progress)}%</div>
+                <Progress value={group.progress} className="w-20 h-2" />
               </div>
             </div>
           </CardHeader>
