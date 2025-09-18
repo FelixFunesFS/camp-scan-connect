@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Users, Search, AlertCircle, CheckCircle2, Phone, Mail, User, Hash } from "lucide-react";
+import { ArrowLeft, Users, Search, AlertCircle, CheckCircle2, Phone, Mail, User, Hash, AlertTriangle } from "lucide-react";
 import { MobileAttendeeCard, type NotificationState } from "./reports/shared/MobileAttendeeCard";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import { getOrderGroupBackgroundColor, groupAttendeesByOrder, getOrderBadgeColor } from "@/utils/orderGroupUtils";
@@ -36,9 +36,11 @@ export function UnifiedActivationPreview({
 }: UnifiedActivationPreviewProps) {
   const [localNotifications, setLocalNotifications] = useState<AttendeeNotification[]>(attendeeNotifications);
   const hasCompanions = searchResult.order_companions && searchResult.order_companions.length > 0;
-  const directCount = searchResult.attendee_details?.length || 0;
+  const directCount = searchResult.attendee_details?.filter(a => a.has_rfid && !a.is_activated).length || 0;
   const companionCount = searchResult.order_companions?.length || 0;
   const totalInOrder = directCount + companionCount;
+  const totalWithRfid = [...(searchResult.attendee_details || []), ...(searchResult.order_companions || [])]
+    .filter(a => a.has_rfid && !a.is_activated).length;
 
   // Group all attendees for consistent color coding
   const allAttendees = [
@@ -190,7 +192,7 @@ export function UnifiedActivationPreview({
           {/* Primary Action: Activate Search Group */}
           <Button
             onClick={handleActivateSearchGroup}
-            disabled={isProcessing}
+            disabled={isProcessing || directCount === 0}
             size="lg"
             className="w-full h-12 text-base font-medium"
           >
@@ -198,6 +200,11 @@ export function UnifiedActivationPreview({
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 Activating...
+              </div>
+            ) : directCount === 0 ? (
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                No RFID Attendees Available
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -214,12 +221,27 @@ export function UnifiedActivationPreview({
           {hasCompanions && searchResult.searchType !== 'order_id' && (
             <Button
               onClick={handleActivateEntireOrder}
-              disabled={isProcessing}
+              disabled={isProcessing || totalWithRfid === 0}
               variant="outline"
               size="lg"
               className="w-full h-12 text-base font-medium border-accent text-accent hover:bg-accent hover:text-accent-foreground"
             >
-              {isProcessing ? "Activating..." : `Activate Entire Order (${totalInOrder})`}
+              {isProcessing ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-accent"></div>
+                  Activating Order...
+                </div>
+              ) : totalWithRfid === 0 ? (
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  No RFID Attendees in Order
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Activate Entire Order ({totalWithRfid})
+                </div>
+              )}
             </Button>
           )}
 

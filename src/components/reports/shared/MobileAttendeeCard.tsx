@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
-  X
+  X,
+  Radio
 } from "lucide-react";
 import { EnhancedAttendee } from "../AttendeeManagementTab";
 import { Link } from "react-router-dom";
@@ -237,12 +238,29 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
               <div className="flex items-center gap-2 mb-2">
                 {getStatusIcon(attendee.overall_status)}
                 <Badge variant={getStatusColor(attendee.overall_status)} className="text-xs">
-                  {attendee.overall_status?.charAt(0).toUpperCase() + attendee.overall_status?.slice(1)}
+                  {attendee.overall_status ? 
+                    attendee.overall_status.charAt(0).toUpperCase() + attendee.overall_status.slice(1) : 
+                    'Unknown'
+                  }
                 </Badge>
                 <Badge variant={getRfidStatusColor(attendee.rfid_status)} className="text-xs">
-                  {attendee.rfid_status?.charAt(0).toUpperCase() + attendee.rfid_status?.slice(1)}
+                  {attendee.rfid_status ? 
+                    attendee.rfid_status.charAt(0).toUpperCase() + attendee.rfid_status.slice(1) : 
+                    'No RFID'
+                  }
                 </Badge>
               </div>
+
+              {/* RFID Information */}
+              {attendee.rfid_uid && (
+                <div className="flex items-center gap-2 mb-2">
+                  <Radio className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-sm">RFID:</span>
+                  <Badge variant="outline" className="text-xs font-mono">
+                    {attendee.rfid_uid}
+                  </Badge>
+                </div>
+              )}
 
               {/* Order Information - Moved to Primary Section */}
               {attendee.order_id && (
@@ -316,6 +334,16 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
                   {attendee.ticket_type?.replace('_', ' ').toUpperCase()}
                 </Badge>
               </div>
+
+              {/* Meal Plan */}
+              {attendee.meal_plan && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Meal Plan:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {attendee.meal_plan.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                </div>
+              )}
 
               {/* Arrival Day */}
               {attendee.arrival_day && (
