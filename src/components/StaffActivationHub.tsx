@@ -238,7 +238,8 @@ export function StaffActivationHub() {
         ) || [];
         const is_phone_duplicate = duplicatePhones.length > 0;
 
-        const group_size = attendee.order_id ? orderSizes.get(attendee.order_id) || 1 : 1;
+        const calculatedGroupSize = attendee.order_id ? (orderSizes.get(attendee.order_id) || 1) : 1;
+        const group_size = Number.isFinite(calculatedGroupSize) ? calculatedGroupSize : 1;
         const is_group_order = group_size > 1;
 
         return {

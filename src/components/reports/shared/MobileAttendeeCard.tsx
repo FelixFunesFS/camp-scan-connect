@@ -250,7 +250,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
                   <Users className="h-3 w-3 text-muted-foreground" />
                   <span className="text-sm">Order:</span>
                   <span className="text-sm font-mono">{attendee.order_id}</span>
-                  {attendee.group_size && attendee.group_size > 1 && (
+                  {Number.isFinite(attendee.group_size) && attendee.group_size > 1 && (
                     <Badge variant="outline" className="text-xs">
                       {attendee.group_size} people
                     </Badge>
@@ -350,7 +350,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
                 <div className="flex items-center gap-2">
                   <Wine className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    Bar Visits: {attendee.bar_hits || 0}
+                    Bar Visits: {Number.isFinite(attendee.bar_hits) ? attendee.bar_hits : 0}
                   </span>
                 </div>
               </div>
