@@ -28,8 +28,10 @@ export class EnhancedActivationService {
       return 'email';
     }
     
-    // Order ID detection: starts with # or is alphanumeric with specific patterns
-    if (trimmed.startsWith('#') || /^[A-Z0-9\-]+$/i.test(trimmed)) {
+    // Order ID detection: starts with # or matches order ID patterns (6+ chars with specific formats)
+    if (trimmed.startsWith('#') || 
+        (trimmed.length >= 6 && /^[A-Z0-9]{6,}(-[A-Z0-9]+)*$/i.test(trimmed)) ||
+        (trimmed.length >= 8 && /^[0-9A-F]{8,}$/i.test(trimmed))) {
       return 'order_id';
     }
     
