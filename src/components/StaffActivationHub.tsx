@@ -33,6 +33,7 @@ import { MobileAttendeeCard } from "@/components/reports/shared/MobileAttendeeCa
 import { rfidLookupService } from "@/services/rfidLookupService";
 import { enhancedActivationService, UnifiedSearchResult, EnhancedActivationService } from "@/services/enhancedActivationService";
 import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
+import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // Enhanced attendee interface matching AttendeeManagementTab
@@ -62,6 +63,10 @@ export interface EnhancedAttendee {
   updated_at: string;
   group_size?: number;
   is_group_order?: boolean;
+  is_veteran?: boolean;
+  city?: string;
+  state?: string;
+  special_accommodations?: string;
 }
 
 export interface TableColumn {
@@ -127,6 +132,9 @@ export function StaffActivationHub() {
   const [manualRfid, setManualRfid] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [deactivationActivity, setDeactivationActivity] = useState<any[]>([]);
+  
+  // Attendee detail modal state
+  const [selectedAttendee, setSelectedAttendee] = useState<EnhancedAttendee | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -242,7 +250,11 @@ export function StaffActivationHub() {
           regfox_id: attendee.regfox_id || undefined,
           registration_status: attendee.registration_status || 'registered',
           group_size,
-          is_group_order
+          is_group_order,
+          is_veteran: attendee.is_veteran ?? false,
+          city: attendee.city || undefined,
+          state: attendee.state || undefined,
+          special_accommodations: attendee.special_accommodations || undefined
         } as EnhancedAttendee;
       });
 
@@ -341,7 +353,7 @@ export function StaffActivationHub() {
     ];
   }, [attendees]);
 
-  // Filter processed attendees
+  // Filter and sort processed attendees
   const processedAttendees = useMemo(() => {
     let filtered = [...attendees];
     
@@ -363,15 +375,52 @@ export function StaffActivationHub() {
       );
     }
     
+    // Apply sorting
+    if (sortField) {
+      filtered.sort((a, b) => {
+        const aVal = a[sortField as keyof EnhancedAttendee];
+        const bVal = b[sortField as keyof EnhancedAttendee];
+        
+        // Handle null/undefined values
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return sortDirection === 'asc' ? -1 : 1;
+        if (bVal == null) return sortDirection === 'asc' ? 1 : -1;
+        
+        // Handle different data types
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          const result = aVal.toLowerCase().localeCompare(bVal.toLowerCase());
+          return sortDirection === 'asc' ? result : -result;
+        }
+        
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          const result = aVal - bVal;
+          return sortDirection === 'asc' ? result : -result;
+        }
+        
+        // Handle date strings
+        const aDate = new Date(String(aVal));
+        const bDate = new Date(String(bVal));
+        if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+          const result = aDate.getTime() - bDate.getTime();
+          return sortDirection === 'asc' ? result : -result;
+        }
+        
+        // Fallback to string comparison
+        const result = String(aVal).toLowerCase().localeCompare(String(bVal).toLowerCase());
+        return sortDirection === 'asc' ? result : -result;
+      });
+    }
+    
     return filtered;
-  }, [attendees, searchTerm, activeQuickFilter]);
+  }, [attendees, searchTerm, activeQuickFilter, sortField, sortDirection]);
 
   const handleSort = (field: keyof EnhancedAttendee) => {
     setSortField(field);
     setSortDirection(sortField === field ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
   };
 
-  // Activation handlers
+  // Enhanced activation handlers with edge case functions
+  // Enhanced activation handlers with edge case functions
   const handleIndividualActivation = async (attendeeId: string) => {
     try {
       const attendee = attendees.find(a => a.id === attendeeId);
@@ -386,7 +435,7 @@ export function StaffActivationHub() {
         return;
       }
 
-      const result = await rfidLookupService.activateRfid(attendee.rfid_uid, staffId || undefined);
+      const result = await EnhancedActivationService.activateIndividual(attendeeId, staffId || undefined);
       
       if (result.success) {
         toast({
@@ -409,6 +458,49 @@ export function StaffActivationHub() {
         description: "Failed to activate attendee",
         variant: "destructive",
       });
+    }
+  };
+
+  // New function for activating remaining attendees by phone
+  const handleActivateRemainingByPhone = async (phoneNumber: string) => {
+    try {
+      setIsUnifiedProcessing(true);
+      
+      // Use the phone activation service
+      const { data, error } = await supabase.rpc('activate_remaining_rfids_by_phone', {
+        p_phone: phoneNumber,
+        p_activation_method: 'staff_remaining'
+      });
+
+      if (error) throw error;
+
+      const result = data[0];
+      if (result && result.activated_count > 0) {
+        toast({
+          title: "Remaining Activations Complete",
+          description: `Activated ${result.activated_count} additional attendees${
+            result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
+          }`,
+        });
+      } else {
+        toast({
+          title: "No Additional Activations",
+          description: "All attendees with this phone number are already activated",
+          variant: "default",
+        });
+      }
+
+      fetchAttendees();
+      loadDashboardData();
+    } catch (error) {
+      console.error('Remaining activation error:', error);
+      toast({
+        title: "Activation Error",
+        description: "Failed to activate remaining attendees",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUnifiedProcessing(false);
     }
   };
 
@@ -939,16 +1031,18 @@ export function StaffActivationHub() {
                               <th key={column.key} className="p-3 text-left text-sm font-medium">
                                 <div className="flex items-center gap-2">
                                   {column.label}
-                                  {column.sortable && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleSort(column.key as keyof EnhancedAttendee)}
-                                      className="h-4 w-4 p-0"
-                                    >
-                                      ↕
-                                    </Button>
-                                  )}
+                                   {column.sortable && (
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       onClick={() => handleSort(column.key as keyof EnhancedAttendee)}
+                                       className="h-4 w-4 p-0 hover:bg-accent"
+                                     >
+                                       {sortField === column.key ? (
+                                         sortDirection === 'asc' ? '↑' : '↓'
+                                       ) : '↕'}
+                                     </Button>
+                                   )}
                                 </div>
                               </th>
                             ))}
@@ -956,8 +1050,20 @@ export function StaffActivationHub() {
                         </thead>
                         <tbody>
                           {processedAttendees.map((attendee, index) => (
-                            <tr key={attendee.id} className={`border-b hover:bg-accent/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
-                              <td className="p-3 text-sm">{attendee.first_name} {attendee.last_name}</td>
+                            <tr key={attendee.id} className={`border-b hover:bg-accent/50 cursor-pointer ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
+                              <td className="p-3 text-sm">
+                                <AttendeeDetailModal 
+                                  attendee={attendee} 
+                                  allAttendees={attendees}
+                                  onActivate={handleIndividualActivation}
+                                  onGroupActivate={handleGroupActivation}
+                                  trigger={
+                                    <button className="text-left hover:underline focus:outline-none">
+                                      {attendee.first_name} {attendee.last_name}
+                                    </button>
+                                  }
+                                />
+                              </td>
                               <td className="p-3 text-sm">{attendee.email}</td>
                               <td className="p-3 text-sm">{attendee.phone}</td>
                               <td className="p-3 text-sm">{attendee.ticket_type}</td>
