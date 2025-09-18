@@ -122,6 +122,10 @@ export class EnhancedActivationService {
           id: attendee.id,
           name: `${attendee.first_name} ${attendee.last_name}`,
           order_id: attendee.order_id,
+          phone: attendee.phone,
+          email: attendee.email,
+          ticket_type: attendee.ticket_type,
+          waiver_signed: attendee.waiver_signed,
           meal_plan: attendee.meal_plan,
           rfid_uid: rfidTag?.uid,
           activated_at: attendee.activated_at,
@@ -133,21 +137,21 @@ export class EnhancedActivationService {
         };
       });
 
-      // Find order companions if any attendee has an order_id
+      // Find order companions for ALL orders that matched attendees belong to
       let orderCompanions: any[] = [];
       let hasGroupOrder = false;
       let primaryOrderId: string | null = null;
 
       const ordersWithAttendees = attendeesData.filter(a => a.order_id).map(a => a.order_id);
       if (ordersWithAttendees.length > 0) {
-        const uniqueOrderId = ordersWithAttendees[0]; // Take first order for simplicity
-        primaryOrderId = uniqueOrderId;
+        const uniqueOrderIds = [...new Set(ordersWithAttendees)];
+        primaryOrderId = uniqueOrderIds[0]; // Take first order as primary
 
-        // Find other attendees in the same order
+        // Find ALL other attendees in ALL orders that contain our matched attendees
         const { data: companionData } = await supabase
           .from('attendees')
           .select('*')
-          .eq('order_id', uniqueOrderId)
+          .in('order_id', uniqueOrderIds)
           .not('email', 'ilike', email.trim());
 
         if (companionData && companionData.length > 0) {
@@ -169,6 +173,9 @@ export class EnhancedActivationService {
               name: `${companion.first_name} ${companion.last_name}`,
               order_id: companion.order_id,
               phone: companion.phone,
+              email: companion.email,
+              ticket_type: companion.ticket_type,
+              waiver_signed: companion.waiver_signed,
               meal_plan: companion.meal_plan,
               rfid_uid: rfidTag?.uid,
               activated_at: companion.activated_at,
@@ -230,6 +237,9 @@ export class EnhancedActivationService {
           name: `${attendee.first_name} ${attendee.last_name}`,
           order_id: attendee.order_id,
           phone: attendee.phone,
+          email: attendee.email,
+          ticket_type: attendee.ticket_type,
+          waiver_signed: attendee.waiver_signed,
           meal_plan: attendee.meal_plan,
           rfid_uid: rfidTag?.uid,
           activated_at: attendee.activated_at,
@@ -289,6 +299,9 @@ export class EnhancedActivationService {
           name: `${attendee.first_name} ${attendee.last_name}`,
           order_id: attendee.order_id,
           phone: attendee.phone,
+          email: attendee.email,
+          ticket_type: attendee.ticket_type,
+          waiver_signed: attendee.waiver_signed,
           meal_plan: attendee.meal_plan,
           rfid_uid: rfidTag?.uid,
           activated_at: attendee.activated_at,
@@ -300,7 +313,7 @@ export class EnhancedActivationService {
         };
       });
 
-      // Find order companions if any attendee has an order_id
+      // Find order companions for ALL orders that matched attendees belong to
       let orderCompanions: any[] = [];
       let hasGroupOrder = false;
       let primaryOrderId: string | null = null;
@@ -308,17 +321,15 @@ export class EnhancedActivationService {
       const ordersWithAttendees = attendeesData.filter(a => a.order_id).map(a => a.order_id);
       if (ordersWithAttendees.length > 0) {
         const uniqueOrderIds = [...new Set(ordersWithAttendees)];
-        
-        // For simplicity, take the first order ID
-        primaryOrderId = uniqueOrderIds[0];
+        primaryOrderId = uniqueOrderIds[0]; // Take first order as primary
 
-        // Find other attendees in the same orders who don't match the name search
+        // Find ALL other attendees in ALL orders who don't match the name search
         const companionQuery = supabase
           .from('attendees')
           .select('*')
           .in('order_id', uniqueOrderIds);
 
-        // Apply NOT condition for name search  
+        // Apply NOT condition for name search to exclude direct matches
         const { data: companionData } = await companionQuery
           .not('first_name', 'ilike', `%${searchTerm}%`)
           .not('last_name', 'ilike', `%${searchTerm}%`);
@@ -342,6 +353,9 @@ export class EnhancedActivationService {
               name: `${companion.first_name} ${companion.last_name}`,
               order_id: companion.order_id,
               phone: companion.phone,
+              email: companion.email,
+              ticket_type: companion.ticket_type,
+              waiver_signed: companion.waiver_signed,
               meal_plan: companion.meal_plan,
               rfid_uid: rfidTag?.uid,
               activated_at: companion.activated_at,
