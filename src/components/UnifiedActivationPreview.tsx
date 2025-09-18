@@ -38,11 +38,14 @@ export function UnifiedActivationPreview({
 }: UnifiedActivationPreviewProps) {
   const [localNotifications, setLocalNotifications] = useState<AttendeeNotification[]>(attendeeNotifications);
   const hasCompanions = searchResult.order_companions && searchResult.order_companions.length > 0;
-  const directCount = searchResult.attendee_details?.filter(a => a.has_rfid && !a.is_activated).length || 0;
+  const directCount = searchResult.attendee_details?.length || 0;
   const companionCount = searchResult.order_companions?.length || 0;
   const totalInOrder = directCount + companionCount;
-  const totalWithRfid = [...(searchResult.attendee_details || []), ...(searchResult.order_companions || [])]
+  
+  // Count attendees available for activation (have RFID but not activated)
+  const availableForActivation = [...(searchResult.attendee_details || []), ...(searchResult.order_companions || [])]
     .filter(a => a.has_rfid && !a.is_activated).length;
+  const directAvailableCount = searchResult.attendee_details?.filter(a => a.has_rfid && !a.is_activated).length || 0;
 
   // Group all attendees for consistent color coding
   const allAttendees = [
@@ -139,6 +142,11 @@ export function UnifiedActivationPreview({
           <h4 className="font-medium flex items-center gap-2">
             <Users className="h-4 w-4" />
             {searchResult.searchType === 'order_id' ? 'Order Members' : 'Direct Matches'} ({directCount})
+            {directAvailableCount !== directCount && (
+              <Badge variant="secondary" className="text-xs ml-1">
+                {directAvailableCount} available for activation
+              </Badge>
+            )}
           </h4>
           <div className="space-y-2">
             {searchResult.attendee_details?.map((attendee: any, index: number) => {
@@ -202,7 +210,7 @@ export function UnifiedActivationPreview({
           {/* Primary Action: Activate Search Group */}
           <Button
             onClick={handleActivateSearchGroup}
-            disabled={isProcessing || directCount === 0}
+            disabled={isProcessing || directAvailableCount === 0}
             size="lg"
             className="w-full h-12 text-base font-medium"
           >
@@ -211,7 +219,7 @@ export function UnifiedActivationPreview({
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 Activating...
               </div>
-            ) : directCount === 0 ? (
+            ) : directAvailableCount === 0 ? (
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
                 No RFID Attendees Available
@@ -220,8 +228,8 @@ export function UnifiedActivationPreview({
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
                 {searchResult.searchType === 'order_id' ? 
-                  `Activate All Order Members (${directCount})` : 
-                  `Activate Direct Matches (${directCount})`
+                  `Activate Available Order Members (${directAvailableCount})` : 
+                  `Activate Available Direct Matches (${directAvailableCount})`
                 }
               </div>
             )}
@@ -231,7 +239,7 @@ export function UnifiedActivationPreview({
           {hasCompanions && searchResult.searchType !== 'order_id' && (
             <Button
               onClick={handleActivateEntireOrder}
-              disabled={isProcessing || totalWithRfid === 0}
+              disabled={isProcessing || availableForActivation === 0}
               variant="outline"
               size="lg"
               className="w-full h-12 text-base font-medium border-accent text-accent hover:bg-accent hover:text-accent-foreground"
@@ -241,7 +249,7 @@ export function UnifiedActivationPreview({
                   <div className="animate-spin rounded-full h-4 w-4 border-accent"></div>
                   Activating Order...
                 </div>
-              ) : totalWithRfid === 0 ? (
+              ) : availableForActivation === 0 ? (
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5" />
                   No RFID Attendees in Order
@@ -249,7 +257,7 @@ export function UnifiedActivationPreview({
               ) : (
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Activate Entire Order ({totalWithRfid})
+                  Activate Entire Order ({availableForActivation})
                 </div>
               )}
             </Button>
