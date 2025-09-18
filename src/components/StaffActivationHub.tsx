@@ -476,12 +476,19 @@ export function StaffActivationHub() {
       if (error) throw error;
 
       const result = data[0];
+      // Provide contextual messaging based on activation results
       if (result && result.activated_count > 0) {
         toast({
           title: "Remaining Activations Complete",
           description: `Activated ${result.activated_count} additional attendees${
             result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
           }`,
+        });
+      } else if (result && result.warnings && result.warnings.length > 0) {
+        toast({
+          title: "RFID Assignment Required",
+          description: "Remaining attendees need RFID tags assigned before activation",
+          variant: "destructive",
         });
       } else {
         toast({
@@ -667,13 +674,28 @@ export function StaffActivationHub() {
         staffId || undefined
       );
 
-      toast({
-        title: "Group Activation Complete",
-        description: `Activated ${result.activated_count} attendees${
-          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
-        }`,
-        variant: result.warnings && result.warnings.length > 0 ? "default" : "default",
-      });
+      // Provide contextual messaging based on activation results
+      if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
+        toast({
+          title: "RFID Assignment Required",
+          description: "No attendees could be activated - RFID tags must be assigned first",
+          variant: "destructive",
+        });
+      } else if (result.activated_count === 0) {
+        toast({
+          title: "No Activations Needed",
+          description: "All attendees in this group are already activated",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Group Activation Complete",
+          description: `Successfully activated ${result.activated_count} attendees${
+            result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
+          }`,
+          variant: "default",
+        });
+      }
 
       // Reset unified search state
       setShowUnifiedPreview(false);
@@ -705,13 +727,34 @@ export function StaffActivationHub() {
         staffId || undefined
       );
 
-      toast({
-        title: "Order Activation Complete",
-        description: `Activated ${result.activated_count} out of ${result.total_attendees} attendees${
-          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
-        }`,
-        variant: "default",
-      });
+      // Provide contextual messaging based on activation results
+      if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
+        toast({
+          title: "RFID Assignment Required",
+          description: "No attendees could be activated - RFID tags must be assigned first",
+          variant: "destructive",
+        });
+      } else if (result.activated_count === 0) {
+        toast({
+          title: "No Activations Needed",
+          description: "All order members are already activated",
+          variant: "default",
+        });
+      } else if (result.activated_count < result.total_attendees) {
+        toast({
+          title: "Partial Order Activation",
+          description: `Activated ${result.activated_count} of ${result.total_attendees} attendees${
+            result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} need RFID assignment.` : ''
+          }`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Order Activation Complete",
+          description: `Successfully activated all ${result.activated_count} order members`,
+          variant: "default",
+        });
+      }
 
       // Reset unified search state
       setShowUnifiedPreview(false);
