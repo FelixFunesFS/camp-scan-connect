@@ -23,13 +23,15 @@ interface MobileAttendeeCardProps {
   type: 'direct' | 'companion';
   showDetails?: boolean;
   onToggleDetails?: () => void;
+  backgroundColor?: string;
 }
 
 export function MobileAttendeeCard({ 
   attendee, 
   type, 
   showDetails = false, 
-  onToggleDetails 
+  onToggleDetails,
+  backgroundColor 
 }: MobileAttendeeCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -63,11 +65,14 @@ export function MobileAttendeeCard({
   };
 
   return (
-    <Card className={`transition-all duration-200 ${
-      type === 'companion' 
-        ? 'border-accent/30 bg-accent/5' 
-        : 'border-primary/20 bg-primary/5'
-    }`}>
+    <Card 
+      className={`transition-all duration-200 ${
+        type === 'companion' 
+          ? 'border-accent/30' 
+          : 'border-primary/20'
+      }`}
+      style={{ backgroundColor: backgroundColor || (type === 'companion' ? 'hsl(var(--accent) / 0.05)' : 'hsl(var(--primary) / 0.05)') }}
+    >
       <CardContent className="p-4">
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <div className="flex items-center justify-between">
@@ -78,6 +83,11 @@ export function MobileAttendeeCard({
                 {type === 'companion' && (
                   <Badge variant="outline" className="text-xs">
                     Companion
+                  </Badge>
+                )}
+                {attendee.order_id && (
+                  <Badge variant="secondary" className="text-xs font-mono">
+                    #{attendee.order_id}
                   </Badge>
                 )}
               </div>
@@ -127,13 +137,6 @@ export function MobileAttendeeCard({
                     <span className="text-muted-foreground">
                       {formatPhoneNumber(attendee.phone)}
                     </span>
-                  </div>
-                )}
-                
-                {attendee.order_id && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Order:</span>
-                    <span className="font-mono text-xs">{attendee.order_id}</span>
                   </div>
                 )}
 

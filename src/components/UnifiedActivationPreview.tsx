@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, Search, AlertCircle, CheckCircle2, Phone, Mail, User, Hash } from "lucide-react";
 import { MobileAttendeeCard } from "./MobileAttendeeCard";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
+import { getOrderGroupBackgroundColor, groupAttendeesByOrder } from "@/utils/orderGroupUtils";
 import type { UnifiedSearchResult } from "@/services/enhancedActivationService";
 
 interface UnifiedActivationPreviewProps {
@@ -27,6 +28,14 @@ export function UnifiedActivationPreview({
   const directCount = searchResult.attendee_details?.length || 0;
   const companionCount = searchResult.order_companions?.length || 0;
   const totalInOrder = directCount + companionCount;
+
+  // Group all attendees for consistent color coding
+  const allAttendees = [
+    ...(searchResult.attendee_details || []),
+    ...(searchResult.order_companions || [])
+  ];
+  const orderGroups = groupAttendeesByOrder(allAttendees);
+  const uniqueOrderCount = orderGroups.filter(group => group.orderId !== null).length;
 
   const getSearchIcon = () => {
     switch (searchResult.searchType) {
@@ -63,6 +72,7 @@ export function UnifiedActivationPreview({
               </h3>
               <p className="text-muted-foreground text-sm">
                 Found {searchResult.attendee_count} {searchResult.attendee_count === 1 ? 'person' : 'people'}
+                {uniqueOrderCount > 1 && ` across ${uniqueOrderCount} orders`}
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="outline" className="text-xs">
@@ -71,6 +81,11 @@ export function UnifiedActivationPreview({
                 {searchResult.order_id && (
                   <Badge variant="secondary" className="text-xs font-mono">
                     #{searchResult.order_id}
+                  </Badge>
+                )}
+                {uniqueOrderCount > 1 && (
+                  <Badge variant="outline" className="text-xs bg-accent/10 text-accent">
+                    {uniqueOrderCount} Orders
                   </Badge>
                 )}
               </div>
@@ -93,6 +108,7 @@ export function UnifiedActivationPreview({
                 attendee={attendee}
                 type="direct"
                 showDetails={true}
+                backgroundColor={getOrderGroupBackgroundColor(attendee.order_id)}
               />
             ))}
           </div>
@@ -118,6 +134,7 @@ export function UnifiedActivationPreview({
                 attendee={companion}
                 type="companion"
                 showDetails={true}
+                backgroundColor={getOrderGroupBackgroundColor(companion.order_id)}
               />
             ))}
           </div>
