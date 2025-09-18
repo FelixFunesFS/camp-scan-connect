@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -94,6 +94,8 @@ export const RfidAssignmentTab = () => {
   const [totalProgress, setTotalProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'groups' | 'individual'>('groups');
+  const [isViewModeSwitch, setIsViewModeSwitch] = useState(false);
+  const scrollPositionRef = useRef<number>(0);
   const { toast } = useToast();
 
   // Load attendees data
@@ -281,15 +283,18 @@ export const RfidAssignmentTab = () => {
   });
 
   // Focus first unassigned attendee overall
-  const focusFirstUnassigned = useCallback(() => {
+  const focusFirstUnassigned = useCallback((preventScroll: boolean = false) => {
+    // Don't auto-focus during view mode switches
+    if (isViewModeSwitch && preventScroll) return;
+    
     setTimeout(() => {
       const firstInput = document.querySelector('input[data-rfid-input="true"]:not([value])') as HTMLInputElement;
       if (firstInput) {
-        firstInput.focus({ preventScroll: true });
+        firstInput.focus({ preventScroll });
         firstInput.select();
       }
     }, 200);
-  }, []);
+  }, [isViewModeSwitch]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -341,11 +346,13 @@ export const RfidAssignmentTab = () => {
       
       if (incompleteGroupIds.length > 0) {
         setExpandedGroups(new Set(incompleteGroupIds));
-        // Focus first unassigned input
-        focusFirstUnassigned();
+        // Only focus on initial load, not during view switches
+        if (!isViewModeSwitch) {
+          focusFirstUnassigned(false);
+        }
       }
     }
-  }, [orderGroups, focusFirstUnassigned]);
+  }, [orderGroups, focusFirstUnassigned, isViewModeSwitch]);
 
   if (loading) {
     return (
@@ -423,7 +430,20 @@ export const RfidAssignmentTab = () => {
         </div>
         
         {/* View Mode Toggle */}
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'groups' | 'individual')}>
+        <Tabs value={viewMode} onValueChange={(value) => {
+          // Capture current scroll position
+          scrollPositionRef.current = window.scrollY;
+          
+          // Mark as view mode switch
+          setIsViewModeSwitch(true);
+          setViewMode(value as 'groups' | 'individual');
+          
+          // Restore scroll position and reset switch flag after render
+          setTimeout(() => {
+            window.scrollTo({ top: scrollPositionRef.current, behavior: 'instant' });
+            setIsViewModeSwitch(false);
+          }, 50);
+        }}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="groups" className="flex items-center gap-2">
               <Grid className="h-4 w-4" />
@@ -467,7 +487,7 @@ export const RfidAssignmentTab = () => {
       )}
 
       {/* Main Content Views - Middle Section */}
-      <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'groups' | 'individual')}>
+      <Tabs value={viewMode}>
         <TabsContent value="groups" className="space-y-4">
           {/* Group Order View */}
           {orderGroups.length === 0 ? (
