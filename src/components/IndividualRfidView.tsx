@@ -17,6 +17,8 @@ interface AttendeeWithRfid {
   first_name: string;
   last_name: string;
   order_id: string | null;
+  phone: string | null;
+  registration_status: string;
   rfid_uid: string | null;
   rfid_status: string | null;
 }
@@ -27,7 +29,7 @@ interface IndividualViewProps {
   searchTerm: string;
 }
 
-type SortField = 'name' | 'order' | 'status';
+type SortField = 'name' | 'order' | 'phone' | 'registration_status' | 'status';
 type SortDirection = 'asc' | 'desc';
 
 export const IndividualView: React.FC<IndividualViewProps> = ({ 
@@ -51,6 +53,14 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
         case 'order':
           aValue = a.order_id?.toLowerCase() || 'zzz-no-order';
           bValue = b.order_id?.toLowerCase() || 'zzz-no-order';
+          break;
+        case 'phone':
+          aValue = a.phone?.toLowerCase() || 'zzz-no-phone';
+          bValue = b.phone?.toLowerCase() || 'zzz-no-phone';
+          break;
+        case 'registration_status':
+          aValue = a.registration_status.toLowerCase();
+          bValue = b.registration_status.toLowerCase();
           break;
         case 'status':
           aValue = a.rfid_uid && a.rfid_status === 'assigned' ? 'assigned' : 'unassigned';
@@ -153,6 +163,30 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                     </div>
                   </Button>
                 </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    onClick={() => handleSort('phone')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Phone
+                      {getSortIcon('phone')}
+                    </div>
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    className="h-auto p-0 font-semibold hover:bg-transparent"
+                    onClick={() => handleSort('registration_status')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Status
+                      {getSortIcon('registration_status')}
+                    </div>
+                  </Button>
+                </TableHead>
                 <TableHead>RFID Assignment</TableHead>
                 <TableHead>
                   <Button
@@ -161,7 +195,7 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center gap-2">
-                      Status
+                      RFID Status
                       {getSortIcon('status')}
                     </div>
                   </Button>
@@ -181,6 +215,23 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                   <TableCell>
                     <Badge variant="outline" className="font-mono text-xs">
                       {attendee.order_id || 'No Order'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {attendee.phone || 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant="outline"
+                      className={
+                        attendee.registration_status === 'registered' 
+                          ? 'border-success text-success' 
+                          : attendee.registration_status === 'cancelled'
+                          ? 'border-destructive text-destructive'
+                          : 'border-warning text-warning'
+                      }
+                    >
+                      {attendee.registration_status}
                     </Badge>
                   </TableCell>
                   <TableCell>

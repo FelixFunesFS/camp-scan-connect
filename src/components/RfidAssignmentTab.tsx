@@ -39,6 +39,8 @@ interface AttendeeWithRfid {
   first_name: string;
   last_name: string;
   order_id: string | null;
+  phone: string | null;
+  registration_status: string;
   rfid_uid: string | null;
   rfid_status: string | null;
 }
@@ -84,6 +86,8 @@ export const RfidAssignmentTab = () => {
           first_name,
           last_name,
           order_id,
+          phone,
+          registration_status,
           rfid_tags(uid, status)
         `)
         .order('order_id', { ascending: true })
@@ -97,6 +101,8 @@ export const RfidAssignmentTab = () => {
         first_name: attendee.first_name,
         last_name: attendee.last_name,
         order_id: attendee.order_id,
+        phone: attendee.phone,
+        registration_status: attendee.registration_status,
         rfid_uid: (attendee.rfid_tags as any)?.[0]?.uid || null,
         rfid_status: (attendee.rfid_tags as any)?.[0]?.status || null,
       }));
@@ -122,6 +128,7 @@ export const RfidAssignmentTab = () => {
     return attendees.filter(attendee => 
       `${attendee.first_name} ${attendee.last_name}`.toLowerCase().includes(term) ||
       (attendee.order_id && attendee.order_id.toLowerCase().includes(term)) ||
+      (attendee.phone && attendee.phone.toLowerCase().includes(term)) ||
       (attendee.rfid_uid && attendee.rfid_uid.toLowerCase().includes(term))
     );
   }, [attendees, searchTerm]);
@@ -294,13 +301,52 @@ export const RfidAssignmentTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* Search and View Toggle - Top Section */}
+      {/* Progress Overview - Top Section */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{attendees.length}</div>
+            <p className="text-xs text-muted-foreground">Total Attendees</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-warning">
+              {attendees.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Unassigned</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-success">
+              {attendees.filter(a => a.rfid_uid && a.rfid_status === 'assigned').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Assigned</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{orderGroups.length}</div>
+            <p className="text-xs text-muted-foreground">All Orders</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{Math.round(totalProgress)}%</div>
+            <p className="text-xs text-muted-foreground">Assignment Progress</p>
+            <Progress value={totalProgress} className="mt-2 h-2" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and View Toggle - Second Section */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search attendees, orders, RFID..."
+            placeholder="Search name, order, phone, RFID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -493,44 +539,6 @@ export const RfidAssignmentTab = () => {
         </CardHeader>
       </Card>
 
-      {/* Progress Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{attendees.length}</div>
-            <p className="text-xs text-muted-foreground">Total Attendees</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-warning">
-              {attendees.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned').length}
-            </div>
-            <p className="text-xs text-muted-foreground">Unassigned</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-success">
-              {attendees.filter(a => a.rfid_uid && a.rfid_status === 'assigned').length}
-            </div>
-            <p className="text-xs text-muted-foreground">Assigned</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{orderGroups.length}</div>
-            <p className="text-xs text-muted-foreground">All Orders</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{Math.round(totalProgress)}%</div>
-            <p className="text-xs text-muted-foreground">Assignment Progress</p>
-            <Progress value={totalProgress} className="mt-2 h-2" />
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Keyboard Shortcuts */}
       <Card className="border-muted">
