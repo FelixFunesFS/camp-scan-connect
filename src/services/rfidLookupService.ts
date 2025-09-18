@@ -374,26 +374,37 @@ class RfidLookupService {
   // Get recent staff activity
   async getRecentStaffActivity(limit: number = 50): Promise<any[]> {
     try {
-      const { data, error } = await supabase
+      // Get transactions first
+      const { data: transactions, error: txError } = await supabase
         .from('station_transactions')
-        .select(`
-          id,
-          created_at,
-          transaction_type,
-          rfid_uid,
-          extra_data,
-          attendee:attendees(
-            first_name,
-            last_name
-          )
-        `)
+        .select('id, created_at, transaction_type, rfid_uid, extra_data, attendee_id')
         .eq('station_type', 'activation')
         .not('staff_id', 'is', null)
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      if (error) throw error;
-      return data || [];
+      if (txError) throw txError;
+      if (!transactions?.length) return [];
+
+      // Get attendee info for the transactions
+      const attendeeIds = transactions.map(tx => tx.attendee_id).filter(Boolean);
+      const { data: attendees, error: attendeeError } = await supabase
+        .from('attendees')
+        .select('id, first_name, last_name')
+        .in('id', attendeeIds);
+
+      if (attendeeError) throw attendeeError;
+
+      // Create a map for quick lookup
+      const attendeeMap = new Map(attendees?.map(a => [a.id, a]) || []);
+
+      // Merge the data
+      const mergedData = transactions.map(tx => ({
+        ...tx,
+        attendee: attendeeMap.get(tx.attendee_id) || null
+      }));
+
+      return mergedData;
     } catch (error) {
       console.error('Error getting recent staff activity:', error);
       return [];
