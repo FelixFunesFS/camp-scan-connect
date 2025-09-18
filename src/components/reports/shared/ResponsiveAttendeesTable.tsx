@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +33,7 @@ import { MobileAttendeeCard } from "./MobileAttendeeCard";
 import { useGroupRfid } from "@/components/GroupRfidProvider";
 import { KeyboardShortcutsHelper } from "@/components/KeyboardShortcutsHelper";
 import { Link } from "react-router-dom";
+import { getOrderGroupBackgroundColor, getOrderGroupClasses, groupAttendeesByOrder } from "@/utils/orderGroupUtils";
 
 interface ResponsiveAttendeesTableProps {
   attendees: GroupedAttendee[] | EnhancedAttendee[];
@@ -368,6 +369,26 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
     ? (attendees as EnhancedAttendee[]) 
     : [];
 
+  // Filter and process attendees for color grouping
+  const processedForGrouping = useMemo(() => {
+    if (isGroupedView) {
+      return { individualData, groupedData };
+    }
+    
+    // Sort individual attendees by order_id to keep groups together
+    const sortedIndividual = [...individualData].sort((a, b) => {
+      const orderA = a.order_id || 'zzz_individual';
+      const orderB = b.order_id || 'zzz_individual';
+      return orderA.localeCompare(orderB);
+    });
+    
+    return { 
+      individualData: sortedIndividual, 
+      groupedData,
+      orderGroups: groupAttendeesByOrder(sortedIndividual)
+    };
+  }, [individualData, groupedData, isGroupedView]);
+
   // If no attendees or invalid data, show empty state
   if (!attendees || !Array.isArray(attendees) || attendees.length === 0) {
     return (
@@ -392,13 +413,13 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       
       <div className="flex justify-between items-center text-sm text-muted-foreground">
         <div>
-          {isGroupedView && groupedData.length > 0 ? (
+          {isGroupedView && processedForGrouping.groupedData.length > 0 ? (
             <span>
-              Showing {groupedData.length} groups with {groupedData.reduce((sum, group) => sum + group.attendees.length, 0)} attendees
+              Showing {processedForGrouping.groupedData.length} groups with {processedForGrouping.groupedData.reduce((sum, group) => sum + group.attendees.length, 0)} attendees
             </span>
-          ) : individualData.length > 0 ? (
+          ) : processedForGrouping.individualData.length > 0 ? (
             <span>
-              Showing {individualData.length} attendees
+              Showing {processedForGrouping.individualData.length} attendees
             </span>
           ) : (
             <span>No attendees to display</span>
@@ -436,7 +457,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       </div>
 
       {/* Group Management Controls */}
-      {isGroupedView && groupedData.length > 0 && (
+      {isGroupedView && processedForGrouping.groupedData.length > 0 && (
         <div className="flex gap-2 mb-4">
           <Button
             variant="outline"
@@ -445,7 +466,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
             className="text-xs"
           >
             <ChevronDown className="h-3 w-3 mr-1" />
-            Expand All ({groupedData.length} groups)
+            Expand All ({processedForGrouping.groupedData.length} groups)
           </Button>
           <Button
             variant="outline"
@@ -462,17 +483,18 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
       {/* Mobile Card View */}
       {isMobile && (
         <div className="space-y-3">
-          {isGroupedView && groupedData.length > 0 ? (
-            groupedData.map((group) => {
+          {isGroupedView && processedForGrouping.groupedData.length > 0 ? (
+            processedForGrouping.groupedData.map((group) => {
               const groupKey = group.orderId || 'no-order';
               const isExpanded = expandedGroups.has(groupKey);
+              const backgroundColor = getOrderGroupBackgroundColor(group.orderId);
               
               return (
-                <Card key={groupKey} className="overflow-hidden">
+                <Card key={groupKey} className="overflow-hidden" style={{ backgroundColor }}>
                   <CardContent className="p-0">
                     {/* Group Header */}
                     <div
-                      className="flex items-center justify-between p-3 bg-muted/30 border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                      className="flex items-center justify-between p-3 bg-black/5 border-b hover:bg-black/10 transition-colors cursor-pointer"
                       onClick={() => toggleGroup(groupKey)}
                     >
                       <div className="flex items-center gap-2 flex-1">
@@ -489,7 +511,7 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                         </Button>
                         <div>
                           <h3 className="font-medium text-base flex items-center gap-2">
-                            Order: {group.orderId || "No Order ID"}
+                            Order: {group.orderId || "Individual Attendees"}
                             <Badge variant="outline" className="text-xs">
                               <Users className="h-3 w-3 mr-1" />
                               {group.attendees.length}
@@ -516,14 +538,18 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                 </Card>
               );
             })
-          ) : individualData.length > 0 ? (
-            individualData.map((attendee) => (
-              <MobileAttendeeCard 
-                key={attendee.id}
-                attendee={attendee} 
-                onRefresh={onRefresh}
-              />
-            ))
+          ) : processedForGrouping.individualData.length > 0 ? (
+            processedForGrouping.individualData.map((attendee) => {
+              const backgroundColor = getOrderGroupBackgroundColor(attendee.order_id);
+              return (
+                <div key={attendee.id} style={{ backgroundColor }} className="rounded-lg">
+                  <MobileAttendeeCard 
+                    attendee={attendee} 
+                    onRefresh={onRefresh}
+                  />
+                </div>
+              );
+            })
           ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No attendees found matching the current filters.</p>
@@ -561,13 +587,13 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
               </thead>
               
               <tbody>
-                {isGroupedView && groupedData.length > 0 ? (
-                  groupedData.flatMap((group, groupIndex) => {
+                {isGroupedView && processedForGrouping.groupedData.length > 0 ? (
+                  processedForGrouping.groupedData.flatMap((group, groupIndex) => {
                     const groupKey = group.orderId || 'no-order';
                     const isExpanded = expandedGroups.has(groupKey);
                     
                     // Calculate starting row index for this group
-                    const baseRowIndex = groupedData
+                    const baseRowIndex = processedForGrouping.groupedData
                       .slice(0, groupIndex)
                       .reduce((sum, g) => sum + g.attendees.length, 0);
                     
@@ -584,44 +610,59 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
                       />
                     ];
                     
-                    // Add attendee rows
+                    // Add attendee rows with order group background colors
                     group.attendees.forEach((attendee, attendeeIndex) => {
                       const rowIndex = baseRowIndex + attendeeIndex;
+                      const backgroundColor = getOrderGroupBackgroundColor(group.orderId);
+                      
                       rows.push(
-                        <AttendeeRow
+                        <tr
                           key={attendee.id}
-                          attendee={attendee}
-                          columns={visibleDesktopColumns}
-                          rowIndex={rowIndex}
-                          isEven={attendeeIndex % 2 === 0}
-                          isVisible={isExpanded}
-                          renderCellContent={renderCellContent}
-                        />
+                          className={`border-b last:border-b-0 hover:bg-accent/50 ${getOrderGroupClasses(group.orderId)} ${
+                            isExpanded ? '' : 'hidden'
+                          }`}
+                          style={{ backgroundColor }}
+                          data-row-index={rowIndex}
+                          data-attendee-id={attendee.id}
+                        >
+                          {visibleDesktopColumns.map((column) => (
+                            <td
+                              key={column.key}
+                              className={`p-3 text-sm border-r last:border-r-0 align-top ${column.width || 'w-auto'}`}
+                            >
+                              {renderCellContent(attendee, column.key)}
+                            </td>
+                          ))}
+                        </tr>
                       );
                     });
                     
                     return rows;
                   })
-                ) : individualData.length > 0 ? (
-                  individualData.map((attendee, index) => (
-                    <tr
-                      key={attendee.id}
-                      className={`border-b last:border-b-0 hover:bg-accent/50 ${
-                        index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
-                      }`}
-                      data-row-index={index}
-                      data-attendee-id={attendee.id}
-                    >
-                      {visibleDesktopColumns.map((column) => (
-                        <td
-                          key={column.key}
-                          className={`p-3 text-sm border-r last:border-r-0 align-top ${column.width || 'w-auto'}`}
-                        >
-                          {renderCellContent(attendee, column.key)}
-                        </td>
-                      ))}
-                      </tr>
-                    ))
+                ) : processedForGrouping.individualData.length > 0 ? (
+                  processedForGrouping.individualData.map((attendee, index) => {
+                    const backgroundColor = getOrderGroupBackgroundColor(attendee.order_id);
+                    const borderClasses = getOrderGroupClasses(attendee.order_id);
+                    
+                    return (
+                      <tr
+                        key={attendee.id}
+                        className={`border-b last:border-b-0 hover:bg-accent/50 ${borderClasses}`}
+                        style={{ backgroundColor }}
+                        data-row-index={index}
+                        data-attendee-id={attendee.id}
+                      >
+                        {visibleDesktopColumns.map((column) => (
+                          <td
+                            key={column.key}
+                            className={`p-3 text-sm border-r last:border-r-0 align-top ${column.width || 'w-auto'}`}
+                          >
+                            {renderCellContent(attendee, column.key)}
+                          </td>
+                        ))}
+                        </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={visibleDesktopColumns.length} className="text-center py-8 text-muted-foreground">

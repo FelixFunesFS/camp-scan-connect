@@ -91,6 +91,20 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
                 </Badge>
               </div>
 
+              {/* Order Information - Moved to Primary Section */}
+              {attendee.order_id && (
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-sm">Order:</span>
+                  <span className="text-sm font-mono">{attendee.order_id}</span>
+                  {attendee.group_size && attendee.group_size > 1 && (
+                    <Badge variant="outline" className="text-xs">
+                      {attendee.group_size} people
+                    </Badge>
+                  )}
+                </div>
+              )}
+
               {/* Contact Info */}
               <div className="space-y-1">
                 {attendee.email && (
@@ -140,22 +154,6 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleContent>
             <div className="p-4 bg-muted/30 space-y-3">
-              {/* Order Information */}
-              {attendee.order_id && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Order ID:</span>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-sm font-mono">{attendee.order_id}</span>
-                    {attendee.group_size && attendee.group_size > 1 && (
-                      <Badge variant="outline" className="text-xs">
-                        {attendee.group_size}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {/* Ticket Information */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Ticket Type:</span>

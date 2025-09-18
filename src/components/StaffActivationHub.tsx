@@ -115,7 +115,7 @@ export function StaffActivationHub() {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [visibleColumns] = useState<string[]>([
-    'first_name', 'last_name', 'phone', 'email', 'ticket_type', 'rfid_status', 'overall_status', 'actions'
+    'first_name', 'last_name', 'phone', 'email', 'order_id', 'ticket_type', 'rfid_status', 'overall_status', 'actions'
   ]);
   
   // Unified activation section state
@@ -145,6 +145,7 @@ export function StaffActivationHub() {
     { key: 'first_name', label: 'Name', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
     { key: 'email', label: 'Email', mobile: true, desktop: true, width: 'min-w-48', sortable: true },
     { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'order_id', label: 'Order ID', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
     { key: 'ticket_type', label: 'Ticket Type', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
