@@ -27,25 +27,31 @@ serve(async (req) => {
 
     console.log('Fetching RegFox data to debug ID fields...');
 
-    // Fetch a small sample of RegFox data
-    const response = await fetch(`https://api.regfox.com/v2/forms/${regfoxFormId}/registrants?startingAfter=0&limit=10`, {
+    // Fetch a small sample of RegFox data using the correct API endpoint
+    const requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=regfox.com&formId=${encodeURIComponent(regfoxFormId)}&limit=10&sort=asc`;
+    
+    console.log('Making RegFox API call to:', requestUrl);
+    
+    const response = await fetch(requestUrl, {
       headers: {
-        'Authorization': `Bearer ${regfoxApiKey}`,
+        'apiKey': regfoxApiKey,
         'Content-Type': 'application/json'
       }
     });
 
     if (!response.ok) {
-      throw new Error(`RegFox API error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('RegFox API error response:', errorText);
+      throw new Error(`RegFox API error: ${response.status} ${response.statusText}`);
     }
 
     const regfoxData = await response.json();
     
     console.log('RegFox API Response Structure:');
-    console.log('Total registrants:', regfoxData.registrants?.length || 0);
+    console.log('Total registrants:', regfoxData.data?.length || 0);
     
-    if (regfoxData.registrants && regfoxData.registrants.length > 0) {
-      const firstRegistrant = regfoxData.registrants[0];
+    if (regfoxData.data && regfoxData.data.length > 0) {
+      const firstRegistrant = regfoxData.data[0];
       
       console.log('\n=== FIRST REGISTRANT ID FIELDS ===');
       console.log('id:', firstRegistrant.id);
@@ -56,7 +62,7 @@ serve(async (req) => {
       console.log('amount:', firstRegistrant.amount);
       
       // Look for Bernard Hunter specifically
-      const bernard = regfoxData.registrants.find((r: any) => {
+      const bernard = regfoxData.data.find((r: any) => {
         const fields = r.fieldData || [];
         const firstName = fields.find((f: any) => f.label?.includes('First Name') || f.path?.includes('firstName'))?.value || '';
         const lastName = fields.find((f: any) => f.label?.includes('Last Name') || f.path?.includes('lastName'))?.value || '';
@@ -77,10 +83,10 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       message: 'Debug data logged to console',
-      sampleData: regfoxData.registrants?.[0] ? {
-        id: regfoxData.registrants[0].id,
-        displayId: regfoxData.registrants[0].displayId,
-        orderId: regfoxData.registrants[0].orderId,
+      sampleData: regfoxData.data?.[0] ? {
+        id: regfoxData.data[0].id,
+        displayId: regfoxData.data[0].displayId,
+        orderId: regfoxData.data[0].orderId,
       } : null
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
