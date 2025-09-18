@@ -500,6 +500,10 @@ export type Database = {
         }
         Returns: number
       }
+      is_alphanumeric_regfox_id: {
+        Args: { order_id_value: string }
+        Returns: boolean
+      }
       lookup_attendees_by_phone: {
         Args: { p_phone: string }
         Returns: {
