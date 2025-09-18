@@ -1,0 +1,2 @@
+-- Update supabase/config.toml to include the new debug function
+-- This will be handled automatically by the migration system

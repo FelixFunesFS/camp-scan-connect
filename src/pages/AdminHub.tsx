@@ -19,6 +19,7 @@ import {
 import { RfidAssignmentTab } from "@/components/RfidAssignmentTab";
 import { StaffActivationHub } from "@/components/StaffActivationHub";
 import { MobileAdminNavigation } from "@/components/MobileAdminNavigation";
+import { RegFoxIdDebugger } from "@/components/RegFoxIdDebugger";
 import Reports from "./Reports";
 
 const AdminHub = () => {
@@ -152,6 +153,7 @@ const AdminHub = () => {
                   </div>
                 </CardContent>
               </Card>
+              <RegFoxIdDebugger />
             </div>
           </div>
         )

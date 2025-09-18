@@ -352,7 +352,7 @@ serve(async (req) => {
             email: email,
             phone: phone || null,
             regfox_id: payload.data.id,
-            order_id: payload.data.orderId || null
+            order_id: payload.data.displayId || payload.data.orderId || null
           };
           attendeeId = payload.data.id;
         }
@@ -473,7 +473,7 @@ serve(async (req) => {
             email: email,
             phone: phone || null,
             regfox_id: registrant.id,
-            order_id: payload.data.id || null
+            order_id: payload.data.displayId || payload.data.orderId || payload.data.id || null
           };
           attendeeId = registrant.id;
         }
@@ -642,7 +642,7 @@ serve(async (req) => {
           // Complete attendee data with all enhanced fields
           const completeAttendeeData = {
             ...attendeeData,
-            order_id: payload.data.id || attendeeData.order_id || null,
+            order_id: payload.data.displayId || payload.data.orderId || attendeeData.order_id || null,
             ticket_type: ticketType,
             registration_status: registrationStatus,
             is_veteran: isVeteran,
