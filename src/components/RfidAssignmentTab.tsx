@@ -416,6 +416,8 @@ export const RfidAssignmentTab = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
+            data-search-input="true"
+            data-exclude-rfid="true"
           />
           {searchTerm && (
             <Button
