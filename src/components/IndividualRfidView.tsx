@@ -11,16 +11,38 @@ import {
   Search
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
+import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 
 interface AttendeeWithRfid {
   id: string;
   first_name: string;
   last_name: string;
-  order_id: string | null;
-  phone: string | null;
+  email?: string;
+  phone?: string;
+  regfox_id?: string;
+  order_id?: string;
+  ticket_type: string;
   registration_status: string;
-  rfid_uid: string | null;
-  rfid_status: string | null;
+  activated_at?: string;
+  waiver_signed?: boolean;
+  rfid_uid?: string;
+  rfid_status: string;
+  has_headphones?: boolean;
+  bar_hits?: number;
+  overall_status: string;
+  arrival_day?: string;
+  is_duplicate?: boolean;
+  is_phone_duplicate?: boolean;
+  meal_plan?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  group_size?: number;
+  is_group_order?: boolean;
+  is_veteran?: boolean;
+  city?: string;
+  state?: string;
+  special_accommodations?: string;
 }
 
 interface IndividualViewProps {
@@ -210,7 +232,14 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                   className="hover:bg-muted/50"
                 >
                   <TableCell className="font-medium">
-                    {attendee.first_name} {attendee.last_name}
+                    <AttendeeDetailModal
+                      attendee={attendee}
+                      trigger={
+                        <Button variant="link" className="p-0 h-auto font-medium text-left hover:underline">
+                          {attendee.first_name} {attendee.last_name}
+                        </Button>
+                      }
+                    />
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="font-mono text-xs">

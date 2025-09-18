@@ -38,11 +38,32 @@ interface AttendeeWithRfid {
   id: string;
   first_name: string;
   last_name: string;
-  order_id: string | null;
-  phone: string | null;
+  email?: string;
+  phone?: string;
+  regfox_id?: string;
+  order_id?: string;
+  ticket_type: string;
   registration_status: string;
-  rfid_uid: string | null;
-  rfid_status: string | null;
+  activated_at?: string;
+  waiver_signed?: boolean;
+  rfid_uid?: string;
+  rfid_status: string;
+  has_headphones?: boolean;
+  bar_hits?: number;
+  overall_status: string;
+  arrival_day?: string;
+  is_duplicate?: boolean;
+  is_phone_duplicate?: boolean;
+  meal_plan?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  group_size?: number;
+  is_group_order?: boolean;
+  is_veteran?: boolean;
+  city?: string;
+  state?: string;
+  special_accommodations?: string;
 }
 
 interface OrderGroup {
@@ -85,10 +106,24 @@ export const RfidAssignmentTab = () => {
           id,
           first_name,
           last_name,
-          order_id,
+          email,
           phone,
+          regfox_id,
+          order_id,
+          ticket_type,
           registration_status,
-          rfid_tags(uid, status)
+          activated_at,
+          waiver_signed,
+          meal_plan,
+          notes,
+          special_accommodations,
+          created_at,
+          updated_at,
+          city,
+          state,
+          arrival_window,
+          is_veteran,
+          rfid_tags(uid, status, activated_at)
         `)
         .order('order_id', { ascending: true })
         .order('first_name', { ascending: true });
@@ -96,16 +131,40 @@ export const RfidAssignmentTab = () => {
       if (error) throw error;
 
       // Flatten and enhance the data
-      const enhancedAttendees: AttendeeWithRfid[] = data.map(attendee => ({
-        id: attendee.id,
-        first_name: attendee.first_name,
-        last_name: attendee.last_name,
-        order_id: attendee.order_id,
-        phone: attendee.phone,
-        registration_status: attendee.registration_status,
-        rfid_uid: (attendee.rfid_tags as any)?.[0]?.uid || null,
-        rfid_status: (attendee.rfid_tags as any)?.[0]?.status || null,
-      }));
+      const enhancedAttendees: AttendeeWithRfid[] = data.map(attendee => {
+        const rfidTag = (attendee.rfid_tags as any)?.[0];
+        return {
+          id: attendee.id,
+          first_name: attendee.first_name,
+          last_name: attendee.last_name,
+          email: attendee.email,
+          phone: attendee.phone,
+          regfox_id: attendee.regfox_id,
+          order_id: attendee.order_id,
+          ticket_type: attendee.ticket_type,
+          registration_status: attendee.registration_status,
+          activated_at: attendee.activated_at,
+          waiver_signed: attendee.waiver_signed,
+          meal_plan: attendee.meal_plan,
+          notes: attendee.notes,
+          special_accommodations: attendee.special_accommodations,
+          created_at: attendee.created_at,
+          updated_at: attendee.updated_at,
+          city: attendee.city,
+          state: attendee.state,
+          rfid_uid: rfidTag?.uid || null,
+          rfid_status: rfidTag?.status || 'unissued',
+          has_headphones: false, // Default values for computed fields
+          bar_hits: 0,
+          overall_status: attendee.activated_at ? 'activated' : (rfidTag?.uid ? 'assigned' : 'unassigned'),
+          arrival_day: attendee.arrival_window,
+          is_duplicate: false,
+          is_phone_duplicate: false,
+          group_size: 1,
+          is_group_order: false,
+          is_veteran: attendee.is_veteran || false,
+        };
+      });
 
       setAttendees(enhancedAttendees);
     } catch (error) {
