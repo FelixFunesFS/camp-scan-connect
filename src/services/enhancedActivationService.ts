@@ -13,6 +13,15 @@ export interface UnifiedSearchResult {
 
 export class EnhancedActivationService {
   /**
+   * Calculate overall status based on activation and RFID assignment
+   */
+  private static calculateOverallStatus(isActivated: boolean, hasRfid: boolean): string {
+    if (isActivated) return 'activated';
+    if (hasRfid) return 'assigned';
+    return 'unassigned';
+  }
+
+  /**
    * Detect the type of search query
    */
   static detectSearchType(query: string): 'phone' | 'email' | 'order_id' | 'name' {
@@ -107,6 +116,8 @@ export class EnhancedActivationService {
       // Process attendees with RFID data
       const attendeeDetails = attendeesData.map(attendee => {
         const rfidTag = rfidData?.find(tag => tag.attendee_id === attendee.id);
+        const isActivated = !!attendee.activated_at;
+        const hasRfid = !!rfidTag?.uid;
         return {
           id: attendee.id,
           name: `${attendee.first_name} ${attendee.last_name}`,
@@ -116,8 +127,9 @@ export class EnhancedActivationService {
           activated_at: attendee.activated_at,
           rfid_activated_at: rfidTag?.activated_at,
           rfid_status: rfidTag?.status,
-          is_activated: !!attendee.activated_at,
-          has_rfid: !!rfidTag?.uid
+          is_activated: isActivated,
+          has_rfid: hasRfid,
+          overall_status: this.calculateOverallStatus(isActivated, hasRfid)
         };
       });
 
@@ -150,6 +162,8 @@ export class EnhancedActivationService {
 
           orderCompanions = companionData.map(companion => {
             const rfidTag = companionRfidData?.find(tag => tag.attendee_id === companion.id);
+            const isActivated = !!companion.activated_at;
+            const hasRfid = !!rfidTag?.uid;
             return {
               id: companion.id,
               name: `${companion.first_name} ${companion.last_name}`,
@@ -160,8 +174,9 @@ export class EnhancedActivationService {
               activated_at: companion.activated_at,
               rfid_activated_at: rfidTag?.activated_at,
               rfid_status: rfidTag?.status,
-              is_activated: !!companion.activated_at,
-              has_rfid: !!rfidTag?.uid
+              is_activated: isActivated,
+              has_rfid: hasRfid,
+              overall_status: this.calculateOverallStatus(isActivated, hasRfid)
             };
           });
         }
@@ -208,6 +223,8 @@ export class EnhancedActivationService {
       // Process all attendees as "details" since they're all in the same order
       const attendeeDetails = attendeesData.map(attendee => {
         const rfidTag = rfidData?.find(tag => tag.attendee_id === attendee.id);
+        const isActivated = !!attendee.activated_at;
+        const hasRfid = !!rfidTag?.uid;
         return {
           id: attendee.id,
           name: `${attendee.first_name} ${attendee.last_name}`,
@@ -218,8 +235,9 @@ export class EnhancedActivationService {
           activated_at: attendee.activated_at,
           rfid_activated_at: rfidTag?.activated_at,
           rfid_status: rfidTag?.status,
-          is_activated: !!attendee.activated_at,
-          has_rfid: !!rfidTag?.uid
+          is_activated: isActivated,
+          has_rfid: hasRfid,
+          overall_status: this.calculateOverallStatus(isActivated, hasRfid)
         };
       });
 
@@ -264,6 +282,8 @@ export class EnhancedActivationService {
       // Process attendees with RFID data
       const attendeeDetails = attendeesData.map(attendee => {
         const rfidTag = rfidData?.find(tag => tag.attendee_id === attendee.id);
+        const isActivated = !!attendee.activated_at;
+        const hasRfid = !!rfidTag?.uid;
         return {
           id: attendee.id,
           name: `${attendee.first_name} ${attendee.last_name}`,
@@ -274,8 +294,9 @@ export class EnhancedActivationService {
           activated_at: attendee.activated_at,
           rfid_activated_at: rfidTag?.activated_at,
           rfid_status: rfidTag?.status,
-          is_activated: !!attendee.activated_at,
-          has_rfid: !!rfidTag?.uid
+          is_activated: isActivated,
+          has_rfid: hasRfid,
+          overall_status: this.calculateOverallStatus(isActivated, hasRfid)
         };
       });
 
@@ -314,6 +335,8 @@ export class EnhancedActivationService {
 
           orderCompanions = companionData.map(companion => {
             const rfidTag = companionRfidData?.find(tag => tag.attendee_id === companion.id);
+            const isActivated = !!companion.activated_at;
+            const hasRfid = !!rfidTag?.uid;
             return {
               id: companion.id,
               name: `${companion.first_name} ${companion.last_name}`,
@@ -324,8 +347,9 @@ export class EnhancedActivationService {
               activated_at: companion.activated_at,
               rfid_activated_at: rfidTag?.activated_at,
               rfid_status: rfidTag?.status,
-              is_activated: !!companion.activated_at,
-              has_rfid: !!rfidTag?.uid
+              is_activated: isActivated,
+              has_rfid: hasRfid,
+              overall_status: this.calculateOverallStatus(isActivated, hasRfid)
             };
           });
         }
