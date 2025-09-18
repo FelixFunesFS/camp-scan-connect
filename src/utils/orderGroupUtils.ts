@@ -47,6 +47,39 @@ export function getOrderGroupBackgroundColor(orderId: string | null | undefined,
 }
 
 /**
+ * Get distinct badge colors for order IDs
+ */
+const ORDER_BADGE_COLORS = [
+  { bg: 'hsl(200 100% 88%)', text: 'hsl(200 100% 20%)', border: 'hsl(200 100% 75%)' }, // Blue
+  { bg: 'hsl(24 100% 88%)', text: 'hsl(24 100% 20%)', border: 'hsl(24 100% 75%)' },   // Orange
+  { bg: 'hsl(142 76% 88%)', text: 'hsl(142 76% 20%)', border: 'hsl(142 76% 75%)' },   // Green
+  { bg: 'hsl(38 92% 88%)', text: 'hsl(38 92% 20%)', border: 'hsl(38 92% 75%)' },      // Yellow
+  { bg: 'hsl(217 91% 88%)', text: 'hsl(217 91% 20%)', border: 'hsl(217 91% 75%)' },   // Info Blue
+  { bg: 'hsl(280 100% 88%)', text: 'hsl(280 100% 20%)', border: 'hsl(280 100% 75%)' }, // Purple
+  { bg: 'hsl(160 100% 88%)', text: 'hsl(160 100% 20%)', border: 'hsl(160 100% 75%)' }, // Cyan
+  { bg: 'hsl(340 100% 88%)', text: 'hsl(340 100% 20%)', border: 'hsl(340 100% 75%)' }, // Pink
+];
+
+export function getOrderBadgeColor(orderId: string | null | undefined): { bg: string; text: string; border: string } {
+  if (!orderId || orderId.trim() === '') {
+    return { bg: 'hsl(var(--muted))', text: 'hsl(var(--muted-foreground))', border: 'hsl(var(--border))' };
+  }
+  
+  // Create a simple hash from the order ID for consistent color assignment
+  let hash = 0;
+  for (let i = 0; i < orderId.length; i++) {
+    const char = orderId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Use absolute value to ensure positive index
+  const colorIndex = Math.abs(hash) % ORDER_BADGE_COLORS.length;
+  
+  return ORDER_BADGE_COLORS[colorIndex];
+}
+
+/**
  * Get CSS classes for order group styling
  */
 export function getOrderGroupClasses(orderId: string | null | undefined): string {

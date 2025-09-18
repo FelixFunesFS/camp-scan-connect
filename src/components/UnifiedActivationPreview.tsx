@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, Search, AlertCircle, CheckCircle2, Phone, Mail, User, Hash } from "lucide-react";
 import { MobileAttendeeCard } from "./MobileAttendeeCard";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
-import { getOrderGroupBackgroundColor, groupAttendeesByOrder } from "@/utils/orderGroupUtils";
+import { getOrderGroupBackgroundColor, groupAttendeesByOrder, getOrderBadgeColor } from "@/utils/orderGroupUtils";
 import type { UnifiedSearchResult } from "@/services/enhancedActivationService";
 
 interface UnifiedActivationPreviewProps {
@@ -109,6 +109,7 @@ export function UnifiedActivationPreview({
                 type="direct"
                 showDetails={true}
                 backgroundColor={getOrderGroupBackgroundColor(attendee.order_id)}
+                primarySearchOrderId={searchResult.order_id}
               />
             ))}
           </div>
@@ -135,6 +136,7 @@ export function UnifiedActivationPreview({
                 type="companion"
                 showDetails={true}
                 backgroundColor={getOrderGroupBackgroundColor(companion.order_id)}
+                primarySearchOrderId={searchResult.order_id}
               />
             ))}
           </div>

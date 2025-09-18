@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp, User, Phone, CreditCard, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
+import { getOrderBadgeColor } from "@/utils/orderGroupUtils";
 
 interface AttendeeData {
   id?: string;
@@ -24,6 +25,7 @@ interface MobileAttendeeCardProps {
   showDetails?: boolean;
   onToggleDetails?: () => void;
   backgroundColor?: string;
+  primarySearchOrderId?: string | null;
 }
 
 export function MobileAttendeeCard({ 
@@ -31,7 +33,8 @@ export function MobileAttendeeCard({
   type, 
   showDetails = false, 
   onToggleDetails,
-  backgroundColor 
+  backgroundColor,
+  primarySearchOrderId 
 }: MobileAttendeeCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -85,11 +88,30 @@ export function MobileAttendeeCard({
                     Companion
                   </Badge>
                 )}
-                {attendee.order_id && (
-                  <Badge variant="secondary" className="text-xs font-mono">
-                    #{attendee.order_id}
-                  </Badge>
-                )}
+                {attendee.order_id && (() => {
+                  const badgeColors = getOrderBadgeColor(attendee.order_id);
+                  const isDifferentOrder = primarySearchOrderId && attendee.order_id !== primarySearchOrderId;
+                  
+                  return (
+                    <div className="flex items-center gap-1">
+                      <Badge 
+                        className="text-xs font-mono border"
+                        style={{
+                          backgroundColor: badgeColors.bg,
+                          color: badgeColors.text,
+                          borderColor: badgeColors.border
+                        }}
+                      >
+                        #{attendee.order_id}
+                      </Badge>
+                      {isDifferentOrder && (
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                          Different Order
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               
               <div className="flex items-center gap-2 flex-wrap">
