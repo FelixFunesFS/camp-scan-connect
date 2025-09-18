@@ -35,7 +35,7 @@ import { enhancedActivationService, UnifiedSearchResult, EnhancedActivationServi
 import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { NotificationState } from "@/components/MobileAttendeeCard";
+import type { NotificationState } from "@/components/reports/shared/MobileAttendeeCard";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {

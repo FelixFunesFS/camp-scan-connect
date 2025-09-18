@@ -17,21 +17,91 @@ import {
   Wine,
   Eye,
   FileText,
-  Users
+  Users,
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
+  X
 } from "lucide-react";
 import { EnhancedAttendee } from "../AttendeeManagementTab";
 import { Link } from "react-router-dom";
 
+export type NotificationState = 'idle' | 'processing' | 'success' | 'warning' | 'error';
+
+// Flexible attendee interface for both EnhancedAttendee and simpler data structures
+interface FlexibleAttendeeData {
+  // Core fields
+  id?: string;
+  first_name?: string;
+  last_name?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  
+  // Order info
+  order_id?: string;
+  
+  // Status fields
+  overall_status?: string;
+  rfid_status?: string;
+  is_activated?: boolean;
+  activated_at?: string;
+  rfid_activated_at?: string;
+  
+  // RFID info
+  rfid_uid?: string;
+  
+  // Additional fields
+  ticket_type?: string;
+  arrival_day?: string;
+  waiver_signed?: boolean;
+  has_headphones?: boolean;
+  bar_hits?: number;
+  notes?: string;
+  is_duplicate?: boolean;
+  is_phone_duplicate?: boolean;
+  meal_plan?: string;
+  group_size?: number;
+}
+
 interface MobileAttendeeCardProps {
-  attendee: EnhancedAttendee;
+  attendee: EnhancedAttendee | FlexibleAttendeeData;
   onRefresh?: () => void;
+  // New props for activation preview compatibility
+  type?: 'direct' | 'companion';
+  showDetails?: boolean;
+  onToggleDetails?: () => void;
+  backgroundColor?: string;
+  primarySearchOrderId?: string | null;
+  // Notification props
+  notificationState?: NotificationState;
+  notificationMessage?: string;
+  showNotification?: boolean;
+  onDismissNotification?: () => void;
 }
 
 export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   attendee,
-  onRefresh
+  onRefresh,
+  type,
+  showDetails: propShowDetails,
+  onToggleDetails,
+  backgroundColor,
+  primarySearchOrderId,
+  notificationState = 'idle',
+  notificationMessage,
+  showNotification = false,
+  onDismissNotification
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Get display name from either first_name/last_name or name field
+  const displayName = (attendee as any).name || 
+    `${(attendee as EnhancedAttendee).first_name || ''} ${(attendee as EnhancedAttendee).last_name || ''}`.trim();
+  
+  // Handle the collapsible state
+  const isCollapsible = propShowDetails !== undefined;
+  const shouldShowDetails = isCollapsible ? propShowDetails : true;
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -67,9 +137,87 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
     }
   };
 
+  const getNotificationStyles = () => {
+    switch (notificationState) {
+      case 'success':
+        return {
+          bg: 'bg-green-50 border-green-200',
+          text: 'text-green-800',
+          icon: CheckCircle2,
+          iconColor: 'text-green-600'
+        };
+      case 'warning':
+        return {
+          bg: 'bg-amber-50 border-amber-200', 
+          text: 'text-amber-800',
+          icon: AlertTriangle,
+          iconColor: 'text-amber-600'
+        };
+      case 'error':
+        return {
+          bg: 'bg-red-50 border-red-200',
+          text: 'text-red-800', 
+          icon: AlertTriangle,
+          iconColor: 'text-red-600'
+        };
+      case 'processing':
+        return {
+          bg: 'bg-blue-50 border-blue-200',
+          text: 'text-blue-800',
+          icon: Loader2,
+          iconColor: 'text-blue-600'
+        };
+      default:
+        return {
+          bg: 'bg-gray-50 border-gray-200',
+          text: 'text-gray-800',
+          icon: AlertTriangle,
+          iconColor: 'text-gray-600'
+        };
+    }
+  };
+
   return (
-    <Card className="overflow-hidden">
+    <Card 
+      className={`overflow-hidden transition-all duration-200 ${
+        type === 'companion' 
+          ? 'border-accent/30' 
+          : type === 'direct'
+          ? 'border-primary/20'
+          : ''
+      }`}
+      style={{ backgroundColor: backgroundColor }}
+    >
       <CardContent className="p-0">
+        {/* Notification Banner */}
+        {showNotification && notificationMessage && (
+          <div className={`m-4 mb-0 p-3 rounded-lg border ${getNotificationStyles().bg} ${getNotificationStyles().text}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const { icon: Icon, iconColor } = getNotificationStyles();
+                  return (
+                    <Icon 
+                      className={`h-4 w-4 ${iconColor} ${notificationState === 'processing' ? 'animate-spin' : ''}`} 
+                    />
+                  );
+                })()}
+                <span className="text-sm font-medium">{notificationMessage}</span>
+              </div>
+              {onDismissNotification && notificationState !== 'processing' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 hover:bg-black/10"
+                  onClick={onDismissNotification}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Primary Info - Always Visible */}
         <div className="p-4 border-b">
           <div className="flex items-start justify-between gap-3">
@@ -77,8 +225,13 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <h3 className="font-medium text-base truncate">
-                  {attendee.first_name} {attendee.last_name}
+                  {displayName}
                 </h3>
+                {type === 'companion' && (
+                  <Badge variant="outline" className="text-xs">
+                    Companion
+                  </Badge>
+                )}
               </div>
               
               <div className="flex items-center gap-2 mb-2">
@@ -127,13 +280,15 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
             </div>
 
             <div className="flex flex-col items-end gap-2">
-              <Link
-                to={`/attendee/${attendee.id}`}
-                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
-              >
-                <Eye className="h-3 w-3" />
-                View
-              </Link>
+              {attendee.id && (
+                <Link
+                  to={`/attendee/${attendee.id}`}
+                  className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Eye className="h-3 w-3" />
+                  View
+                </Link>
+              )}
               
               <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
                 <CollapsibleTrigger asChild>

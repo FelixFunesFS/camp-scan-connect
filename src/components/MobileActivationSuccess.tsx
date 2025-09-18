@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, Users, RotateCcw, Home, AlertTriangle, RefreshCw, AlertCircle } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
-import { MobileAttendeeCard } from "./MobileAttendeeCard";
+import { MobileAttendeeCard } from "./reports/shared/MobileAttendeeCard";
 import { phoneActivationService, PhoneActivationService } from "@/services/phoneActivationService";
 import { useState } from "react";
 import type { GroupActivationResult } from "@/services/phoneActivationService";

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, Smartphone, AlertCircle, CheckCircle2 } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
-import { MobileAttendeeCard } from "./MobileAttendeeCard";
+import { MobileAttendeeCard } from "./reports/shared/MobileAttendeeCard";
 import type { PhoneLookupResult } from "@/services/phoneActivationService";
 
 interface MobileActivationPreviewProps {
