@@ -98,7 +98,7 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
 
       // Auto-advance to next unassigned after a brief delay (reduced for faster workflow)
       setTimeout(() => {
-        focusNextUnassigned();
+        focusNextUnassigned(false); // Allow scrolling for RFID auto-advance
       }, 500);
     }
   }, [focusNextUnassigned, toast]);

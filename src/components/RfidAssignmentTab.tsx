@@ -245,7 +245,7 @@ export const RfidAssignmentTab = () => {
             // Skip current attendee - focus next
             const nextInput = document.querySelector('input[data-rfid-input="true"]:not([value])') as HTMLInputElement;
             if (nextInput) {
-              nextInput.focus();
+              nextInput.focus({ preventScroll: false });
               nextInput.select();
             }
             break;

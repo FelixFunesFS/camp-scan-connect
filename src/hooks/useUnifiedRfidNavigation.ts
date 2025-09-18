@@ -55,7 +55,7 @@ export const useUnifiedRfidNavigation = ({
   }, [groupedAttendees, isGroupedView, expandedGroups]);
 
   // Navigate between RFID input fields with arrow keys
-  const navigateToRow = useCallback((direction: 'up' | 'down') => {
+  const navigateToRow = useCallback((direction: 'up' | 'down', preventScroll = false) => {
     if (!focusableRows.length) return;
     
     const currentFocusedElement = document.activeElement as HTMLInputElement;
@@ -93,19 +93,21 @@ export const useUnifiedRfidNavigation = ({
     setTimeout(() => {
       const targetInput = document.querySelector(`input[data-attendee-id="${targetAttendee.id}"][data-rfid-input="true"]`) as HTMLInputElement;
       if (targetInput) {
-        targetInput.focus();
+        targetInput.focus({ preventScroll });
         targetInput.select();
         currentAttendeeIdRef.current = targetAttendee.id;
         onRowFocus?.(targetIndex);
         
-        // Smooth scroll to element
-        targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Only scroll for user-initiated navigation
+        if (!preventScroll) {
+          targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
     }, isGroupedView ? 100 : 50);
   }, [focusableRows, isGroupedView, expandedGroups, onRowFocus]);
 
   // Focus first unassigned row
-  const focusFirstUnassignedRow = useCallback(() => {
+  const focusFirstUnassignedRow = useCallback((preventScroll = false) => {
     if (!focusableRows.length) return;
     
     const firstAttendee = focusableRows[0];
@@ -122,7 +124,7 @@ export const useUnifiedRfidNavigation = ({
     setTimeout(() => {
       const firstInput = document.querySelector(`input[data-attendee-id="${firstAttendee.id}"][data-rfid-input="true"]`) as HTMLInputElement;
       if (firstInput) {
-        firstInput.focus();
+        firstInput.focus({ preventScroll });
         firstInput.select();
         currentAttendeeIdRef.current = firstAttendee.id;
         onRowFocus?.(0);
@@ -157,7 +159,7 @@ export const useUnifiedRfidNavigation = ({
   }, [focusableRows, isGroupedView, expandedGroups, onRowFocus]);
 
   // Focus next unassigned (for RFID auto-advance)
-  const focusNextUnassigned = useCallback(() => {
+  const focusNextUnassigned = useCallback((preventScroll = false) => {
     if (!focusableRows.length) return;
     
     const currentFocusedElement = document.activeElement as HTMLInputElement;
@@ -180,13 +182,15 @@ export const useUnifiedRfidNavigation = ({
     setTimeout(() => {
       const nextInput = document.querySelector(`input[data-attendee-id="${nextAttendee.id}"][data-rfid-input="true"]`) as HTMLInputElement;
       if (nextInput) {
-        nextInput.focus();
+        nextInput.focus({ preventScroll });
         nextInput.select();
         currentAttendeeIdRef.current = nextAttendee.id;
         onRowFocus?.(nextIndex);
         
-        // Smooth scroll to element
-        nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Only scroll for user-initiated navigation
+        if (!preventScroll) {
+          nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
     }, 50);
   }, [focusableRows, isGroupedView, expandedGroups, onRowFocus]);
