@@ -20,6 +20,7 @@ import { RfidAssignmentTab } from "@/components/RfidAssignmentTab";
 import { StaffActivationHub } from "@/components/StaffActivationHub";
 import { MobileAdminNavigation } from "@/components/MobileAdminNavigation";
 import { RegFoxIdDebugger } from "@/components/RegFoxIdDebugger";
+import { EnhancedSystemStatus } from "@/components/EnhancedSystemStatus";
 import Reports from "./Reports";
 
 const AdminHub = () => {
@@ -131,26 +132,7 @@ const AdminHub = () => {
                   <CardDescription>System overview and management tools</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="mobile-grid gap-4">
-                    <Card className="p-4">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="mobile-subtitle">System Status</p>
-                          <p className="text-sm text-muted-foreground">All systems operational</p>
-                        </div>
-                      </div>
-                    </Card>
-                    <Card className="p-4">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-blue-600" />
-                        <div>
-                          <p className="mobile-subtitle">Active Users</p>
-                          <p className="text-sm text-muted-foreground">Staff and admin access</p>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
+                  <EnhancedSystemStatus />
                 </CardContent>
               </Card>
               <RegFoxIdDebugger />
