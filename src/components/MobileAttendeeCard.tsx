@@ -3,9 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, User, Phone, CreditCard, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronUp, User, Phone, CreditCard, CheckCircle2, Clock, AlertTriangle, Loader2, X } from "lucide-react";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import { getOrderBadgeColor } from "@/utils/orderGroupUtils";
+
+export type NotificationState = 'idle' | 'processing' | 'success' | 'warning' | 'error';
 
 interface AttendeeData {
   id?: string;
@@ -26,6 +28,10 @@ interface MobileAttendeeCardProps {
   onToggleDetails?: () => void;
   backgroundColor?: string;
   primarySearchOrderId?: string | null;
+  notificationState?: NotificationState;
+  notificationMessage?: string;
+  showNotification?: boolean;
+  onDismissNotification?: () => void;
 }
 
 export function MobileAttendeeCard({ 
@@ -34,7 +40,11 @@ export function MobileAttendeeCard({
   showDetails = false, 
   onToggleDetails,
   backgroundColor,
-  primarySearchOrderId 
+  primarySearchOrderId,
+  notificationState = 'idle',
+  notificationMessage,
+  showNotification = false,
+  onDismissNotification
 }: MobileAttendeeCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -67,6 +77,46 @@ export function MobileAttendeeCard({
     );
   };
 
+  const getNotificationStyles = () => {
+    switch (notificationState) {
+      case 'success':
+        return {
+          bg: 'bg-green-50 border-green-200',
+          text: 'text-green-800',
+          icon: CheckCircle2,
+          iconColor: 'text-green-600'
+        };
+      case 'warning':
+        return {
+          bg: 'bg-amber-50 border-amber-200', 
+          text: 'text-amber-800',
+          icon: AlertTriangle,
+          iconColor: 'text-amber-600'
+        };
+      case 'error':
+        return {
+          bg: 'bg-red-50 border-red-200',
+          text: 'text-red-800', 
+          icon: AlertTriangle,
+          iconColor: 'text-red-600'
+        };
+      case 'processing':
+        return {
+          bg: 'bg-blue-50 border-blue-200',
+          text: 'text-blue-800',
+          icon: Loader2,
+          iconColor: 'text-blue-600'
+        };
+      default:
+        return {
+          bg: 'bg-gray-50 border-gray-200',
+          text: 'text-gray-800',
+          icon: AlertTriangle,
+          iconColor: 'text-gray-600'
+        };
+    }
+  };
+
   return (
     <Card 
       className={`transition-all duration-200 ${
@@ -77,6 +127,35 @@ export function MobileAttendeeCard({
       style={{ backgroundColor: backgroundColor || (type === 'companion' ? 'hsl(var(--accent) / 0.05)' : 'hsl(var(--primary) / 0.05)') }}
     >
       <CardContent className="p-4">
+        {/* Notification Banner */}
+        {showNotification && notificationMessage && (
+          <div className={`mb-3 p-3 rounded-lg border ${getNotificationStyles().bg} ${getNotificationStyles().text}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const { icon: Icon, iconColor } = getNotificationStyles();
+                  return (
+                    <Icon 
+                      className={`h-4 w-4 ${iconColor} ${notificationState === 'processing' ? 'animate-spin' : ''}`} 
+                    />
+                  );
+                })()}
+                <span className="text-sm font-medium">{notificationMessage}</span>
+              </div>
+              {onDismissNotification && notificationState !== 'processing' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 hover:bg-black/10"
+                  onClick={onDismissNotification}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+        
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">

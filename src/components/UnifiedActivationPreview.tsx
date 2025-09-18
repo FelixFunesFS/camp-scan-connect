@@ -1,19 +1,28 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, Search, AlertCircle, CheckCircle2, Phone, Mail, User, Hash } from "lucide-react";
-import { MobileAttendeeCard } from "./MobileAttendeeCard";
+import { MobileAttendeeCard, type NotificationState } from "./MobileAttendeeCard";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import { getOrderGroupBackgroundColor, groupAttendeesByOrder, getOrderBadgeColor } from "@/utils/orderGroupUtils";
 import type { UnifiedSearchResult } from "@/services/enhancedActivationService";
+
+interface AttendeeNotification {
+  attendeeId: string;
+  state: NotificationState;
+  message: string;
+  showNotification: boolean;
+}
 
 interface UnifiedActivationPreviewProps {
   searchQuery: string;
   searchResult: UnifiedSearchResult;
   isProcessing: boolean;
-  onActivateSearchGroup: () => void;
-  onActivateEntireOrder: () => void;
+  onActivateSearchGroup: (notifications: AttendeeNotification[]) => void;
+  onActivateEntireOrder: (notifications: AttendeeNotification[]) => void;
   onBack: () => void;
+  attendeeNotifications?: AttendeeNotification[];
 }
 
 export function UnifiedActivationPreview({
@@ -22,8 +31,10 @@ export function UnifiedActivationPreview({
   isProcessing,
   onActivateSearchGroup,
   onActivateEntireOrder,
-  onBack
+  onBack,
+  attendeeNotifications = []
 }: UnifiedActivationPreviewProps) {
+  const [localNotifications, setLocalNotifications] = useState<AttendeeNotification[]>(attendeeNotifications);
   const hasCompanions = searchResult.order_companions && searchResult.order_companions.length > 0;
   const directCount = searchResult.attendee_details?.length || 0;
   const companionCount = searchResult.order_companions?.length || 0;
@@ -55,6 +66,22 @@ export function UnifiedActivationPreview({
       case 'name': return 'Name';
       default: return 'Search';
     }
+  };
+
+  const getAttendeeNotification = (attendeeId: string) => {
+    return localNotifications.find(n => n.attendeeId === attendeeId);
+  };
+
+  const handleDismissNotification = (attendeeId: string) => {
+    setLocalNotifications(prev => prev.filter(n => n.attendeeId !== attendeeId));
+  };
+
+  const handleActivateSearchGroup = () => {
+    onActivateSearchGroup(localNotifications);
+  };
+
+  const handleActivateEntireOrder = () => {
+    onActivateEntireOrder(localNotifications);
   };
 
   return (
@@ -102,16 +129,23 @@ export function UnifiedActivationPreview({
             {searchResult.searchType === 'order_id' ? 'Order Members' : 'Direct Matches'} ({directCount})
           </h4>
           <div className="space-y-2">
-            {searchResult.attendee_details?.map((attendee: any, index: number) => (
-              <MobileAttendeeCard 
-                key={`direct-${index}`}
-                attendee={attendee}
-                type="direct"
-                showDetails={true}
-                backgroundColor={getOrderGroupBackgroundColor(attendee.order_id)}
-                primarySearchOrderId={searchResult.order_id}
-              />
-            ))}
+            {searchResult.attendee_details?.map((attendee: any, index: number) => {
+              const notification = getAttendeeNotification(attendee.id);
+              return (
+                <MobileAttendeeCard 
+                  key={`direct-${index}`}
+                  attendee={attendee}
+                  type="direct"
+                  showDetails={true}
+                  backgroundColor={getOrderGroupBackgroundColor(attendee.order_id)}
+                  primarySearchOrderId={searchResult.order_id}
+                  notificationState={notification?.state}
+                  notificationMessage={notification?.message}
+                  showNotification={notification?.showNotification}
+                  onDismissNotification={() => handleDismissNotification(attendee.id)}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -129,16 +163,23 @@ export function UnifiedActivationPreview({
             These people are in the same order:
           </p>
           <div className="space-y-2">
-            {searchResult.order_companions?.map((companion: any, index: number) => (
-              <MobileAttendeeCard 
-                key={`companion-${index}`}
-                attendee={companion}
-                type="companion"
-                showDetails={true}
-                backgroundColor={getOrderGroupBackgroundColor(companion.order_id)}
-                primarySearchOrderId={searchResult.order_id}
-              />
-            ))}
+            {searchResult.order_companions?.map((companion: any, index: number) => {
+              const notification = getAttendeeNotification(companion.id);
+              return (
+                <MobileAttendeeCard 
+                  key={`companion-${index}`}
+                  attendee={companion}
+                  type="companion"
+                  showDetails={true}
+                  backgroundColor={getOrderGroupBackgroundColor(companion.order_id)}
+                  primarySearchOrderId={searchResult.order_id}
+                  notificationState={notification?.state}
+                  notificationMessage={notification?.message}
+                  showNotification={notification?.showNotification}
+                  onDismissNotification={() => handleDismissNotification(companion.id)}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -148,7 +189,7 @@ export function UnifiedActivationPreview({
         <div className="space-y-3">
           {/* Primary Action: Activate Search Group */}
           <Button
-            onClick={onActivateSearchGroup}
+            onClick={handleActivateSearchGroup}
             disabled={isProcessing}
             size="lg"
             className="w-full h-12 text-base font-medium"
@@ -172,7 +213,7 @@ export function UnifiedActivationPreview({
           {/* Secondary Action: Activate Entire Order (if applicable and not order search) */}
           {hasCompanions && searchResult.searchType !== 'order_id' && (
             <Button
-              onClick={onActivateEntireOrder}
+              onClick={handleActivateEntireOrder}
               disabled={isProcessing}
               variant="outline"
               size="lg"

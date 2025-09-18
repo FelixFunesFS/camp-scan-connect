@@ -35,6 +35,7 @@ import { enhancedActivationService, UnifiedSearchResult, EnhancedActivationServi
 import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
+import type { NotificationState } from "@/components/MobileAttendeeCard";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {
@@ -84,6 +85,13 @@ interface StaffStats {
   todayActivations: number;
 }
 
+export interface AttendeeNotification {
+  attendeeId: string;
+  state: NotificationState;
+  message: string;
+  showNotification: boolean;
+}
+
 const DEACTIVATION_REASONS = [
   { value: "lost", label: "Lost RFID" },
   { value: "damaged", label: "Damaged RFID" },
@@ -124,6 +132,7 @@ export function StaffActivationHub() {
   const [showUnifiedPreview, setShowUnifiedPreview] = useState(false);
   const [isUnifiedProcessing, setIsUnifiedProcessing] = useState(false);
   const [isUnifiedSearching, setIsUnifiedSearching] = useState(false);
+  const [attendeeNotifications, setAttendeeNotifications] = useState<AttendeeNotification[]>([]);
   
   // Deactivation section state
   const [isDeactivationOpen, setIsDeactivationOpen] = useState(false);
@@ -639,6 +648,7 @@ export function StaffActivationHub() {
     if (!unifiedSearchQuery.trim()) return;
     
     setIsUnifiedSearching(true);
+    setAttendeeNotifications([]); // Clear previous notifications
     try {
       const result = await EnhancedActivationService.unifiedSearch(unifiedSearchQuery);
       
@@ -664,49 +674,103 @@ export function StaffActivationHub() {
     }
   };
 
-  const handleUnifiedActivateSearchGroup = async () => {
+  const handleUnifiedActivateSearchGroup = async (notifications: AttendeeNotification[] = []) => {
     if (!unifiedSearchResult) return;
 
     setIsUnifiedProcessing(true);
+    
+    // Set processing state for all attendees
+    const allAttendees = [
+      ...(unifiedSearchResult.attendee_details || []),
+      ...(unifiedSearchResult.order_companions || [])
+    ];
+    
+    const processingNotifications: AttendeeNotification[] = allAttendees.map(attendee => ({
+      attendeeId: attendee.id,
+      state: 'processing' as NotificationState,
+      message: 'Activating...',
+      showNotification: true
+    }));
+    
+    setAttendeeNotifications(processingNotifications);
+    
     try {
       const result = await EnhancedActivationService.activateSearchGroup(
         unifiedSearchResult,
         staffId || undefined
       );
 
-      // Provide contextual messaging based on activation results
-      if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
-        toast({
-          title: "RFID Assignment Required",
-          description: "No attendees could be activated - RFID tags must be assigned first",
-          variant: "destructive",
+      // Create per-attendee notifications based on results
+      const resultNotifications: AttendeeNotification[] = [];
+      
+      // Process successful activations
+      if (result.activated_count > 0) {
+        // We'll assume activated attendees succeeded (could be enhanced with detailed results)
+        allAttendees.slice(0, result.activated_count).forEach(attendee => {
+          resultNotifications.push({
+            attendeeId: attendee.id,
+            state: 'success',
+            message: '✅ Activated successfully',
+            showNotification: true
+          });
         });
-      } else if (result.activated_count === 0) {
-        toast({
-          title: "No Activations Needed",
-          description: "All attendees in this group are already activated",
-          variant: "default",
+      }
+      
+      // Process warnings/errors  
+      if (result.warnings && result.warnings.length > 0) {
+        const remainingAttendees = allAttendees.slice(result.activated_count);
+        remainingAttendees.forEach(attendee => {
+          if (!attendee.rfid_uid) {
+            resultNotifications.push({
+              attendeeId: attendee.id,
+              state: 'error',
+              message: '❌ RFID tag required for activation',
+              showNotification: true
+            });
+          } else if (attendee.is_activated) {
+            resultNotifications.push({
+              attendeeId: attendee.id,
+              state: 'warning',
+              message: '⚠️ Already activated',
+              showNotification: true
+            });
+          }
         });
-      } else {
+      }
+      
+      setAttendeeNotifications(resultNotifications);
+
+      // Only show summary toast for major issues or complete success
+      if (result.activated_count === allAttendees.length) {
         toast({
           title: "Group Activation Complete",
-          description: `Successfully activated ${result.activated_count} attendees${
-            result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
-          }`,
+          description: `Successfully activated all ${result.activated_count} attendees`,
+          variant: "default",
+        });
+      } else if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
+        toast({
+          title: "Review Card Notifications",
+          description: "Check individual attendee cards for specific activation issues",
           variant: "default",
         });
       }
-
-      // Reset unified search state
-      setShowUnifiedPreview(false);
-      setUnifiedSearchQuery("");
-      setUnifiedSearchResult(null);
 
       // Refresh data
       fetchAttendees();
       loadDashboardData();
     } catch (error) {
       console.error('Group activation error:', error);
+      
+      // Set error state for all attendees
+      const errorNotifications: AttendeeNotification[] = allAttendees.map(attendee => ({
+        attendeeId: attendee.id,
+        state: 'error' as NotificationState,
+        message: '❌ Activation failed - system error',
+        showNotification: true
+      }));
+      
+      setAttendeeNotifications(errorNotifications);
+      
       toast({
         title: "Activation Failed",
         description: "Failed to activate group",
@@ -779,6 +843,7 @@ export function StaffActivationHub() {
   const handleUnifiedBack = () => {
     setShowUnifiedPreview(false);
     setUnifiedSearchResult(null);
+    setAttendeeNotifications([]);
   };
 
   const exportActivity = () => {
@@ -952,6 +1017,7 @@ export function StaffActivationHub() {
                   onActivateSearchGroup={handleUnifiedActivateSearchGroup}
                   onActivateEntireOrder={handleUnifiedActivateEntireOrder}
                   onBack={handleUnifiedBack}
+                  attendeeNotifications={attendeeNotifications}
                 />
               )
             )}
