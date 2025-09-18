@@ -32,6 +32,7 @@ import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentC
 import { IndividualView } from "@/components/IndividualRfidView";
 import { RfidTestingSection } from "@/components/RfidTestingSection";
 import { RfidBulkOperationsSection } from "@/components/RfidBulkOperationsSection";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 
 interface AttendeeWithRfid {
   id: string;
@@ -560,6 +561,9 @@ export const RfidAssignmentTab = () => {
 
       {/* Bulk Operations */}
       <RfidBulkOperationsSection staffId="MC2025" />
+
+      {/* Scroll to Top Button */}
+      <ScrollToTop />
     </div>
   );
 };

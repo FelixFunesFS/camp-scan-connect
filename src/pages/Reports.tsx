@@ -12,6 +12,7 @@ import { ExecutiveReportsTab } from "@/components/reports/ExecutiveReportsTab";
 import { ChartCustomizer } from "@/components/reports/ChartCustomizer";
 import { CustomDashboard } from "@/components/reports/CustomDashboard";
 import { MobileReportsNavigation } from "@/components/reports/shared/MobileReportsNavigation";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 
 const Reports = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -136,6 +137,9 @@ const Reports = () => {
           </div>
         </Tabs>
       </div>
+
+      {/* Scroll to Top Button */}
+      <ScrollToTop />
     </div>
   );
 };

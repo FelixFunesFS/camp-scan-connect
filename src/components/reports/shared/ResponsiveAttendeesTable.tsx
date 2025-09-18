@@ -34,6 +34,7 @@ import { useGroupRfid } from "@/components/GroupRfidProvider";
 import { KeyboardShortcutsHelper } from "@/components/KeyboardShortcutsHelper";
 import { Link } from "react-router-dom";
 import { getOrderGroupBackgroundColor, getOrderGroupClasses, groupAttendeesByOrder } from "@/utils/orderGroupUtils";
+import { ScrollToTop } from '@/components/ui/scroll-to-top';
 
 interface ResponsiveAttendeesTableProps {
   attendees: GroupedAttendee[] | EnhancedAttendee[];
@@ -711,6 +712,9 @@ export const ResponsiveAttendeesTable: React.FC<ResponsiveAttendeesTableProps> =
           </span>
         </div>
       )}
+
+      {/* Scroll to Top Button */}
+      <ScrollToTop />
     </div>
   );
 };

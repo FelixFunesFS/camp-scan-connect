@@ -36,6 +36,7 @@ import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview"
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { NotificationState } from "@/components/reports/shared/MobileAttendeeCard";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {
@@ -1482,6 +1483,9 @@ export function StaffActivationHub() {
           </Card>
         </Collapsible>
       </div>
+
+      {/* Scroll to Top Button */}
+      <ScrollToTop />
     </div>
   );
 }
