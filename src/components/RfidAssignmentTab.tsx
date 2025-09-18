@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,9 +23,13 @@ import {
   AlertTriangle, 
   Zap,
   SkipForward,
-  RotateCcw
+  RotateCcw,
+  Search,
+  List,
+  Grid
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
+import { IndividualView } from "@/components/IndividualRfidView";
 import { RfidTestingSection } from "@/components/RfidTestingSection";
 import { RfidBulkOperationsSection } from "@/components/RfidBulkOperationsSection";
 
@@ -63,6 +68,8 @@ export const RfidAssignmentTab = () => {
   const [testModeEnabled, setTestModeEnabled] = useState(false);
   const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
   const [totalProgress, setTotalProgress] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'groups' | 'individual'>('groups');
   const { toast } = useToast();
 
   // Load attendees data
@@ -106,11 +113,23 @@ export const RfidAssignmentTab = () => {
     }
   }, [toast]);
 
+  // Filter attendees based on search term
+  const filteredAttendees = useMemo(() => {
+    if (!searchTerm.trim()) return attendees;
+    
+    const term = searchTerm.toLowerCase().trim();
+    return attendees.filter(attendee => 
+      `${attendee.first_name} ${attendee.last_name}`.toLowerCase().includes(term) ||
+      (attendee.order_id && attendee.order_id.toLowerCase().includes(term)) ||
+      (attendee.rfid_uid && attendee.rfid_uid.toLowerCase().includes(term))
+    );
+  }, [attendees, searchTerm]);
+
   // Process attendees into order groups
   const processOrderGroups = useMemo(() => {
-    if (!attendees.length) return [];
+    if (!filteredAttendees.length) return [];
 
-    const grouped = attendees.reduce((acc, attendee) => {
+    const grouped = filteredAttendees.reduce((acc, attendee) => {
       const orderId = attendee.order_id || 'no-order';
       if (!acc[orderId]) {
         acc[orderId] = [];
@@ -138,13 +157,13 @@ export const RfidAssignmentTab = () => {
       }
       return a.orderId.localeCompare(b.orderId);
     });
-  }, [attendees]);
+  }, [filteredAttendees]);
 
   // Update order groups when processed
   useEffect(() => {
     setOrderGroups(processOrderGroups);
     
-    // Calculate total progress
+    // Calculate total progress based on all attendees (not filtered)
     const totalAttendees = attendees.length;
     const totalAssigned = attendees.filter(a => 
       a.rfid_uid && a.rfid_status === 'assigned'
@@ -287,24 +306,62 @@ export const RfidAssignmentTab = () => {
                 Rapid USB reader workflow for event bag RFID assignment
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <TestTube className="h-4 w-4" />
-                <Label htmlFor="test-mode">Test Mode</Label>
-                <Switch
-                  id="test-mode"
-                  checked={testModeEnabled}
-                  onCheckedChange={setTestModeEnabled}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              {/* Search */}
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search attendees, orders, RFID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
                 />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                    onClick={() => setSearchTerm('')}
+                  >
+                    ×
+                  </Button>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <SkipForward className="h-4 w-4" />
-                <Label htmlFor="auto-advance">Auto Advance</Label>
-                <Switch
-                  id="auto-advance"
-                  checked={autoAdvanceEnabled}
-                  onCheckedChange={setAutoAdvanceEnabled}
-                />
+              
+              {/* View Mode Toggle */}
+              <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'groups' | 'individual')}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="groups" className="flex items-center gap-2">
+                    <Grid className="h-4 w-4" />
+                    Groups
+                  </TabsTrigger>
+                  <TabsTrigger value="individual" className="flex items-center gap-2">
+                    <List className="h-4 w-4" />
+                    Individual
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              {/* Settings */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <TestTube className="h-4 w-4" />
+                  <Label htmlFor="test-mode">Test Mode</Label>
+                  <Switch
+                    id="test-mode"
+                    checked={testModeEnabled}
+                    onCheckedChange={setTestModeEnabled}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <SkipForward className="h-4 w-4" />
+                  <Label htmlFor="auto-advance">Auto Advance</Label>
+                  <Switch
+                    id="auto-advance"
+                    checked={autoAdvanceEnabled}
+                    onCheckedChange={setAutoAdvanceEnabled}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -312,33 +369,62 @@ export const RfidAssignmentTab = () => {
       </Card>
 
       {/* Progress Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold">{attendees.length}</div>
+            <p className="text-xs text-muted-foreground">Total Attendees</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-warning">
+              {attendees.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Unassigned</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-success">
+              {attendees.filter(a => a.rfid_uid && a.rfid_status === 'assigned').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Assigned</p>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{orderGroups.length}</div>
-            <p className="text-xs text-muted-foreground">Total Orders</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-warning">{incompleteGroups.length}</div>
-            <p className="text-xs text-muted-foreground">Pending Orders</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-success">{completedGroups.length}</div>
-            <p className="text-xs text-muted-foreground">Completed Orders</p>
+            <p className="text-xs text-muted-foreground">All Orders</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{Math.round(totalProgress)}%</div>
-            <p className="text-xs text-muted-foreground">Overall Progress</p>
+            <p className="text-xs text-muted-foreground">Assignment Progress</p>
             <Progress value={totalProgress} className="mt-2 h-2" />
           </CardContent>
         </Card>
       </div>
+
+      {/* Search Results Info */}
+      {searchTerm && (
+        <Alert>
+          <Search className="h-4 w-4" />
+          <AlertDescription>
+            Showing {filteredAttendees.length} of {attendees.length} attendees matching "{searchTerm}"
+            {filteredAttendees.length === 0 && (
+              <Button 
+                variant="link" 
+                className="p-0 h-auto ml-2" 
+                onClick={() => setSearchTerm('')}
+              >
+                Clear search
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Test Mode Alert */}
       {testModeEnabled && (
@@ -378,68 +464,96 @@ export const RfidAssignmentTab = () => {
         </CardContent>
       </Card>
 
-      {/* Order Groups */}
-      <div className="space-y-4">
-        {/* Incomplete Groups First */}
-        {incompleteGroups.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              Pending Orders ({incompleteGroups.length})
-            </h3>
-            {incompleteGroups.map((group) => (
-              <GroupCard
-                key={group.orderId}
-                group={group}
-                expandedGroups={expandedGroups}
-                toggleGroup={(groupId) => {
-                  setExpandedGroups(prev => {
-                    const next = new Set(prev);
-                    if (next.has(groupId)) {
-                      next.delete(groupId);
-                    } else {
-                      next.add(groupId);
-                    }
-                    return next;
-                  });
-                }}
-                onRefresh={loadAttendees}
-              />
-            ))}
-          </div>
-        )}
+      {/* Main Content Views */}
+      <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'groups' | 'individual')}>
+        <TabsContent value="groups" className="space-y-4">
+          {/* Group Order View */}
+          {orderGroups.length === 0 ? (
+            <Card>
+              <CardContent className="pt-8 pb-8 text-center">
+                <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  {searchTerm ? 'No matches found' : 'No attendees available'}
+                </h3>
+                <p className="text-muted-foreground">
+                  {searchTerm ? 'Try adjusting your search terms' : 'Load attendee data to begin RFID assignment'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {/* Incomplete Groups First */}
+              {incompleteGroups.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-warning" />
+                    Pending Orders ({incompleteGroups.length})
+                  </h3>
+                  {incompleteGroups.map((group) => (
+                    <GroupCard
+                      key={group.orderId}
+                      group={group}
+                      expandedGroups={expandedGroups}
+                      toggleGroup={(groupId) => {
+                        setExpandedGroups(prev => {
+                          const next = new Set(prev);
+                          if (next.has(groupId)) {
+                            next.delete(groupId);
+                          } else {
+                            next.add(groupId);
+                          }
+                          return next;
+                        });
+                      }}
+                      onRefresh={loadAttendees}
+                    />
+                  ))}
+                </div>
+              )}
 
-        {/* Completed Groups */}
-        {completedGroups.length > 0 && (
-          <div className="space-y-3">
-            <Separator />
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-success" />
-              Completed Orders ({completedGroups.length})
-            </h3>
-            {completedGroups.map((group) => (
-              <GroupCard
-                key={group.orderId}
-                group={group}
-                expandedGroups={expandedGroups}
-                toggleGroup={(groupId) => {
-                  setExpandedGroups(prev => {
-                    const next = new Set(prev);
-                    if (next.has(groupId)) {
-                      next.delete(groupId);
-                    } else {
-                      next.add(groupId);
-                    }
-                    return next;
-                  });
-                }}
-                onRefresh={loadAttendees}
-                isCompleted
-              />
-            ))}
-          </div>
-        )}
-      </div>
+              {/* Completed Groups */}
+              {completedGroups.length > 0 && (
+                <div className="space-y-3">
+                  <Separator />
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    Completed Orders ({completedGroups.length})
+                  </h3>
+                  {completedGroups.map((group) => (
+                    <GroupCard
+                      key={group.orderId}
+                      group={group}
+                      expandedGroups={expandedGroups}
+                      toggleGroup={(groupId) => {
+                        setExpandedGroups(prev => {
+                          const next = new Set(prev);
+                          if (next.has(groupId)) {
+                            next.delete(groupId);
+                          } else {
+                            next.add(groupId);
+                          }
+                          return next;
+                        });
+                      }}
+                      onRefresh={loadAttendees}
+                      isCompleted
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="individual" className="space-y-4">
+          {/* Individual View */}
+          <IndividualView 
+            attendees={filteredAttendees} 
+            onRefresh={loadAttendees}
+            searchTerm={searchTerm}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Testing & Development Tools */}
       <RfidTestingSection />
