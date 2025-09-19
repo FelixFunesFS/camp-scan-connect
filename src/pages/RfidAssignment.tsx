@@ -61,7 +61,6 @@ export interface AttendeeData {
   // Additional fields for enhanced functionality
   waiver_signed?: boolean;
   activated_at?: string;
-  overall_status?: string;
   order_companions?: AttendeeData[]; // Linked attendees
   group_assignment_progress?: { assigned: number; total: number; percentage: number };
 }
@@ -169,7 +168,6 @@ export const RfidAssignment = () => {
           formatted_meal_plan: formattedMealPlan,
           waiver_signed: (attendee as any).waiver_signed,
           activated_at: (attendee as any).activated_at,
-          overall_status: overallStatus,
           created_at: attendee.created_at,
           registration_status: (attendee as any).registration_status,
           rfid_uid: rfidTag?.uid || null,

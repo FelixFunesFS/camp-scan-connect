@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { calculateAttendeeStatus, getStatusVariant, getStatusDisplayText } from "@/utils/statusUtils";
 import {
   User,
   Mail,
@@ -88,9 +89,8 @@ export function AttendeeDetailModal({
               {attendee.first_name} {attendee.last_name}
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={getStatusVariant(attendee.overall_status)}>
-                {attendee.overall_status === 'activated' ? 'Active' :
-                 attendee.overall_status === 'assigned' ? 'Pending' : 'No RFID'}
+              <Badge variant={getStatusVariant(calculateAttendeeStatus(!!attendee.is_activated, !!attendee.has_rfid))}>
+                {getStatusDisplayText(calculateAttendeeStatus(!!attendee.is_activated, !!attendee.has_rfid))}
               </Badge>
               {attendee.is_veteran && (
                 <Badge variant="outline">Veteran</Badge>
@@ -290,9 +290,8 @@ export function AttendeeDetailModal({
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 items-end">
-                          <Badge variant={getStatusVariant(companion.overall_status || companion.rfid_status)}>
-                            {companion.overall_status === 'activated' || (companion.activated_at && companion.rfid_uid) ? 'Active' :
-                             companion.overall_status === 'assigned' || companion.rfid_uid ? 'Assigned' : 'Unassigned'}
+                          <Badge variant={getStatusVariant(calculateAttendeeStatus(!!companion.is_activated, !!companion.has_rfid))}>
+                            {getStatusDisplayText(calculateAttendeeStatus(!!companion.is_activated, !!companion.has_rfid))}
                           </Badge>
                           {companion.rfid_uid && (
                             <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
@@ -318,9 +317,8 @@ export function AttendeeDetailModal({
                         {selectedCompanion.first_name} {selectedCompanion.last_name}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={getStatusVariant(selectedCompanion.overall_status)}>
-                          {selectedCompanion.overall_status === 'activated' ? 'Active' :
-                           selectedCompanion.overall_status === 'assigned' ? 'Pending' : 'No RFID'}
+                        <Badge variant={getStatusVariant(calculateAttendeeStatus(!!selectedCompanion.is_activated, !!selectedCompanion.has_rfid))}>
+                          {getStatusDisplayText(calculateAttendeeStatus(!!selectedCompanion.is_activated, !!selectedCompanion.has_rfid))}
                         </Badge>
                         {selectedCompanion.is_veteran && (
                           <Badge variant="outline">Veteran</Badge>

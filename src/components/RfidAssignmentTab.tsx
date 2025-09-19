@@ -50,7 +50,6 @@ interface AttendeeWithRfid {
   rfid_status: string;
   has_headphones?: boolean;
   bar_hits?: number;
-  overall_status: string;
   arrival_day?: string;
   is_duplicate?: boolean;
   is_phone_duplicate?: boolean;
@@ -158,7 +157,6 @@ export const RfidAssignmentTab = () => {
           rfid_status: rfidTag?.status || 'unissued',
           has_headphones: false, // Default values for computed fields
           bar_hits: 0,
-          overall_status: attendee.activated_at ? 'activated' : (rfidTag?.uid ? 'assigned' : 'unassigned'),
           arrival_day: attendee.arrival_window,
           is_duplicate: false,
           is_phone_duplicate: false,

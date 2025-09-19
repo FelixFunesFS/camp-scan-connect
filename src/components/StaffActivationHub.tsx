@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { calculateAttendeeStatus, getStatusVariant, getStatusDisplayText } from "@/utils/statusUtils";
 import { 
   ArrowLeft, 
   Shield, 
@@ -57,7 +58,6 @@ export interface EnhancedAttendee {
   rfid_status: string;
   has_headphones?: boolean;
   bar_hits?: number;
-  overall_status: string;
   arrival_day?: string;
   is_duplicate?: boolean;
   is_phone_duplicate?: boolean;
@@ -127,7 +127,7 @@ export function StaffActivationHub() {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [visibleColumns] = useState<string[]>([
-    'first_name', 'last_name', 'phone', 'email', 'order_id', 'ticket_type', 'rfid_status', 'overall_status', 'actions'
+    'first_name', 'last_name', 'phone', 'email', 'order_id', 'ticket_type', 'rfid_status', 'actions'
   ]);
   
   // Unified activation section state
@@ -160,7 +160,6 @@ export function StaffActivationHub() {
     { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
     { key: 'order_id', label: 'Order ID', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
     { key: 'ticket_type', label: 'Ticket Type', desktop: true, width: 'min-w-24', sortable: true },
-    { key: 'overall_status', label: 'Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'actions', label: 'Actions', mobile: true, desktop: true, width: 'min-w-32', sortable: false }
   ];
@@ -230,13 +229,6 @@ export function StaffActivationHub() {
         ).length;
 
         const rfid_status = rfidTag?.status || 'unissued';
-        let overall_status = 'unassigned';
-        if (attendee.activated_at) {
-          overall_status = 'activated';
-        } else if (rfidTag?.status === 'assigned' || rfidTag?.status === 'active') {
-          overall_status = 'assigned';
-        }
-
         const arrival_day = attendee.arrival_window === 'early' ? 'Thursday' : 'Friday';
 
         const duplicateEmails = attendeesData?.filter(a => 
@@ -259,7 +251,6 @@ export function StaffActivationHub() {
           rfid_status,
           has_headphones,
           bar_hits,
-          overall_status,
           arrival_day,
           is_duplicate,
           is_phone_duplicate,
@@ -304,7 +295,7 @@ export function StaffActivationHub() {
       const todayActivations = todayActivity.filter(a => a.transaction_type === 'activate').length;
       
       // Get total active from attendees data
-      const totalActive = attendees.filter(a => a.overall_status === 'activated').length;
+      const totalActive = attendees.filter(a => !!a.activated_at).length;
 
       setStats({
         totalActive,
@@ -1053,16 +1044,12 @@ export function StaffActivationHub() {
                               <div className="flex flex-col items-end gap-2">
                                 {/* Status Badge */}
                                 <Badge 
-                                  variant={
-                                    attendee.overall_status === 'activated' ? 'default' :
-                                    attendee.overall_status === 'assigned' ? 'secondary' : 
-                                    'destructive'
-                                  }
+                                  variant={getStatusVariant(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}
                                   className="text-xs"
                                 >
-                                  {attendee.overall_status === 'activated' ? (
+                                  {calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid) === 'activated' ? (
                                     <><CheckCircle2 className="h-3 w-3 mr-1" />Active</>
-                                  ) : attendee.overall_status === 'assigned' ? (
+                                  ) : calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid) === 'assigned' ? (
                                     <><Clock className="h-3 w-3 mr-1" />Pending</>
                                   ) : (
                                     <><AlertTriangle className="h-3 w-3 mr-1" />No RFID</>
@@ -1150,12 +1137,8 @@ export function StaffActivationHub() {
                               <td className="p-3 text-sm">{attendee.phone}</td>
                               <td className="p-3 text-sm">{attendee.ticket_type}</td>
                               <td className="p-3 text-sm">
-                                <Badge variant={
-                                  attendee.overall_status === 'activated' ? 'default' :
-                                  attendee.overall_status === 'assigned' ? 'secondary' : 'destructive'
-                                }>
-                                  {attendee.overall_status === 'activated' ? 'Active' :
-                                   attendee.overall_status === 'assigned' ? 'Pending' : 'No RFID'}
+                                <Badge variant={getStatusVariant(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}>
+                                  {getStatusDisplayText(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}
                                 </Badge>
                               </td>
                               <td className="p-3 text-sm">

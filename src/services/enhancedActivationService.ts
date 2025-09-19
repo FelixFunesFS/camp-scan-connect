@@ -13,15 +13,6 @@ export interface UnifiedSearchResult {
 
 export class EnhancedActivationService {
   /**
-   * Calculate overall status based on activation and RFID assignment
-   */
-  private static calculateOverallStatus(isActivated: boolean, hasRfid: boolean): string {
-    if (isActivated) return 'activated';
-    if (hasRfid) return 'assigned';
-    return 'unassigned';
-  }
-
-  /**
    * Detect the type of search query
    */
   static detectSearchType(query: string): 'phone' | 'email' | 'order_id' | 'name' {
@@ -132,8 +123,7 @@ export class EnhancedActivationService {
           rfid_activated_at: rfidTag?.activated_at,
           rfid_status: rfidTag?.status,
           is_activated: isActivated,
-          has_rfid: hasRfid,
-          overall_status: this.calculateOverallStatus(isActivated, hasRfid)
+          has_rfid: hasRfid
         };
       });
 
@@ -182,8 +172,7 @@ export class EnhancedActivationService {
               rfid_activated_at: rfidTag?.activated_at,
               rfid_status: rfidTag?.status,
               is_activated: isActivated,
-              has_rfid: hasRfid,
-              overall_status: this.calculateOverallStatus(isActivated, hasRfid)
+              has_rfid: hasRfid
             };
           });
         }
@@ -246,8 +235,7 @@ export class EnhancedActivationService {
           rfid_activated_at: rfidTag?.activated_at,
           rfid_status: rfidTag?.status,
           is_activated: isActivated,
-          has_rfid: hasRfid,
-          overall_status: this.calculateOverallStatus(isActivated, hasRfid)
+          has_rfid: hasRfid
         };
       });
 
@@ -308,8 +296,7 @@ export class EnhancedActivationService {
           rfid_activated_at: rfidTag?.activated_at,
           rfid_status: rfidTag?.status,
           is_activated: isActivated,
-          has_rfid: hasRfid,
-          overall_status: this.calculateOverallStatus(isActivated, hasRfid)
+          has_rfid: hasRfid
         };
       });
 
@@ -362,8 +349,7 @@ export class EnhancedActivationService {
               rfid_activated_at: rfidTag?.activated_at,
               rfid_status: rfidTag?.status,
               is_activated: isActivated,
-              has_rfid: hasRfid,
-              overall_status: this.calculateOverallStatus(isActivated, hasRfid)
+              has_rfid: hasRfid
             };
           });
         }

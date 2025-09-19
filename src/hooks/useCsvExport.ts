@@ -35,7 +35,6 @@ export const useCsvExport = () => {
         `"${attendee.arrival_day || 'Friday'}"`,
         `"${attendee.rfid_uid || 'Unassigned'}"`,
         `"${attendee.rfid_status || 'unissued'}"`,
-        `"${attendee.overall_status || 'unassigned'}"`,
         `"${attendee.activated_at ? new Date(attendee.activated_at).toLocaleString() : 'Not Activated'}"`,
         `"${attendee.waiver_signed ? 'Signed' : 'Pending'}"`,
         `"${new Date(attendee.created_at).toLocaleString()}"`

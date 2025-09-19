@@ -13,7 +13,6 @@ export interface EnhancedAttendee {
   activated_at?: string | null;
   rfid_uid?: string | null;
   rfid_status?: string | null;
-  overall_status?: string;
 }
 
 export interface GroupedAttendee {
@@ -38,7 +37,6 @@ export interface FlexibleAttendeeData {
   activated_at?: string | null;
   rfid_uid?: string | null;
   rfid_status?: string | null;
-  overall_status?: string;
   is_activated?: boolean;
   has_rfid?: boolean;
 }

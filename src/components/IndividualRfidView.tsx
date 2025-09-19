@@ -29,7 +29,6 @@ interface AttendeeWithRfid {
   rfid_status: string;
   has_headphones?: boolean;
   bar_hits?: number;
-  overall_status: string;
   arrival_day?: string;
   is_duplicate?: boolean;
   is_phone_duplicate?: boolean;
