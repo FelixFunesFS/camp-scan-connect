@@ -374,9 +374,20 @@ export const RfidAssignment = () => {
           bValue = b.formatted_meal_plan?.toLowerCase() || 'zzz-no-plan';
           break;
         case 'arrival_day':
-          aValue = a.arrival_day?.toLowerCase() || 'zzz-standard';
-          bValue = b.arrival_day?.toLowerCase() || 'zzz-standard';
-          break;
+          // Convert to chronological values: Thursday (early) = 0, Friday (standard) = 1
+          const aArrivalValue = a.arrival_day === 'Thursday' ? 0 : 1;
+          const bArrivalValue = b.arrival_day === 'Thursday' ? 0 : 1;
+          const result = aArrivalValue - bArrivalValue;
+          
+          // Secondary sort by order_id when arrival days are equal
+          if (result === 0) {
+            const aOrderId = a.order_id?.toLowerCase() || 'zzz-no-order';
+            const bOrderId = b.order_id?.toLowerCase() || 'zzz-no-order';
+            const secondaryResult = aOrderId.localeCompare(bOrderId);
+            return sortDirection === 'asc' ? secondaryResult : -secondaryResult;
+          }
+          
+          return sortDirection === 'asc' ? result : -result;
         case 'ticket_type':
           aValue = a.ticket_type.toLowerCase();
           bValue = b.ticket_type.toLowerCase();
