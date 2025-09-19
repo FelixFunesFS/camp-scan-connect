@@ -78,7 +78,7 @@ export const RfidAssignment = () => {
   const [mode, setMode] = useState<'pre-event' | 'day-of'>('pre-event');
   const [viewMode, setViewMode] = useState<'individual' | 'group'>('individual');
   const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
-  const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(true);
+  const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(false);
   const [showCancelledRegistrants, setShowCancelledRegistrants] = useState(false);
   const [currentFocusRow, setCurrentFocusRow] = useState(0);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
@@ -87,7 +87,7 @@ export const RfidAssignment = () => {
   const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
   const [realtimeDisabled, setRealtimeDisabled] = useState(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'status'>('name');
+  const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'status'>('arrival_day');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
   const [arrivalDayFilter, setArrivalDayFilter] = useState<string>('all');
@@ -123,7 +123,8 @@ export const RfidAssignment = () => {
           created_at,
           rfid_tags(uid, status, activated_at)
         `)
-        .order('created_at', { ascending: false }); // Recent registrants first for day-of mode
+        .order('arrival_window', { ascending: true }) // Default: Thursday before Friday
+        .order('order_id', { ascending: true }); // Secondary sort by order ID
 
       // Filter registration status based on toggle
       if (showCancelledRegistrants) {
@@ -132,9 +133,9 @@ export const RfidAssignment = () => {
         query = query.neq('registration_status', 'cancelled');
       }
 
-      if (mode === 'pre-event') {
-        // Pre-event: show all attendees, prioritize unassigned
-        query = query.order('order_id', { ascending: true });
+      if (mode === 'day-of') {
+        // Day-of mode: prioritize recent registrants
+        query = query.order('created_at', { ascending: false });
       }
 
       const { data, error } = await query;
@@ -389,6 +390,15 @@ export const RfidAssignment = () => {
       }
       
       const result = aValue.localeCompare(bValue);
+      
+      // Secondary sort by order_id when primary values are equal
+      if (result === 0) {
+        const aOrderId = a.order_id?.toLowerCase() || 'zzz-no-order';
+        const bOrderId = b.order_id?.toLowerCase() || 'zzz-no-order';
+        const secondaryResult = aOrderId.localeCompare(bOrderId);
+        return sortDirection === 'asc' ? secondaryResult : -secondaryResult;
+      }
+      
       const finalResult = sortDirection === 'asc' ? result : -result;
       return finalResult;
     });

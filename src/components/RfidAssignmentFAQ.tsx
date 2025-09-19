@@ -95,7 +95,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                 
                 <div className="pt-2 border-t">
                   <p className="text-xs text-muted-foreground">
-                    <strong>Tip:</strong> Toggle "Unassigned only" to see all attendees or just those needing RFID assignment.
+                    <strong>Default View:</strong> Shows all active attendees, sorted by arrival day then order ID.
                   </p>
                 </div>
               </AccordionContent>
@@ -132,6 +132,39 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                 <div className="pt-2 border-t">
                   <p className="text-xs text-muted-foreground">
                     <strong>Manual Entry:</strong> You can also type UIDs manually and press Enter to save.
+                  </p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Filter Controls */}
+            <AccordionItem value="filters">
+              <AccordionTrigger className="text-left">
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Filter Controls
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">"Show Only Unassigned" Toggle:</h4>
+                  <p className="text-sm text-muted-foreground">
+                    When ON: Shows only attendees needing RFID assignment (workflow focus).
+                    When OFF: Shows all active attendees (comprehensive overview).
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">"Show Cancelled" Toggle:</h4>
+                  <p className="text-sm text-muted-foreground">
+                    When ON: Shows ONLY cancelled registrations (exclusive view).
+                    When OFF: Shows all active registrations (normal operation).
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Note:</strong> These toggles work independently. Use "Unassigned Only" during assignment workflow, "Show Cancelled" for cleanup tasks.
                   </p>
                 </div>
               </AccordionContent>
@@ -293,11 +326,12 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               Quick Reference
             </h3>
             <ul className="space-y-1 text-xs text-muted-foreground">
+              <li>• <strong>Default Sort:</strong> Arrival day → Order ID for organized workflow</li>
               <li>• <strong>Search:</strong> Find by name, order, or phone</li>
               <li>• <strong>Scan:</strong> Position tag near scanner, listen for beep</li>
               <li>• <strong>Save:</strong> Auto-saves on scan or press Enter</li>
               <li>• <strong>Navigate:</strong> Use Ctrl+G to jump to next unassigned</li>
-              <li>• <strong>Filter:</strong> Toggle "Unassigned only" as needed</li>
+              <li>• <strong>Filter:</strong> "Unassigned Only" for workflow, "Show Cancelled" for cleanup</li>
             </ul>
           </div>
         </div>
