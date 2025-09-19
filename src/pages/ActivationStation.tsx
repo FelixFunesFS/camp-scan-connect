@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Smartphone } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Smartphone, HelpCircle, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -10,6 +11,8 @@ import { MobilePhoneInput } from "@/components/MobilePhoneInput";
 import { MobileActivationPreview } from "@/components/MobileActivationPreview";
 import { MobileActivationSuccess } from "@/components/MobileActivationSuccess";
 import { StaffAssistanceModal } from "@/components/StaffAssistanceModal";
+import { SelfActivationInstructions } from "@/components/SelfActivationInstructions";
+import { SelfActivationFAQ } from "@/components/SelfActivationFAQ";
 
 export default function ActivationStation() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -138,63 +141,90 @@ export default function ActivationStation() {
           <div className="w-9" /> {/* Spacer for centering */}
         </div>
 
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Smartphone className="h-5 w-5" />
-              Phone Activation
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {!activationResult ? (
-              <>
-                {!showPreview ? (
-                  <div className="space-y-6">
-                    <MobilePhoneInput
-                      value={phoneNumber}
-                      onChange={setPhoneNumber}
-                      disabled={isProcessing}
-                      onSubmit={handlePhoneLookup}
-                    />
+        <Tabs defaultValue="activate" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="activate" className="flex items-center gap-1">
+              <Smartphone className="h-4 w-4" />
+              <span className="hidden sm:inline">Activate</span>
+            </TabsTrigger>
+            <TabsTrigger value="instructions" className="flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">Guide</span>
+            </TabsTrigger>
+            <TabsTrigger value="faq" className="flex items-center gap-1">
+              <HelpCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">FAQ</span>
+            </TabsTrigger>
+          </TabsList>
 
-                    <Button
-                      onClick={handlePhoneLookup}
-                      disabled={isProcessing || phoneNumber.length !== 10}
-                      size="lg"
-                      className="w-full h-12 text-base font-medium"
-                    >
-                      {isProcessing ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          Looking up...
-                        </div>
-                      ) : (
-                        "Look Up My Registration"
-                      )}
-                    </Button>
-                  </div>
-                ) : lookupResult && (
-                  <MobileActivationPreview
+          <TabsContent value="activate">
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Smartphone className="h-5 w-5" />
+                  Phone Activation
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {!activationResult ? (
+                  <>
+                    {!showPreview ? (
+                      <div className="space-y-6">
+                        <MobilePhoneInput
+                          value={phoneNumber}
+                          onChange={setPhoneNumber}
+                          disabled={isProcessing}
+                          onSubmit={handlePhoneLookup}
+                        />
+
+                        <Button
+                          onClick={handlePhoneLookup}
+                          disabled={isProcessing || phoneNumber.length !== 10}
+                          size="lg"
+                          className="w-full h-12 text-base font-medium"
+                        >
+                          {isProcessing ? (
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                              Looking up...
+                            </div>
+                          ) : (
+                            "Look Up My Registration"
+                          )}
+                        </Button>
+                      </div>
+                    ) : lookupResult && (
+                      <MobileActivationPreview
+                        phoneNumber={phoneNumber}
+                        lookupResult={lookupResult}
+                        isProcessing={isProcessing}
+                        onActivatePhoneGroup={handleActivatePhoneGroup}
+                        onActivateEntireOrder={handleActivateEntireOrder}
+                        onBack={() => setShowPreview(false)}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <MobileActivationSuccess
                     phoneNumber={phoneNumber}
-                    lookupResult={lookupResult}
-                    isProcessing={isProcessing}
-                    onActivatePhoneGroup={handleActivatePhoneGroup}
-                    onActivateEntireOrder={handleActivateEntireOrder}
-                    onBack={() => setShowPreview(false)}
+                    activationResult={activationResult}
+                    onReset={resetForm}
+                    onGoHome={() => navigate("/")}
+                    onUpdate={(result) => setActivationResult(result)}
                   />
                 )}
-              </>
-            ) : (
-              <MobileActivationSuccess
-                phoneNumber={phoneNumber}
-                activationResult={activationResult}
-                onReset={resetForm}
-                onGoHome={() => navigate("/")}
-                onUpdate={(result) => setActivationResult(result)}
-              />
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="instructions">
+            <SelfActivationInstructions />
+          </TabsContent>
+
+          <TabsContent value="faq">
+            <SelfActivationFAQ />
+          </TabsContent>
+        </Tabs>
 
         <StaffAssistanceModal
           isOpen={showStaffModal}

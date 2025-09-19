@@ -33,6 +33,7 @@ export interface FlexibleAttendeeData {
   order_id?: string;
   ticket_type?: string;
   meal_plan?: string;
+  arrival_window?: string;
   waiver_signed?: boolean;
   activated_at?: string | null;
   rfid_uid?: string | null;

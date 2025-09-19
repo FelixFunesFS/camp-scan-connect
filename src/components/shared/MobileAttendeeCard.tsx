@@ -3,8 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, User, Phone, Mail, CreditCard, X } from "lucide-react";
-import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { ChevronDown, ChevronRight, User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio } from "lucide-react";
+import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import type { NotificationState, FlexibleAttendeeData } from "@/types/attendee";
 
 interface MobileAttendeeCardProps {
@@ -42,10 +42,37 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   const isActivated = attendee.is_activated || attendee.activated_at;
   const hasRfid = attendee.has_rfid || attendee.rfid_uid;
 
-  const getStatusBadge = () => {
-    if (isActivated) return <Badge variant="default" className="text-xs">Active</Badge>;
-    if (hasRfid) return <Badge variant="secondary" className="text-xs">Assigned</Badge>;
-    return <Badge variant="outline" className="text-xs">Pending</Badge>;
+  const getRfidStatusBadge = () => {
+    if (isActivated) {
+      return <Badge variant="default" className="text-xs bg-success text-success-foreground"><Radio className="h-3 w-3 mr-1" />RFID Activated</Badge>;
+    }
+    if (hasRfid) {
+      return <Badge variant="secondary" className="text-xs bg-warning text-warning-foreground"><Radio className="h-3 w-3 mr-1" />RFID Assigned</Badge>;
+    }
+    return <Badge variant="outline" className="text-xs text-muted-foreground"><Radio className="h-3 w-3 mr-1" />Unassigned</Badge>;
+  };
+
+  const getMealPlanBadge = () => {
+    if (!attendee.meal_plan) return null;
+    return (
+      <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+        <Utensils className="h-3 w-3 mr-1" />
+        {formatMealPlan(attendee.meal_plan)}
+      </Badge>
+    );
+  };
+
+  const getArrivalDayBadge = () => {
+    if (!attendee.arrival_window) return null;
+    const arrivalLabel = attendee.arrival_window === 'early' ? 'Early Arrival' : 
+                        attendee.arrival_window === 'standard' ? 'Standard Arrival' : 
+                        attendee.arrival_window;
+    return (
+      <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/20">
+        <Calendar className="h-3 w-3 mr-1" />
+        {arrivalLabel}
+      </Badge>
+    );
   };
 
   const getTypeIndicator = () => {
@@ -86,7 +113,12 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 {getTypeIndicator()}
-                {getStatusBadge()}
+                {getRfidStatusBadge()}
+              </div>
+              {/* Meal Plan and Arrival Badges */}
+              <div className="flex items-center gap-2 flex-wrap mt-1">
+                {getMealPlanBadge()}
+                {getArrivalDayBadge()}
               </div>
             </div>
           </div>
