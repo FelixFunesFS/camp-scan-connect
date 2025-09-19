@@ -33,7 +33,7 @@ export function SelfActivationFAQ() {
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />
-                  <span>Try different formats: (555) 123-4567, 555-123-4567, or 5551234567</span>
+                  <span>Make sure to enter exactly 10 digits: 5551234567</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />

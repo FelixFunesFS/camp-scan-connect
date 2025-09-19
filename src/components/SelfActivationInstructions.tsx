@@ -59,16 +59,8 @@ export function SelfActivationInstructions() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Enter your 10-digit phone number in any of these formats:</p>
-            <div className="bg-muted/30 rounded-lg p-3 space-y-1">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-3 w-3 text-success" />
-                <span className="font-mono text-sm">(555) 123-4567</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-3 w-3 text-success" />
-                <span className="font-mono text-sm">555-123-4567</span>
-              </div>
+            <p className="text-sm text-muted-foreground">Enter your 10-digit phone number like this:</p>
+            <div className="bg-muted/30 rounded-lg p-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-3 w-3 text-success" />
                 <span className="font-mono text-sm">5551234567</span>
