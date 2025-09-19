@@ -952,12 +952,13 @@ export const RfidAssignment = () => {
                   ) : (
                     sortedAndPaginatedAttendees.map((attendee, index) => {
                       const globalRowIndex = (currentPage - 1) * ROWS_PER_PAGE + index;
+                      const isCancelled = attendee.registration_status === 'cancelled';
                       const isAssigned = attendee.rfid_uid && attendee.rfid_status === 'assigned';
                       
                       return (
                         <TableRow 
                           key={attendee.id} 
-                          className={isAssigned ? 'bg-success/5' : ''}
+                          className={isCancelled ? 'bg-muted/50' : isAssigned ? 'bg-success/5' : ''}
                           data-row-index={globalRowIndex}
                         >
                           <TableCell className="font-mono text-sm">
