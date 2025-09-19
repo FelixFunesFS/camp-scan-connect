@@ -59,6 +59,62 @@ interface RegFoxWebhookPayload {
   };
 }
 
+// Function to fetch order_id from RegFox API
+const fetchOrderIdFromApi = async (regfoxId: string): Promise<string | null> => {
+  const regfoxApiKey = Deno.env.get('REGFOX_API_KEY');
+  const regfoxFormId = Deno.env.get('REGFOX_FORM_ID');
+  
+  if (!regfoxApiKey || !regfoxFormId || !regfoxId) {
+    console.error('Missing RegFox API credentials or registrant ID');
+    return null;
+  }
+
+  try {
+    const apiUrl = `https://api.webconnex.com/v2/public/search/registrants?formId=${regfoxFormId}&registrantIds=${regfoxId}`;
+    
+    console.log(`Fetching order_id from RegFox API for registrant: ${regfoxId}`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${btoa(regfoxApiKey + ':')}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.error(`RegFox API error: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      const registrant = data[0];
+      const orderId = registrant.orderId || registrant.displayId || null;
+      
+      console.log(`Successfully fetched order_id from API: ${orderId} for registrant: ${regfoxId}`);
+      return orderId;
+    } else {
+      console.error(`No registrant data found in API response for ID: ${regfoxId}`);
+      return null;
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error(`RegFox API call timed out for registrant: ${regfoxId}`);
+    } else {
+      console.error(`Error fetching order_id from RegFox API: ${error.message}`);
+    }
+    return null;
+  }
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -346,13 +402,16 @@ serve(async (req) => {
             }
           });
 
+          // Fetch order_id from RegFox API
+          const apiOrderId = await fetchOrderIdFromApi(payload.data.id);
+          
           attendeeData = {
             first_name: firstName,
             last_name: lastName,
             email: email,
             phone: phone || null,
             regfox_id: payload.data.id,
-            order_id: payload.data.orderId || payload.data.displayId || null
+            order_id: apiOrderId
           };
           attendeeId = payload.data.id;
         }
@@ -639,10 +698,13 @@ serve(async (req) => {
           
           console.log(`Webhook RegFox ID ${attendeeId}: earlyAccess=${earlyAccess}, arrivalWindow=${arrivalWindow}`);
 
+          // Fetch order_id from RegFox API for this registrant
+          const apiOrderId = await fetchOrderIdFromApi(attendeeId);
+
           // Complete attendee data with all enhanced fields
           const completeAttendeeData = {
             ...attendeeData,
-            order_id: payload.data.orderId || payload.data.displayId || attendeeData.order_id || null,
+            order_id: apiOrderId,
             ticket_type: ticketType,
             registration_status: registrationStatus,
             is_veteran: isVeteran,
