@@ -107,11 +107,7 @@ export const RfidTestingSection: React.FC = () => {
 
     } catch (error) {
       console.error('Error loading stats:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load RFID statistics",
-        variant: "destructive",
-      });
+      toast.error("Failed to load RFID statistics");
     }
   };
 
@@ -131,20 +127,13 @@ export const RfidTestingSection: React.FC = () => {
       setStats(result.statistics);
       setLastGenerated(result.generated_rfids);
 
-      toast({
-        title: "Mock RFIDs Generated Successfully",
-        description: `Generated ${result.generated_count} mock RFID tags for testing`,
-      });
+      toast.success(`Generated ${result.generated_count} mock RFID tags for testing`);
 
       console.log('Generated RFIDs:', result.generated_rfids);
 
     } catch (error) {
       console.error('Error generating mock RFIDs:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate mock RFIDs",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to generate mock RFIDs");
     } finally {
       setIsGenerating(false);
     }
@@ -163,10 +152,7 @@ export const RfidTestingSection: React.FC = () => {
 
       const result = data[0];
       
-      toast({
-        title: `${format} RFIDs Cleared`,
-        description: `Reset ${result.deleted_count} RFID assignments and cleared attendee activation status`,
-      });
+      toast.success(`${format} RFIDs Cleared - Reset ${result.deleted_count} RFID assignments and cleared attendee activation status`);
 
       // Refresh stats and clear generated list if needed
       await loadCurrentStats();
@@ -178,11 +164,7 @@ export const RfidTestingSection: React.FC = () => {
 
     } catch (error) {
       console.error(`Error clearing ${format} RFIDs:`, error);
-      toast({
-        title: "Error",
-        description: error.message || `Failed to clear ${format} RFIDs`,
-        variant: "destructive",
-      });
+      toast.error(error.message || `Failed to clear ${format} RFIDs`);
     } finally {
       setClearingStates(prev => ({ ...prev, [stateKey]: false }));
       setConfirmDialog(prev => ({ ...prev, open: false }));

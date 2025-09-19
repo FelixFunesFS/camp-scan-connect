@@ -283,11 +283,7 @@ export function StaffActivationHub() {
 
     } catch (error) {
       console.error("Error fetching attendees:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch attendees data",
-        variant: "destructive"
-      });
+      toast.error("Failed to fetch attendees data");
     } finally {
       setIsLoading(false);
     }
@@ -462,21 +458,14 @@ export function StaffActivationHub() {
       if (!attendee) return;
 
       if (!attendee.rfid_uid) {
-        toast({
-          title: "Cannot Activate",
-          description: "Attendee needs an RFID tag assigned first",
-          variant: "destructive",
-        });
+        toast.error("Attendee needs an RFID tag assigned first");
         return;
       }
 
       const result = await EnhancedActivationService.activateIndividual(attendeeId, staffId || undefined);
       
       if (result.success) {
-        toast({
-          title: "Activation Successful",
-          description: `${attendee.first_name} ${attendee.last_name} has been activated`,
-        });
+        toast.success(`${attendee.first_name} ${attendee.last_name} has been activated`);
         fetchAttendees(); // Refresh data
         loadDashboardData();
         // Also refresh unified search results if we're in that view
@@ -484,19 +473,11 @@ export function StaffActivationHub() {
           await refreshUnifiedSearchResults();
         }
       } else {
-        toast({
-          title: "Activation Failed",
-          description: result.message,
-          variant: "destructive",
-        });
+        toast.error(result.message);
       }
     } catch (error) {
       console.error('Individual activation error:', error);
-      toast({
-        title: "Activation Error",
-        description: "Failed to activate attendee",
-        variant: "destructive",
-      });
+      toast.error("Failed to activate attendee");
     }
   };
 
@@ -516,24 +497,13 @@ export function StaffActivationHub() {
       const result = data[0];
       // Provide contextual messaging based on activation results
       if (result && result.activated_count > 0) {
-        toast({
-          title: "Remaining Activations Complete",
-          description: `Activated ${result.activated_count} additional attendees${
-            result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
-          }`,
-        });
+        toast.success(`Activated ${result.activated_count} additional attendees${
+          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
+        }`);
       } else if (result && result.warnings && result.warnings.length > 0) {
-        toast({
-          title: "RFID Assignment Required",
-          description: "Remaining attendees need RFID tags assigned before activation",
-          variant: "destructive",
-        });
+        toast.error("Remaining attendees need RFID tags assigned before activation");
       } else {
-        toast({
-          title: "No Additional Activations",
-          description: "All attendees with this phone number are already activated",
-          variant: "default",
-        });
+        toast.info("All attendees with this phone number are already activated");
       }
 
       fetchAttendees();
@@ -544,11 +514,7 @@ export function StaffActivationHub() {
       }
     } catch (error) {
       console.error('Remaining activation error:', error);
-      toast({
-        title: "Activation Error",
-        description: "Failed to activate remaining attendees",
-        variant: "destructive",
-      });
+      toast.error("Failed to activate remaining attendees");
     } finally {
       setIsUnifiedProcessing(false);
     }
@@ -559,11 +525,7 @@ export function StaffActivationHub() {
       const activatableAttendees = orderAttendees.filter(a => a.rfid_uid && !a.activated_at);
       
       if (activatableAttendees.length === 0) {
-        toast({
-          title: "No Attendees to Activate",
-          description: "All attendees in this group are already activated or missing RFID tags",
-          variant: "default",
-        });
+        toast.info("All attendees in this group are already activated or missing RFID tags");
         return;
       }
 
@@ -583,11 +545,11 @@ export function StaffActivationHub() {
         }
       }
 
-      toast({
-        title: "Group Activation Complete",
-        description: `Activated ${successCount} attendees${failureCount > 0 ? `, ${failureCount} failed` : ''}`,
-        variant: failureCount === 0 ? "default" : "destructive",
-      });
+      if (failureCount === 0) {
+        toast.success(`Activated ${successCount} attendees`);
+      } else {
+        toast.warning(`Activated ${successCount} attendees, ${failureCount} failed`);
+      }
       
       fetchAttendees(); // Refresh data
       loadDashboardData();
@@ -597,11 +559,7 @@ export function StaffActivationHub() {
       }
     } catch (error) {
       console.error('Group activation error:', error);
-      toast({
-        title: "Group Activation Error",
-        description: "Failed to activate group",
-        variant: "destructive",
-      });
+      toast.error("Failed to activate group");
     }
   };
 
@@ -610,16 +568,9 @@ export function StaffActivationHub() {
     if (staffCode.toLowerCase() === 'mc2025') {
       setIsAuthenticated(true);
       setStaffId('MC2025');
-      toast({
-        title: "Welcome, MC2025 Staff",
-        description: "You now have access to event management tools",
-      });
+      toast.success("Welcome, MC2025 Staff - You now have access to event management tools");
     } else {
-      toast({
-        title: "Invalid Staff Code",
-        description: "Please enter a valid staff code",
-        variant: "destructive",
-      });
+      toast.error("Please enter a valid staff code");
     }
   };
 
@@ -649,26 +600,15 @@ export function StaffActivationHub() {
       
       if (result.success) {
         const attendee = await rfidLookupService.getRfidWithAttendee(uid);
-        toast({
-          title: "RFID Deactivated",
-          description: attendee ? 
-            `${attendee.first_name} ${attendee.last_name} deactivated` :
-            "RFID deactivated successfully",
-        });
+        toast.success(attendee ? 
+          `${attendee.first_name} ${attendee.last_name} deactivated` :
+          "RFID deactivated successfully");
         loadDashboardData();
       } else {
-        toast({
-          title: "Deactivation Failed",
-          description: result.message,
-          variant: "destructive",
-        });
+        toast.error(result.message);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to deactivate RFID",
-        variant: "destructive",
-      });
+      toast.error("Failed to deactivate RFID");
     } finally {
       setIsProcessing(false);
     }
@@ -693,19 +633,11 @@ export function StaffActivationHub() {
         setUnifiedSearchResult(result);
         setShowUnifiedPreview(true);
       } else {
-        toast({
-          title: "No Results",
-          description: "No attendees found for this search query",
-          variant: "destructive",
-        });
+        toast.error("No attendees found for this search query");
       }
     } catch (error) {
       console.error('Unified search error:', error);
-      toast({
-        title: "Search Error",
-        description: "Failed to search attendees",
-        variant: "destructive",
-      });
+      toast.error("Failed to search attendees");
     } finally {
       setIsUnifiedSearching(false);
     }
@@ -779,17 +711,9 @@ export function StaffActivationHub() {
 
       // Only show summary toast for major issues or complete success
       if (result.activated_count === allAttendees.length) {
-        toast({
-          title: "Group Activation Complete",
-          description: `Successfully activated all ${result.activated_count} attendees`,
-          variant: "default",
-        });
+        toast.success(`Successfully activated all ${result.activated_count} attendees`);
       } else if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
-        toast({
-          title: "Review Card Notifications",
-          description: "Check individual attendee cards for specific activation issues",
-          variant: "default",
-        });
+        toast.info("Check individual attendee cards for specific activation issues");
       }
 
       // Refresh data
@@ -810,11 +734,7 @@ export function StaffActivationHub() {
       
       setAttendeeNotifications(errorNotifications);
       
-      toast({
-        title: "Activation Failed",
-        description: "Failed to activate group",
-        variant: "destructive",
-      });
+      toast.error("Failed to activate group");
     } finally {
       setIsUnifiedProcessing(false);
     }
@@ -832,31 +752,15 @@ export function StaffActivationHub() {
 
       // Provide contextual messaging based on activation results
       if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
-        toast({
-          title: "RFID Assignment Required",
-          description: "No attendees could be activated - RFID tags must be assigned first",
-          variant: "destructive",
-        });
+        toast.error("No attendees could be activated - RFID tags must be assigned first");
       } else if (result.activated_count === 0) {
-        toast({
-          title: "No Activations Needed",
-          description: "All order members are already activated",
-          variant: "default",
-        });
+        toast.info("All order members are already activated");
       } else if (result.activated_count < result.total_attendees) {
-        toast({
-          title: "Partial Order Activation",
-          description: `Activated ${result.activated_count} of ${result.total_attendees} attendees${
-            result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} need RFID assignment.` : ''
-          }`,
-          variant: "default",
-        });
+        toast.warning(`Activated ${result.activated_count} of ${result.total_attendees} attendees${
+          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} need RFID assignment.` : ''
+        }`);
       } else {
-        toast({
-          title: "Order Activation Complete",
-          description: `Successfully activated all ${result.activated_count} order members`,
-          variant: "default",
-        });
+        toast.success(`Successfully activated all ${result.activated_count} order members`);
       }
 
       // Reset unified search state
@@ -871,11 +775,7 @@ export function StaffActivationHub() {
       await refreshUnifiedSearchResults();
     } catch (error) {
       console.error('Order activation error:', error);
-      toast({
-        title: "Activation Failed",
-        description: "Failed to activate entire order",
-        variant: "destructive",
-      });
+      toast.error("Failed to activate entire order");
     } finally {
       setIsUnifiedProcessing(false);
     }
