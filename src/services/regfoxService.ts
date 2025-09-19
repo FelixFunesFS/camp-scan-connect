@@ -44,9 +44,10 @@ export class RegFoxService {
   
   async getRegFoxTotals(apiKey: string, formId: string): Promise<RegFoxTotals | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/forms/${formId}/registrants`, {
+      // Use the correct WebConnex API endpoint
+      const response = await fetch(`https://api.webconnex.com/v2/public/search/registrants?product=regfox.com&formId=${encodeURIComponent(formId)}&limit=1000&sort=desc`, {
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'apiKey': apiKey,
           'Content-Type': 'application/json'
         }
       });
@@ -66,25 +67,38 @@ export class RegFoxService {
         rv_site: 0
       };
 
-      // Count registrants by ticket type (this will depend on RegFox's actual structure)
-      data.registrants?.forEach((registrant: any) => {
-        const ticketType = registrant.ticketType || registrant.ticket_type;
-        if (ticketType) {
-          const normalizedType = ticketType.toLowerCase().replace(/\s+/g, '_');
-          if (normalizedType.includes('dry') || normalizedType.includes('tent')) {
+      // Count registrants by ticket type from fieldData
+      data.data?.forEach((registrant: any) => {
+        // Look for ticket type in fieldData
+        const ticketField = registrant.fieldData?.find((field: any) => 
+          field.label?.toLowerCase().includes('ticket') || 
+          field.path?.toLowerCase().includes('ticket') ||
+          field.label?.toLowerCase().includes('site') ||
+          field.path?.toLowerCase().includes('site')
+        );
+        
+        if (ticketField && ticketField.value) {
+          const ticketType = ticketField.value.toLowerCase();
+          if (ticketType.includes('dry') || ticketType.includes('tent')) {
             ticketBreakdown.dry_site++;
-          } else if (normalizedType.includes('glamping')) {
+          } else if (ticketType.includes('glamping')) {
             ticketBreakdown.glamping++;
-          } else if (normalizedType.includes('cabin')) {
+          } else if (ticketType.includes('cabin')) {
             ticketBreakdown.cabin++;
-          } else if (normalizedType.includes('rv')) {
+          } else if (ticketType.includes('rv')) {
             ticketBreakdown.rv_site++;
+          } else {
+            // Default to dry_site if unclear
+            ticketBreakdown.dry_site++;
           }
+        } else {
+          // Default to dry_site if no ticket info found
+          ticketBreakdown.dry_site++;
         }
       });
 
       return {
-        total_attendees: data.registrants?.length || 0,
+        total_attendees: data.data?.length || 0,
         ticket_breakdown: ticketBreakdown,
         last_updated: new Date().toISOString()
       };

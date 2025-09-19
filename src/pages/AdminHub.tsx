@@ -24,6 +24,7 @@ import { EnhancedSystemStatus } from "@/components/EnhancedSystemStatus";
 import { RegFoxSyncPanel } from "@/components/RegFoxSyncPanel";
 import { WebhookStatus } from "@/components/WebhookStatus";
 import { SystemCleanupStatus } from "@/components/SystemCleanupStatus";
+import { RegFoxMissingAnalysis } from "@/components/RegFoxMissingAnalysis";
 import Reports from "./Reports";
 
 const AdminHub = () => {
@@ -166,6 +167,7 @@ const AdminHub = () => {
               <WebhookStatus />
               <SystemCleanupStatus />
               <RegFoxIdDebugger />
+              <RegFoxMissingAnalysis />
             </div>
           </div>
         )
