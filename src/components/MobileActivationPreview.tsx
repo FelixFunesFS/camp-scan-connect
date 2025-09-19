@@ -72,7 +72,6 @@ export function MobileActivationPreview({
                 key={`direct-${index}`}
                 attendee={attendee}
                 type="direct"
-                showDetails={true}
               />
             ))}
           </div>
@@ -97,7 +96,6 @@ export function MobileActivationPreview({
                 key={`companion-${index}`}
                 attendee={companion}
                 type="companion"
-                showDetails={true}
               />
             ))}
           </div>

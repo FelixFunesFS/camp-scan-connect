@@ -236,8 +236,6 @@ export function MobileActivationSuccess({
                       is_activated: true
                     }}
                     type="direct"
-                    showDetails={false}
-                    onToggleDetails={() => {}}
                   />
                 ))}
               </div>
@@ -263,8 +261,6 @@ export function MobileActivationSuccess({
                       is_activated: false
                     }}
                     type="direct"
-                    showDetails={false}
-                    onToggleDetails={() => {}}
                   />
                 ))}
               </div>
@@ -290,8 +286,6 @@ export function MobileActivationSuccess({
                       is_activated: false
                     }}
                     type="direct"
-                    showDetails={false}
-                    onToggleDetails={() => {}}
                   />
                 ))}
               </div>

@@ -1,55 +1,57 @@
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio } from "lucide-react";
+import { User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio, Ticket } from "lucide-react";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import type { NotificationState, FlexibleAttendeeData } from "@/types/attendee";
 
 interface MobileAttendeeCardProps {
   attendee: FlexibleAttendeeData;
   type?: 'direct' | 'companion' | 'standard';
-  showDetails?: boolean;
   notificationState?: NotificationState;
   notificationMessage?: string;
   showNotification?: boolean;
   onViewDetails?: () => void;
-  onToggleDetails?: () => void;
   onDismissNotification?: () => void;
   backgroundColor?: string;
-  primarySearchOrderId?: string;
   className?: string;
 }
 
 export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   attendee,
   type = 'standard',
-  showDetails = false,
   notificationState = 'idle',
   notificationMessage,
   showNotification,
   onViewDetails,
-  onToggleDetails,
   onDismissNotification,
   backgroundColor,
-  primarySearchOrderId,
   className = ""
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const displayName = attendee.name || `${attendee.first_name || ''} ${attendee.last_name || ''}`.trim();
   const isActivated = attendee.is_activated || attendee.activated_at;
   const hasRfid = attendee.has_rfid || attendee.rfid_uid;
 
   const getRfidStatusBadge = () => {
     if (isActivated) {
-      return <Badge variant="default" className="text-xs bg-success text-success-foreground"><Radio className="h-3 w-3 mr-1" />RFID Activated</Badge>;
+      return <Badge variant="default" className="text-xs bg-success text-success-foreground"><Radio className="h-3 w-3 mr-1" />Active</Badge>;
     }
     if (hasRfid) {
-      return <Badge variant="secondary" className="text-xs bg-warning text-warning-foreground"><Radio className="h-3 w-3 mr-1" />RFID Assigned</Badge>;
+      return <Badge variant="secondary" className="text-xs bg-warning text-warning-foreground"><Radio className="h-3 w-3 mr-1" />Assigned</Badge>;
     }
     return <Badge variant="outline" className="text-xs text-muted-foreground"><Radio className="h-3 w-3 mr-1" />Unassigned</Badge>;
+  };
+
+  const getTicketTypeBadge = () => {
+    if (!attendee.ticket_type) return null;
+    const ticketLabel = attendee.ticket_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return (
+      <Badge variant="outline" className="text-xs bg-secondary/10 text-secondary border-secondary/20">
+        <Ticket className="h-3 w-3 mr-1" />
+        {ticketLabel}
+      </Badge>
+    );
   };
 
   const getMealPlanBadge = () => {
@@ -64,8 +66,8 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
 
   const getArrivalDayBadge = () => {
     if (!attendee.arrival_window) return null;
-    const arrivalLabel = attendee.arrival_window === 'early' ? 'Early Arrival' : 
-                        attendee.arrival_window === 'standard' ? 'Standard Arrival' : 
+    const arrivalLabel = attendee.arrival_window === 'early' ? 'Thursday' : 
+                        attendee.arrival_window === 'standard' ? 'Friday' : 
                         attendee.arrival_window;
     return (
       <Badge variant="outline" className="text-xs bg-accent/10 text-accent border-accent/20">
@@ -76,7 +78,6 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   };
 
   const getTypeIndicator = () => {
-    if (type === 'direct') return <Badge variant="default" className="text-xs bg-primary">Your Registration</Badge>;
     if (type === 'companion') return <Badge variant="secondary" className="text-xs">Order Companion</Badge>;
     return null;
   };
@@ -107,23 +108,27 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <h3 className="font-medium text-base truncate">{displayName || 'Unknown'}</h3>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {getTypeIndicator()}
-                {getRfidStatusBadge()}
-              </div>
-              {/* Meal Plan and Arrival Badges */}
-              <div className="flex items-center gap-2 flex-wrap mt-1">
-                {getMealPlanBadge()}
-                {getArrivalDayBadge()}
+              
+              {/* Status and Info Badges */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {getTypeIndicator()}
+                  {getRfidStatusBadge()}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {getTicketTypeBadge()}
+                  {getMealPlanBadge()}
+                  {getArrivalDayBadge()}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Basic Info */}
+          {/* Contact Info */}
           <div className="space-y-2 text-sm">
             {attendee.phone && (
               <div className="flex items-center gap-2">
@@ -146,39 +151,6 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
               </div>
             )}
           </div>
-
-          {/* Expandable Details */}
-          {showDetails && (
-            <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-              <CollapsibleTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full justify-between p-2 h-auto"
-                  onClick={onToggleDetails}
-                >
-                  <span className="text-xs">More Details</span>
-                  {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-2">
-                <div className="space-y-2 text-xs text-muted-foreground bg-muted/20 rounded-lg p-3">
-                  {attendee.ticket_type && (
-                    <div><strong>Ticket:</strong> {attendee.ticket_type}</div>
-                  )}
-                  {attendee.meal_plan && (
-                    <div><strong>Meal Plan:</strong> {attendee.meal_plan}</div>
-                  )}
-                  {attendee.rfid_uid && (
-                    <div><strong>RFID:</strong> <span className="font-mono">{attendee.rfid_uid}</span></div>
-                  )}
-                  {attendee.activated_at && (
-                    <div><strong>Activated:</strong> {new Date(attendee.activated_at).toLocaleDateString()}</div>
-                  )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
 
           {/* Action Button */}
           {onViewDetails && (

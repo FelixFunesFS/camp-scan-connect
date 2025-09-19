@@ -154,15 +154,13 @@ export function UnifiedActivationPreview({
               const notification = getAttendeeNotification(attendee.id);
               return (
                 <MobileAttendeeCard 
-                  key={`direct-${index}`}
+                  key={`attendee-${index}`}
                   attendee={attendee}
                   type="direct"
-                  showDetails={true}
                   backgroundColor={getOrderGroupBackgroundColor(attendee.order_id)}
-                  primarySearchOrderId={searchResult.order_id}
-                  notificationState={notification?.state}
-                  notificationMessage={notification?.message}
-                  showNotification={notification?.showNotification}
+                  notificationState={notification?.state || 'idle'}
+                  notificationMessage={notification?.message || ''}
+                  showNotification={notification?.showNotification || false}
                   onDismissNotification={() => handleDismissNotification(attendee.id)}
                 />
               );
@@ -191,12 +189,10 @@ export function UnifiedActivationPreview({
                   key={`companion-${index}`}
                   attendee={companion}
                   type="companion"
-                  showDetails={true}
                   backgroundColor={getOrderGroupBackgroundColor(companion.order_id)}
-                  primarySearchOrderId={searchResult.order_id}
-                  notificationState={notification?.state}
-                  notificationMessage={notification?.message}
-                  showNotification={notification?.showNotification}
+                  notificationState={notification?.state || 'idle'}
+                  notificationMessage={notification?.message || ''}
+                  showNotification={notification?.showNotification || false}
                   onDismissNotification={() => handleDismissNotification(companion.id)}
                 />
               );
