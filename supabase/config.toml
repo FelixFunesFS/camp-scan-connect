@@ -3,29 +3,5 @@ project_id = "oglargpkunjeblfutekl"
 [functions.regfox-sync]
 verify_jwt = false
 
-[functions.regfox-manual-sync]
-verify_jwt = false
-
 [functions.regfox-webhook]
-verify_jwt = false
-
-[functions.regfox-sync-cancel]
-verify_jwt = false
-
-[functions.regfox-cleanup]
-verify_jwt = false
-
-[functions.regfox-debug-ids]
-verify_jwt = false
-
-[functions.regfox-missing-analysis]
-verify_jwt = false
-
-[functions.data-migration]
-verify_jwt = false
-
-[functions.data-reconciliation]
-verify_jwt = false
-
-[functions.bulk-generate-rfids]
 verify_jwt = false

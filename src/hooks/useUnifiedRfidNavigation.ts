@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, useMemo } from 'react';
-import { EnhancedAttendee, GroupedAttendee } from '@/components/reports/AttendeeManagementTab';
+import { EnhancedAttendee, GroupedAttendee } from '@/types/attendee';
 
 interface UseUnifiedRfidNavigationOptions {
   groupedAttendees: GroupedAttendee[] | EnhancedAttendee[];

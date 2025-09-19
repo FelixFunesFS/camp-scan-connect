@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useCallback } from 'react';
 import { useUnifiedRfidNavigation } from '@/hooks/useUnifiedRfidNavigation';
 import { useRfidCapture } from '@/hooks/useRfidCapture';
-import { EnhancedAttendee, GroupedAttendee } from './reports/AttendeeManagementTab';
+import { EnhancedAttendee, GroupedAttendee } from '@/types/attendee';
 import { useToast } from '@/hooks/use-toast';
 
 interface GroupRfidContextType {

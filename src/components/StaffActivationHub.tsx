@@ -28,14 +28,14 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { RfidScanner } from "@/components/RfidScanner";
-import { UnifiedSearchFilter, QuickFilter } from "@/components/reports/shared/UnifiedSearchFilter";
-import { MobileAttendeeCard } from "@/components/reports/shared/MobileAttendeeCard";
+import { UnifiedSearchFilter, QuickFilter } from "@/components/shared/UnifiedSearchFilter";
+import { MobileAttendeeCard } from "@/components/shared/MobileAttendeeCard";
 import { rfidLookupService } from "@/services/rfidLookupService";
 import { enhancedActivationService, UnifiedSearchResult, EnhancedActivationService } from "@/services/enhancedActivationService";
 import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { NotificationState } from "@/components/reports/shared/MobileAttendeeCard";
+import type { NotificationState } from "@/types/attendee";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 
 // Enhanced attendee interface matching AttendeeManagementTab
@@ -358,10 +358,10 @@ export function StaffActivationHub() {
     const unassignedCount = attendees.filter(a => a.rfid_status === 'unissued').length;
 
     return [
-      { id: "all", label: "All Attendees", count: totalCount },
-      { id: "activated", label: "Activated", count: activatedCount, color: "success" as const },
-      { id: "assigned", label: "RFID Assigned", count: assignedCount, color: "warning" as const },
-      { id: "unassigned", label: "Needs RFID", count: unassignedCount, color: "destructive" as const }
+      { key: "all", label: "All Attendees", count: totalCount },
+      { key: "activated", label: "Activated", count: activatedCount },
+      { key: "assigned", label: "RFID Assigned", count: assignedCount },
+      { key: "unassigned", label: "Needs RFID", count: unassignedCount }
     ];
   }, [attendees]);
 
@@ -1070,8 +1070,10 @@ export function StaffActivationHub() {
               searchValue={searchTerm}
               onSearchChange={setSearchTerm}
               quickFilters={quickFilters}
-              activeQuickFilter={activeQuickFilter}
-              onQuickFilterChange={setActiveQuickFilter}
+              activeQuickFilters={[activeQuickFilter]}
+              onQuickFilterChange={(filterKey, active) => {
+                setActiveQuickFilter(active ? filterKey : "all");
+              }}
               placeholder="Search attendees for detailed management..."
             />
 

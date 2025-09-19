@@ -1,18 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, UserCheck, Scan, ShoppingCart, Users, Settings, Radio, Zap } from "lucide-react";
+import { Scan, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
-  const roles = [{
-    id: "admin",
-    title: "Admin Hub",
-    description: "Complete administrative control with unified dashboard",
-    icon: Shield,
-    color: "bg-primary text-primary-foreground",
-    path: "/admin"
-  }];
+  const roles = [];
 
   const stations = [{
     id: "meal",
@@ -42,32 +35,6 @@ const Index = () => {
           <Badge variant="outline" className="mb-4">Veterans Campground, Cordele, GA • Sep 26-28, 2025</Badge>
         </div>
 
-        {/* Role Selection */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
-            <Users className="h-5 w-8" />
-            Select Your Role
-          </h2>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {roles.map(role => {
-            const Icon = role.icon;
-            return <Card key={role.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
-                  <CardHeader className="text-center">
-                    <div className={`w-16 h-16 rounded-full ${role.color} mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <Icon className="h-8 w-8" />
-                    </div>
-                    <CardTitle className="text-lg">{role.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <CardDescription className="mb-4">{role.description}</CardDescription>
-                    <Button variant="outline" size="sm" onClick={() => navigate(role.path)} className="w-full">
-                      Access {role.title}
-                    </Button>
-                  </CardContent>
-                </Card>;
-          })}
-          </div>
-        </div>
 
         {/* Activation Tools */}
         <div className="mb-8">
