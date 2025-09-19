@@ -25,11 +25,13 @@ import {
   Key,
   Timer,
   Wifi,
-  WifiOff
+  WifiOff,
+  HelpCircle
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { GroupRfidView } from "@/components/GroupRfidView";
+import { RfidAssignmentFAQ } from "@/components/RfidAssignmentFAQ";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { 
@@ -89,6 +91,7 @@ export const RfidAssignment = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
   const [arrivalDayFilter, setArrivalDayFilter] = useState<string>('all');
+  const [showFAQ, setShowFAQ] = useState(false);
   
   const { exportToCsv } = useCsvExport();
 
@@ -580,15 +583,29 @@ export const RfidAssignment = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* FAQ Panel */}
+      <RfidAssignmentFAQ isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
+      
       <div className="container mx-auto p-6 max-w-7xl">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">RFID Assignment Station</h1>
-              <p className="text-muted-foreground mt-1">
-                Assign RFID tags to attendees using USB scanner
-              </p>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFAQ(true)}
+                className="flex items-center gap-2"
+              >
+                <HelpCircle className="h-4 w-4" />
+                Help
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">RFID Assignment Station</h1>
+                <p className="text-muted-foreground mt-1">
+                  Assign RFID tags to attendees using USB scanner
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <Select value={mode} onValueChange={(value) => setMode(value as 'pre-event' | 'day-of')}>
