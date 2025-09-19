@@ -21,10 +21,7 @@ import { StaffActivationHub } from "@/components/StaffActivationHub";
 import { MobileAdminNavigation } from "@/components/MobileAdminNavigation";
 import { RegFoxIdDebugger } from "@/components/RegFoxIdDebugger";
 import { EnhancedSystemStatus } from "@/components/EnhancedSystemStatus";
-import { RegFoxSyncPanel } from "@/components/RegFoxSyncPanel";
-import { WebhookStatus } from "@/components/WebhookStatus";
-import { SystemCleanupStatus } from "@/components/SystemCleanupStatus";
-import { RegFoxMissingAnalysis } from "@/components/RegFoxMissingAnalysis";
+import { SystemManagementGrid } from "@/components/SystemManagementGrid";
 import Reports from "./Reports";
 
 const AdminHub = () => {
@@ -160,17 +157,7 @@ const AdminHub = () => {
         id: 'system-management', 
         label: 'System Management', 
         icon: Shield, 
-        component: (
-          <div className="mobile-container">
-            <div className="mobile-stack">
-              <RegFoxSyncPanel />
-              <WebhookStatus />
-              <SystemCleanupStatus />
-              <RegFoxIdDebugger />
-              <RegFoxMissingAnalysis />
-            </div>
-          </div>
-        )
+        component: <SystemManagementGrid />
       },
       { 
         id: 'staff', 

@@ -71,6 +71,7 @@ serve(async (req) => {
 
     // Fetch details for missing IDs from RegFox API
     const missingDetails = [];
+    let allRegfoxData: RegFoxRegistrant[] = [];
     
     if (missingFromDb.length > 0) {
       console.log('Fetching missing registration details from RegFox...');
@@ -78,7 +79,6 @@ serve(async (req) => {
       // Fetch registrants in batches
       let page = 1;
       const limit = 100;
-      let allRegfoxData: RegFoxRegistrant[] = [];
       
       while (true) {
         const requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=regfox.com&formId=${encodeURIComponent(regfoxFormId)}&limit=${limit}&page=${page}&sort=desc`;
