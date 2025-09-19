@@ -12,6 +12,7 @@ import MealStation from "./pages/MealStation";
 import DrinksStation from "./pages/DrinksStation";
 import HeadphonesStation from "./pages/HeadphonesStation";
 import AttendeeDetail from "./pages/AttendeeDetail";
+import DeveloperDashboard from "./pages/DeveloperDashboard";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/drinks-station" element={<DrinksStation />} />
           <Route path="/headphones-station" element={<HeadphonesStation />} />
           <Route path="/attendee/:id" element={<AttendeeDetail />} />
+          <Route path="/dev" element={<DeveloperDashboard />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

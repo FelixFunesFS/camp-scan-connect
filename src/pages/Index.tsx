@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Scan, Zap, Key } from "lucide-react";
+import { Scan, Zap, Key, Code } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
@@ -128,6 +128,32 @@ const Index = () => {
           </div>
         </div>
 
+        {/* Developer Tools */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+            <Code className="h-5 w-5" />
+            Developer Tools
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4 max-w-md mx-auto">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-purple-200 bg-purple-50/50" onClick={() => navigate("/dev")}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-lg mb-2 text-purple-700">Developer Dashboard</h3>
+                <p className="text-sm text-muted-foreground mb-3">Webhook monitoring, sync history, analytics, and debug tools</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/dev");
+                  }}
+                  className="w-full border-purple-300 hover:bg-purple-100"
+                >
+                  Access Developer Tools
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-muted-foreground">
