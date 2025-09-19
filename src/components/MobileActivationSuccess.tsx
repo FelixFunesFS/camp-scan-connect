@@ -87,13 +87,13 @@ export function MobileActivationSuccess({
     } else {
       return {
         type: 'none',
-        title: 'Activation Required',
-        subtitle: 'All attendees need RFID assignment',
+        title: 'Need RFID Assignment',
+        subtitle: 'Contact staff to program wristbands',
         icon: AlertCircle,
-        cardClass: 'border-destructive/30 bg-destructive/5',
-        iconBgClass: 'bg-destructive/20',
-        iconClass: 'text-destructive',
-        titleClass: 'text-destructive'
+        cardClass: 'border-warning/30 bg-warning/5',
+        iconBgClass: 'bg-warning/20',
+        iconClass: 'text-warning',
+        titleClass: 'text-warning'
       };
     }
   };
@@ -156,7 +156,7 @@ export function MobileActivationSuccess({
             ? 'bg-success text-success-foreground' 
             : status.type === 'partial'
             ? 'bg-warning text-warning-foreground'
-            : 'bg-destructive text-destructive-foreground'
+            : 'bg-warning text-warning-foreground'
         }`}>
           <Users className="h-5 w-5 mr-2" />
           {totalServiceReady} Service Ready of {activationResult.total_attendees} Total
@@ -231,7 +231,8 @@ export function MobileActivationSuccess({
                       order_id: attendee.order_id,
                       rfid_uid: attendee.rfid_uid,
                       activated_at: attendee.activated_at,
-                      meal_plan: "Standard",
+                      meal_plan: attendee.meal_plan,
+                      arrival_window: attendee.arrival_window,
                       is_activated: true
                     }}
                     type="direct"
@@ -257,7 +258,8 @@ export function MobileActivationSuccess({
                       order_id: attendee.order_id,
                       rfid_uid: attendee.rfid_uid,
                       activated_at: null,
-                      meal_plan: "Standard",
+                      meal_plan: attendee.meal_plan,
+                      arrival_window: attendee.arrival_window,
                       is_activated: false
                     }}
                     type="direct"
@@ -272,7 +274,7 @@ export function MobileActivationSuccess({
           {/* No RFID Attendees */}
           {noRfidAttendees.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-md font-medium text-red-700">❌ RFID Required</h4>
+              <h4 className="text-md font-medium text-amber-700">🏷️ Need RFID Assignment</h4>
               <div className="space-y-2">
                 {noRfidAttendees.map((attendee: any, index: number) => (
                   <MobileAttendeeCard
@@ -283,7 +285,8 @@ export function MobileActivationSuccess({
                       order_id: attendee.order_id,
                       rfid_uid: null,
                       activated_at: null,
-                      meal_plan: "Standard",
+                      meal_plan: attendee.meal_plan,
+                      arrival_window: attendee.arrival_window,
                       is_activated: false
                     }}
                     type="direct"
