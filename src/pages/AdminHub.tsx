@@ -14,7 +14,10 @@ import {
   LogOut,
   Users,
   FileText,
-  Shield
+  Shield,
+  Settings,
+  Code2,
+  Calendar
 } from "lucide-react";
 import { RfidAssignmentTab } from "@/components/RfidAssignmentTab";
 import { StaffActivationHub } from "@/components/StaffActivationHub";
@@ -121,7 +124,7 @@ const AdminHub = () => {
       );
     }
 
-    // Core admin functionality tabs
+    // Organized admin functionality tabs
     const tabs = [
       { 
         id: 'dashboard', 
@@ -132,13 +135,118 @@ const AdminHub = () => {
             <div className="mobile-stack">
               <Card className="mobile-card">
                 <CardHeader>
-                  <CardTitle className="mobile-title">Admin Dashboard</CardTitle>
-                  <CardDescription>System overview and management tools</CardDescription>
+                  <CardTitle className="mobile-title">Event Dashboard</CardTitle>
+                  <CardDescription>System overview and key metrics for Melanated Campout</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <EnhancedSystemStatus onViewDetails={() => setActiveTab('system-management')} />
                 </CardContent>
               </Card>
+              
+              {/* Quick Actions */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('event-management')}>
+                  <CardContent className="p-6 text-center">
+                    <Calendar className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-medium">Event Management</h3>
+                    <p className="text-sm text-muted-foreground">RFID & Staff Tools</p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('reports')}>
+                  <CardContent className="p-6 text-center">
+                    <FileText className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-medium">Reports</h3>
+                    <p className="text-sm text-muted-foreground">Analytics & Data</p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('system-management')}>
+                  <CardContent className="p-6 text-center">
+                    <Settings className="h-8 w-8 mx-auto mb-2 text-primary" />
+                    <h3 className="font-medium">System Management</h3>
+                    <p className="text-sm text-muted-foreground">Maintenance & Config</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        )
+      },
+      { 
+        id: 'event-management', 
+        label: 'Event Management', 
+        icon: Calendar, 
+        component: (
+          <div className="mobile-container">
+            <div className="mobile-stack">
+              <Card className="mobile-card">
+                <CardHeader>
+                  <CardTitle className="mobile-title">Event Management</CardTitle>
+                  <CardDescription>Core event operations for Melanated Campout</CardDescription>
+                </CardHeader>
+              </Card>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CreditCard className="h-5 w-5" />
+                      RFID Assignment
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <RfidAssignmentTab />
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Staff Tools
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <StaffActivationHub />
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        )
+      },
+      { 
+        id: 'reports', 
+        label: 'Reports', 
+        icon: FileText, 
+        component: <Reports />
+      },
+      { 
+        id: 'system-management', 
+        label: 'System Management', 
+        icon: Settings, 
+        component: <SystemManagementGrid />
+      },
+      { 
+        id: 'developer-tools', 
+        label: 'Developer Tools', 
+        icon: Code2, 
+        component: (
+          <div className="mobile-container">
+            <div className="mobile-stack">
+              <Card className="mobile-card">
+                <CardHeader>
+                  <CardTitle className="mobile-title flex items-center gap-2">
+                    <Code2 className="h-5 w-5" />
+                    Developer Tools
+                  </CardTitle>
+                  <CardDescription>
+                    Debugging and analysis tools for development and troubleshooting
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <ComprehensiveCsvAnalysis />
                 <DatabaseOrderIdComparison />
@@ -150,30 +258,6 @@ const AdminHub = () => {
             </div>
           </div>
         )
-      },
-      { 
-        id: 'rfid-assignment', 
-        label: 'RFID Assignment', 
-        icon: CreditCard, 
-        component: <RfidAssignmentTab />
-      },
-      { 
-        id: 'reports', 
-        label: 'Reports', 
-        icon: FileText, 
-        component: <Reports />
-      },
-      { 
-        id: 'system-management', 
-        label: 'System Management', 
-        icon: Shield, 
-        component: <SystemManagementGrid />
-      },
-      { 
-        id: 'staff', 
-        label: 'Staff Tools', 
-        icon: Users, 
-        component: <StaffActivationHub />
       }
     ];
 

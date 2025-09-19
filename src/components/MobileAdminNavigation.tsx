@@ -3,12 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { 
   BarChart3, 
-  CreditCard, 
+  Calendar,
   FileText, 
   Users, 
   Menu,
   Shield,
-  Settings
+  Settings,
+  Code2
 } from "lucide-react";
 
 interface MobileAdminNavigationProps {
@@ -22,24 +23,25 @@ const tabCategories = [
     description: "System dashboard and metrics",
     icon: BarChart3,
     tabs: [
-      { id: "dashboard", label: "Dashboard", icon: BarChart3, description: "System overview and metrics" }
+      { id: "dashboard", label: "Dashboard", icon: BarChart3, description: "Event overview and key metrics" }
     ]
   },
   {
-    title: "Operations",
-    description: "Core administrative functions",
+    title: "Event Operations",
+    description: "Core event management tools",
+    icon: Calendar,
+    tabs: [
+      { id: "event-management", label: "Event Management", icon: Calendar, description: "RFID & Staff management tools" },
+      { id: "reports", label: "Reports", icon: FileText, description: "Event analytics and insights" }
+    ]
+  },
+  {
+    title: "System & Development", 
+    description: "Administration and debugging",
     icon: Settings,
     tabs: [
-      { id: "rfid-assignment", label: "RFID Assignment", icon: CreditCard, description: "Manage RFID tags and assignments" },
-      { id: "staff", label: "Staff Tools", icon: Users, description: "Staff activation and management tools" }
-    ]
-  },
-  {
-    title: "Analytics", 
-    description: "Reports and insights",
-    icon: FileText,
-    tabs: [
-      { id: "reports", label: "Reports", icon: FileText, description: "Event analytics and insights" }
+      { id: "system-management", label: "System Management", icon: Settings, description: "System maintenance and configuration" },
+      { id: "developer-tools", label: "Developer Tools", icon: Code2, description: "Debugging and analysis tools" }
     ]
   }
 ];
