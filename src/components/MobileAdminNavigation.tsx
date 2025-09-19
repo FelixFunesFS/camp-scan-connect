@@ -3,13 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { 
   BarChart3, 
-  Calendar,
   FileText, 
-  Users, 
   Menu,
   Shield,
-  Settings,
-  Code2
+  Settings
 } from "lucide-react";
 
 interface MobileAdminNavigationProps {
@@ -19,29 +16,13 @@ interface MobileAdminNavigationProps {
 
 const tabCategories = [
   {
-    title: "Overview",
-    description: "System dashboard and metrics",
+    title: "Core Functions",
+    description: "Main administrative tools",
     icon: BarChart3,
     tabs: [
-      { id: "dashboard", label: "Dashboard", icon: BarChart3, description: "Event overview and key metrics" }
-    ]
-  },
-  {
-    title: "Event Operations",
-    description: "Core event management tools",
-    icon: Calendar,
-    tabs: [
-      { id: "event-management", label: "Event Management", icon: Calendar, description: "RFID & Staff management tools" },
-      { id: "reports", label: "Reports", icon: FileText, description: "Event analytics and insights" }
-    ]
-  },
-  {
-    title: "System & Development", 
-    description: "Administration and debugging",
-    icon: Settings,
-    tabs: [
-      { id: "system-management", label: "System Management", icon: Settings, description: "System maintenance and configuration" },
-      { id: "developer-tools", label: "Developer Tools", icon: Code2, description: "Debugging and analysis tools" }
+      { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'System overview and quick actions' },
+      { id: 'admin-tools', label: 'Admin Tools', icon: Settings, description: 'Event operations and system maintenance' },
+      { id: 'reports', label: 'Reports', icon: FileText, description: 'Analytics and attendee reports' }
     ]
   }
 ];

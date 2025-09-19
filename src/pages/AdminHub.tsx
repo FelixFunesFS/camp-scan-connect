@@ -7,27 +7,23 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { 
-  CreditCard, 
   BarChart3, 
   Eye,
   EyeOff,
   LogOut,
-  Users,
-  FileText,
-  Shield,
   Settings,
-  Code2,
-  Calendar
+  FileText,
+  Shield
 } from "lucide-react";
-import { RfidAssignmentTab } from "@/components/RfidAssignmentTab";
-import { StaffActivationHub } from "@/components/StaffActivationHub";
+
+// Import components
+import { SystemOverview } from "@/components/SystemOverview";
+import { QuickActionsPanel } from "@/components/QuickActionsPanel";
+import { RecentActivityFeed } from "@/components/RecentActivityFeed";
+import { EventOperationsPanel } from "@/components/EventOperationsPanel";
+import { SystemMaintenancePanel } from "@/components/SystemMaintenancePanel";
+import { DebugToolsPanel } from "@/components/DebugToolsPanel";
 import { MobileAdminNavigation } from "@/components/MobileAdminNavigation";
-import { RegFoxIdDebugger } from "@/components/RegFoxIdDebugger";
-import { RegFoxCsvComparison } from "@/components/RegFoxCsvComparison";
-import { ComprehensiveCsvAnalysis } from "@/components/ComprehensiveCsvAnalysis";
-import { DatabaseOrderIdComparison } from "@/components/DatabaseOrderIdComparison";
-import { EnhancedSystemStatus } from "@/components/EnhancedSystemStatus";
-import { SystemManagementGrid } from "@/components/SystemManagementGrid";
 import Reports from "./Reports";
 
 const AdminHub = () => {
@@ -124,7 +120,7 @@ const AdminHub = () => {
       );
     }
 
-    // Organized admin functionality tabs
+    // Simplified admin functionality tabs
     const tabs = [
       { 
         id: 'dashboard', 
@@ -133,85 +129,30 @@ const AdminHub = () => {
         component: (
           <div className="mobile-container">
             <div className="mobile-stack">
-              <Card className="mobile-card">
-                <CardHeader>
-                  <CardTitle className="mobile-title">Event Dashboard</CardTitle>
-                  <CardDescription>System overview and key metrics for Melanated Campout</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <EnhancedSystemStatus onViewDetails={() => setActiveTab('system-management')} />
-                </CardContent>
-              </Card>
+              <div className="flex items-center gap-2 mb-6">
+                <BarChart3 className="h-6 w-6 text-primary" />
+                <h2 className="text-2xl font-bold">Admin Dashboard</h2>
+              </div>
               
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('event-management')}>
-                  <CardContent className="p-6 text-center">
-                    <Calendar className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <h3 className="font-medium">Event Management</h3>
-                    <p className="text-sm text-muted-foreground">RFID & Staff Tools</p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('reports')}>
-                  <CardContent className="p-6 text-center">
-                    <FileText className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <h3 className="font-medium">Reports</h3>
-                    <p className="text-sm text-muted-foreground">Analytics & Data</p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('system-management')}>
-                  <CardContent className="p-6 text-center">
-                    <Settings className="h-8 w-8 mx-auto mb-2 text-primary" />
-                    <h3 className="font-medium">System Management</h3>
-                    <p className="text-sm text-muted-foreground">Maintenance & Config</p>
-                  </CardContent>
-                </Card>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SystemOverview />
+                <QuickActionsPanel onNavigate={setActiveTab} />
+                <RecentActivityFeed />
               </div>
             </div>
           </div>
         )
       },
       { 
-        id: 'event-management', 
-        label: 'Event Management', 
-        icon: Calendar, 
+        id: 'admin-tools', 
+        label: 'Admin Tools', 
+        icon: Settings, 
         component: (
           <div className="mobile-container">
             <div className="mobile-stack">
-              <Card className="mobile-card">
-                <CardHeader>
-                  <CardTitle className="mobile-title">Event Management</CardTitle>
-                  <CardDescription>Core event operations for Melanated Campout</CardDescription>
-                </CardHeader>
-              </Card>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CreditCard className="h-5 w-5" />
-                      RFID Assignment
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <RfidAssignmentTab />
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Staff Tools
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <StaffActivationHub />
-                  </CardContent>
-                </Card>
-              </div>
+              <EventOperationsPanel />
+              <SystemMaintenancePanel />
+              <DebugToolsPanel />
             </div>
           </div>
         )
@@ -221,43 +162,6 @@ const AdminHub = () => {
         label: 'Reports', 
         icon: FileText, 
         component: <Reports />
-      },
-      { 
-        id: 'system-management', 
-        label: 'System Management', 
-        icon: Settings, 
-        component: <SystemManagementGrid />
-      },
-      { 
-        id: 'developer-tools', 
-        label: 'Developer Tools', 
-        icon: Code2, 
-        component: (
-          <div className="mobile-container">
-            <div className="mobile-stack">
-              <Card className="mobile-card">
-                <CardHeader>
-                  <CardTitle className="mobile-title flex items-center gap-2">
-                    <Code2 className="h-5 w-5" />
-                    Developer Tools
-                  </CardTitle>
-                  <CardDescription>
-                    Debugging and analysis tools for development and troubleshooting
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <ComprehensiveCsvAnalysis />
-                <DatabaseOrderIdComparison />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RegFoxIdDebugger />
-                <RegFoxCsvComparison />
-              </div>
-            </div>
-          </div>
-        )
       }
     ];
 
