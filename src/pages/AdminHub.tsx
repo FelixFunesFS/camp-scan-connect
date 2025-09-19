@@ -20,6 +20,7 @@ import { RfidAssignmentTab } from "@/components/RfidAssignmentTab";
 import { StaffActivationHub } from "@/components/StaffActivationHub";
 import { MobileAdminNavigation } from "@/components/MobileAdminNavigation";
 import { RegFoxIdDebugger } from "@/components/RegFoxIdDebugger";
+import { RegFoxCsvComparison } from "@/components/RegFoxCsvComparison";
 import { EnhancedSystemStatus } from "@/components/EnhancedSystemStatus";
 import { SystemManagementGrid } from "@/components/SystemManagementGrid";
 import Reports from "./Reports";
@@ -137,6 +138,7 @@ const AdminHub = () => {
                 </CardContent>
               </Card>
               <RegFoxIdDebugger />
+              <RegFoxCsvComparison />
             </div>
           </div>
         )
