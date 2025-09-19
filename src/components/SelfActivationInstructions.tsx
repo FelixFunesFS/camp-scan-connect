@@ -84,7 +84,7 @@ export function SelfActivationInstructions() {
               <Badge variant="outline" className="text-xs text-muted-foreground">
                 Unassigned
               </Badge>
-              <span className="text-sm text-muted-foreground">You need to get an RFID wristband first</span>
+              <span className="text-sm text-muted-foreground">Your wristband needs to be programmed by staff first</span>
             </div>
             <div className="flex items-center gap-3">
               <Badge variant="secondary" className="text-xs bg-warning text-warning-foreground">

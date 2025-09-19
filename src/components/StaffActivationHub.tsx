@@ -37,6 +37,7 @@ import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview"
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { NotificationState } from "@/types/attendee";
+import { StaffAssistanceNotifications } from "@/components/StaffAssistanceNotifications";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 
 // Enhanced attendee interface matching AttendeeManagementTab
@@ -887,6 +888,9 @@ export function StaffActivationHub() {
             </Button>
           </div>
         </div>
+
+        {/* Staff Assistance Queue */}
+        <StaffAssistanceNotifications />
 
         {/* Unified Multi-Criteria Activation Section */}
         <Card>

@@ -57,19 +57,24 @@ export function SelfActivationFAQ() {
               </span>
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="text-xs text-muted-foreground">Unassigned</Badge>
-                <span className="text-sm">means you don't have an RFID wristband yet</span>
-              </div>
               <p className="text-sm text-muted-foreground">
-                You need to visit the RFID Assignment station first to get your wristband, then come back here to activate it.
+                "Unassigned" means your wristband hasn't been programmed with your unique RFID code yet.
               </p>
-              <Alert>
-                <HelpCircle className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  Look for staff wearing ranger badges - they can direct you to the RFID Assignment area.
-                </AlertDescription>
-              </Alert>
+              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <p className="text-sm font-medium">Technical explanation:</p>
+                <div className="flex items-start gap-2">
+                  <HelpCircle className="h-4 w-4 text-primary mt-0.5" />
+                  <span className="text-sm">Your wristband exists but has no RFID UID loaded onto it</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Users className="h-4 w-4 text-primary mt-0.5" />
+                  <span className="text-sm">Staff need to program your wristband with your unique ID before you can activate</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />
+                  <span className="text-sm">Find staff to program your wristband, then return here to activate</span>
+                </div>
+              </div>
             </AccordionContent>
           </AccordionItem>
 

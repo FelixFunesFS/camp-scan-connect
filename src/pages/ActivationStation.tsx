@@ -21,7 +21,7 @@ export default function ActivationStation() {
   const [lookupResult, setLookupResult] = useState<PhoneLookupResult | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
-  const [errorType, setErrorType] = useState<'not_found' | 'system_error' | 'network_error'>('system_error');
+  const [errorType, setErrorType] = useState<'not_found' | 'unassigned' | 'activation_failed' | 'system_error'>('system_error');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const navigate = useNavigate();
   
@@ -52,7 +52,7 @@ export default function ActivationStation() {
       
       // Determine error type based on error message
       if (errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('connection')) {
-        setErrorType('network_error');
+        setErrorType('system_error');
       } else {
         setErrorType('system_error');
       }

@@ -332,6 +332,54 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_assistance_requests: {
+        Row: {
+          assigned_staff_id: string | null
+          attendee_name: string | null
+          contact_info: Json | null
+          created_at: string
+          email: string | null
+          error_message: string | null
+          id: string
+          issue_type: string
+          phone_number: string | null
+          priority: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          status: string | null
+        }
+        Insert: {
+          assigned_staff_id?: string | null
+          attendee_name?: string | null
+          contact_info?: Json | null
+          created_at?: string
+          email?: string | null
+          error_message?: string | null
+          id?: string
+          issue_type: string
+          phone_number?: string | null
+          priority?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          assigned_staff_id?: string | null
+          attendee_name?: string | null
+          contact_info?: Json | null
+          created_at?: string
+          email?: string | null
+          error_message?: string | null
+          id?: string
+          issue_type?: string
+          phone_number?: string | null
+          priority?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       station_transactions: {
         Row: {
           activation_method: string | null
