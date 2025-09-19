@@ -186,6 +186,15 @@ export const RfidAssignment = () => {
     }
   }, [mode, showCancelledRegistrants, toast]);
 
+  // Optimistic update function to immediately update local state
+  const handleOptimisticUpdate = useCallback((attendeeId: string, rfidUid: string | null, rfidStatus: string) => {
+    setAttendees(prev => prev.map(attendee => 
+      attendee.id === attendeeId 
+        ? { ...attendee, rfid_uid: rfidUid, rfid_status: rfidStatus }
+        : attendee
+    ));
+  }, []);
+
   // Debounced version of loadAttendees to prevent excessive reloads
   const debouncedLoadAttendees = useCallback(() => {
     if (debounceTimeoutRef.current) {
@@ -197,7 +206,7 @@ export const RfidAssignment = () => {
         console.log('Debounced reload triggered');
         loadAttendees();
       }
-    }, 500); // 500ms debounce
+    }, 1000); // Increased debounce to 1 second
   }, [loadAttendees, realtimeDisabled]);
 
   // Check for active syncs to control real-time subscriptions
@@ -593,8 +602,8 @@ export const RfidAssignment = () => {
 
   const handleAssignmentComplete = useCallback(() => {
     setLastInteraction('rfid-assignment');
-    loadAttendees(); // Refresh data after assignment
-  }, [loadAttendees]);
+    debouncedLoadAttendees(); // Use debounced refresh after assignment
+  }, [debouncedLoadAttendees]);
 
   if (loading) {
     return (
@@ -1013,6 +1022,7 @@ export const RfidAssignment = () => {
                               currentRfidStatus={attendee.rfid_status}
                               attendeeName={`${attendee.first_name} ${attendee.last_name}`}
                               onAssignmentComplete={handleAssignmentComplete}
+                              onOptimisticUpdate={handleOptimisticUpdate}
                             />
                           </TableCell>
                           <TableCell>
@@ -1075,7 +1085,8 @@ export const RfidAssignment = () => {
           ) : (
             <GroupRfidView 
               attendees={filteredAttendees}
-              onRefresh={handleAssignmentComplete}
+              onRefresh={debouncedLoadAttendees}
+              onOptimisticUpdate={handleOptimisticUpdate}
               searchTerm={searchTerm}
             />
           )}

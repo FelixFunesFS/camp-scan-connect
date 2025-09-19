@@ -24,6 +24,7 @@ import { getOrderGroupBackgroundColor, groupAttendeesByOrder } from "@/utils/ord
 interface GroupRfidViewProps {
   attendees: AttendeeData[];
   onRefresh: () => void;
+  onOptimisticUpdate?: (attendeeId: string, rfidUid: string | null, rfidStatus: string) => void;
   searchTerm: string;
 }
 
@@ -33,6 +34,7 @@ type SortDirection = 'asc' | 'desc';
 export const GroupRfidView: React.FC<GroupRfidViewProps> = ({ 
   attendees, 
   onRefresh, 
+  onOptimisticUpdate,
   searchTerm 
 }) => {
   const [sortField, setSortField] = useState<SortField>('order_id');
@@ -331,6 +333,7 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                                         currentRfidStatus={attendee.rfid_status}
                                         attendeeName={`${attendee.first_name} ${attendee.last_name}`}
                                         onAssignmentComplete={onRefresh}
+                                        onOptimisticUpdate={onOptimisticUpdate}
                                       />
                                     </TableCell>
                                     <TableCell>

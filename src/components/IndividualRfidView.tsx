@@ -48,6 +48,7 @@ interface AttendeeWithRfid {
 interface IndividualViewProps {
   attendees: AttendeeWithRfid[];
   onRefresh: () => void;
+  onOptimisticUpdate?: (attendeeId: string, rfidUid: string | null, rfidStatus: string) => void;
   searchTerm: string;
 }
 
@@ -57,6 +58,7 @@ type SortDirection = 'asc' | 'desc';
 export const IndividualView: React.FC<IndividualViewProps> = ({ 
   attendees, 
   onRefresh, 
+  onOptimisticUpdate,
   searchTerm 
 }) => {
   const [sortField, setSortField] = useState<SortField>('name');
@@ -270,6 +272,7 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                       currentRfidStatus={attendee.rfid_status}
                       attendeeName={`${attendee.first_name} ${attendee.last_name}`}
                       onAssignmentComplete={onRefresh}
+                      onOptimisticUpdate={onOptimisticUpdate}
                     />
                   </TableCell>
                   <TableCell>

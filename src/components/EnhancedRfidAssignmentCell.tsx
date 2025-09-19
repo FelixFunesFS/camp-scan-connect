@@ -12,6 +12,7 @@ interface EnhancedRfidAssignmentCellProps {
   currentRfidStatus?: string | null;
   attendeeName: string;
   onAssignmentComplete: () => void;
+  onOptimisticUpdate?: (attendeeId: string, rfidUid: string | null, rfidStatus: string) => void;
 }
 
 export const EnhancedRfidAssignmentCell = ({ 
@@ -19,7 +20,8 @@ export const EnhancedRfidAssignmentCell = ({
   currentRfidUid, 
   currentRfidStatus,
   attendeeName,
-  onAssignmentComplete
+  onAssignmentComplete,
+  onOptimisticUpdate
 }: EnhancedRfidAssignmentCellProps) => {
   const [uid, setUid] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -235,8 +237,17 @@ export const EnhancedRfidAssignmentCell = ({
 
       toast.success(`RFID Assigned Successfully: ${uid.trim()} → ${attendeeName}`);
 
+      // Optimistic update first
+      if (onOptimisticUpdate) {
+        onOptimisticUpdate(attendeeId, uid.trim(), 'assigned');
+      }
+
       setUid("");
-      onAssignmentComplete();
+      
+      // Debounce the full refresh
+      const refreshTimeout = setTimeout(() => {
+        onAssignmentComplete();
+      }, 300);
       
       // Auto-focus next unassigned field after brief delay
       setTimeout(() => {
@@ -342,9 +353,18 @@ export const EnhancedRfidAssignmentCell = ({
 
       toast.success(`RFID Updated Successfully: ${editValue.trim()} → ${attendeeName}`);
 
+      // Optimistic update first
+      if (onOptimisticUpdate) {
+        onOptimisticUpdate(attendeeId, editValue.trim(), 'assigned');
+      }
+
       setIsEditing(false);
       setEditValue("");
-      onAssignmentComplete();
+      
+      // Debounce the full refresh
+      const refreshTimeout = setTimeout(() => {
+        onAssignmentComplete();
+      }, 300);
 
     } catch (error) {
       console.error('RFID edit error:', error);
@@ -392,7 +412,15 @@ export const EnhancedRfidAssignmentCell = ({
 
       toast.success(`RFID Cleared: ${currentRfidUid} has been unassigned from ${attendeeName}`);
 
-      onAssignmentComplete();
+      // Optimistic update first
+      if (onOptimisticUpdate) {
+        onOptimisticUpdate(attendeeId, null, 'unissued');
+      }
+
+      // Debounce the full refresh
+      const refreshTimeout = setTimeout(() => {
+        onAssignmentComplete();
+      }, 300);
     } catch (error) {
       console.error('RFID clear error:', error);
       toast.error("Clear Failed - Failed to clear RFID assignment.");
