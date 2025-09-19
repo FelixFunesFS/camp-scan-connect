@@ -37,6 +37,7 @@ export function AttendeeDetailModal({
   allAttendees = [] 
 }: AttendeeDetailModalProps) {
   const [open, setOpen] = useState(false);
+  const [companionModalOpen, setCompanionModalOpen] = useState(false);
   const [selectedCompanion, setSelectedCompanion] = useState<any | null>(null);
 
   const orderCompanions = allAttendees.filter(a => 
@@ -243,7 +244,7 @@ export function AttendeeDetailModal({
                   Activity Summary
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <CardContent className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-muted rounded-lg">
                   <div className="font-semibold text-lg">{attendee.bar_hits || 0}</div>
                   <div className="text-sm text-muted-foreground">Bar Visits</div>
@@ -253,18 +254,6 @@ export function AttendeeDetailModal({
                     {attendee.has_headphones ? 'Yes' : 'No'}
                   </div>
                   <div className="text-sm text-muted-foreground">Headphones</div>
-                </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <div className="font-semibold text-lg">
-                    {attendee.is_duplicate ? 'Yes' : 'No'}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Duplicate Email</div>
-                </div>
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <div className="font-semibold text-lg">
-                    {attendee.is_phone_duplicate ? 'Yes' : 'No'}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Duplicate Phone</div>
                 </div>
               </CardContent>
             </Card>
@@ -286,7 +275,10 @@ export function AttendeeDetailModal({
                           <Button
                             variant="link"
                             className="p-0 h-auto font-medium text-left hover:underline"
-                            onClick={() => setSelectedCompanion(companion)}
+                            onClick={() => {
+                              setSelectedCompanion(companion);
+                              setCompanionModalOpen(true);
+                            }}
                           >
                             {companion.first_name} {companion.last_name}
                           </Button>
@@ -315,15 +307,192 @@ export function AttendeeDetailModal({
               </Card>
             )}
 
-            {/* Nested Modal for Companion Details */}
+            {/* Companion Details Dialog */}
             {selectedCompanion && (
-              <AttendeeDetailModal
-                attendee={selectedCompanion}
-                allAttendees={allAttendees}
-                trigger={<div />} // Hidden trigger
-                onActivate={onActivate}
-                onGroupActivate={onGroupActivate}
-              />
+              <Dialog open={companionModalOpen} onOpenChange={setCompanionModalOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh]">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        {selectedCompanion.first_name} {selectedCompanion.last_name}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getStatusVariant(selectedCompanion.overall_status)}>
+                          {selectedCompanion.overall_status === 'activated' ? 'Active' :
+                           selectedCompanion.overall_status === 'assigned' ? 'Pending' : 'No RFID'}
+                        </Badge>
+                        {selectedCompanion.is_veteran && (
+                          <Badge variant="outline">Veteran</Badge>
+                        )}
+                      </div>
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  <ScrollArea className="max-h-[70vh] pr-6">
+                    <div className="space-y-6">
+                      
+                      {/* Contact Information */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Mail className="h-4 w-4" />
+                            Contact Information
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <span>{selectedCompanion.email || 'Not provided'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <span>{selectedCompanion.phone ? formatPhoneNumber(selectedCompanion.phone) : 'Not provided'}</span>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <span>{selectedCompanion.city ? `${selectedCompanion.city}, ${selectedCompanion.state}` : 'Not provided'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span>Arrival: {selectedCompanion.arrival_day || 'Standard'}</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Registration Details */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Registration Details
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <div>
+                              <span className="text-sm font-medium">Ticket Type:</span>
+                              <Badge className="ml-2">{selectedCompanion.ticket_type}</Badge>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium">Meal Plan:</span>
+                              <Badge variant="outline" className="ml-2">
+                                {formatMealPlan(selectedCompanion.meal_plan)}
+                              </Badge>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium">Waiver:</span>
+                              <Badge variant={selectedCompanion.waiver_signed ? "default" : "destructive"} className="ml-2">
+                                {selectedCompanion.waiver_signed ? "Signed" : "Pending"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <span className="text-sm font-medium">Order ID:</span>
+                              <span className="ml-2 font-mono text-sm">{selectedCompanion.order_id || 'N/A'}</span>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium">RegFox ID:</span>
+                              <span className="ml-2 font-mono text-sm">{selectedCompanion.regfox_id || 'N/A'}</span>
+                            </div>
+                            <div>
+                              <span className="text-sm font-medium">Registration:</span>
+                              <Badge variant="outline" className="ml-2">
+                                {selectedCompanion.registration_status}
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* RFID Information */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            RFID Information
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <div>
+                                <span className="text-sm font-medium">RFID Status:</span>
+                                <Badge variant={getRfidStatusVariant(selectedCompanion.rfid_status)} className="ml-2">
+                                  {selectedCompanion.rfid_status}
+                                </Badge>
+                              </div>
+                              {selectedCompanion.rfid_uid && (
+                                <div>
+                                  <span className="text-sm font-medium">RFID UID:</span>
+                                  <span className="ml-2 font-mono text-sm bg-muted px-2 py-1 rounded">
+                                    {selectedCompanion.rfid_uid}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              {selectedCompanion.activated_at && (
+                                <div>
+                                  <span className="text-sm font-medium">Activated:</span>
+                                  <span className="ml-2 text-sm">
+                                    {new Date(selectedCompanion.activated_at).toLocaleString()}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2 pt-2">
+                            {selectedCompanion.rfid_uid && !selectedCompanion.activated_at && (
+                              <Button 
+                                onClick={() => {
+                                  if (onActivate) {
+                                    onActivate(selectedCompanion.id);
+                                    setCompanionModalOpen(false);
+                                  }
+                                }} 
+                                className="flex items-center gap-2"
+                              >
+                                <Zap className="h-4 w-4" />
+                                Activate RFID
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Activity Summary */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Activity className="h-4 w-4" />
+                            Activity Summary
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-4">
+                          <div className="text-center p-3 bg-muted rounded-lg">
+                            <div className="font-semibold text-lg">{selectedCompanion.bar_hits || 0}</div>
+                            <div className="text-sm text-muted-foreground">Bar Visits</div>
+                          </div>
+                          <div className="text-center p-3 bg-muted rounded-lg">
+                            <div className="font-semibold text-lg">
+                              {selectedCompanion.has_headphones ? 'Yes' : 'No'}
+                            </div>
+                            <div className="text-sm text-muted-foreground">Headphones</div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
             )}
 
             {/* Notes */}
