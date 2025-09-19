@@ -1,49 +1,33 @@
 // Utility functions for order group visual management
 
-// Color palette for order group backgrounds - using HSL values from design system
-const ORDER_GROUP_COLORS = [
-  'hsl(200 100% 96%)', // Very light blue (primary tint)
-  'hsl(24 100% 96%)',  // Very light orange (secondary tint)  
-  'hsl(142 76% 96%)',  // Very light green (success tint)
-  'hsl(38 92% 96%)',   // Very light yellow (warning tint)
-  'hsl(217 91% 96%)',  // Very light info blue
-  'hsl(280 100% 96%)', // Very light purple
-  'hsl(160 100% 96%)', // Very light cyan
-  'hsl(340 100% 96%)', // Very light pink
+// Simplified alternating color palette for order group backgrounds
+const ALTERNATING_COLORS_LIGHT = [
+  'hsl(200 100% 96%)', // Light blue
+  'hsl(210 20% 98%)',  // Light gray
 ];
 
-// Darker background variants for better contrast in some contexts
-const ORDER_GROUP_COLORS_DARK = [
-  'hsl(200 100% 92%)', // Slightly darker blue
-  'hsl(24 100% 92%)',  // Slightly darker orange
-  'hsl(142 76% 92%)',  // Slightly darker green
-  'hsl(38 92% 92%)',   // Slightly darker yellow
-  'hsl(217 91% 92%)',  // Slightly darker info blue
-  'hsl(280 100% 92%)', // Slightly darker purple
-  'hsl(160 100% 92%)', // Slightly darker cyan
-  'hsl(340 100% 92%)', // Slightly darker pink
+const ALTERNATING_COLORS_DARK = [
+  'hsl(200 100% 92%)', // Darker blue
+  'hsl(210 20% 94%)',  // Darker gray
 ];
 
 /**
- * Get a consistent background color for an order ID
+ * Get alternating background color based on group position
  */
-export function getOrderGroupBackgroundColor(orderId: string | null | undefined, variant: 'light' | 'dark' = 'light'): string {
+export function getOrderGroupBackgroundColor(
+  orderId: string | null | undefined, 
+  groupIndex: number = 0,
+  variant: 'light' | 'dark' = 'light'
+): string {
   if (!orderId || orderId.trim() === '') {
     return 'transparent'; // No special background for individual attendees
   }
   
-  // Create a simple hash from the order ID for consistent color assignment
-  let hash = 0;
-  for (let i = 0; i < orderId.length; i++) {
-    const char = orderId.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
+  // Simple alternating colors based on position
+  const colorIndex = groupIndex % 2;
+  const colors = variant === 'dark' ? ALTERNATING_COLORS_DARK : ALTERNATING_COLORS_LIGHT;
   
-  // Use absolute value to ensure positive index
-  const colorIndex = Math.abs(hash) % ORDER_GROUP_COLORS.length;
-  
-  return variant === 'dark' ? ORDER_GROUP_COLORS_DARK[colorIndex] : ORDER_GROUP_COLORS[colorIndex];
+  return colors[colorIndex];
 }
 
 /**
@@ -121,10 +105,10 @@ export function groupAttendeesByOrder<T extends { order_id?: string | null }>(at
     groups.get(key)!.push(attendee);
   });
   
-  return Array.from(groups.entries()).map(([key, groupAttendees]) => ({
+  return Array.from(groups.entries()).map(([key, groupAttendees], index) => ({
     orderId: key === '__individual__' ? null : key,
     attendees: groupAttendees,
     groupSize: groupAttendees.length,
-    backgroundColor: getOrderGroupBackgroundColor(key === '__individual__' ? null : key)
+    backgroundColor: getOrderGroupBackgroundColor(key === '__individual__' ? null : key, index)
   }));
 }

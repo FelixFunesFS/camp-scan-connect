@@ -77,6 +77,8 @@ export const RfidAssignment = () => {
   const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(true);
   const [currentFocusRow, setCurrentFocusRow] = useState(0);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [lastInteraction, setLastInteraction] = useState<'data-load' | 'search' | 'filter' | 'rfid-assignment'>('data-load');
   const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'status'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
@@ -211,6 +213,9 @@ export const RfidAssignment = () => {
   // Enhanced filtering with search, assignment status, meal plan, and arrival day
   useEffect(() => {
     let filtered = attendees;
+    
+    // Track that this is a filter/search operation
+    setLastInteraction('search');
 
     // Filter by assignment status
     if (showOnlyUnassigned) {
@@ -231,15 +236,46 @@ export const RfidAssignment = () => {
       filtered = filtered.filter(a => a.arrival_window === arrivalDayFilter);
     }
 
-    // Filter by search term (including phone numbers)
+    // Enhanced search with companion inclusion
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(attendee => 
-        `${attendee.first_name} ${attendee.last_name}`.toLowerCase().includes(term) ||
-        (attendee.order_id && attendee.order_id.toLowerCase().includes(term)) ||
-        (attendee.phone && attendee.phone.toLowerCase().includes(term)) ||
-        (attendee.email && attendee.email.toLowerCase().includes(term))
+      const matchingOrderIds = new Set<string>();
+      
+      // Find all attendees that directly match the search
+      const directMatches = attendees.filter(attendee => {
+        const matches = 
+          `${attendee.first_name} ${attendee.last_name}`.toLowerCase().includes(term) ||
+          (attendee.order_id && attendee.order_id.toLowerCase().includes(term)) ||
+          (attendee.phone && attendee.phone.toLowerCase().includes(term)) ||
+          (attendee.email && attendee.email.toLowerCase().includes(term));
+        
+        if (matches && attendee.order_id) {
+          matchingOrderIds.add(attendee.order_id);
+        }
+        
+        return matches;
+      });
+      
+      // Include companions from matching order IDs
+      filtered = attendees.filter(attendee => 
+        directMatches.includes(attendee) || 
+        (attendee.order_id && matchingOrderIds.has(attendee.order_id))
       );
+      
+      // Apply other filters to the companion-inclusive results
+      if (showOnlyUnassigned) {
+        filtered = filtered.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned');
+      }
+      if (mealPlanFilter !== 'all') {
+        if (mealPlanFilter === 'none') {
+          filtered = filtered.filter(a => !a.meal_plan);
+        } else {
+          filtered = filtered.filter(a => a.meal_plan === mealPlanFilter);
+        }
+      }
+      if (arrivalDayFilter !== 'all') {
+        filtered = filtered.filter(a => a.arrival_window === arrivalDayFilter);
+      }
     }
 
     setFilteredAttendees(filtered);
@@ -458,17 +494,19 @@ export const RfidAssignment = () => {
 
   // Load data on mount and when mode changes
   useEffect(() => {
+    setLastInteraction('data-load');
     loadAttendees();
   }, [loadAttendees]);
 
-  // Auto-focus first unassigned on data load
+  // Safe auto-focus: only on data load, not during search/filter operations
   useEffect(() => {
-    if (sortedAndPaginatedAttendees.length > 0 && !loading) {
+    if (sortedAndPaginatedAttendees.length > 0 && !loading && !isSearching && lastInteraction === 'data-load') {
       focusFirstUnassigned();
     }
-  }, [sortedAndPaginatedAttendees, loading, focusFirstUnassigned]);
+  }, [sortedAndPaginatedAttendees, loading, focusFirstUnassigned, isSearching, lastInteraction]);
 
   const handleAssignmentComplete = useCallback(() => {
+    setLastInteraction('rfid-assignment');
     loadAttendees(); // Refresh data after assignment
   }, [loadAttendees]);
 
@@ -575,9 +613,11 @@ export const RfidAssignment = () => {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search name, order, phone, email..."
+                placeholder="Search names, phones, emails, or order IDs (includes companions)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => setIsSearching(true)}
+                onBlur={() => setTimeout(() => setIsSearching(false), 200)}
                 className="pl-10"
                 data-search-input="true"
                 data-exclude-rfid="true"

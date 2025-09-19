@@ -39,7 +39,7 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Group attendees by order
+  // Group attendees by order with alternating colors after sorting
   const orderGroups = useMemo(() => {
     const groups = groupAttendeesByOrder(attendees);
     
@@ -81,7 +81,11 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
       }
     });
     
-    return sorted;
+    // Reassign alternating colors based on final sorted position
+    return sorted.map((group, index) => ({
+      ...group,
+      backgroundColor: getOrderGroupBackgroundColor(group.orderId, index)
+    }));
   }, [attendees, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
@@ -218,7 +222,7 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                     </div>
                   </Button>
                 </TableHead>
-                <TableHead>Actions</TableHead>
+                
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -273,23 +277,11 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleGroup(orderId);
-                          }}
-                        >
-                          {isExpanded ? 'Collapse' : 'Expand'}
-                        </Button>
-                      </TableCell>
                     </TableRow>
                     
                     {isExpanded && (
                       <TableRow>
-                        <TableCell colSpan={5} className="p-0">
+                        <TableCell colSpan={4} className="p-0">
                           <div className="p-4 bg-muted/20">
                             <Table>
                               <TableHeader>
