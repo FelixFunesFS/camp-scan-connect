@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, AlertCircle, Loader2 } from "lucide-react";
+import { Check, X, AlertCircle, Loader2, Edit3, Save, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,24 +25,38 @@ export const EnhancedRfidAssignmentCell = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [validationError, setValidationError] = useState("");
   const [isValidating, setIsValidating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Auto-focus input when component mounts or when becomes active
   useEffect(() => {
-    if (inputRef.current && !currentRfidUid) {
+    if (inputRef.current && !currentRfidUid && !isEditing) {
       // Only auto-focus on initial mount, not during view switches
       const timer = setTimeout(() => {
         inputRef.current?.focus({ preventScroll: true });
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [currentRfidUid]);
+  }, [currentRfidUid, isEditing]);
+
+  // Auto-focus edit input when entering edit mode
+  useEffect(() => {
+    if (isEditing && editInputRef.current) {
+      const timer = setTimeout(() => {
+        editInputRef.current?.focus();
+        editInputRef.current?.select();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isEditing]);
 
   // Enhanced keyboard handling with better navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target === inputRef.current) {
+      if (e.target === inputRef.current && !isEditing) {
         switch (e.key) {
           case 'Enter':
             if (uid.trim() && !validationError && !isProcessing) {
@@ -61,16 +75,29 @@ export const EnhancedRfidAssignmentCell = ({
             inputRef.current?.blur();
             break;
         }
+      } else if (e.target === editInputRef.current && isEditing) {
+        switch (e.key) {
+          case 'Enter':
+            if (editValue.trim() && !validationError && !isProcessing) {
+              e.preventDefault();
+              handleSaveEdit();
+            }
+            break;
+          case 'Escape':
+            e.preventDefault();
+            handleCancelEdit();
+            break;
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [uid, validationError, isProcessing]);
+  }, [uid, editValue, validationError, isProcessing, isEditing]);
 
-  // Real-time validation with debouncing
+  // Real-time validation with debouncing for assignment input
   useEffect(() => {
-    if (!uid.trim()) {
+    if (!uid.trim() || isEditing) {
       setValidationError("");
       return;
     }
@@ -80,9 +107,22 @@ export const EnhancedRfidAssignmentCell = ({
     }, 300); // Debounce validation
 
     return () => clearTimeout(validateTimeout);
-  }, [uid, attendeeId]);
+  }, [uid, attendeeId, isEditing]);
 
-  const validateRfidUid = async (rfidUid: string): Promise<boolean> => {
+  // Real-time validation for edit input
+  useEffect(() => {
+    if (!editValue.trim() || !isEditing) {
+      return;
+    }
+
+    const validateTimeout = setTimeout(async () => {
+      await validateRfidUid(editValue.trim(), true);
+    }, 300); // Debounce validation
+
+    return () => clearTimeout(validateTimeout);
+  }, [editValue, attendeeId, isEditing]);
+
+  const validateRfidUid = async (rfidUid: string, isEdit: boolean = false): Promise<boolean> => {
     if (!rfidUid) {
       setValidationError("");
       return false;
@@ -222,6 +262,112 @@ export const EnhancedRfidAssignmentCell = ({
     }
   };
 
+  // Edit mode functions
+  const handleStartEdit = () => {
+    setEditValue(currentRfidUid || "");
+    setIsEditing(true);
+    setValidationError("");
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditValue("");
+    setValidationError("");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editValue.trim() || validationError || isProcessing) return;
+
+    setIsProcessing(true);
+    
+    try {
+      // Validate the new UID
+      const isValid = await validateRfidUid(editValue.trim(), true);
+      if (!isValid && validationError) {
+        return;
+      }
+
+      // Clear the old RFID assignment
+      if (currentRfidUid && currentRfidUid !== editValue.trim()) {
+        await supabase
+          .from('rfid_tags')
+          .update({
+            status: 'replaced',
+            attendee_id: null,
+            deactivated_at: new Date().toISOString(),
+            reason: 'Manual reassignment via edit'
+          })
+          .eq('uid', currentRfidUid);
+      }
+
+      // Check if the new RFID UID exists in the system
+      const { data: tagExists } = await supabase
+        .from('rfid_tags')
+        .select('uid, status')
+        .eq('uid', editValue.trim())
+        .single();
+
+      if (!tagExists) {
+        // Create new RFID tag entry
+        await supabase
+          .from('rfid_tags')
+          .insert({
+            uid: editValue.trim(),
+            attendee_id: attendeeId,
+            status: 'assigned',
+            issued_at: new Date().toISOString()
+          });
+      } else {
+        // Update existing tag
+        await supabase
+          .from('rfid_tags')
+          .update({
+            attendee_id: attendeeId,
+            status: 'assigned',
+            issued_at: new Date().toISOString(),
+            deactivated_at: null,
+            reason: null
+          })
+          .eq('uid', editValue.trim());
+      }
+
+      // Log the edit transaction
+      await supabase
+        .from('station_transactions')
+        .insert({
+          attendee_id: attendeeId,
+          rfid_uid: editValue.trim(),
+          station_type: 'activation',
+          transaction_type: 'activate',
+          activation_method: 'edit_assignment',
+          extra_data: {
+            assignment_source: 'assignment_station_edit',
+            previous_rfid: currentRfidUid || null,
+            edit_action: true
+          }
+        });
+
+      toast({
+        title: "RFID Updated Successfully",
+        description: `${editValue.trim()} → ${attendeeName}`,
+      });
+
+      setIsEditing(false);
+      setEditValue("");
+      onAssignmentComplete();
+
+    } catch (error) {
+      console.error('RFID edit error:', error);
+      toast({
+        title: "Edit Failed",
+        description: "Failed to update RFID assignment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleClearRfid = async () => {
     if (!currentRfidUid) return;
 
@@ -288,29 +434,103 @@ export const EnhancedRfidAssignmentCell = ({
     }
   };
 
-  // Show assigned RFID with clear button
+  // Show assigned RFID with edit/clear buttons or edit input
   if (currentRfidUid && (currentRfidStatus === 'active' || currentRfidStatus === 'assigned')) {
+    if (isEditing) {
+      return (
+        <div className="flex items-start gap-2 min-w-[280px]">
+          <div className="flex-1">
+            <Input
+              ref={editInputRef}
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              placeholder="Enter new RFID UID"
+              className={`font-mono text-sm ${validationError ? 'border-destructive' : ''}`}
+              disabled={isProcessing}
+              data-rfid-input="true"
+              data-attendee-id={attendeeId}
+            />
+            {(validationError || isValidating) && (
+              <div className="flex items-center gap-1 mt-1 text-xs">
+                {isValidating ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Validating...</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-3 w-3 text-destructive" />
+                    <span className="text-destructive">{validationError}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSaveEdit}
+              disabled={!editValue.trim() || !!validationError || isProcessing || isValidating}
+              className="h-8 px-3"
+              title="Save changes"
+            >
+              {isProcessing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Save className="h-3 w-3" />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancelEdit}
+              disabled={isProcessing}
+              className="h-8 px-3"
+              title="Cancel edit"
+            >
+              <XCircle className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex items-center gap-2 min-w-[250px]">
+      <div className="flex items-center gap-2 min-w-[280px]">
         <div className="flex flex-col flex-1">
           <span className="font-mono text-sm font-medium">{currentRfidUid}</span>
           <Badge variant={getRfidStatusColor(currentRfidStatus)} className="text-xs w-fit mt-1">
             {currentRfidStatus}
           </Badge>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleClearRfid}
-          disabled={isProcessing}
-          className="h-8 px-3"
-        >
-          {isProcessing ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <X className="h-3 w-3" />
-          )}
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleStartEdit}
+            disabled={isProcessing}
+            className="h-8 px-3"
+            title="Edit RFID assignment"
+          >
+            <Edit3 className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearRfid}
+            disabled={isProcessing}
+            className="h-8 px-3"
+            title="Clear RFID assignment"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <X className="h-3 w-3" />
+            )}
+          </Button>
+        </div>
       </div>
     );
   }

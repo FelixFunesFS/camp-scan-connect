@@ -16,13 +16,15 @@ import {
   Search, 
   ChevronLeft,
   ChevronRight,
-  RotateCcw,
+  RefreshCw,
   Zap,
   Users,
   CheckCircle,
   AlertTriangle,
   Key,
-  Timer
+  Timer,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 
@@ -45,12 +47,14 @@ export const RfidAssignment = () => {
   const [attendees, setAttendees] = useState<AttendeeData[]>([]);
   const [filteredAttendees, setFilteredAttendees] = useState<AttendeeData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [mode, setMode] = useState<'pre-event' | 'day-of'>('pre-event');
   const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
   const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(true);
   const [currentFocusRow, setCurrentFocusRow] = useState(0);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const { toast } = useToast();
 
   // Progress calculations
@@ -114,6 +118,45 @@ export const RfidAssignment = () => {
       setLoading(false);
     }
   }, [mode, toast]);
+
+  // RegFox sync functionality
+  const handleRegFoxSync = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('regfox-sync');
+      
+      if (error) {
+        throw error;
+      }
+
+      if (data?.success === false) {
+        toast({
+          title: "Sync Warning",
+          description: data.error || "RegFox sync completed with warnings",
+          variant: data.code === 'SYNC_IN_PROGRESS' ? "default" : "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "RegFox Sync Complete",
+        description: `Updated ${data?.updatedRecords || 0} attendees, added ${data?.newRecords || 0} new registrations`,
+      });
+
+      // Refresh attendee data after successful sync
+      await loadAttendees();
+      
+    } catch (error) {
+      console.error('RegFox sync error:', error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync RegFox data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSyncing(false);
+    }
+  }, [toast, loadAttendees]);
 
   // Enhanced filtering with search and assignment status
   useEffect(() => {
@@ -201,7 +244,7 @@ export const RfidAssignment = () => {
             break;
           case 'r':
             e.preventDefault();
-            loadAttendees();
+            handleRegFoxSync();
             break;
         }
       } else if (e.key === 'F1') {
@@ -209,7 +252,7 @@ export const RfidAssignment = () => {
         // Show help overlay (could be implemented later)
         toast({
           title: "Keyboard Shortcuts",
-          description: "Ctrl+G: Focus first unassigned • Ctrl+Space: Toggle auto-advance • Ctrl+R: Refresh",
+          description: "Ctrl+G: Focus first unassigned • Ctrl+Space: Toggle auto-advance • Ctrl+R: Sync RegFox",
           duration: 4000,
         });
       }
@@ -218,6 +261,58 @@ export const RfidAssignment = () => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [focusFirstUnassigned, autoAdvanceEnabled, loadAttendees, toast]);
+
+  // Real-time subscriptions for live updates
+  useEffect(() => {
+    console.log('Setting up real-time subscriptions...');
+    
+    const channel = supabase
+      .channel('attendee-rfid-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'attendees'
+      }, (payload) => {
+        console.log('Attendee change detected:', payload);
+        // Reload data when attendee changes
+        loadAttendees();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public', 
+        table: 'rfid_tags'
+      }, (payload) => {
+        console.log('RFID tag change detected:', payload);
+        // Reload data when RFID tags change
+        loadAttendees();
+      })
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status);
+        setIsRealtimeConnected(status === 'SUBSCRIBED');
+        
+        if (status === 'SUBSCRIBED') {
+          toast({
+            title: "Live Updates Enabled",
+            description: "Assignment table will update automatically",
+            duration: 2000,
+          });
+        } else if (status === 'CLOSED') {
+          setIsRealtimeConnected(false);
+          toast({
+            title: "Live Updates Disconnected",
+            description: "Real-time updates are not available",
+            variant: "destructive",
+            duration: 3000,
+          });
+        }
+      });
+
+    return () => {
+      console.log('Cleaning up real-time subscriptions');
+      supabase.removeChannel(channel);
+      setIsRealtimeConnected(false);
+    };
+  }, [loadAttendees, toast]);
 
   // Load data on mount and when mode changes
   useEffect(() => {
@@ -269,14 +364,29 @@ export const RfidAssignment = () => {
                   <SelectItem value="day-of">Day-Of</SelectItem>
                 </SelectContent>
               </Select>
-              <Button 
-                variant="outline" 
-                onClick={loadAttendees}
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Refresh
-              </Button>
+              <div className="flex items-center gap-2">
+                {isRealtimeConnected ? (
+                  <Badge variant="secondary" className="text-xs">
+                    <Wifi className="h-3 w-3 mr-1" />
+                    Live
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs">
+                    <WifiOff className="h-3 w-3 mr-1" />
+                    Offline
+                  </Badge>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={handleRegFoxSync}
+                  disabled={syncing}
+                  className="flex items-center gap-2"
+                  title="Sync latest registrations from RegFox"
+                >
+                  <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                  {syncing ? 'Syncing...' : 'Sync RegFox Data'}
+                </Button>
+              </div>
             </div>
           </div>
 
