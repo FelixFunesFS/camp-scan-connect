@@ -104,8 +104,12 @@ export const RfidAssignment = () => {
           phone,
           order_id,
           ticket_type,
+          meal_plan,
+          arrival_window,
+          waiver_signed,
+          activated_at,
           created_at,
-          rfid_tags(uid, status)
+          rfid_tags(uid, status, activated_at)
         `)
         .order('created_at', { ascending: false }); // Recent registrants first for day-of mode
 
@@ -911,7 +915,7 @@ export const RfidAssignment = () => {
           )}
 
         {/* Status Alert */}
-        {autoAdvanceEnabled && (
+        {autoAdvanceEnabled && sortedAndPaginatedAttendees.length > 0 && (
           <Alert className="mt-4">
             <Zap className="h-4 w-4" />
             <AlertDescription>
