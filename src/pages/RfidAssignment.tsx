@@ -125,8 +125,10 @@ export const RfidAssignment = () => {
         `)
         .order('created_at', { ascending: false }); // Recent registrants first for day-of mode
 
-      // Default filter out cancelled registrants unless explicitly shown
-      if (!showCancelledRegistrants) {
+      // Filter registration status based on toggle
+      if (showCancelledRegistrants) {
+        query = query.eq('registration_status', 'cancelled');
+      } else {
         query = query.neq('registration_status', 'cancelled');
       }
 
@@ -270,8 +272,10 @@ export const RfidAssignment = () => {
     // Track that this is a filter/search operation
     setLastInteraction('search');
 
-    // Filter out cancelled registrants unless explicitly shown
-    if (!showCancelledRegistrants) {
+    // Filter registration status based on toggle
+    if (showCancelledRegistrants) {
+      filtered = filtered.filter(a => a.registration_status === 'cancelled');
+    } else {
       filtered = filtered.filter(a => a.registration_status !== 'cancelled');
     }
 
@@ -320,8 +324,10 @@ export const RfidAssignment = () => {
         (attendee.order_id && matchingOrderIds.has(attendee.order_id))
       );
       
-      // Apply other filters to the companion-inclusive results
-      if (!showCancelledRegistrants) {
+      // Apply registration status filter to the companion-inclusive results
+      if (showCancelledRegistrants) {
+        filtered = filtered.filter(a => a.registration_status === 'cancelled');
+      } else {
         filtered = filtered.filter(a => a.registration_status !== 'cancelled');
       }
       if (showOnlyUnassigned) {
