@@ -90,11 +90,7 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
       const changeEvent = new Event('change', { bubbles: true });
       focusedInput.dispatchEvent(changeEvent);
 
-      toast({
-        title: "RFID Captured",
-        description: `UID ${uid} captured from reader`,
-        duration: 2000
-      });
+      toast.info(`RFID Captured: UID ${uid} captured from reader`);
 
       // Auto-advance to next unassigned after a brief delay (reduced for faster workflow)
       setTimeout(() => {

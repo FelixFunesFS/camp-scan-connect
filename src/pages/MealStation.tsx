@@ -14,7 +14,7 @@ const MEAL_WINDOWS = [
 ];
 
 export default function MealStation() {
-  const { toast } = useToast();
+  
 
   return (
     <BaseStationComponent

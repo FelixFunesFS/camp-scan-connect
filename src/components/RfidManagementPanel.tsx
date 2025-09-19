@@ -52,20 +52,13 @@ export const RfidManagementPanel: React.FC = () => {
       setStats(result.statistics);
       setLastGenerated(result.generated_rfids);
 
-      toast({
-        title: "Mock RFIDs Generated Successfully",
-        description: `Generated ${result.generated_count} mock RFID tags`,
-      });
+      toast.success(`Mock RFIDs Generated Successfully - Generated ${result.generated_count} mock RFID tags`);
 
       console.log('Generated RFIDs:', result.generated_rfids);
 
     } catch (error) {
       console.error('Error generating mock RFIDs:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate mock RFIDs",
-        variant: "destructive",
-      });
+      toast.error(`Error - ${error.message || "Failed to generate mock RFIDs"}`);
     } finally {
       setIsGenerating(false);
     }
@@ -82,10 +75,7 @@ export const RfidManagementPanel: React.FC = () => {
 
       const result = data[0];
       
-      toast({
-        title: `${format} RFIDs Cleared`,
-        description: `Reset ${result.deleted_count} RFID assignments`,
-      });
+      toast.success(`${format} RFIDs Cleared - Reset ${result.deleted_count} RFID assignments`);
 
       // Refresh stats and clear generated list if needed
       await loadCurrentStats();
@@ -97,11 +87,7 @@ export const RfidManagementPanel: React.FC = () => {
 
     } catch (error) {
       console.error(`Error clearing ${format} RFIDs:`, error);
-      toast({
-        title: "Error",
-        description: error.message || `Failed to clear ${format} RFIDs`,
-        variant: "destructive",
-      });
+      toast.error(`Error - ${error.message || `Failed to clear ${format} RFIDs`}`);
     } finally {
       setLoadingState(false);
     }
@@ -152,11 +138,7 @@ export const RfidManagementPanel: React.FC = () => {
 
     } catch (error) {
       console.error('Error loading stats:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load RFID statistics",
-        variant: "destructive",
-      });
+      toast.error("Error - Failed to load RFID statistics");
     }
   };
 

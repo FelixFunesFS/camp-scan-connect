@@ -28,20 +28,12 @@ export const TestRfidGenerator: React.FC<TestRfidGeneratorProps> = ({ onGenerate
       const generatedUids = data?.map((item: any) => item.test_uid) || [];
       setLastGenerated(generatedUids);
 
-      toast({
-        title: "Test RFIDs Generated",
-        description: `Generated ${generatedUids.length} test RFID UIDs for rapid testing`,
-        duration: 3000
-      });
+      toast.success(`Test RFIDs Generated - Generated ${generatedUids.length} test RFID UIDs for rapid testing`);
 
       onGenerated();
     } catch (error) {
       console.error('Failed to generate test RFIDs:', error);
-      toast({
-        title: "Generation Failed",
-        description: "Failed to generate test RFIDs. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Generation Failed - Failed to generate test RFIDs. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -54,21 +46,13 @@ export const TestRfidGenerator: React.FC<TestRfidGeneratorProps> = ({ onGenerate
 
       if (error) throw error;
 
-      toast({
-        title: "Test Data Cleaned",
-        description: `Removed ${deletedCount || 0} test RFID assignments`,
-        duration: 2000
-      });
+      toast.success(`Test Data Cleaned - Removed ${deletedCount || 0} test RFID assignments`);
 
       setLastGenerated([]);
       onGenerated();
     } catch (error) {
       console.error('Failed to clean test data:', error);
-      toast({
-        title: "Cleanup Failed", 
-        description: "Failed to clean test data. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Cleanup Failed - Failed to clean test data. Please try again.");
     } finally {
       setIsCleaning(false);
     }

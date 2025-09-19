@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { BaseStationComponent, StationChildProps } from "@/components/BaseStationComponent";
 
 export default function DrinksStation() {
-  const { toast } = useToast();
+  
 
   return (
     <BaseStationComponent

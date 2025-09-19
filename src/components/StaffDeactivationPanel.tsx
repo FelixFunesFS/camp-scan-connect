@@ -107,27 +107,17 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
       
       if (result.success) {
         const attendee = await rfidLookupService.getRfidWithAttendee(uid);
-        toast({
-          title: "RFID Deactivated",
-          description: attendee ? 
-            `${attendee.first_name} ${attendee.last_name} deactivated` :
-            "RFID deactivated successfully",
-        });
+        const toastMessage = attendee ? 
+          `RFID Deactivated - ${attendee.first_name} ${attendee.last_name} deactivated` :
+          "RFID Deactivated - RFID deactivated successfully";
+        toast.success(toastMessage);
         loadActiveRfids();
         loadRecentActivity();
       } else {
-        toast({
-          title: "Deactivation Failed",
-          description: result.message,
-          variant: "destructive",
-        });
+        toast.error(`Deactivation Failed - ${result.message}`);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to deactivate RFID",
-        variant: "destructive",
-      });
+      toast.error("Error - Failed to deactivate RFID");
     } finally {
       setIsProcessing(false);
     }

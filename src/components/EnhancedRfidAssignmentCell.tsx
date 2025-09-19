@@ -233,10 +233,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast({
-        title: "RFID Assigned Successfully",
-        description: `${uid.trim()} → ${attendeeName}`,
-      });
+      toast.success(`RFID Assigned Successfully: ${uid.trim()} → ${attendeeName}`);
 
       setUid("");
       onAssignmentComplete();
@@ -252,11 +249,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     } catch (error) {
       console.error('RFID assignment error:', error);
-      toast({
-        title: "Assignment Failed",
-        description: "Failed to assign RFID. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Assignment Failed - Failed to assign RFID. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -347,10 +340,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast({
-        title: "RFID Updated Successfully",
-        description: `${editValue.trim()} → ${attendeeName}`,
-      });
+      toast.success(`RFID Updated Successfully: ${editValue.trim()} → ${attendeeName}`);
 
       setIsEditing(false);
       setEditValue("");
@@ -358,11 +348,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     } catch (error) {
       console.error('RFID edit error:', error);
-      toast({
-        title: "Edit Failed",
-        description: "Failed to update RFID assignment. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Edit Failed - Failed to update RFID assignment. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -404,19 +390,12 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast({
-        title: "RFID Cleared",
-        description: `${currentRfidUid} has been unassigned from ${attendeeName}`,
-      });
+      toast.success(`RFID Cleared: ${currentRfidUid} has been unassigned from ${attendeeName}`);
 
       onAssignmentComplete();
     } catch (error) {
       console.error('RFID clear error:', error);
-      toast({
-        title: "Clear Failed",
-        description: "Failed to clear RFID assignment.",
-        variant: "destructive"
-      });
+      toast.error("Clear Failed - Failed to clear RFID assignment.");
     } finally {
       setIsProcessing(false);
     }

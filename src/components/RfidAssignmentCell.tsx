@@ -144,20 +144,13 @@ export const RfidAssignmentCell = ({
           .eq('uid', uid.trim());
       }
 
-      toast({
-        title: "RFID Assigned",
-        description: `UID ${uid.trim()} assigned to ${attendeeName}. Use Activation Station to activate.`,
-      });
+      toast.success(`RFID Assigned: UID ${uid.trim()} assigned to ${attendeeName}. Use Activation Station to activate.`);
 
       setUid("");
       onAssignmentComplete();
     } catch (error) {
       console.error('RFID assignment error:', error);
-      toast({
-        title: "Assignment Failed",
-        description: "Failed to assign RFID. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Assignment Failed - Failed to assign RFID. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -207,19 +200,12 @@ export const RfidAssignmentCell = ({
         console.error('Transaction logging error:', transactionError);
       }
 
-      toast({
-        title: "RFID Cleared",
-        description: `UID ${currentRfidUid} has been cleared and is now unassigned`,
-      });
+      toast.success(`RFID Cleared: UID ${currentRfidUid} has been cleared and is now unassigned`);
 
       onAssignmentComplete();
     } catch (error) {
       console.error('RFID deactivation error:', error);
-      toast({
-        title: "Clear Failed",
-        description: "Failed to clear RFID. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Clear Failed - Failed to clear RFID. Please try again.");
     } finally {
       setIsProcessing(false);
     }

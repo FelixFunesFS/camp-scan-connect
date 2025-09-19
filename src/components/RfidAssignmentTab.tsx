@@ -171,11 +171,7 @@ export const RfidAssignmentTab = () => {
       setAttendees(enhancedAttendees);
     } catch (error) {
       console.error('Error loading attendees:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load attendee data",
-        variant: "destructive"
-      });
+      toast.error("Error - Failed to load attendee data");
     } finally {
       setLoading(false);
     }
@@ -268,10 +264,7 @@ export const RfidAssignmentTab = () => {
       }, 500);
     }
 
-    toast({
-      title: "RFID Captured",
-      description: `UID: ${finalUid}${testModeEnabled ? ' (Test Mode)' : ''}`,
-    });
+    toast.info(`RFID Captured: UID: ${finalUid}${testModeEnabled ? ' (Test Mode)' : ''}`);
   }, [testModeEnabled, autoAdvanceEnabled, generateSyntheticRfid, toast]);
 
   // RFID capture hook

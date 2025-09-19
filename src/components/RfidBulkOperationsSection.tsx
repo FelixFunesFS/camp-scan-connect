@@ -70,11 +70,7 @@ export const RfidBulkOperationsSection: React.FC<BulkOperationsSectionProps> = (
       setActiveRfids(rfids);
     } catch (error) {
       console.error('Error loading active RFIDs:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load active RFIDs",
-        variant: "destructive",
-      });
+      toast.error("Error - Failed to load active RFIDs");
     }
   };
 
@@ -138,20 +134,17 @@ export const RfidBulkOperationsSection: React.FC<BulkOperationsSectionProps> = (
 
       const result = await rfidLookupService.processBulkOperations(operations, staffId);
       
-      toast({
-        title: "Bulk Deactivation Complete",
-        description: `${result.processed_count} deactivated, ${result.failed_count} failed`,
-        variant: result.success ? "default" : "destructive",
-      });
+      const message = `Bulk Deactivation Complete - ${result.processed_count} deactivated, ${result.failed_count} failed`;
+      if (result.success) {
+        toast.success(message);
+      } else {
+        toast.error(message);
+      }
 
       setSelectedAttendees([]);
       await loadActiveRfids();
     } catch (error) {
-      toast({
-        title: "Bulk Operation Failed",
-        description: "Failed to process bulk deactivation",
-        variant: "destructive",
-      });
+      toast.error("Bulk Operation Failed - Failed to process bulk deactivation");
     } finally {
       setIsProcessing(false);
       setConfirmDialog(prev => ({ ...prev, open: false }));
@@ -164,19 +157,16 @@ export const RfidBulkOperationsSection: React.FC<BulkOperationsSectionProps> = (
       const reason = getReasonText();
       const result = await rfidLookupService.massDeactivateAll(reason, staffId);
       
-      toast({
-        title: "Mass Deactivation Complete",
-        description: result.message,
-        variant: result.success ? "default" : "destructive",
-      });
+      const message = `Mass Deactivation Complete - ${result.message}`;
+      if (result.success) {
+        toast.success(message);
+      } else {
+        toast.error(message);
+      }
 
       await loadActiveRfids();
     } catch (error) {
-      toast({
-        title: "Mass Deactivation Failed",
-        description: "Failed to perform mass deactivation",
-        variant: "destructive",
-      });
+      toast.error("Mass Deactivation Failed - Failed to perform mass deactivation");
     } finally {
       setIsProcessing(false);
       setConfirmDialog(prev => ({ ...prev, open: false }));
