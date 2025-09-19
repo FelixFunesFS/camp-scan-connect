@@ -14,6 +14,7 @@ import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Search, 
+  X,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
@@ -677,10 +678,21 @@ export const RfidAssignment = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => setIsSearching(true)}
                 onBlur={() => setTimeout(() => setIsSearching(false), 200)}
-                className="pl-10"
+                className={`pl-10 ${searchTerm ? 'pr-10' : ''}`}
                 data-search-input="true"
                 data-exclude-rfid="true"
               />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-transparent"
+                  onClick={() => setSearchTerm('')}
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                </Button>
+              )}
             </div>
             
             <div className="flex items-center gap-4">
