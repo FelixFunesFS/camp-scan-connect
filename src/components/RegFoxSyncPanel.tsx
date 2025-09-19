@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,9 +35,10 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [lastSyncStatus, setLastSyncStatus] = useState<SyncLog | null>(null);
   const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch sync logs
-  const fetchSyncLogs = async () => {
+  const fetchSyncLogs = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('regfox_sync_log')
@@ -57,7 +58,18 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
     } catch (error) {
       console.error('Error fetching sync logs:', error);
     }
-  };
+  }, []);
+
+  // Debounced version to prevent excessive UI updates during heartbeat changes
+  const debouncedFetchSyncLogs = useCallback(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    debounceTimeoutRef.current = setTimeout(() => {
+      fetchSyncLogs();
+    }, 300); // 300ms debounce for UI updates
+  }, [fetchSyncLogs]);
 
   useEffect(() => {
     fetchSyncLogs();
@@ -73,15 +85,18 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
           table: 'regfox_sync_log'
         },
         () => {
-          fetchSyncLogs();
+          debouncedFetchSyncLogs();
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
-  }, []);
+  }, [debouncedFetchSyncLogs]);
 
   const handleInitialSync = async () => {
     setIsInitialSyncing(true);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,6 +81,9 @@ export const RfidAssignment = () => {
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [lastInteraction, setLastInteraction] = useState<'data-load' | 'search' | 'filter' | 'rfid-assignment'>('data-load');
+  const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
+  const [realtimeDisabled, setRealtimeDisabled] = useState(false);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'status'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
@@ -180,6 +183,62 @@ export const RfidAssignment = () => {
     }
   }, [mode, showCancelledRegistrants, toast]);
 
+  // Debounced version of loadAttendees to prevent excessive reloads
+  const debouncedLoadAttendees = useCallback(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    debounceTimeoutRef.current = setTimeout(() => {
+      if (!realtimeDisabled) {
+        console.log('Debounced reload triggered');
+        loadAttendees();
+      }
+    }, 500); // 500ms debounce
+  }, [loadAttendees, realtimeDisabled]);
+
+  // Check for active syncs to control real-time subscriptions
+  const checkActiveSyncs = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('regfox_sync_log')
+        .select('id, status, cancelled_at')
+        .eq('status', 'in_progress')
+        .is('cancelled_at', null)
+        .limit(1);
+      
+      if (error) throw error;
+      
+      const activeSync = data?.[0];
+      const hasActiveSync = !!activeSync;
+      
+      setActiveSyncId(hasActiveSync ? activeSync.id : null);
+      
+      // Disable real-time updates during active sync
+      if (hasActiveSync && !realtimeDisabled) {
+        console.log('Sync detected, disabling real-time updates');
+        setRealtimeDisabled(true);
+        toast({
+          title: "Sync in Progress",
+          description: "Real-time updates paused during sync",
+          duration: 2000,
+        });
+      } else if (!hasActiveSync && realtimeDisabled) {
+        console.log('Sync completed, re-enabling real-time updates');
+        setRealtimeDisabled(false);
+        // Trigger a single refresh after sync completes
+        loadAttendees();
+        toast({
+          title: "Sync Complete",
+          description: "Real-time updates resumed",
+          duration: 2000,
+        });
+      }
+    } catch (error) {
+      console.error('Error checking active syncs:', error);
+    }
+  }, [realtimeDisabled, loadAttendees, toast]);
+
   // RegFox sync functionality
   const handleRegFoxSync = useCallback(async () => {
     setSyncing(true);
@@ -204,8 +263,7 @@ export const RfidAssignment = () => {
         description: `Updated ${data?.updatedRecords || 0} attendees, added ${data?.newRecords || 0} new registrations`,
       });
 
-      // Refresh attendee data after successful sync
-      await loadAttendees();
+      // Let real-time subscription handle the refresh when sync completes
       
     } catch (error) {
       console.error('RegFox sync error:', error);
@@ -217,7 +275,7 @@ export const RfidAssignment = () => {
     } finally {
       setSyncing(false);
     }
-  }, [toast, loadAttendees]);
+  }, [toast]);
 
   // Enhanced filtering with search, assignment status, meal plan, and arrival day
   useEffect(() => {
@@ -457,10 +515,25 @@ export const RfidAssignment = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [focusFirstUnassigned, autoAdvanceEnabled, loadAttendees, toast]);
 
-  // Real-time subscriptions for live updates
+  // Monitor sync status to control real-time updates
   useEffect(() => {
-    // Only subscribe to real-time updates when NOT showing cancelled registrants
-    if (showCancelledRegistrants) {
+    checkActiveSyncs();
+    
+    // Set up periodic check for sync status
+    const syncCheckInterval = setInterval(checkActiveSyncs, 3000); // Check every 3 seconds
+    
+    return () => {
+      clearInterval(syncCheckInterval);
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [checkActiveSyncs]);
+
+  // Real-time subscriptions for live updates (only when not disabled)
+  useEffect(() => {
+    // Only subscribe to real-time updates when NOT showing cancelled registrants AND not disabled
+    if (showCancelledRegistrants || realtimeDisabled) {
       setIsRealtimeConnected(false);
       return;
     }
@@ -475,8 +548,8 @@ export const RfidAssignment = () => {
         table: 'attendees'
       }, (payload) => {
         console.log('Attendee change detected:', payload);
-        // Reload data when attendee changes
-        loadAttendees();
+        // Use debounced reload to prevent excessive updates
+        debouncedLoadAttendees();
       })
       .on('postgres_changes', {
         event: '*',
@@ -484,14 +557,14 @@ export const RfidAssignment = () => {
         table: 'rfid_tags'
       }, (payload) => {
         console.log('RFID tag change detected:', payload);
-        // Reload data when RFID tags change
-        loadAttendees();
+        // Use debounced reload to prevent excessive updates
+        debouncedLoadAttendees();
       })
       .subscribe((status) => {
         console.log('Real-time subscription status:', status);
         setIsRealtimeConnected(status === 'SUBSCRIBED');
         
-        if (status === 'SUBSCRIBED') {
+        if (status === 'SUBSCRIBED' && !realtimeDisabled) {
           toast({
             title: "Live Updates Enabled",
             description: "Assignment table will update automatically",
@@ -513,7 +586,7 @@ export const RfidAssignment = () => {
       supabase.removeChannel(channel);
       setIsRealtimeConnected(false);
     };
-  }, [loadAttendees, toast, showCancelledRegistrants]);
+  }, [debouncedLoadAttendees, toast, showCancelledRegistrants, realtimeDisabled]);
 
   // Load data on mount and when mode changes
   useEffect(() => {
