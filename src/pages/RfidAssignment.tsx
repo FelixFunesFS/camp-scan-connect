@@ -53,6 +53,7 @@ export interface AttendeeData {
   formatted_meal_plan?: string; // Computed display value
   rfid_uid?: string;
   rfid_status?: string;
+  registration_status?: string;
   created_at: string;
   // Additional fields for enhanced functionality
   waiver_signed?: boolean;
@@ -75,6 +76,7 @@ export const RfidAssignment = () => {
   const [viewMode, setViewMode] = useState<'individual' | 'group'>('individual');
   const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
   const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(true);
+  const [showCancelledRegistrants, setShowCancelledRegistrants] = useState(false);
   const [currentFocusRow, setCurrentFocusRow] = useState(0);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -108,12 +110,18 @@ export const RfidAssignment = () => {
           ticket_type,
           meal_plan,
           arrival_window,
+          registration_status,
           waiver_signed,
           activated_at,
           created_at,
           rfid_tags(uid, status, activated_at)
         `)
         .order('created_at', { ascending: false }); // Recent registrants first for day-of mode
+
+      // Default filter out cancelled registrants unless explicitly shown
+      if (!showCancelledRegistrants) {
+        query = query.neq('registration_status', 'cancelled');
+      }
 
       if (mode === 'pre-event') {
         // Pre-event: show all attendees, prioritize unassigned
@@ -153,6 +161,7 @@ export const RfidAssignment = () => {
           activated_at: (attendee as any).activated_at,
           overall_status: overallStatus,
           created_at: attendee.created_at,
+          registration_status: (attendee as any).registration_status,
           rfid_uid: rfidTag?.uid || null,
           rfid_status: rfidTag?.status || 'unissued',
         };
@@ -169,7 +178,7 @@ export const RfidAssignment = () => {
     } finally {
       setLoading(false);
     }
-  }, [mode, toast]);
+  }, [mode, showCancelledRegistrants, toast]);
 
   // RegFox sync functionality
   const handleRegFoxSync = useCallback(async () => {
@@ -217,6 +226,11 @@ export const RfidAssignment = () => {
     // Track that this is a filter/search operation
     setLastInteraction('search');
 
+    // Filter out cancelled registrants unless explicitly shown
+    if (!showCancelledRegistrants) {
+      filtered = filtered.filter(a => a.registration_status !== 'cancelled');
+    }
+
     // Filter by assignment status
     if (showOnlyUnassigned) {
       filtered = filtered.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned');
@@ -263,6 +277,9 @@ export const RfidAssignment = () => {
       );
       
       // Apply other filters to the companion-inclusive results
+      if (!showCancelledRegistrants) {
+        filtered = filtered.filter(a => a.registration_status !== 'cancelled');
+      }
       if (showOnlyUnassigned) {
         filtered = filtered.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned');
       }
@@ -688,6 +705,16 @@ export const RfidAssignment = () => {
                 />
                 <Label htmlFor="unassigned-only" className="text-sm">
                   Unassigned only
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-cancelled"
+                  checked={showCancelledRegistrants}
+                  onCheckedChange={setShowCancelledRegistrants}
+                />
+                <Label htmlFor="show-cancelled" className="text-sm">
+                  Show cancelled
                 </Label>
               </div>
               <div className="flex items-center space-x-2">

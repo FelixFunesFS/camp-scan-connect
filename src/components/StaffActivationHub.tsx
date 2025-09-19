@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   ArrowLeft, 
@@ -120,6 +121,7 @@ export function StaffActivationHub() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeQuickFilter, setActiveQuickFilter] = useState<string | null>(null);
+  const [showCancelledRegistrants, setShowCancelledRegistrants] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -173,17 +175,24 @@ export function StaffActivationHub() {
       }, 30000);
       return () => clearInterval(interval);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, showCancelledRegistrants]);
 
   // Enhanced attendee data fetching (from AttendeeManagementTab)
   const fetchAttendees = async () => {
     try {
       setIsLoading(true);
       
-      const { data: attendeesData, error: attendeesError } = await supabase
+      let query = supabase
         .from('attendees')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Default filter out cancelled registrants unless explicitly shown
+      if (!showCancelledRegistrants) {
+        query = query.neq('registration_status', 'cancelled');
+      }
+
+      const { data: attendeesData, error: attendeesError } = await query;
 
       if (attendeesError) throw attendeesError;
 
@@ -1076,6 +1085,19 @@ export function StaffActivationHub() {
               }}
               placeholder="Search attendees for detailed management..."
             />
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-cancelled-staff"
+                  checked={showCancelledRegistrants}
+                  onCheckedChange={setShowCancelledRegistrants}
+                />
+                <Label htmlFor="show-cancelled-staff" className="text-sm">
+                  Show cancelled registrants
+                </Label>
+              </div>
+            </div>
 
             {/* Enhanced Search Results */}
             {processedAttendees.length > 0 ? (
