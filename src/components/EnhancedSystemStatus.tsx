@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, Users, CreditCard, Activity, Zap, Globe, Clock, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
@@ -31,7 +32,12 @@ interface SystemMetrics {
   webhookStatus: 'connected' | 'disconnected' | 'unknown';
 }
 
-export const EnhancedSystemStatus: React.FC = () => {
+interface EnhancedSystemStatusProps {
+  className?: string;
+  onViewDetails?: () => void;
+}
+
+export const EnhancedSystemStatus: React.FC<EnhancedSystemStatusProps> = ({ className, onViewDetails }) => {
   const [metrics, setMetrics] = useState<SystemMetrics>({
     attendees: { total: 0, activated: 0, activationRate: 0 },
     rfids: { total: 0, active: 0, assigned: 0, unissued: 0, assignmentRate: 0 },
@@ -211,10 +217,17 @@ export const EnhancedSystemStatus: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
-          System Status
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            System Status
+          </CardTitle>
+          {onViewDetails && (
+            <Button variant="outline" size="sm" onClick={onViewDetails}>
+              View Details
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* System Health Overview */}

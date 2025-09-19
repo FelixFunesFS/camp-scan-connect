@@ -21,6 +21,9 @@ import { StaffActivationHub } from "@/components/StaffActivationHub";
 import { MobileAdminNavigation } from "@/components/MobileAdminNavigation";
 import { RegFoxIdDebugger } from "@/components/RegFoxIdDebugger";
 import { EnhancedSystemStatus } from "@/components/EnhancedSystemStatus";
+import { RegFoxSyncPanel } from "@/components/RegFoxSyncPanel";
+import { WebhookStatus } from "@/components/WebhookStatus";
+import { SystemCleanupStatus } from "@/components/SystemCleanupStatus";
 import Reports from "./Reports";
 
 const AdminHub = () => {
@@ -132,7 +135,7 @@ const AdminHub = () => {
                   <CardDescription>System overview and management tools</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <EnhancedSystemStatus />
+                  <EnhancedSystemStatus onViewDetails={() => setActiveTab('system-management')} />
                 </CardContent>
               </Card>
               <RegFoxIdDebugger />
@@ -151,6 +154,21 @@ const AdminHub = () => {
         label: 'Reports', 
         icon: FileText, 
         component: <Reports />
+      },
+      { 
+        id: 'system-management', 
+        label: 'System Management', 
+        icon: Shield, 
+        component: (
+          <div className="mobile-container">
+            <div className="mobile-stack">
+              <RegFoxSyncPanel />
+              <WebhookStatus />
+              <SystemCleanupStatus />
+              <RegFoxIdDebugger />
+            </div>
+          </div>
+        )
       },
       { 
         id: 'staff', 
