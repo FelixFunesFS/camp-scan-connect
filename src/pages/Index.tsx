@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Scan, Zap } from "lucide-react";
+import { Scan, Zap, Key } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ const Index = () => {
             <Zap className="h-5 w-5" />
             Activation Tools
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/activation")}>
               <CardContent className="p-4">
                 <h3 className="font-semibold text-lg mb-2">Self-Service Activation</h3>
@@ -57,6 +57,27 @@ const Index = () => {
                   className="w-full"
                 >
                   Access Self-Service
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-secondary/50 bg-secondary/5" onClick={() => navigate("/rfid-assignment")}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Key className="h-5 w-5 text-secondary" />
+                  <h3 className="font-semibold text-lg">RFID Assignment</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">Assign RFID tags to attendees using USB scanner</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/rfid-assignment");
+                  }}
+                  className="w-full border-secondary/30 hover:bg-secondary/10"
+                >
+                  Access Assignment Station
                 </Button>
               </CardContent>
             </Card>

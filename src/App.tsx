@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 import ActivationStation from "./pages/ActivationStation";
+import { RfidAssignment } from "./pages/RfidAssignment";
 import { StaffActivationHub } from "./components/StaffActivationHub";
 import MealStation from "./pages/MealStation";
 import DrinksStation from "./pages/DrinksStation";
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           
           <Route path="/activation" element={<ActivationStation />} />
+          <Route path="/rfid-assignment" element={<RfidAssignment />} />
           <Route path="/staff-hub" element={<StaffActivationHub />} />
           <Route path="/meal-station" element={<MealStation />} />
           <Route path="/drinks-station" element={<DrinksStation />} />
