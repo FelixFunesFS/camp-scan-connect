@@ -21,6 +21,8 @@ import { StaffActivationHub } from "@/components/StaffActivationHub";
 import { MobileAdminNavigation } from "@/components/MobileAdminNavigation";
 import { RegFoxIdDebugger } from "@/components/RegFoxIdDebugger";
 import { RegFoxCsvComparison } from "@/components/RegFoxCsvComparison";
+import { ComprehensiveCsvAnalysis } from "@/components/ComprehensiveCsvAnalysis";
+import { DatabaseOrderIdComparison } from "@/components/DatabaseOrderIdComparison";
 import { EnhancedSystemStatus } from "@/components/EnhancedSystemStatus";
 import { SystemManagementGrid } from "@/components/SystemManagementGrid";
 import Reports from "./Reports";
@@ -137,8 +139,14 @@ const AdminHub = () => {
                   <EnhancedSystemStatus onViewDetails={() => setActiveTab('system-management')} />
                 </CardContent>
               </Card>
-              <RegFoxIdDebugger />
-              <RegFoxCsvComparison />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ComprehensiveCsvAnalysis />
+                <DatabaseOrderIdComparison />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <RegFoxIdDebugger />
+                <RegFoxCsvComparison />
+              </div>
             </div>
           </div>
         )

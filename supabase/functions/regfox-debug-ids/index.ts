@@ -25,69 +25,108 @@ serve(async (req) => {
       throw new Error('RegFox API key and Form ID are required');
     }
 
-    console.log('Fetching RegFox data to debug ID fields...');
+    console.log('Fetching comprehensive RegFox data for analysis...');
+    
+    // Fetch multiple pages to get more comprehensive data
+    const allRegistrants: any[] = [];
+    let page = 1;
+    const limit = 100;
+    
+    while (allRegistrants.length < 500 && page <= 5) { // Limit to 5 pages max
+      console.log(`Fetching page ${page}...`);
+      
+      const requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=regfox.com&formId=${encodeURIComponent(regfoxFormId)}&limit=${limit}&page=${page}&sort=asc`;
+      
+      const response = await fetch(requestUrl, {
+        headers: {
+          'apiKey': regfoxApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
 
-    // Fetch a small sample of RegFox data using the correct API endpoint
-    const requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=regfox.com&formId=${encodeURIComponent(regfoxFormId)}&limit=10&sort=asc`;
-    
-    console.log('Making RegFox API call to:', requestUrl);
-    
-    const response = await fetch(requestUrl, {
-      headers: {
-        'apiKey': regfoxApiKey,
-        'Content-Type': 'application/json'
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('RegFox API error response:', errorText);
+        break;
       }
-    });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('RegFox API error response:', errorText);
-      throw new Error(`RegFox API error: ${response.status} ${response.statusText}`);
+      const regfoxData = await response.json();
+      
+      if (!regfoxData.data || regfoxData.data.length === 0) {
+        console.log('No more data found, stopping pagination');
+        break;
+      }
+      
+      allRegistrants.push(...regfoxData.data);
+      page++;
+      
+      // Small delay to be respectful to the API
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    const regfoxData = await response.json();
+    console.log(`Fetched ${allRegistrants.length} registrants total`);
     
-    console.log('RegFox API Response Structure:');
-    console.log('Total registrants:', regfoxData.data?.length || 0);
+    // Analyze order ID patterns
+    const orderIdPatterns: { [key: string]: { count: number; examples: string[] } } = {};
+    const registrantIdSamples: string[] = [];
     
-    if (regfoxData.data && regfoxData.data.length > 0) {
-      const firstRegistrant = regfoxData.data[0];
-      
-      console.log('\n=== FIRST REGISTRANT ID FIELDS ===');
-      console.log('id:', firstRegistrant.id);
-      console.log('displayId:', firstRegistrant.displayId);
-      console.log('orderId:', firstRegistrant.orderId);
-      console.log('formId:', firstRegistrant.formId);
-      console.log('status:', firstRegistrant.status);
-      console.log('amount:', firstRegistrant.amount);
-      
-      // Look for Bernard Hunter specifically
-      const bernard = regfoxData.data.find((r: any) => {
-        const fields = r.fieldData || [];
-        const firstName = fields.find((f: any) => f.label?.includes('First Name') || f.path?.includes('firstName'))?.value || '';
-        const lastName = fields.find((f: any) => f.label?.includes('Last Name') || f.path?.includes('lastName'))?.value || '';
-        return firstName.toLowerCase().includes('bernard') && lastName.toLowerCase().includes('hunter');
-      });
-      
-      if (bernard) {
-        console.log('\n=== BERNARD HUNTER ID FIELDS ===');
-        console.log('id:', bernard.id);
-        console.log('displayId:', bernard.displayId);
-        console.log('orderId:', bernard.orderId);
-        console.log('formId:', bernard.formId);
-        console.log('status:', bernard.status);
-        console.log('amount:', bernard.amount);
+    allRegistrants.forEach((registrant) => {
+      // Collect registrant ID samples
+      if (registrant.id && registrantIdSamples.length < 20) {
+        registrantIdSamples.push(registrant.id);
       }
+      
+      // Analyze order ID patterns
+      if (registrant.orderId) {
+        const range = registrant.orderId.toString().substring(0, 2) + 'M';
+        if (!orderIdPatterns[range]) {
+          orderIdPatterns[range] = { count: 0, examples: [] };
+        }
+        orderIdPatterns[range].count++;
+        if (orderIdPatterns[range].examples.length < 5) {
+          orderIdPatterns[range].examples.push(registrant.orderId.toString());
+        }
+      }
+    });
+    
+    // Log analysis results
+    console.log('Order ID Patterns Found:', orderIdPatterns);
+    console.log('Registrant ID Samples:', registrantIdSamples.slice(0, 10));
+    
+    // Log first few registrants' key fields
+    const sampleAnalysis = allRegistrants.slice(0, 5).map(reg => ({
+      id: reg.id,
+      displayId: reg.displayId,
+      orderId: reg.orderId,
+      formId: reg.formId,
+      status: reg.status,
+      createdAt: reg.createdAt
+    }));
+    
+    console.log('Sample Registrant Analysis:', sampleAnalysis);
+
+    // Look for Bernard Hunter specifically
+    const bernard = allRegistrants.find((r: any) => {
+      const fields = r.fieldData || [];
+      const firstName = fields.find((f: any) => f.label?.includes('First Name') || f.path?.includes('firstName'))?.value || '';
+      const lastName = fields.find((f: any) => f.label?.includes('Last Name') || f.path?.includes('lastName'))?.value || '';
+      return firstName.toLowerCase().includes('bernard') && lastName.toLowerCase().includes('hunter');
+    });
+    
+    if (bernard) {
+      console.log('\n=== BERNARD HUNTER ID FIELDS ===');
+      console.log('id:', bernard.id);
+      console.log('displayId:', bernard.displayId);
+      console.log('orderId:', bernard.orderId);
     }
 
     return new Response(JSON.stringify({
       success: true,
-      message: 'Debug data logged to console',
-      sampleData: regfoxData.data?.[0] ? {
-        id: regfoxData.data[0].id,
-        displayId: regfoxData.data[0].displayId,
-        orderId: regfoxData.data[0].orderId,
-      } : null
+      totalFetched: allRegistrants.length,
+      orderIdPatterns,
+      registrantIdSamples: registrantIdSamples.slice(0, 10),
+      sampleAnalysis,
+      sampleData: allRegistrants.slice(0, 10)
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
