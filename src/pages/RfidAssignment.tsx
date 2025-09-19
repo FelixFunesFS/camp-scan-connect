@@ -812,7 +812,7 @@ export const RfidAssignment = () => {
                   onCheckedChange={setShowCancelledRegistrants}
                 />
                 <Label htmlFor="show-cancelled" className="text-sm">
-                  Show cancelled
+                  Cancelled registrations
                 </Label>
               </div>
               <div className="flex items-center space-x-2">

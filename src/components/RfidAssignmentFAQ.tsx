@@ -155,7 +155,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm">"Show Cancelled" Toggle:</h4>
+                  <h4 className="font-medium text-sm">"Cancelled Registrations" Toggle:</h4>
                   <p className="text-sm text-muted-foreground">
                     When ON: Shows ONLY cancelled registrations (exclusive view).
                     When OFF: Shows all active registrations (normal operation).
@@ -164,7 +164,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
 
                 <div className="pt-2 border-t">
                   <p className="text-xs text-muted-foreground">
-                    <strong>Note:</strong> These toggles work independently. Use "Unassigned Only" during assignment workflow, "Show Cancelled" for cleanup tasks.
+                    <strong>Note:</strong> These toggles work independently. Use "Unassigned Only" during assignment workflow, "Cancelled Registrations" for cleanup tasks.
                   </p>
                 </div>
               </AccordionContent>
@@ -331,7 +331,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               <li>• <strong>Scan:</strong> Position tag near scanner, listen for beep</li>
               <li>• <strong>Save:</strong> Auto-saves on scan or press Enter</li>
               <li>• <strong>Navigate:</strong> Use Ctrl+G to jump to next unassigned</li>
-              <li>• <strong>Filter:</strong> "Unassigned Only" for workflow, "Show Cancelled" for cleanup</li>
+              <li>• <strong>Filter:</strong> "Unassigned Only" for workflow, "Cancelled Registrations" for cleanup</li>
             </ul>
           </div>
         </div>
