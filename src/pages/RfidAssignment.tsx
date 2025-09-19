@@ -459,6 +459,12 @@ export const RfidAssignment = () => {
 
   // Real-time subscriptions for live updates
   useEffect(() => {
+    // Only subscribe to real-time updates when NOT showing cancelled registrants
+    if (showCancelledRegistrants) {
+      setIsRealtimeConnected(false);
+      return;
+    }
+
     console.log('Setting up real-time subscriptions...');
     
     const channel = supabase
@@ -507,7 +513,7 @@ export const RfidAssignment = () => {
       supabase.removeChannel(channel);
       setIsRealtimeConnected(false);
     };
-  }, [loadAttendees, toast]);
+  }, [loadAttendees, toast, showCancelledRegistrants]);
 
   // Load data on mount and when mode changes
   useEffect(() => {
@@ -562,16 +568,20 @@ export const RfidAssignment = () => {
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-2">
-                {isRealtimeConnected ? (
-                  <Badge variant="secondary" className="text-xs">
-                    <Wifi className="h-3 w-3 mr-1" />
-                    Live
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs">
-                    <WifiOff className="h-3 w-3 mr-1" />
-                    Offline
-                  </Badge>
+                {!showCancelledRegistrants && (
+                  <>
+                    {isRealtimeConnected ? (
+                      <Badge variant="secondary" className="text-xs">
+                        <Wifi className="h-3 w-3 mr-1" />
+                        Live
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        <WifiOff className="h-3 w-3 mr-1" />
+                        Offline
+                      </Badge>
+                    )}
+                  </>
                 )}
                 <Button 
                   variant="outline" 
