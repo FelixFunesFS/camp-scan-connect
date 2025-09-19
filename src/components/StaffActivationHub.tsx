@@ -564,14 +564,25 @@ export function StaffActivationHub() {
     }
   };
 
-  const handleStaffLogin = () => {
-    // Simple staff code validation - in production, this would be more secure
-    if (staffCode.toLowerCase() === 'mc2025') {
-      setIsAuthenticated(true);
-      setStaffId('MC2025');
-      toast.success("Welcome, MC2025 Staff - You now have access to event management tools");
-    } else {
-      toast.error("Please enter a valid staff code");
+  const handleStaffLogin = async () => {
+    try {
+      const { data, error } = await supabase.rpc('authenticate_staff_code', {
+        p_code: staffCode.toLowerCase()
+      });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const staffInfo = data[0];
+        setIsAuthenticated(true);
+        setStaffId(staffInfo.staff_id);
+        toast.success(`Welcome, ${staffInfo.display_name} - You now have access to event management tools`);
+      } else {
+        toast.error("Please enter a valid staff code");
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+      toast.error("Authentication failed");
     }
   };
 

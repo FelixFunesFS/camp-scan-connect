@@ -491,6 +491,14 @@ export type Database = {
           warnings: string[]
         }[]
       }
+      authenticate_staff_code: {
+        Args: { p_code: string }
+        Returns: {
+          display_name: string
+          staff_id: string
+          staff_role: Database["public"]["Enums"]["staff_role"]
+        }[]
+      }
       bulk_generate_mock_rfids: {
         Args: { p_limit?: number }
         Returns: {
