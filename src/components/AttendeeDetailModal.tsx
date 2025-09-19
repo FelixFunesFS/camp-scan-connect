@@ -22,11 +22,11 @@ import { EnhancedAttendee } from "./StaffActivationHub";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 
 interface AttendeeDetailModalProps {
-  attendee: EnhancedAttendee;
+  attendee: any; // Made flexible to work with different attendee types
   trigger: React.ReactNode;
   onActivate?: (attendeeId: string) => void;
-  onGroupActivate?: (orderAttendees: EnhancedAttendee[]) => void;
-  allAttendees?: EnhancedAttendee[];
+  onGroupActivate?: (orderAttendees: any[]) => void;
+  allAttendees?: any[];
 }
 
 export function AttendeeDetailModal({ 
@@ -37,6 +37,7 @@ export function AttendeeDetailModal({
   allAttendees = [] 
 }: AttendeeDetailModalProps) {
   const [open, setOpen] = useState(false);
+  const [selectedCompanion, setSelectedCompanion] = useState<any | null>(null);
 
   const orderCompanions = allAttendees.filter(a => 
     a.order_id === attendee.order_id && a.id !== attendee.id && attendee.order_id
@@ -268,8 +269,8 @@ export function AttendeeDetailModal({
               </CardContent>
             </Card>
 
-            {/* Group/Order Information */}
-            {attendee.is_group_order && orderCompanions.length > 0 && (
+            {/* Group/Order Information with Drill-Down */}
+            {orderCompanions.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -280,24 +281,49 @@ export function AttendeeDetailModal({
                 <CardContent>
                   <div className="space-y-2">
                     {orderCompanions.map((companion) => (
-                      <div key={companion.id} className="flex items-center justify-between p-2 border rounded-lg">
+                      <div key={companion.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex-1">
-                          <div className="font-medium">{companion.first_name} {companion.last_name}</div>
-                          <div className="text-sm text-muted-foreground">
+                          <Button
+                            variant="link"
+                            className="p-0 h-auto font-medium text-left hover:underline"
+                            onClick={() => setSelectedCompanion(companion)}
+                          >
+                            {companion.first_name} {companion.last_name}
+                          </Button>
+                          <div className="text-sm text-muted-foreground mt-1">
                             {companion.email} • {companion.phone ? formatPhoneNumber(companion.phone) : 'No phone'}
                           </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {companion.formatted_meal_plan || 'No Plan'} • {companion.arrival_day || 'Friday'}
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Badge variant={getStatusVariant(companion.overall_status)}>
-                            {companion.overall_status === 'activated' ? 'Active' :
-                             companion.overall_status === 'assigned' ? 'Pending' : 'No RFID'}
+                        <div className="flex flex-col gap-2 items-end">
+                          <Badge variant={getStatusVariant(companion.overall_status || companion.rfid_status)}>
+                            {companion.overall_status === 'activated' || (companion.activated_at && companion.rfid_uid) ? 'Active' :
+                             companion.overall_status === 'assigned' || companion.rfid_uid ? 'Assigned' : 'Unassigned'}
                           </Badge>
+                          {companion.rfid_uid && (
+                            <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
+                              {companion.rfid_uid}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Nested Modal for Companion Details */}
+            {selectedCompanion && (
+              <AttendeeDetailModal
+                attendee={selectedCompanion}
+                allAttendees={allAttendees}
+                trigger={<div />} // Hidden trigger
+                onActivate={onActivate}
+                onGroupActivate={onGroupActivate}
+              />
             )}
 
             {/* Notes */}

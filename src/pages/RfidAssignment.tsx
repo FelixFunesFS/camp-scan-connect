@@ -27,8 +27,19 @@ import {
   WifiOff
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
+import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { GroupRfidView } from "@/components/GroupRfidView";
+import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { useCsvExport } from "@/hooks/useCsvExport";
+import { 
+  ArrowUpDown, 
+  ArrowUp, 
+  ArrowDown,
+  Download,
+  Filter
+} from "lucide-react";
 
-interface AttendeeData {
+export interface AttendeeData {
   id: string;
   first_name: string;
   last_name: string;
@@ -36,9 +47,19 @@ interface AttendeeData {
   phone?: string;
   order_id?: string;
   ticket_type: string;
+  meal_plan?: string;
+  arrival_window?: string;
+  arrival_day?: string; // Computed from arrival_window
+  formatted_meal_plan?: string; // Computed display value
   rfid_uid?: string;
   rfid_status?: string;
   created_at: string;
+  // Additional fields for enhanced functionality
+  waiver_signed?: boolean;
+  activated_at?: string;
+  overall_status?: string;
+  order_companions?: AttendeeData[]; // Linked attendees
+  group_assignment_progress?: { assigned: number; total: number; percentage: number };
 }
 
 const ROWS_PER_PAGE = 50;
@@ -51,11 +72,17 @@ export const RfidAssignment = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [mode, setMode] = useState<'pre-event' | 'day-of'>('pre-event');
+  const [viewMode, setViewMode] = useState<'individual' | 'group'>('individual');
   const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
   const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(true);
   const [currentFocusRow, setCurrentFocusRow] = useState(0);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'status'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
+  const [arrivalDayFilter, setArrivalDayFilter] = useState<string>('all');
   const { toast } = useToast();
+  const { exportToCsv } = useCsvExport();
 
   // Progress calculations
   const totalCount = attendees.length;
@@ -92,6 +119,18 @@ export const RfidAssignment = () => {
 
       const processedAttendees: AttendeeData[] = data.map(attendee => {
         const rfidTag = (attendee.rfid_tags as any)?.[0];
+        
+        // Map arrival window to readable day
+        const arrivalDay = (attendee as any).arrival_window === 'early' ? 'Thursday' : 'Friday';
+        
+        // Format meal plan for display
+        const formattedMealPlan = (attendee as any).meal_plan === '1' ? 'Plan 1' : 
+                                 (attendee as any).meal_plan === '2' ? 'Plan 2' : 'No Plan';
+        
+        // Determine overall status
+        const overallStatus = (attendee as any).activated_at && rfidTag?.activated_at ? 'activated' :
+                             rfidTag?.uid ? 'assigned' : 'unassigned';
+        
         return {
           id: attendee.id,
           first_name: attendee.first_name,
@@ -100,6 +139,13 @@ export const RfidAssignment = () => {
           phone: attendee.phone,
           order_id: attendee.order_id,
           ticket_type: attendee.ticket_type,
+          meal_plan: (attendee as any).meal_plan,
+          arrival_window: (attendee as any).arrival_window,
+          arrival_day: arrivalDay,
+          formatted_meal_plan: formattedMealPlan,
+          waiver_signed: (attendee as any).waiver_signed,
+          activated_at: (attendee as any).activated_at,
+          overall_status: overallStatus,
           created_at: attendee.created_at,
           rfid_uid: rfidTag?.uid || null,
           rfid_status: rfidTag?.status || 'unissued',
@@ -158,7 +204,7 @@ export const RfidAssignment = () => {
     }
   }, [toast, loadAttendees]);
 
-  // Enhanced filtering with search and assignment status
+  // Enhanced filtering with search, assignment status, meal plan, and arrival day
   useEffect(() => {
     let filtered = attendees;
 
@@ -167,7 +213,21 @@ export const RfidAssignment = () => {
       filtered = filtered.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned');
     }
 
-    // Filter by search term
+    // Filter by meal plan
+    if (mealPlanFilter !== 'all') {
+      if (mealPlanFilter === 'none') {
+        filtered = filtered.filter(a => !a.meal_plan);
+      } else {
+        filtered = filtered.filter(a => a.meal_plan === mealPlanFilter);
+      }
+    }
+
+    // Filter by arrival day
+    if (arrivalDayFilter !== 'all') {
+      filtered = filtered.filter(a => a.arrival_window === arrivalDayFilter);
+    }
+
+    // Filter by search term (including phone numbers)
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
       filtered = filtered.filter(attendee => 
@@ -180,15 +240,93 @@ export const RfidAssignment = () => {
 
     setFilteredAttendees(filtered);
     setCurrentPage(1); // Reset to first page on filter change
-  }, [attendees, searchTerm, showOnlyUnassigned]);
+  }, [attendees, searchTerm, showOnlyUnassigned, mealPlanFilter, arrivalDayFilter]);
 
-  // Pagination
-  const paginatedAttendees = useMemo(() => {
+  // Sorting and pagination
+  const sortedAndPaginatedAttendees = useMemo(() => {
+    // Sort attendees
+    const sorted = [...filteredAttendees].sort((a, b) => {
+      let aValue: string, bValue: string;
+      
+      switch (sortField) {
+        case 'name':
+          aValue = `${a.first_name} ${a.last_name}`.toLowerCase();
+          bValue = `${b.first_name} ${b.last_name}`.toLowerCase();
+          break;
+        case 'phone':
+          aValue = a.phone?.toLowerCase() || 'zzz-no-phone';
+          bValue = b.phone?.toLowerCase() || 'zzz-no-phone';
+          break;
+        case 'order':
+          aValue = a.order_id?.toLowerCase() || 'zzz-no-order';
+          bValue = b.order_id?.toLowerCase() || 'zzz-no-order';
+          break;
+        case 'meal_plan':
+          aValue = a.formatted_meal_plan?.toLowerCase() || 'zzz-no-plan';
+          bValue = b.formatted_meal_plan?.toLowerCase() || 'zzz-no-plan';
+          break;
+        case 'arrival_day':
+          aValue = a.arrival_day?.toLowerCase() || 'zzz-standard';
+          bValue = b.arrival_day?.toLowerCase() || 'zzz-standard';
+          break;
+        case 'ticket_type':
+          aValue = a.ticket_type.toLowerCase();
+          bValue = b.ticket_type.toLowerCase();
+          break;
+        case 'status':
+          aValue = a.rfid_uid && a.rfid_status === 'assigned' ? 'assigned' : 'unassigned';
+          bValue = b.rfid_uid && b.rfid_status === 'assigned' ? 'assigned' : 'unassigned';
+          break;
+        default:
+          return 0;
+      }
+      
+      const result = aValue.localeCompare(bValue);
+      const finalResult = sortDirection === 'asc' ? result : -result;
+      return finalResult;
+    });
+
+    // Apply pagination
     const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
-    return filteredAttendees.slice(startIndex, startIndex + ROWS_PER_PAGE);
-  }, [filteredAttendees, currentPage]);
+    return sorted.slice(startIndex, startIndex + ROWS_PER_PAGE);
+  }, [filteredAttendees, currentPage, sortField, sortDirection]);
 
   const totalPages = Math.ceil(filteredAttendees.length / ROWS_PER_PAGE);
+
+  // Sorting handler
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Sort icon helper
+  const getSortIcon = (field: typeof sortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4" />;
+    }
+    return sortDirection === 'asc' ? 
+      <ArrowUp className="h-4 w-4" /> : 
+      <ArrowDown className="h-4 w-4" />;
+  };
+
+  // CSV export handler
+  const handleCsvExport = () => {
+    const exportData = showOnlyUnassigned 
+      ? filteredAttendees.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned')
+      : filteredAttendees;
+    
+    const filename = `rfid-assignment-${mode}-${showOnlyUnassigned ? 'unassigned-only' : 'all'}`;
+    exportToCsv(exportData, filename);
+    
+    toast({
+      title: "Export Complete",
+      description: `Exported ${exportData.length} attendee records to CSV`,
+    });
+  };
 
   // Enhanced RFID capture handler
   const handleRfidCapture = useCallback(async (uid: string) => {
@@ -321,10 +459,10 @@ export const RfidAssignment = () => {
 
   // Auto-focus first unassigned on data load
   useEffect(() => {
-    if (paginatedAttendees.length > 0 && !loading) {
+    if (sortedAndPaginatedAttendees.length > 0 && !loading) {
       focusFirstUnassigned();
     }
-  }, [paginatedAttendees, loading, focusFirstUnassigned]);
+  }, [sortedAndPaginatedAttendees, loading, focusFirstUnassigned]);
 
   const handleAssignmentComplete = useCallback(() => {
     loadAttendees(); // Refresh data after assignment
@@ -427,80 +565,207 @@ export const RfidAssignment = () => {
         </div>
 
         {/* Controls */}
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-6">
-          {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search name, order, phone, email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-              data-search-input="true"
-              data-exclude-rfid="true"
-            />
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Search and View Mode */}
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search name, order, phone, email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+                data-search-input="true"
+                data-exclude-rfid="true"
+              />
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <Select value={viewMode} onValueChange={(value) => setViewMode(value as 'individual' | 'group')}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Individual</SelectItem>
+                  <SelectItem value="group">Group</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleCsvExport}
+                className="flex items-center gap-2"
+                title="Export current view to CSV"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+            </div>
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="unassigned-only"
-                checked={showOnlyUnassigned}
-                onCheckedChange={setShowOnlyUnassigned}
-              />
-              <Label htmlFor="unassigned-only" className="text-sm">
-                Unassigned only
-              </Label>
+          {/* Filters and Toggles */}
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Filters:</span>
+              </div>
+              
+              <Select value={mealPlanFilter} onValueChange={setMealPlanFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Meal Plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Plans</SelectItem>
+                  <SelectItem value="none">No Plan</SelectItem>
+                  <SelectItem value="1">Plan 1</SelectItem>
+                  <SelectItem value="2">Plan 2</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={arrivalDayFilter} onValueChange={setArrivalDayFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Arrival Day" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Days</SelectItem>
+                  <SelectItem value="early">Thursday</SelectItem>
+                  <SelectItem value="standard">Friday</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="auto-advance"
-                checked={autoAdvanceEnabled}
-                onCheckedChange={setAutoAdvanceEnabled}
-              />
-              <Label htmlFor="auto-advance" className="text-sm flex items-center gap-1">
-                <Zap className="h-3 w-3" />
-                Auto-advance
-              </Label>
+
+            <div className="flex items-center gap-6">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="unassigned-only"
+                  checked={showOnlyUnassigned}
+                  onCheckedChange={setShowOnlyUnassigned}
+                />
+                <Label htmlFor="unassigned-only" className="text-sm">
+                  Unassigned only
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="auto-advance"
+                  checked={autoAdvanceEnabled}
+                  onCheckedChange={setAutoAdvanceEnabled}
+                />
+                <Label htmlFor="auto-advance" className="text-sm flex items-center gap-1">
+                  <Zap className="h-3 w-3" />
+                  Auto-advance
+                </Label>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Assignment Table */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Assignment Table
-                {mode === 'day-of' && (
-                  <Badge variant="secondary" className="ml-2">
-                    <Timer className="h-3 w-3 mr-1" />
-                    Day-Of Mode
-                  </Badge>
-                )}
-              </CardTitle>
-              <div className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages} • {filteredAttendees.length} total
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+          {viewMode === 'individual' ? (
+            <div className="space-y-6">
+              {/* Assignment Table */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Key className="h-5 w-5" />
+                      Assignment Table
+                      {mode === 'day-of' && (
+                        <Badge variant="secondary" className="ml-2">
+                          <Timer className="h-3 w-3 mr-1" />
+                          Day-Of Mode
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <div className="text-sm text-muted-foreground">
+                      Page {currentPage} of {totalPages} • {filteredAttendees.length} filtered • {attendees.length} total
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">#</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Ticket Type</TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => handleSort('name')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Name
+                          {getSortIcon('name')}
+                        </div>
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => handleSort('phone')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Phone
+                          {getSortIcon('phone')}
+                        </div>
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => handleSort('order')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Order ID
+                          {getSortIcon('order')}
+                        </div>
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => handleSort('meal_plan')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Meal Plan
+                          {getSortIcon('meal_plan')}
+                        </div>
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => handleSort('arrival_day')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Arrival Day
+                          {getSortIcon('arrival_day')}
+                        </div>
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-semibold hover:bg-transparent"
+                        onClick={() => handleSort('ticket_type')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Ticket Type
+                          {getSortIcon('ticket_type')}
+                        </div>
+                      </Button>
+                    </TableHead>
                     <TableHead className="w-64">RFID Assignment</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedAttendees.length === 0 ? (
+                  {sortedAndPaginatedAttendees.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-12">
                         <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -516,7 +781,7 @@ export const RfidAssignment = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedAttendees.map((attendee, index) => {
+                    sortedAndPaginatedAttendees.map((attendee, index) => {
                       const globalRowIndex = (currentPage - 1) * ROWS_PER_PAGE + index;
                       const isAssigned = attendee.rfid_uid && attendee.rfid_status === 'assigned';
                       
@@ -530,17 +795,41 @@ export const RfidAssignment = () => {
                             {globalRowIndex + 1}
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium">
-                              {attendee.first_name} {attendee.last_name}
-                            </div>
+                            <AttendeeDetailModal
+                              attendee={attendee}
+                              allAttendees={attendees}
+                              trigger={
+                                <Button variant="link" className="p-0 h-auto font-medium text-left hover:underline">
+                                  {attendee.first_name} {attendee.last_name}
+                                </Button>
+                              }
+                            />
                             {attendee.email && (
                               <div className="text-sm text-muted-foreground">
                                 {attendee.email}
                               </div>
                             )}
                           </TableCell>
+                          <TableCell className="text-sm">
+                            {attendee.phone ? formatPhoneNumber(attendee.phone) : 'N/A'}
+                          </TableCell>
                           <TableCell className="font-mono text-sm">
-                            {attendee.order_id || '-'}
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {attendee.order_id || 'No Order'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {attendee.formatted_meal_plan}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={attendee.arrival_window === 'early' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {attendee.arrival_day}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline">
@@ -610,8 +899,16 @@ export const RfidAssignment = () => {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <GroupRfidView 
+              attendees={filteredAttendees}
+              onRefresh={handleAssignmentComplete}
+              searchTerm={searchTerm}
+            />
+          )}
 
         {/* Status Alert */}
         {autoAdvanceEnabled && (
