@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Headphones, HeadphonesIcon } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { BaseStationComponent, StationChildProps } from "@/components/BaseStationComponent";
 
 export default function HeadphonesStation() {

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Zap, RotateCcw, TestTube2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 
 interface TestRfidGeneratorProps {
   onGenerated: () => void;
@@ -14,7 +14,7 @@ export const TestRfidGenerator: React.FC<TestRfidGeneratorProps> = ({ onGenerate
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
   const [lastGenerated, setLastGenerated] = useState<string[]>([]);
-  const { toast } = useToast();
+  
 
   const generateTestRfids = async () => {
     setIsGenerating(true);

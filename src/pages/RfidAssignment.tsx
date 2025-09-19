@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -88,7 +88,7 @@ export const RfidAssignment = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
   const [arrivalDayFilter, setArrivalDayFilter] = useState<string>('all');
-  const { toast } = useToast();
+  
   const { exportToCsv } = useCsvExport();
 
   // Progress calculations
@@ -173,11 +173,7 @@ export const RfidAssignment = () => {
       setAttendees(processedAttendees);
     } catch (error) {
       console.error('Error loading attendees:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load attendee data",
-        variant: "destructive"
-      });
+      toast.error("Failed to load attendee data");
     } finally {
       setLoading(false);
     }
@@ -218,21 +214,13 @@ export const RfidAssignment = () => {
       if (hasActiveSync && !realtimeDisabled) {
         console.log('Sync detected, disabling real-time updates');
         setRealtimeDisabled(true);
-        toast({
-          title: "Sync in Progress",
-          description: "Real-time updates paused during sync",
-          duration: 2000,
-        });
+        toast.info("Sync in Progress - Real-time updates paused during sync");
       } else if (!hasActiveSync && realtimeDisabled) {
         console.log('Sync completed, re-enabling real-time updates');
         setRealtimeDisabled(false);
         // Trigger a single refresh after sync completes
         loadAttendees();
-        toast({
-          title: "Sync Complete",
-          description: "Real-time updates resumed",
-          duration: 2000,
-        });
+        toast.success("Sync Complete - Real-time updates resumed");
       }
     } catch (error) {
       console.error('Error checking active syncs:', error);
@@ -250,28 +238,22 @@ export const RfidAssignment = () => {
       }
 
       if (data?.success === false) {
-        toast({
-          title: "Sync Warning",
-          description: data.error || "RegFox sync completed with warnings",
-          variant: data.code === 'SYNC_IN_PROGRESS' ? "default" : "destructive"
-        });
+        const isError = data.code !== 'SYNC_IN_PROGRESS';
+        if (isError) {
+          toast.error(`Sync Warning: ${data.error || "RegFox sync completed with warnings"}`);
+        } else {
+          toast.warning(`Sync Warning: ${data.error || "RegFox sync completed with warnings"}`);
+        }
         return;
       }
 
-      toast({
-        title: "RegFox Sync Complete",
-        description: `Updated ${data?.updatedRecords || 0} attendees, added ${data?.newRecords || 0} new registrations`,
-      });
+      toast.success(`RegFox Sync Complete - Updated ${data?.updatedRecords || 0} attendees, added ${data?.newRecords || 0} new registrations`);
 
       // Let real-time subscription handle the refresh when sync completes
       
     } catch (error) {
       console.error('RegFox sync error:', error);
-      toast({
-        title: "Sync Failed",
-        description: "Failed to sync RegFox data. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Sync Failed - Failed to sync RegFox data. Please try again.");
     } finally {
       setSyncing(false);
     }
@@ -437,22 +419,15 @@ export const RfidAssignment = () => {
     const filename = `rfid-assignment-${mode}-${showOnlyUnassigned ? 'unassigned-only' : 'all'}`;
     exportToCsv(exportData, filename);
     
-    toast({
-      title: "Export Complete",
-      description: `Exported ${exportData.length} attendee records to CSV`,
-    });
+    toast.success(`Export Complete - Exported ${exportData.length} attendee records to CSV`);
   };
 
   // Enhanced RFID capture handler
   const handleRfidCapture = useCallback(async (uid: string) => {
     if (!uid.trim()) return;
     
-    toast({
-      title: "RFID Captured",
-      description: `UID: ${uid} - Ready for assignment`,
-      duration: 2000,
-    });
-  }, [toast]);
+    toast.info(`RFID Captured: ${uid} - Ready for assignment`);
+  }, []);
 
   // RFID capture with optimized settings for assignment workflow
   useRfidCapture({
@@ -490,10 +465,7 @@ export const RfidAssignment = () => {
           case ' ':
             e.preventDefault();
             setAutoAdvanceEnabled(prev => !prev);
-            toast({
-              title: "Auto-advance " + (autoAdvanceEnabled ? "disabled" : "enabled"),
-              duration: 1500,
-            });
+            toast.info(`Auto-advance ${autoAdvanceEnabled ? "disabled" : "enabled"}`);
             break;
           case 'r':
             e.preventDefault();
@@ -503,11 +475,7 @@ export const RfidAssignment = () => {
       } else if (e.key === 'F1') {
         e.preventDefault();
         // Show help overlay (could be implemented later)
-        toast({
-          title: "Keyboard Shortcuts",
-          description: "Ctrl+G: Focus first unassigned • Ctrl+Space: Toggle auto-advance • Ctrl+R: Sync RegFox",
-          duration: 4000,
-        });
+        toast.info("Keyboard Shortcuts: Ctrl+G: Focus first unassigned • Ctrl+Space: Toggle auto-advance • Ctrl+R: Sync RegFox");
       }
     };
 
@@ -565,19 +533,10 @@ export const RfidAssignment = () => {
         setIsRealtimeConnected(status === 'SUBSCRIBED');
         
         if (status === 'SUBSCRIBED' && !realtimeDisabled) {
-          toast({
-            title: "Live Updates Enabled",
-            description: "Assignment table will update automatically",
-            duration: 2000,
-          });
+          toast.success("Live Updates Enabled - Assignment table will update automatically");
         } else if (status === 'CLOSED') {
           setIsRealtimeConnected(false);
-          toast({
-            title: "Live Updates Disconnected",
-            description: "Real-time updates are not available",
-            variant: "destructive",
-            duration: 3000,
-          });
+          toast.error("Live Updates Disconnected - Real-time updates are not available");
         }
       });
 

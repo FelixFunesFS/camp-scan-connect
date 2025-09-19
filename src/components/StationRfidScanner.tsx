@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Scan, User, AlertCircle } from "lucide-react";
 import { rfidService } from "@/services/rfidService";
 import { useRfidCapture } from "@/hooks/useRfidCapture";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface AttendeeInfo {
   id: string;
@@ -36,7 +36,7 @@ export const StationRfidScanner = ({
   const [lastScannedUid, setLastScannedUid] = useState("");
   const [attendeeInfo, setAttendeeInfo] = useState<AttendeeInfo | null>(null);
   const [error, setError] = useState("");
-  const { toast } = useToast();
+  
 
   const handleRfidFound = useCallback(async (uid: string) => {
     if (!uid.trim()) return;

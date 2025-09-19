@@ -27,7 +27,7 @@ import {
   Zap
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { RfidScanner } from "@/components/RfidScanner";
 import { UnifiedSearchFilter, QuickFilter } from "@/components/shared/UnifiedSearchFilter";
 import { MobileAttendeeCard } from "@/components/shared/MobileAttendeeCard";
@@ -149,7 +149,7 @@ export function StaffActivationHub() {
   const [selectedAttendee, setSelectedAttendee] = useState<EnhancedAttendee | null>(null);
   
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   const isMobile = useIsMobile();
 
   // Table columns configuration for staff use

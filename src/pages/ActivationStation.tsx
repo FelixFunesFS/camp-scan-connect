@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Smartphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { phoneActivationService, GroupActivationResult, PhoneActivationService, type PhoneLookupResult } from "@/services/phoneActivationService";
 import { MobilePhoneInput } from "@/components/MobilePhoneInput";
@@ -21,17 +21,13 @@ export default function ActivationStation() {
   const [errorType, setErrorType] = useState<'not_found' | 'system_error' | 'network_error'>('system_error');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   const isMobile = useIsMobile();
 
   const handlePhoneLookup = async () => {
     const validation = PhoneActivationService.validatePhone(phoneNumber);
     if (!validation.isValid) {
-      toast({
-        title: "Invalid Phone Number",
-        description: validation.error,
-        variant: "destructive",
-      });
+      toast.error("Invalid Phone Number - " + validation.error);
       return;
     }
 
@@ -77,26 +73,15 @@ export default function ActivationStation() {
 
       if (result) {
         setActivationResult(result);
-        toast({
-          title: "Activation Successful!",
-          description: `Activated ${result.activated_count - result.already_active_count} new attendee(s)`,
-        });
+        toast.success(`Activation Successful! Activated ${result.activated_count - result.already_active_count} new attendee(s)`);
         setShowPreview(false);
         setLookupResult(null);
       } else {
-        toast({
-          title: "Activation Failed",
-          description: "Unable to activate attendees",
-          variant: "destructive",
-        });
+        toast.error("Activation Failed - Unable to activate attendees");
       }
     } catch (error) {
       console.error('Activation error:', error);
-      toast({
-        title: "Activation Failed",
-        description: "There was an error activating your group. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Activation Failed - There was an error activating your group. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -114,26 +99,15 @@ export default function ActivationStation() {
 
       if (result) {
         setActivationResult(result);
-        toast({
-          title: "Order Activation Successful!",
-          description: `Activated ${result.activated_count - result.already_active_count} new attendee(s) from the entire order`,
-        });
+        toast.success(`Order Activation Successful! Activated ${result.activated_count - result.already_active_count} new attendee(s) from the entire order`);
         setShowPreview(false);
         setLookupResult(null);
       } else {
-        toast({
-          title: "Order Activation Failed",
-          description: "Unable to activate entire order",
-          variant: "destructive",
-        });
+        toast.error("Order Activation Failed - Unable to activate entire order");
       }
     } catch (error) {
       console.error('Order activation error:', error);
-      toast({
-        title: "Order Activation Failed",
-        description: "There was an error activating the entire order. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Order Activation Failed - There was an error activating the entire order. Please try again.");
     } finally {
       setIsProcessing(false);
     }

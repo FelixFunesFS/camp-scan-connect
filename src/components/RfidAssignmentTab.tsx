@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -96,7 +96,7 @@ export const RfidAssignmentTab = () => {
   const [viewMode, setViewMode] = useState<'groups' | 'individual'>('groups');
   const [isViewModeSwitch, setIsViewModeSwitch] = useState(false);
   const scrollPositionRef = useRef<number>(0);
-  const { toast } = useToast();
+  
 
   // Load attendees data
   const loadAttendees = useCallback(async () => {

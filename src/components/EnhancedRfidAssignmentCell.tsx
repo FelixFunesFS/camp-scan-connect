@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, AlertCircle, Loader2, Edit3, Save, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface EnhancedRfidAssignmentCellProps {
   attendeeId: string;
@@ -29,7 +29,7 @@ export const EnhancedRfidAssignmentCell = ({
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  
 
   // Auto-focus input when component mounts or when becomes active
   useEffect(() => {

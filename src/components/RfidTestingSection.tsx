@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 import { SafetyConfirmationDialog } from './SafetyConfirmationDialog';
 import { 
   TestTube, 
@@ -61,7 +61,7 @@ export const RfidTestingSection: React.FC = () => {
     title: '',
     description: ''
   });
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     if (isExpanded) {

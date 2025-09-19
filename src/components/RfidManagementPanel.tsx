@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 import { Loader2, Zap, Users, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -34,7 +34,7 @@ export const RfidManagementPanel: React.FC = () => {
   const [isClearingTest, setIsClearingTest] = useState(false);
   const [stats, setStats] = useState<RfidStats | null>(null);
   const [lastGenerated, setLastGenerated] = useState<GeneratedRfid[]>([]);
-  const { toast } = useToast();
+  
 
   const handleBulkGenerate = async (batchSize: number = 100) => {
     setIsGenerating(true);

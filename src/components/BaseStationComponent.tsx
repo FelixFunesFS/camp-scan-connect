@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { RfidScanner } from "@/components/RfidScanner";
 import { rfidService } from "@/services/rfidService";
 import { StationTransactionService } from "@/services/stationTransactionService";
@@ -30,7 +30,7 @@ export function BaseStationComponent({ stationType, stationTitle, children }: Ba
   const [isProcessing, setIsProcessing] = useState(false);
   const [attendeeReadiness, setAttendeeReadiness] = useState<AttendeeReadiness | null>(null);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
 
   const handleRfidScan = async (rfidData: RfidTag) => {
     setSelectedRfid(rfidData);

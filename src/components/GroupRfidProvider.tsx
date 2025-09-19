@@ -2,7 +2,7 @@ import React, { createContext, useContext, useCallback } from 'react';
 import { useUnifiedRfidNavigation } from '@/hooks/useUnifiedRfidNavigation';
 import { useRfidCapture } from '@/hooks/useRfidCapture';
 import { EnhancedAttendee, GroupedAttendee } from '@/types/attendee';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "sonner";
 
 interface GroupRfidContextType {
   navigateToRow: (direction: 'up' | 'down') => void;
@@ -35,7 +35,7 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
   isGroupedView,
   onRefresh
 }) => {
-  const { toast } = useToast();
+  
 
   // Add error handling for hook usage
   let navigationHooks;

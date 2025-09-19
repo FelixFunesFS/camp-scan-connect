@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Scan, Check, X, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface RfidAssignmentCellProps {
   attendeeId: string;
@@ -31,7 +31,7 @@ export const RfidAssignmentCell = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [validationError, setValidationError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  
 
   // Auto-focus input when component mounts
   useEffect(() => {

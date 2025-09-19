@@ -16,7 +16,7 @@ import {
   AlertTriangle,
   Clock
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { RfidScanner } from "@/components/RfidScanner";
 import { rfidLookupService, AttendeeSearchResult } from "@/services/rfidLookupService";
 
@@ -44,7 +44,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeRfids, setActiveRfids] = useState<AttendeeSearchResult[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     loadActiveRfids();
