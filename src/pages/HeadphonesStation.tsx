@@ -27,6 +27,7 @@ function HeadphonesContent({
   onReset 
 }: StationActionProps) {
   const [headphoneStatus, setHeadphoneStatus] = useState<string>('available');
+  const [scanCount, setScanCount] = useState<number>(0);
 
   const checkHeadphoneStatus = useCallback(async () => {
     try {
@@ -54,19 +55,22 @@ function HeadphonesContent({
     setIsProcessing(true);
 
     try {
+      // Increment scan count
+      const newScanCount = scanCount + 1;
+      setScanCount(newScanCount);
+
+      // Determine action based on scan count (odd = checkout, even = checkin)
       let transactionType: 'headphone_checkout' | 'headphone_checkin';
       let newStatus: string;
 
-      // 3-state workflow: available -> checked_out -> checked_in -> checked_out -> ...
-      if (headphoneStatus === 'available') {
+      if (newScanCount % 2 === 1) {
+        // Odd scans: checkout
         transactionType = 'headphone_checkout';
         newStatus = 'checked_out';
-      } else if (headphoneStatus === 'checked_out') {
+      } else {
+        // Even scans: checkin
         transactionType = 'headphone_checkin';
         newStatus = 'checked_in';
-      } else { // checked_in
-        transactionType = 'headphone_checkout';
-        newStatus = 'checked_out';
       }
 
       await executeAction(transactionType, {
@@ -88,24 +92,18 @@ function HeadphonesContent({
       console.error("Error updating headphone status:", error);
       toast.error("Failed to update headphone status");
       
-      // Refresh status from database to ensure consistency
-      try {
-        await checkHeadphoneStatus();
-      } catch (statusError) {
-        console.error("Error refreshing headphone status after failure:", statusError);
-        // Fallback to available state if status refresh also fails
-        setHeadphoneStatus('available');
-      }
+      // Revert scan count on failure
+      setScanCount(scanCount);
     } finally {
       setIsProcessing(false);
     }
-  }, [attendeeReadiness, isProcessing, headphoneStatus, executeAction, selectedRfid, onReset, checkHeadphoneStatus]);
+  }, [attendeeReadiness, isProcessing, scanCount, executeAction, selectedRfid, onReset]);
 
+  // Reset scan count when RFID changes
   useEffect(() => {
-    if (selectedRfid && attendeeReadiness?.isReady) {
-      checkHeadphoneStatus();
-    }
-  }, [selectedRfid, attendeeReadiness, checkHeadphoneStatus]);
+    setScanCount(0);
+    setHeadphoneStatus('available');
+  }, [selectedRfid?.uid]);
 
   // Auto-trigger headphone checkout/checkin when ready
   useEffect(() => {
