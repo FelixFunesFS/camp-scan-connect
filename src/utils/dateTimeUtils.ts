@@ -34,7 +34,7 @@ export const formatStandardDateTime = (
     return format(dateObj, 'MMM d, h:mm a');
   }
   
-  // Standard format
+  // Standard format - always show date for equipment checkouts
   const baseFormat = 'MMM d, h:mm a';
   const timezoneSuffix = showTimezone ? ' ET' : '';
   

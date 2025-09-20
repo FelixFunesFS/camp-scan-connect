@@ -59,13 +59,15 @@ serve(async (req) => {
       
       console.log('Valid registration event detected, triggering API sync...');
       
-      // Trigger the API sync function
+      // Trigger the API sync function with increased timeout
       const { data: syncResponse, error: syncError } = await supabase.functions.invoke('regfox-sync', {
         body: { 
           webhook_triggered: true,
           event_type: eventType,
           registrant_id: payload.data.id || payload.data.registrants?.[0]?.id
-        }
+        },
+        // Increase timeout to 10 minutes for webhook-triggered syncs
+        timeout: 600000
       });
 
       if (syncError) {

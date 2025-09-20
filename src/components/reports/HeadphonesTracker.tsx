@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -39,10 +39,14 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
     averageUsageMinutes: 0,
     longestUsageMinutes: 0
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  const fetchHeadphoneData = useCallback(async () => {
+  const fetchHeadphoneData = useCallback(async (isBackground = false) => {
       try {
+        // Only show loading state on initial load, not during background refresh
+        if (!isBackground) {
+          setIsInitialLoading(true);
+        }
         const boundaries = getTimeBoundaries(selectedPeriod);
         
         // Get currently checked out headphones (checkout without matching checkin)
@@ -158,14 +162,20 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
       } catch (error) {
         console.error('Error fetching headphone data:', error);
       } finally {
-        setIsLoading(false);
+        if (!isBackground) {
+          setIsInitialLoading(false);
+        }
       }
     }, [selectedPeriod]);
 
     useBackgroundRefresh({
-      onRefresh: fetchHeadphoneData,
+      onRefresh: () => fetchHeadphoneData(true), // Mark as background refresh
       refreshTrigger
     });
+    
+    useEffect(() => {
+      fetchHeadphoneData(false); // Initial load
+    }, [fetchHeadphoneData]);
 
   const formatUsageTime = (minutes: number): string => {
     if (minutes === 0) return '0m';
@@ -174,7 +184,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <Card>
         <CardHeader>
@@ -270,7 +280,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
                   <TableRow>
                     <TableHead>Attendee</TableHead>
                     <TableHead>Phone</TableHead>
-                    <TableHead>Checkout Time</TableHead>
+                    <TableHead>Checkout Date/Time</TableHead>
                     <TableHead>Duration</TableHead>
                     <TableHead>RFID</TableHead>
                   </TableRow>
@@ -293,7 +303,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            {formatStandardDateTime(checkout.checkoutTime, { compact: true })}
+                            {formatStandardDateTime(checkout.checkoutTime)}
                           </div>
                         </TableCell>
                         <TableCell>

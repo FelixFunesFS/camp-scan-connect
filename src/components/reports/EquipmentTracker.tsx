@@ -34,12 +34,16 @@ export default function EquipmentTracker({
     averageUsage: 0,
     longestSession: 0
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   
 
-  const fetchEquipmentData = useCallback(async () => {
+  const fetchEquipmentData = useCallback(async (isBackground = false) => {
     try {
-      setIsLoading(true);
+      // Only show loading state on initial load, not during background refresh
+      if (!isBackground) {
+        setIsInitialLoading(true);
+      }
+      
       const data = await EquipmentStatusService.getEquipmentData(
         equipmentType,
         checkoutType,
@@ -52,23 +56,25 @@ export default function EquipmentTracker({
     } catch (error) {
       console.error(`Error fetching ${equipmentName} data:`, error);
     } finally {
-      setIsLoading(false);
+      if (!isBackground) {
+        setIsInitialLoading(false);
+      }
     }
   }, [equipmentType, checkoutType, checkinType, equipmentName, timePeriod]);
 
   useBackgroundRefresh({ 
-    onRefresh: fetchEquipmentData, 
+    onRefresh: () => fetchEquipmentData(true), // Mark as background refresh
     refreshTrigger 
   });
 
   useEffect(() => {
-    fetchEquipmentData();
+    fetchEquipmentData(false); // Initial load
   }, [fetchEquipmentData]);
 
   // Using centralized duration formatting
   const formatUsageTime = formatDuration;
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div className="space-y-4">
         <div className="animate-pulse">
@@ -95,7 +101,7 @@ export default function EquipmentTracker({
             <TableRow>
               <TableHead>Attendee</TableHead>
               <TableHead>Phone</TableHead>
-              <TableHead>Checkout Time</TableHead>
+              <TableHead>Checkout Date/Time</TableHead>
               <TableHead>Duration</TableHead>
               <TableHead>RFID</TableHead>
             </TableRow>
@@ -126,7 +132,7 @@ export default function EquipmentTracker({
                   <div className="flex items-center gap-2">
                     <Clock className="h-3 w-3 text-muted-foreground" />
                     <span className="text-sm">
-                      {formatStandardDateTime(checkout.checkoutTime, { compact: true })}
+                      {formatStandardDateTime(checkout.checkoutTime)}
                     </span>
                   </div>
                 </TableCell>
