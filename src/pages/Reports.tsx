@@ -3,14 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones, Package } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { CheckInStatusTables } from "@/components/reports/CheckInStatusTables";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
-import { GolfCartsTracker } from "@/components/reports/GolfCartsTracker";
-import { WalkieTalkiesTracker } from "@/components/reports/WalkieTalkiesTracker";
-import { FannyPacksTracker } from "@/components/reports/FannyPacksTracker";
 import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,21 +17,12 @@ const Reports = () => {
   const navigate = useNavigate();
   const { exportToCsv } = useCsvExport();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLastUpdate(new Date());
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setLastUpdate(new Date());
+    setRefreshTrigger(prev => prev + 1);
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
@@ -92,7 +80,7 @@ const Reports = () => {
                 Admin Reports
               </h1>
               <p className="text-muted-foreground text-sm">
-                Last updated: {lastUpdate.toLocaleTimeString()} • {formatTimePeriod(selectedPeriod)}
+                Real-time data • {formatTimePeriod(selectedPeriod)}
               </p>
             </div>
           </div>
@@ -133,10 +121,10 @@ const Reports = () => {
 
         <div className="space-y-6">
           {/* Daily Check-in Overview */}
-          <CheckInOverview key={lastUpdate.getTime()} />
+          <CheckInOverview refreshTrigger={refreshTrigger} />
 
           {/* Check-in Status Tables */}
-          <CheckInStatusTables key={`status-${lastUpdate.getTime()}`} />
+          <CheckInStatusTables refreshTrigger={refreshTrigger} />
 
           {/* Attendee Services */}
           <div className="space-y-4">
@@ -145,44 +133,22 @@ const Reports = () => {
               <h2 className="text-xl font-semibold">Attendee Services</h2>
             </div>
             <HeadphonesTracker 
-              key={`headphones-${lastUpdate.getTime()}-${selectedPeriod}`}
               selectedPeriod={selectedPeriod}
-            />
-          </div>
-
-          {/* Staff Equipment */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Package className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold">Staff Equipment</h2>
-            </div>
-            <GolfCartsTracker 
-              key={`golf-carts-${lastUpdate.getTime()}-${selectedPeriod}`}
-              selectedPeriod={selectedPeriod}
-            />
-            
-            <WalkieTalkiesTracker 
-              key={`walkie-talkies-${lastUpdate.getTime()}-${selectedPeriod}`}
-              selectedPeriod={selectedPeriod}
-            />
-            
-            <FannyPacksTracker 
-              key={`fanny-packs-${lastUpdate.getTime()}-${selectedPeriod}`}
-              selectedPeriod={selectedPeriod}
+              refreshTrigger={refreshTrigger}
             />
           </div>
 
           {/* Analytics Cards */}
           <AnalyticsCards 
-            key={`analytics-${lastUpdate.getTime()}-${selectedPeriod}`}
             selectedPeriod={selectedPeriod}
+            refreshTrigger={refreshTrigger}
           />
         </div>
 
         {/* Auto-refresh indicator */}
         <div className="text-center mt-8">
           <Badge variant="outline" className="text-xs">
-            Auto-refreshing every 30 seconds
+            Auto-refreshing every 30 seconds - No page flashing ✓
           </Badge>
         </div>
       </div>

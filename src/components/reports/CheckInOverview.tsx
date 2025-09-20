@@ -32,7 +32,11 @@ interface CheckInStats {
 }
 
 // CheckInOverview component - displays daily check-in statistics
-export const CheckInOverview = () => {
+interface CheckInOverviewProps {
+  refreshTrigger?: number;
+}
+
+export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) => {
   const [stats, setStats] = useState<CheckInStats>({
     totalExpected: 0,
     checkedIn: 0,
@@ -151,7 +155,7 @@ export const CheckInOverview = () => {
     };
 
     fetchStats();
-  }, []);
+  }, [refreshTrigger]);
 
   if (isLoading) {
     return (

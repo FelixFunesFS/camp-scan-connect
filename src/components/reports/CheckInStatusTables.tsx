@@ -18,7 +18,11 @@ interface AttendeeStatus {
   orderInfo: string;
 }
 
-export const CheckInStatusTables = () => {
+interface CheckInStatusTablesProps {
+  refreshTrigger?: number;
+}
+
+export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps) => {
   const [recentCheckIns, setRecentCheckIns] = useState<AttendeeStatus[]>([]);
   const [pendingCheckIns, setPendingCheckIns] = useState<AttendeeStatus[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,7 +72,7 @@ export const CheckInStatusTables = () => {
     };
 
     fetchStatusData();
-  }, []);
+  }, [refreshTrigger]);
 
   const filteredPending = pendingCheckIns.filter(attendee =>
     attendee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

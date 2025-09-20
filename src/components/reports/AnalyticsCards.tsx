@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { GlassWater, Clock, TrendingUp, Users, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, getTimeBoundaries, getComparisonBoundaries, formatTimePeriod } from "@/utils/etTimezone";
+import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 
 interface AnalyticsData {
   drinkCount: number;
@@ -25,9 +26,10 @@ interface AnalyticsData {
 
 interface AnalyticsCardsProps {
   selectedPeriod: TimePeriod;
+  refreshTrigger?: number;
 }
 
-export const AnalyticsCards = ({ selectedPeriod }: AnalyticsCardsProps) => {
+export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCardsProps) => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     drinkCount: 0,
     drinkHourlyData: [],
@@ -38,8 +40,7 @@ export const AnalyticsCards = ({ selectedPeriod }: AnalyticsCardsProps) => {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
       try {
         const boundaries = getTimeBoundaries(selectedPeriod);
         const comparisonBoundaries = getComparisonBoundaries(selectedPeriod);
@@ -209,10 +210,12 @@ export const AnalyticsCards = ({ selectedPeriod }: AnalyticsCardsProps) => {
       } finally {
         setIsLoading(false);
       }
-    };
+    }, [selectedPeriod]);
 
-    fetchAnalytics();
-  }, [selectedPeriod]);
+    useBackgroundRefresh({
+      onRefresh: fetchAnalytics,
+      refreshTrigger
+    });
 
   const formatTime = (minutes: number): string => {
     if (minutes === 0) return '0m';

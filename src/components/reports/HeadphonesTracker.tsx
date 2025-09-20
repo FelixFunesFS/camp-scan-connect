@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,6 +7,7 @@ import { Headphones, Clock, User, Phone, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { TimePeriod, getTimeBoundaries, formatTimePeriod } from "@/utils/etTimezone";
+import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 
 interface HeadphoneCheckout {
   id: string;
@@ -26,9 +27,10 @@ interface HeadphoneStats {
 
 interface HeadphonesTrackerProps {
   selectedPeriod: TimePeriod;
+  refreshTrigger?: number;
 }
 
-export const HeadphonesTracker = ({ selectedPeriod }: HeadphonesTrackerProps) => {
+export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: HeadphonesTrackerProps) => {
   const [checkouts, setCheckouts] = useState<HeadphoneCheckout[]>([]);
   const [stats, setStats] = useState<HeadphoneStats>({
     currentlyCheckedOut: 0,
@@ -38,8 +40,7 @@ export const HeadphonesTracker = ({ selectedPeriod }: HeadphonesTrackerProps) =>
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchHeadphoneData = async () => {
+  const fetchHeadphoneData = useCallback(async () => {
       try {
         const boundaries = getTimeBoundaries(selectedPeriod);
         
@@ -158,10 +159,12 @@ export const HeadphonesTracker = ({ selectedPeriod }: HeadphonesTrackerProps) =>
       } finally {
         setIsLoading(false);
       }
-    };
+    }, [selectedPeriod]);
 
-    fetchHeadphoneData();
-  }, [selectedPeriod]);
+    useBackgroundRefresh({
+      onRefresh: fetchHeadphoneData,
+      refreshTrigger
+    });
 
   const formatUsageTime = (minutes: number): string => {
     if (minutes === 0) return '0m';
