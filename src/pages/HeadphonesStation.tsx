@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Headphones, HeadphonesIcon } from "lucide-react";
+import { HeadphonesIcon } from "lucide-react";
 import { toast } from "sonner";
 import { UnifiedStationScanner, StationActionProps } from "@/components/UnifiedStationScanner";
 
@@ -11,7 +10,7 @@ export default function HeadphonesStation() {
       stationType="headphones"
       stationTitle="Headphones Station"
       mode="quick"
-      autoTrigger={false}
+      autoTrigger={true}
     >
       {(props) => <HeadphonesContent {...props} />}
     </UnifiedStationScanner>
@@ -29,24 +28,23 @@ function HeadphonesContent({
 }: StationActionProps) {
   const [headphoneStatus, setHeadphoneStatus] = useState<string>('available');
 
-  useEffect(() => {
-    if (selectedRfid && attendeeReadiness?.isReady) {
-      checkHeadphoneStatus();
-    }
-  }, [selectedRfid, attendeeReadiness]);
-
-  const checkHeadphoneStatus = async () => {
-    const latestTransaction = await getLatestStatus('transaction_type');
-    
-    if (latestTransaction === 'headphone_checkout') {
-      setHeadphoneStatus('checked_out');
-    } else {
+  const checkHeadphoneStatus = useCallback(async () => {
+    try {
+      const latestTransaction = await getLatestStatus('transaction_type');
+      
+      if (latestTransaction === 'headphone_checkout') {
+        setHeadphoneStatus('checked_out');
+      } else {
+        setHeadphoneStatus('available');
+      }
+    } catch (error) {
+      console.error("Error checking headphone status:", error);
       setHeadphoneStatus('available');
     }
-  };
+  }, [getLatestStatus]);
 
-  const handleHeadphoneToggle = async () => {
-    if (!attendeeReadiness?.isReady) return;
+  const handleHeadphoneToggle = useCallback(async () => {
+    if (!attendeeReadiness?.isReady || isProcessing) return;
 
     setIsProcessing(true);
 
@@ -75,7 +73,27 @@ function HeadphonesContent({
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [attendeeReadiness, isProcessing, headphoneStatus, executeAction, selectedRfid, onReset]);
+
+  useEffect(() => {
+    if (selectedRfid && attendeeReadiness?.isReady) {
+      checkHeadphoneStatus();
+    }
+  }, [selectedRfid, attendeeReadiness, checkHeadphoneStatus]);
+
+  // Auto-trigger headphone checkout/checkin when ready
+  useEffect(() => {
+    const handleAutoTrigger = () => {
+      if (selectedRfid && attendeeReadiness?.isReady && !isProcessing) {
+        handleHeadphoneToggle();
+      }
+    };
+
+    if (selectedRfid && attendeeReadiness?.isReady && !isProcessing) {
+      window.addEventListener('autoTrigger', handleAutoTrigger);
+      return () => window.removeEventListener('autoTrigger', handleAutoTrigger);
+    }
+  }, [selectedRfid, attendeeReadiness, isProcessing, handleHeadphoneToggle]);
 
   // Don't render if attendee is not ready
   if (!attendeeReadiness?.isReady) {
@@ -110,34 +128,20 @@ function HeadphonesContent({
             </div>
           </div>
 
-          {/* Action Button */}
-          <Button
-            onClick={handleHeadphoneToggle}
-            disabled={isProcessing}
-            size="lg"
-            className="w-full h-16 text-lg"
-            variant={headphoneStatus === 'checked_out' ? "secondary" : "default"}
-          >
-            {isProcessing ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                Processing...
+          {/* Processing Status */}
+          {isProcessing && (
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
+                <span className="text-blue-600 font-medium">
+                  {headphoneStatus === 'checked_out' ? 'Checking in headphones...' : 'Checking out headphones...'}
+                </span>
               </div>
-            ) : headphoneStatus === 'checked_out' ? (
-              <>
-                <Headphones className="h-5 w-5 mr-2" />
-                CHECK IN HEADPHONES
-              </>
-            ) : (
-              <>
-                <Headphones className="h-5 w-5 mr-2" />
-                CHECK OUT HEADPHONES
-              </>
-            )}
-          </Button>
+            </div>
+          )}
 
           <div className="text-center text-sm text-muted-foreground">
-            <p>Silent disco equipment checkout and return</p>
+            <p>Silent disco equipment - automatic checkout/return</p>
           </div>
         </div>
       </CardContent>
