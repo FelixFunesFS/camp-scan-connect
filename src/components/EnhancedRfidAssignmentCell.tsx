@@ -132,7 +132,7 @@ export const EnhancedRfidAssignmentCell = ({
     }
 
     const validateTimeout = setTimeout(async () => {
-      await validateRfidUid(uid.trim());
+      const result = await validateRfidUid(uid.trim());
     }, 300); // Debounce validation
 
     return () => clearTimeout(validateTimeout);
@@ -145,16 +145,16 @@ export const EnhancedRfidAssignmentCell = ({
     }
 
     const validateTimeout = setTimeout(async () => {
-      await validateRfidUid(editValue.trim(), true);
+      const result = await validateRfidUid(editValue.trim(), true);
     }, 300); // Debounce validation
 
     return () => clearTimeout(validateTimeout);
   }, [editValue, attendeeId, isEditing]);
 
-  const validateRfidUid = async (rfidUid: string, isEdit: boolean = false): Promise<boolean> => {
+  const validateRfidUid = async (rfidUid: string, isEdit: boolean = false): Promise<{ isValid: boolean; duplicateAttendee?: any }> => {
     if (!rfidUid) {
       setValidationError("");
-      return false;
+      return { isValid: false };
     }
 
     setIsValidating(true);
@@ -163,22 +163,24 @@ export const EnhancedRfidAssignmentCell = ({
       // Check if UID already exists and is assigned to another attendee
       const { data: existingTag } = await supabase
         .from('rfid_tags')
-        .select('attendee_id, attendee:attendees(first_name, last_name)')
+        .select('attendee_id, status, issued_at, attendee:attendees(first_name, last_name)')
         .eq('uid', rfidUid)
+        .in('status', ['assigned', 'active'])
         .single();
 
       if (existingTag && existingTag.attendee_id && existingTag.attendee_id !== attendeeId) {
         const assignedAttendee = existingTag.attendee as any;
-        setValidationError(`Already assigned to ${assignedAttendee?.first_name} ${assignedAttendee?.last_name}`);
-        return false;
+        const issueDate = existingTag.issued_at ? new Date(existingTag.issued_at).toLocaleDateString() : 'Unknown';
+        setValidationError(`DUPLICATE: Already assigned to ${assignedAttendee?.first_name} ${assignedAttendee?.last_name} on ${issueDate}. To reassign, first clear it from the original attendee.`);
+        return { isValid: false, duplicateAttendee: assignedAttendee };
       }
 
       setValidationError("");
-      return true;
+      return { isValid: true };
     } catch (error) {
       // No existing record found - UID is available
       setValidationError("");
-      return true;
+      return { isValid: true };
     } finally {
       setIsValidating(false);
     }
@@ -190,9 +192,10 @@ export const EnhancedRfidAssignmentCell = ({
     setIsProcessing(true);
     
     try {
-      // Validate one more time before assignment
-      const isValid = await validateRfidUid(uid.trim());
-      if (!isValid && validationError) {
+      // Validate one more time before assignment to prevent duplicates
+      const validationResult = await validateRfidUid(uid.trim());
+      if (!validationResult.isValid) {
+        toast.error("Assignment Blocked - RFID is already assigned to another attendee.");
         return;
       }
 
@@ -216,12 +219,18 @@ export const EnhancedRfidAssignmentCell = ({
           .eq('uid', existingRfid.uid);
       }
 
-      // Check if the new RFID UID exists in the system
+      // Check if the new RFID UID exists in the system but only allow unissued tags
       const { data: tagExists } = await supabase
         .from('rfid_tags')
-        .select('uid, status')
+        .select('uid, status, attendee_id')
         .eq('uid', uid.trim())
         .single();
+
+      if (tagExists && tagExists.attendee_id && tagExists.attendee_id !== attendeeId) {
+        // This should not happen due to validation, but double-check for safety
+        toast.error("Assignment Blocked - RFID is assigned to another attendee.");
+        return;
+      }
 
       if (!tagExists) {
         // Create new RFID tag entry
@@ -234,7 +243,7 @@ export const EnhancedRfidAssignmentCell = ({
             issued_at: new Date().toISOString()
           });
       } else {
-        // Update existing tag
+        // Update existing tag (only if unissued or deactivated)
         await supabase
           .from('rfid_tags')
           .update({
@@ -244,7 +253,8 @@ export const EnhancedRfidAssignmentCell = ({
             deactivated_at: null,
             reason: null
           })
-          .eq('uid', uid.trim());
+          .eq('uid', uid.trim())
+          .in('status', ['unissued', 'deactivated', 'replaced']);
       }
 
       // Log assignment transaction
@@ -304,8 +314,9 @@ export const EnhancedRfidAssignmentCell = ({
     
     try {
       // Validate the new UID
-      const isValid = await validateRfidUid(editValue.trim(), true);
-      if (!isValid && validationError) {
+      const validationResult = await validateRfidUid(editValue.trim(), true);
+      if (!validationResult.isValid) {
+        toast.error("Edit Blocked - RFID is already assigned to another attendee.");
         return;
       }
 
@@ -597,7 +608,7 @@ export const EnhancedRfidAssignmentCell = ({
           data-attendee-id={attendeeId}
         />
         {(validationError || isValidating) && (
-          <div className="flex items-center gap-1 mt-1 text-xs">
+          <div className="flex items-center gap-1 mt-1 text-xs max-w-[300px]">
             {isValidating ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
@@ -605,8 +616,8 @@ export const EnhancedRfidAssignmentCell = ({
               </>
             ) : (
               <>
-                <AlertCircle className="h-3 w-3 text-destructive" />
-                <span className="text-destructive">{validationError}</span>
+                <AlertCircle className="h-3 w-3 text-destructive flex-shrink-0" />
+                <span className="text-destructive font-medium">{validationError}</span>
               </>
             )}
           </div>
