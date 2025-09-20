@@ -70,6 +70,15 @@ function HeadphonesContent({
     } catch (error) {
       console.error("Error updating headphone status:", error);
       toast.error("Failed to update headphone status");
+      
+      // Refresh status from database to ensure consistency
+      try {
+        await checkHeadphoneStatus();
+      } catch (statusError) {
+        console.error("Error refreshing headphone status after failure:", statusError);
+        // Fallback to available state if status refresh also fails
+        setHeadphoneStatus('available');
+      }
     } finally {
       setIsProcessing(false);
     }
