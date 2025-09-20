@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import { UnifiedStationScanner, StationActionProps } from "@/components/UnifiedStationScanner";
 import { supabase } from "@/integrations/supabase/client";
 
+// Testing mode - set to true to disable time windows for testing
+const TESTING_MODE = true;
+
 // Meal windows configuration
 const MEAL_WINDOWS = [
   { type: 'breakfast', label: 'Breakfast', start: '07:00', end: '10:00', days: [6, 0] }, // Sat, Sun
@@ -74,17 +77,33 @@ function MealContent({
   };
 
   const checkCurrentMealWindow = () => {
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5);
-    const currentDay = now.getDay();
-    
-    const activeWindow = MEAL_WINDOWS.find(window => {
-      return window.days.includes(currentDay) && 
-             currentTime >= window.start && 
-             currentTime <= window.end;
-    });
-    
-    setCurrentMealWindow(activeWindow);
+    if (TESTING_MODE) {
+      // In testing mode, always provide a default breakfast window if no real window is active
+      const now = new Date();
+      const currentTime = now.toTimeString().slice(0, 5);
+      const currentDay = now.getDay();
+      
+      const activeWindow = MEAL_WINDOWS.find(window => {
+        return window.days.includes(currentDay) && 
+               currentTime >= window.start && 
+               currentTime <= window.end;
+      });
+      
+      // If no real window is active, default to breakfast for testing
+      setCurrentMealWindow(activeWindow || { type: 'breakfast', label: 'Breakfast (Testing)', start: '00:00', end: '23:59', days: [0,1,2,3,4,5,6] });
+    } else {
+      const now = new Date();
+      const currentTime = now.toTimeString().slice(0, 5);
+      const currentDay = now.getDay();
+      
+      const activeWindow = MEAL_WINDOWS.find(window => {
+        return window.days.includes(currentDay) && 
+               currentTime >= window.start && 
+               currentTime <= window.end;
+      });
+      
+      setCurrentMealWindow(activeWindow);
+    }
   };
 
   const canGetMeal = () => {
@@ -163,6 +182,11 @@ function MealContent({
           <div className="p-4 bg-muted rounded-lg">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Clock className="h-5 w-5" />
+              {TESTING_MODE && (
+                <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">
+                  TESTING MODE
+                </span>
+              )}
             </div>
             {currentMealWindow ? (
               <div>
