@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,7 +42,30 @@ export function UnifiedStationScanner({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [error, setError] = useState<string>("");
+  const [autoTriggered, setAutoTriggered] = useState(false);
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus input on mount and after reset
+  useEffect(() => {
+    const focusInput = () => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    };
+    
+    focusInput();
+    // Also focus after a short delay to ensure it works after page transitions
+    const timeout = setTimeout(focusInput, 100);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Auto-focus after reset
+  useEffect(() => {
+    if (!selectedRfid && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [selectedRfid]);
 
   const handleRfidFound = async (uid: string) => {
     setError("");
@@ -61,6 +84,7 @@ export function UnifiedStationScanner({
         
         // Clear manual input
         setManualUid("");
+        setAutoTriggered(false);
         
       } else {
         setError("RFID tag not found or not assigned to an attendee");
@@ -126,7 +150,20 @@ export function UnifiedStationScanner({
     setAttendeeReadiness(null);
     setManualUid("");
     setError("");
+    setAutoTriggered(false);
   };
+
+  // Auto-trigger logic for quick mode stations
+  useEffect(() => {
+    if (autoTrigger && selectedRfid && attendeeReadiness?.isReady && !autoTriggered && !isProcessing) {
+      setAutoTriggered(true);
+      // Trigger auto-action - this will be handled by the child component
+      const event = new CustomEvent('autoTrigger', { 
+        detail: { selectedRfid, attendeeReadiness } 
+      });
+      window.dispatchEvent(event);
+    }
+  }, [autoTrigger, selectedRfid, attendeeReadiness, autoTriggered, isProcessing]);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -156,6 +193,7 @@ export function UnifiedStationScanner({
             {/* Manual RFID Input */}
             <div className="flex gap-2">
               <Input
+                ref={inputRef}
                 data-rfid-input="true"
                 placeholder="Scan RFID or type manually..."
                 value={manualUid}

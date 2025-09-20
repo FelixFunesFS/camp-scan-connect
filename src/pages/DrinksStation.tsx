@@ -12,7 +12,7 @@ export default function DrinksStation() {
       stationType="drinks"
       stationTitle="Drinks Station"
       mode="quick"
-      autoTrigger={false}
+      autoTrigger={true}
     >
       {(props) => <DrinksContent {...props} />}
     </UnifiedStationScanner>
@@ -35,6 +35,18 @@ function DrinksContent({
       loadDrinkCount();
     }
   }, [selectedRfid, attendeeReadiness]);
+
+  // Auto-trigger drink recording when ready
+  useEffect(() => {
+    const handleAutoTrigger = () => {
+      if (selectedRfid && attendeeReadiness?.isReady && !isProcessing) {
+        handleDrinkScan();
+      }
+    };
+
+    window.addEventListener('autoTrigger', handleAutoTrigger);
+    return () => window.removeEventListener('autoTrigger', handleAutoTrigger);
+  }, [selectedRfid, attendeeReadiness, isProcessing]);
 
   const loadDrinkCount = async () => {
     const count = await loadDailyCount(['drink']);
@@ -93,25 +105,22 @@ function DrinksContent({
             </div>
           </div>
 
-          {/* Action Button */}
-          <Button
-            onClick={handleDrinkScan}
-            disabled={isProcessing}
-            size="lg"
-            className="w-full h-16 text-lg"
-          >
-            {isProcessing ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                Recording...
+          {/* Auto Status Display */}
+          {isProcessing ? (
+            <div className="p-6 bg-primary/10 border border-primary/20 rounded-lg">
+              <div className="flex items-center justify-center gap-2 text-primary">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+                <span className="font-medium">Recording drink...</span>
               </div>
-            ) : (
-              <>
-                <Droplets className="h-6 w-6 mr-2" />
-                ADD DRINK
-              </>
-            )}
-          </Button>
+            </div>
+          ) : (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center justify-center gap-2 text-green-700">
+                <Droplets className="h-5 w-5" />
+                <span className="font-medium">Ready - Scan RFID to record drink</span>
+              </div>
+            </div>
+          )}
 
           <div className="text-center text-sm text-muted-foreground">
             <p>Refreshments and beverages service</p>
