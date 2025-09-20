@@ -41,6 +41,9 @@ import {
   Download,
   Filter
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileRfidControls } from "@/components/MobileRfidControls";
+import { MobileAttendeeList } from "@/components/MobileAttendeeList";
 
 export interface AttendeeData {
   id: string;
@@ -94,6 +97,7 @@ export const RfidAssignment = () => {
   const [hasRfidInputFocused, setHasRfidInputFocused] = useState(false);
   
   const { exportToCsv } = useCsvExport();
+  const isMobile = useIsMobile();
 
   // Progress calculations
   const totalCount = attendees.length;
@@ -647,465 +651,530 @@ export const RfidAssignment = () => {
         {/* FAQ Panel */}
         <RfidAssignmentFAQ isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
         
-        <div className="container mx-auto p-6 max-w-none lg:max-w-[95vw] xl:max-w-[90vw]">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFAQ(true)}
-                className="flex items-center gap-2"
-              >
-                <HelpCircle className="h-4 w-4" />
-                Help
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">RFID Assignment Station</h1>
-                <p className="text-muted-foreground mt-1">
-                  Assign RFID tags to attendees using USB scanner
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Select value={mode} onValueChange={(value) => setMode(value as 'pre-event' | 'day-of')}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pre-event">Pre-Event</SelectItem>
-                  <SelectItem value="day-of">Day-Of</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-2">
-                {!showCancelledRegistrants && (
-                  <>
-                    {isRealtimeConnected ? (
-                      <Badge variant="secondary" className="text-xs">
-                        <Wifi className="h-3 w-3 mr-1" />
-                        Live
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        <WifiOff className="h-3 w-3 mr-1" />
-                        Offline
-                      </Badge>
-                    )}
-                  </>
-                )}
-                <Button 
-                  variant="outline" 
-                  onClick={handleRegFoxSync}
-                  disabled={syncing}
-                  className="flex items-center gap-2"
-                  title="Sync latest registrations from RegFox"
-                >
-                  <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                  {syncing ? 'Syncing...' : 'Sync RegFox Data'}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Progress Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-foreground">{totalCount}</div>
-                <p className="text-xs text-muted-foreground">Total Attendees</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-warning">{unassignedCount}</div>
-                <p className="text-xs text-muted-foreground">Unassigned</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-success">{assignedCount}</div>
-                <p className="text-xs text-muted-foreground">Assigned</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-primary">{Math.round(progressPercent)}%</div>
-                <p className="text-xs text-muted-foreground">Progress</p>
-                <Progress value={progressPercent} className="mt-2 h-2" />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-muted-foreground">{filteredAttendees.length}</div>
-                <p className="text-xs text-muted-foreground">Filtered Results</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="flex flex-col gap-4 mb-6">
-          {/* Search and View Mode */}
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search names, phones, emails, or order IDs (includes companions)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setIsSearching(true)}
-                onBlur={() => setTimeout(() => setIsSearching(false), 200)}
-                className={`pl-10 ${searchTerm ? 'pr-10' : ''}`}
-                data-search-input="true"
-                data-exclude-rfid="true"
-              />
-              {searchTerm && (
+        {isMobile ? (
+          /* Mobile Layout */
+          <div className="mobile-container py-4">
+            {/* Mobile Header */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h1 className="mobile-title">RFID Assignment</h1>
+                  <p className="mobile-subtitle">Assign tags to attendees</p>
+                </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-transparent"
-                  onClick={() => setSearchTerm('')}
-                  aria-label="Clear search"
+                  onClick={() => setShowFAQ(true)}
+                  className="touch-target"
                 >
-                  <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                  <HelpCircle className="h-4 w-4" />
                 </Button>
+              </div>
+            </div>
+
+            {/* Mobile Controls */}
+            <MobileRfidControls
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              showOnlyUnassigned={showOnlyUnassigned}
+              onShowOnlyUnassignedChange={setShowOnlyUnassigned}
+              mealPlanFilter={mealPlanFilter}
+              onMealPlanFilterChange={setMealPlanFilter}
+              arrivalDayFilter={arrivalDayFilter}
+              onArrivalDayFilterChange={setArrivalDayFilter}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              onSync={handleRegFoxSync}
+              syncing={syncing}
+              totalCount={totalCount}
+              assignedCount={assignedCount}
+              progressPercent={progressPercent}
+            />
+
+            {/* Mobile Content */}
+            <div className="mt-6">
+              {viewMode === 'individual' ? (
+                <MobileAttendeeList
+                  attendees={sortedAndPaginatedAttendees}
+                  loading={loading}
+                  totalCount={filteredAttendees.length}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  onAssignmentComplete={handleAssignmentComplete}
+                  onOptimisticUpdate={handleOptimisticUpdate}
+                />
+              ) : (
+                <GroupRfidView 
+                  attendees={filteredAttendees}
+                  onRefresh={debouncedLoadAttendees}
+                  onOptimisticUpdate={handleOptimisticUpdate}
+                  searchTerm={searchTerm}
+                />
               )}
             </div>
-            
-            <div className="flex items-center gap-4">
-              <Select value={viewMode} onValueChange={(value) => setViewMode(value as 'individual' | 'group')}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">Individual</SelectItem>
-                  <SelectItem value="group">Group</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Button 
-                variant="outline" 
-                onClick={handleCsvExport}
-                className="flex items-center gap-2"
-                title="Export current view to CSV"
-              >
-                <Download className="h-4 w-4" />
-                Export CSV
-              </Button>
-            </div>
           </div>
-
-          {/* Filters and Toggles */}
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Filters:</span>
-              </div>
-              
-              <Select value={mealPlanFilter} onValueChange={setMealPlanFilter}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Meal Plan" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Plans</SelectItem>
-                  <SelectItem value="none">No Plan</SelectItem>
-                  <SelectItem value="1">Plan 1</SelectItem>
-                  <SelectItem value="2">Plan 2</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={arrivalDayFilter} onValueChange={setArrivalDayFilter}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Arrival Day" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Days</SelectItem>
-                  <SelectItem value="early">Thursday</SelectItem>
-                  <SelectItem value="standard">Friday</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-6">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="unassigned-only"
-                  checked={showOnlyUnassigned}
-                  onCheckedChange={setShowOnlyUnassigned}
-                />
-                <Label htmlFor="unassigned-only" className="text-sm">
-                  Unassigned only
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-cancelled"
-                  checked={showCancelledRegistrants}
-                  onCheckedChange={setShowCancelledRegistrants}
-                />
-                <Label htmlFor="show-cancelled" className="text-sm">
-                  Cancelled registrations
-                </Label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-          {viewMode === 'individual' ? (
-            <div className="space-y-6">
-              {/* Assignment Table */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Key className="h-5 w-5" />
-                      Assignment Table
-                      {mode === 'day-of' && (
-                        <Badge variant="secondary" className="ml-2">
-                          <Timer className="h-3 w-3 mr-1" />
-                          Day-Of Mode
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <div className="text-sm text-muted-foreground">
-                      Page {currentPage} of {totalPages} • {filteredAttendees.length} filtered • {attendees.length} total
-                    </div>
+        ) : (
+          /* Desktop Layout */
+          <div className="container mx-auto p-6 max-w-none lg:max-w-[95vw] xl:max-w-[90vw]">
+            {/* Header */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFAQ(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                    Help
+                  </Button>
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground">RFID Assignment Station</h1>
+                    <p className="text-muted-foreground mt-1">
+                      Assign RFID tags to attendees using USB scanner
+                    </p>
                   </div>
-                </CardHeader>
-                <CardContent>
-            <div className="rounded-md border overflow-x-auto">
-              <Table className="min-w-fit">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16 min-w-16">#</TableHead>
-                    <TableHead className="min-w-[180px]">
-                      <Button
-                        variant="ghost"
-                        className="h-auto p-0 font-semibold hover:bg-transparent"
-                        onClick={() => handleSort('name')}
-                      >
-                        <div className="flex items-center gap-2">
-                          Name
-                          {getSortIcon('name')}
-                        </div>
-                      </Button>
-                    </TableHead>
-                    <TableHead className="min-w-[140px]">
-                      <Button
-                        variant="ghost"
-                        className="h-auto p-0 font-semibold hover:bg-transparent"
-                        onClick={() => handleSort('phone')}
-                      >
-                        <div className="flex items-center gap-2">
-                          Phone
-                          {getSortIcon('phone')}
-                        </div>
-                      </Button>
-                    </TableHead>
-                    <TableHead className="min-w-[120px]">
-                      <Button
-                        variant="ghost"
-                        className="h-auto p-0 font-semibold hover:bg-transparent"
-                        onClick={() => handleSort('order')}
-                      >
-                        <div className="flex items-center gap-2">
-                          Order ID
-                          {getSortIcon('order')}
-                        </div>
-                      </Button>
-                    </TableHead>
-                    <TableHead className="min-w-[120px]">
-                      <Button
-                        variant="ghost"
-                        className="h-auto p-0 font-semibold hover:bg-transparent"
-                        onClick={() => handleSort('meal_plan')}
-                      >
-                        <div className="flex items-center gap-2">
-                          Meal Plan
-                          {getSortIcon('meal_plan')}
-                        </div>
-                      </Button>
-                    </TableHead>
-                    <TableHead className="min-w-[120px]">
-                      <Button
-                        variant="ghost"
-                        className="h-auto p-0 font-semibold hover:bg-transparent"
-                        onClick={() => handleSort('arrival_day')}
-                      >
-                        <div className="flex items-center gap-2">
-                          Arrival Day
-                          {getSortIcon('arrival_day')}
-                        </div>
-                      </Button>
-                    </TableHead>
-                    <TableHead className="min-w-[140px]">
-                      <Button
-                        variant="ghost"
-                        className="h-auto p-0 font-semibold hover:bg-transparent"
-                        onClick={() => handleSort('ticket_type')}
-                      >
-                        <div className="flex items-center gap-2">
-                          Ticket Type
-                          {getSortIcon('ticket_type')}
-                        </div>
-                      </Button>
-                    </TableHead>
-                    <TableHead className="w-80 min-w-80">RFID Assignment</TableHead>
-                    <TableHead className="min-w-[100px]">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedAndPaginatedAttendees.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12">
-                        <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                        <div className="text-lg font-semibold mb-2">
-                          {searchTerm ? 'No matches found' : 'No attendees to display'}
-                        </div>
-                        <p className="text-muted-foreground">
-                          {searchTerm 
-                            ? 'Try adjusting your search terms or filters'
-                            : 'Load attendee data to begin RFID assignment'
-                          }
-                        </p>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    sortedAndPaginatedAttendees.map((attendee, index) => {
-                      const globalRowIndex = (currentPage - 1) * ROWS_PER_PAGE + index;
-                      const isCancelled = attendee.registration_status === 'cancelled';
-                      const isAssigned = attendee.rfid_uid && attendee.rfid_status === 'assigned';
-                      
-                      return (
-                        <TableRow 
-                          key={attendee.id} 
-                          className={isCancelled ? 'bg-muted/50' : isAssigned ? 'bg-success/5' : ''}
-                          data-row-index={globalRowIndex}
-                        >
-                          <TableCell className="font-mono text-sm">
-                            {globalRowIndex + 1}
-                          </TableCell>
-                          <TableCell>
-                            <AttendeeDetailModal
-                              attendee={attendee}
-                              allAttendees={attendees}
-                              trigger={
-                                <Button variant="link" className="p-0 h-auto font-medium text-left hover:underline">
-                                  {attendee.first_name} {attendee.last_name}
-                                </Button>
-                              }
-                            />
-                            {attendee.email && (
-                              <div className="text-sm text-muted-foreground">
-                                {attendee.email}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {attendee.phone ? formatPhoneNumber(attendee.phone) : 'N/A'}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            <Badge variant="outline" className="font-mono text-xs">
-                              {attendee.order_id || 'No Order'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {attendee.formatted_meal_plan}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={attendee.arrival_window === 'early' ? 'default' : 'secondary'}
-                              className="text-xs"
-                            >
-                              {attendee.arrival_day}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {attendee.ticket_type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <EnhancedRfidAssignmentCell
-                              attendeeId={attendee.id}
-                              currentRfidUid={attendee.rfid_uid}
-                              currentRfidStatus={attendee.rfid_status}
-                              attendeeName={`${attendee.first_name} ${attendee.last_name}`}
-                              onAssignmentComplete={handleAssignmentComplete}
-                              onOptimisticUpdate={handleOptimisticUpdate}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {isAssigned ? (
-                              <div className="flex items-center gap-1 text-success">
-                                <CheckCircle className="h-4 w-4" />
-                                <span className="text-sm">Assigned</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 text-warning">
-                                <AlertTriangle className="h-4 w-4" />
-                                <span className="text-sm">Pending</span>
-                              </div>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
+                </div>
+                <div className="flex items-center gap-4">
+                  <Select value={mode} onValueChange={(value) => setMode(value as 'pre-event' | 'day-of')}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pre-event">Pre-Event</SelectItem>
+                      <SelectItem value="day-of">Day-Of</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2">
+                    {!showCancelledRegistrants && (
+                      <>
+                        {isRealtimeConnected ? (
+                          <Badge variant="secondary" className="text-xs">
+                            <Wifi className="h-3 w-3 mr-1" />
+                            Live
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            <WifiOff className="h-3 w-3 mr-1" />
+                            Offline
+                          </Badge>
+                        )}
+                      </>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      onClick={handleRegFoxSync}
+                      disabled={syncing}
+                      className="flex items-center gap-2"
+                      title="Sync latest registrations from RegFox"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                      {syncing ? 'Syncing...' : 'Sync RegFox Data'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-foreground">{totalCount}</div>
+                    <p className="text-xs text-muted-foreground">Total Attendees</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-warning">{unassignedCount}</div>
+                    <p className="text-xs text-muted-foreground">Unassigned</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-success">{assignedCount}</div>
+                    <p className="text-xs text-muted-foreground">Assigned</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-primary">{Math.round(progressPercent)}%</div>
+                    <p className="text-xs text-muted-foreground">Progress</p>
+                    <Progress value={progressPercent} className="mt-2 h-2" />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-muted-foreground">{filteredAttendees.length}</div>
+                    <p className="text-xs text-muted-foreground">Filtered Results</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex flex-col gap-4 mb-6">
+              {/* Search and View Mode */}
+              <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search names, phones, emails, or order IDs (includes companions)"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => setIsSearching(true)}
+                    onBlur={() => setTimeout(() => setIsSearching(false), 200)}
+                    className={`pl-10 ${searchTerm ? 'pr-10' : ''}`}
+                    data-search-input="true"
+                    data-exclude-rfid="true"
+                  />
+                  {searchTerm && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-transparent"
+                      onClick={() => setSearchTerm('')}
+                      aria-label="Clear search"
+                    >
+                      <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                    </Button>
                   )}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Showing {((currentPage - 1) * ROWS_PER_PAGE) + 1} to{' '}
-                  {Math.min(currentPage * ROWS_PER_PAGE, filteredAttendees.length)} of{' '}
-                  {filteredAttendees.length} results
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
+                
+                <div className="flex items-center gap-4">
+                  <Select value={viewMode} onValueChange={(value) => setViewMode(value as 'individual' | 'group')}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="individual">Individual</SelectItem>
+                      <SelectItem value="group">Group</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCsvExport}
+                    className="flex items-center gap-2"
+                    title="Export current view to CSV"
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <div className="text-sm px-3 py-1 border rounded">
-                    {currentPage} / {totalPages}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
+                    <Download className="h-4 w-4" />
+                    Export CSV
                   </Button>
                 </div>
               </div>
-            )}
-                </CardContent>
-              </Card>
-            </div>
-          ) : (
-            <GroupRfidView 
-              attendees={filteredAttendees}
-              onRefresh={debouncedLoadAttendees}
-              onOptimisticUpdate={handleOptimisticUpdate}
-              searchTerm={searchTerm}
-            />
-          )}
 
-        </div>
+              {/* Filters and Toggles */}
+              <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Filters:</span>
+                  </div>
+                  
+                  <Select value={mealPlanFilter} onValueChange={setMealPlanFilter}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Meal Plan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Plans</SelectItem>
+                      <SelectItem value="none">No Plan</SelectItem>
+                      <SelectItem value="1">Plan 1</SelectItem>
+                      <SelectItem value="2">Plan 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={arrivalDayFilter} onValueChange={setArrivalDayFilter}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Arrival Day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Days</SelectItem>
+                      <SelectItem value="early">Thursday</SelectItem>
+                      <SelectItem value="standard">Friday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="unassigned-only"
+                      checked={showOnlyUnassigned}
+                      onCheckedChange={setShowOnlyUnassigned}
+                    />
+                    <Label htmlFor="unassigned-only" className="text-sm">
+                      Unassigned only
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="show-cancelled"
+                      checked={showCancelledRegistrants}
+                      onCheckedChange={setShowCancelledRegistrants}
+                    />
+                    <Label htmlFor="show-cancelled" className="text-sm">
+                      Cancelled registrations
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {viewMode === 'individual' ? (
+              <div className="space-y-6">
+                {/* Assignment Table */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Key className="h-5 w-5" />
+                        Assignment Table
+                        {mode === 'day-of' && (
+                          <Badge variant="secondary" className="ml-2">
+                            <Timer className="h-3 w-3 mr-1" />
+                            Day-Of Mode
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <div className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages} • {filteredAttendees.length} filtered • {attendees.length} total
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table className="min-w-fit">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-16 min-w-16">#</TableHead>
+                            <TableHead className="min-w-[180px]">
+                              <Button
+                                variant="ghost"
+                                className="h-auto p-0 font-semibold hover:bg-transparent"
+                                onClick={() => handleSort('name')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  Name
+                                  {getSortIcon('name')}
+                                </div>
+                              </Button>
+                            </TableHead>
+                            <TableHead className="min-w-[140px]">
+                              <Button
+                                variant="ghost"
+                                className="h-auto p-0 font-semibold hover:bg-transparent"
+                                onClick={() => handleSort('phone')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  Phone
+                                  {getSortIcon('phone')}
+                                </div>
+                              </Button>
+                            </TableHead>
+                            <TableHead className="min-w-[120px]">
+                              <Button
+                                variant="ghost"
+                                className="h-auto p-0 font-semibold hover:bg-transparent"
+                                onClick={() => handleSort('order')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  Order ID
+                                  {getSortIcon('order')}
+                                </div>
+                              </Button>
+                            </TableHead>
+                            <TableHead className="min-w-[120px]">
+                              <Button
+                                variant="ghost"
+                                className="h-auto p-0 font-semibold hover:bg-transparent"
+                                onClick={() => handleSort('meal_plan')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  Meal Plan
+                                  {getSortIcon('meal_plan')}
+                                </div>
+                              </Button>
+                            </TableHead>
+                            <TableHead className="min-w-[120px]">
+                              <Button
+                                variant="ghost"
+                                className="h-auto p-0 font-semibold hover:bg-transparent"
+                                onClick={() => handleSort('arrival_day')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  Arrival Day
+                                  {getSortIcon('arrival_day')}
+                                </div>
+                              </Button>
+                            </TableHead>
+                            <TableHead className="min-w-[140px]">
+                              <Button
+                                variant="ghost"
+                                className="h-auto p-0 font-semibold hover:bg-transparent"
+                                onClick={() => handleSort('ticket_type')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  Ticket Type
+                                  {getSortIcon('ticket_type')}
+                                </div>
+                              </Button>
+                            </TableHead>
+                            <TableHead className="w-80 min-w-80">RFID Assignment</TableHead>
+                            <TableHead className="min-w-[100px]">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {sortedAndPaginatedAttendees.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-12">
+                                <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                <div className="text-lg font-semibold mb-2">
+                                  {searchTerm ? 'No matches found' : 'No attendees to display'}
+                                </div>
+                                <p className="text-muted-foreground">
+                                  {searchTerm 
+                                    ? 'Try adjusting your search terms or filters'
+                                    : 'Load attendee data to begin RFID assignment'
+                                  }
+                                </p>
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            sortedAndPaginatedAttendees.map((attendee, index) => {
+                              const globalRowIndex = (currentPage - 1) * ROWS_PER_PAGE + index;
+                              const isCancelled = attendee.registration_status === 'cancelled';
+                              const isAssigned = attendee.rfid_uid && attendee.rfid_status === 'assigned';
+                              
+                              return (
+                                <TableRow 
+                                  key={attendee.id} 
+                                  className={isCancelled ? 'bg-muted/50' : isAssigned ? 'bg-success/5' : ''}
+                                  data-row-index={globalRowIndex}
+                                >
+                                  <TableCell className="font-mono text-sm">
+                                    {globalRowIndex + 1}
+                                  </TableCell>
+                                  <TableCell>
+                                    <AttendeeDetailModal
+                                      attendee={attendee}
+                                      allAttendees={attendees}
+                                      trigger={
+                                        <Button variant="link" className="p-0 h-auto font-medium text-left hover:underline">
+                                          {attendee.first_name} {attendee.last_name}
+                                        </Button>
+                                      }
+                                    />
+                                    {attendee.email && (
+                                      <div className="text-sm text-muted-foreground">
+                                        {attendee.email}
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    {attendee.phone ? formatPhoneNumber(attendee.phone) : 'N/A'}
+                                  </TableCell>
+                                  <TableCell className="font-mono text-sm">
+                                    <Badge variant="outline" className="font-mono text-xs">
+                                      {attendee.order_id || 'No Order'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline" className="text-xs">
+                                      {attendee.formatted_meal_plan}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge 
+                                      variant={attendee.arrival_window === 'early' ? 'default' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {attendee.arrival_day}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">
+                                      {attendee.ticket_type}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <EnhancedRfidAssignmentCell
+                                      attendeeId={attendee.id}
+                                      currentRfidUid={attendee.rfid_uid}
+                                      currentRfidStatus={attendee.rfid_status}
+                                      attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+                                      onAssignmentComplete={handleAssignmentComplete}
+                                      onOptimisticUpdate={handleOptimisticUpdate}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    {isAssigned ? (
+                                      <div className="flex items-center gap-1 text-success">
+                                        <CheckCircle className="h-4 w-4" />
+                                        <span className="text-sm">Assigned</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-1 text-warning">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <span className="text-sm">Pending</span>
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="text-sm text-muted-foreground">
+                          Showing {((currentPage - 1) * ROWS_PER_PAGE) + 1} to{' '}
+                          {Math.min(currentPage * ROWS_PER_PAGE, filteredAttendees.length)} of{' '}
+                          {filteredAttendees.length} results
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </Button>
+                          <div className="text-sm px-3 py-1 border rounded">
+                            {currentPage} / {totalPages}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <GroupRfidView 
+                attendees={filteredAttendees}
+                onRefresh={debouncedLoadAttendees}
+                onOptimisticUpdate={handleOptimisticUpdate}
+                searchTerm={searchTerm}
+              />
+            )}
+          </div>
+        )}
       </div>
     </RfidCaptureProvider>
   );
