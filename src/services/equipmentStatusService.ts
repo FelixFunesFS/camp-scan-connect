@@ -90,7 +90,7 @@ export class EquipmentStatusService {
         ? new Date().toISOString().split('T')[0]
         : '1900-01-01';
 
-      // Get all transactions for this equipment type with manual JOIN
+      // Get all transactions for this equipment type
       const { data: transactions, error } = await supabase
         .from('station_transactions')
         .select(`
@@ -99,12 +99,7 @@ export class EquipmentStatusService {
           station_type,
           transaction_type,
           created_at,
-          rfid_uid,
-          attendees!inner (
-            first_name,
-            last_name,
-            phone
-          )
+          rfid_uid
         `)
         .eq('station_type', stationType)
         .in('transaction_type', [checkoutType, checkinType])
@@ -115,6 +110,22 @@ export class EquipmentStatusService {
         console.error(`Error fetching ${stationType} data:`, error);
         return { checkouts: [], stats: { currentlyOut: 0, totalCheckouts: 0, averageUsage: 0, longestSession: 0 } };
       }
+
+      // Get unique attendee IDs from transactions
+      const attendeeIds = [...new Set(transactions?.map(t => t.attendee_id).filter(Boolean) || [])];
+      
+      // Fetch attendee data separately
+      const { data: attendees, error: attendeeError } = await supabase
+        .from('attendees')
+        .select('id, first_name, last_name, phone')
+        .in('id', attendeeIds);
+
+      if (attendeeError) {
+        console.error(`Error fetching attendee data:`, attendeeError);
+      }
+
+      // Create attendee lookup map
+      const attendeeMap = new Map(attendees?.map(a => [a.id, a]) || []);
 
       // Process transactions to find current checkouts
       const checkoutMap = new Map<string, any>();
@@ -145,13 +156,14 @@ export class EquipmentStatusService {
         const isCurrentlyOut = !checkinTx || 
           new Date(checkoutTx.created_at) > new Date(checkinTx.created_at);
 
-        if (isCurrentlyOut && checkoutTx.attendees) {
+        const attendee = attendeeMap.get(attendeeId);
+        if (isCurrentlyOut && attendee) {
           const checkoutTime = new Date(checkoutTx.created_at);
           const duration = Math.floor((Date.now() - checkoutTime.getTime()) / (1000 * 60));
 
           currentCheckouts.push({
-            attendeeName: `${checkoutTx.attendees.first_name} ${checkoutTx.attendees.last_name}`,
-            attendeePhone: checkoutTx.attendees.phone || '',
+            attendeeName: `${attendee.first_name} ${attendee.last_name}`,
+            attendeePhone: attendee.phone || '',
             checkoutTime,
             duration,
             rfidUid: checkoutTx.rfid_uid || '',
