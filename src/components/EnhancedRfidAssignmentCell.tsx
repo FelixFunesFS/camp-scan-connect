@@ -282,15 +282,6 @@ export const EnhancedRfidAssignmentCell = ({
       const refreshTimeout = setTimeout(() => {
         onAssignmentComplete();
       }, 300);
-      
-      // Auto-focus next unassigned field after brief delay
-      setTimeout(() => {
-        const nextInput = document.querySelector('input[data-rfid-input="true"]:not([value])') as HTMLInputElement;
-        if (nextInput) {
-          nextInput.focus();
-          nextInput.select();
-        }
-      }, 200);
 
     } catch (error) {
       console.error('RFID assignment error:', error);
