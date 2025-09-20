@@ -132,7 +132,7 @@ export function StaffActivationHub() {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [visibleColumns] = useState<string[]>([
-    'first_name', 'last_name', 'phone', 'email', 'order_id', 'ticket_type', 'rfid_status', 'headphones', 'actions'
+    'first_name', 'email', 'phone', 'order_id', 'ticket_type', 'registration_status', 'rfid_status', 'headphones', 'actions'
   ]);
   
   // Unified activation section state
@@ -1190,11 +1190,6 @@ export function StaffActivationHub() {
                                <td className="p-3 text-sm">
                                  <Badge variant={getRegistrationStatusVariant(attendee.registration_status)}>
                                    {getRegistrationStatusDisplayText(attendee.registration_status)}
-                                 </Badge>
-                               </td>
-                               <td className="p-3 text-sm">
-                                 <Badge variant={getStatusVariant(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}>
-                                   {getStatusDisplayText(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}
                                  </Badge>
                                </td>
                                <td className="p-3 text-sm">
