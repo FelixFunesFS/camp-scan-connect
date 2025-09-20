@@ -129,7 +129,8 @@ export const RfidAssignment = () => {
       if (showCancelledRegistrants) {
         query = query.eq('registration_status', 'cancelled');
       } else {
-        query = query.neq('registration_status', 'cancelled');
+        // Only show registered and pending - exclude cancelled and waitlisted
+        query = query.in('registration_status', ['registered', 'pending']);
       }
 
       if (mode === 'day-of') {
@@ -284,7 +285,8 @@ export const RfidAssignment = () => {
     if (showCancelledRegistrants) {
       filtered = filtered.filter(a => a.registration_status === 'cancelled');
     } else {
-      filtered = filtered.filter(a => a.registration_status !== 'cancelled');
+      // Only show registered and pending - exclude cancelled and waitlisted
+      filtered = filtered.filter(a => ['registered', 'pending'].includes(a.registration_status || 'registered'));
     }
 
     // Filter by assignment status
@@ -336,7 +338,8 @@ export const RfidAssignment = () => {
       if (showCancelledRegistrants) {
         filtered = filtered.filter(a => a.registration_status === 'cancelled');
       } else {
-        filtered = filtered.filter(a => a.registration_status !== 'cancelled');
+        // Only show registered and pending - exclude cancelled and waitlisted
+        filtered = filtered.filter(a => ['registered', 'pending'].includes(a.registration_status || 'registered'));
       }
       if (showOnlyUnassigned) {
         filtered = filtered.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned');

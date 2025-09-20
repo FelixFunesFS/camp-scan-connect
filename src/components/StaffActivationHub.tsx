@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { calculateAttendeeStatus, getStatusVariant, getStatusDisplayText } from "@/utils/statusUtils";
+import { calculateAttendeeStatus, getStatusVariant, getStatusDisplayText, getRegistrationStatusVariant, getRegistrationStatusDisplayText } from "@/utils/statusUtils";
 import { 
   ArrowLeft, 
   Shield, 
@@ -160,6 +160,7 @@ export function StaffActivationHub() {
     { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
     { key: 'order_id', label: 'Order ID', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
     { key: 'ticket_type', label: 'Ticket Type', desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
     { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'actions', label: 'Actions', mobile: true, desktop: true, width: 'min-w-32', sortable: false }
   ];
@@ -187,10 +188,8 @@ export function StaffActivationHub() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      // Default filter out cancelled registrants unless explicitly shown
-      if (!showCancelledRegistrants) {
-        query = query.neq('registration_status', 'cancelled');
-      }
+      // Staff Hub shows ALL registration statuses for complete oversight
+      // No filtering by registration_status - staff needs to see everything
 
       const { data: attendeesData, error: attendeesError } = await query;
 
@@ -1029,16 +1028,21 @@ export function StaffActivationHub() {
                                   </span>
                                 </div>
                                 
-                                <div className="space-y-1 text-sm text-muted-foreground">
-                                  <p>{attendee.email}</p>
-                                  <p>{attendee.ticket_type}</p>
-                                  {attendee.rfid_uid && (
-                                    <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
-                                  )}
-                                  {attendee.order_id && (
-                                    <p className="font-mono text-xs">Order: {attendee.order_id}</p>
-                                  )}
-                                </div>
+                                 <div className="space-y-1 text-sm text-muted-foreground">
+                                   <p>{attendee.email}</p>
+                                   <p>{attendee.ticket_type}</p>
+                                   <div className="flex items-center gap-2">
+                                     <Badge variant={getRegistrationStatusVariant(attendee.registration_status)} className="text-xs">
+                                       {getRegistrationStatusDisplayText(attendee.registration_status)}
+                                     </Badge>
+                                   </div>
+                                   {attendee.rfid_uid && (
+                                     <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
+                                   )}
+                                   {attendee.order_id && (
+                                     <p className="font-mono text-xs">Order: {attendee.order_id}</p>
+                                   )}
+                                 </div>
                               </div>
                               
                               <div className="flex flex-col items-end gap-2">
@@ -1120,27 +1124,33 @@ export function StaffActivationHub() {
                         <tbody>
                           {processedAttendees.map((attendee, index) => (
                             <tr key={attendee.id} className={`border-b hover:bg-accent/50 cursor-pointer ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
-                              <td className="p-3 text-sm">
-                                <AttendeeDetailModal 
-                                  attendee={attendee} 
-                                  allAttendees={attendees}
-                                  onActivate={handleIndividualActivation}
-                                  onGroupActivate={handleGroupActivation}
-                                  trigger={
-                                    <button className="text-left hover:underline focus:outline-none">
-                                      {attendee.first_name} {attendee.last_name}
-                                    </button>
-                                  }
-                                />
-                              </td>
-                              <td className="p-3 text-sm">{attendee.email}</td>
-                              <td className="p-3 text-sm">{attendee.phone}</td>
-                              <td className="p-3 text-sm">{attendee.ticket_type}</td>
-                              <td className="p-3 text-sm">
-                                <Badge variant={getStatusVariant(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}>
-                                  {getStatusDisplayText(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}
-                                </Badge>
-                              </td>
+                               <td className="p-3 text-sm">
+                                 <AttendeeDetailModal 
+                                   attendee={attendee} 
+                                   allAttendees={attendees}
+                                   onActivate={handleIndividualActivation}
+                                   onGroupActivate={handleGroupActivation}
+                                   trigger={
+                                     <button className="text-left hover:underline focus:outline-none">
+                                       {attendee.first_name} {attendee.last_name}
+                                     </button>
+                                   }
+                                 />
+                               </td>
+                               <td className="p-3 text-sm">{attendee.email}</td>
+                               <td className="p-3 text-sm">{attendee.phone}</td>
+                               <td className="p-3 text-sm">{attendee.order_id}</td>
+                               <td className="p-3 text-sm">{attendee.ticket_type}</td>
+                               <td className="p-3 text-sm">
+                                 <Badge variant={getRegistrationStatusVariant(attendee.registration_status)}>
+                                   {getRegistrationStatusDisplayText(attendee.registration_status)}
+                                 </Badge>
+                               </td>
+                               <td className="p-3 text-sm">
+                                 <Badge variant={getStatusVariant(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}>
+                                   {getStatusDisplayText(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}
+                                 </Badge>
+                               </td>
                               <td className="p-3 text-sm">
                                 <Badge variant={
                                   attendee.rfid_status === 'active' ? 'default' :
