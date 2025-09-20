@@ -61,6 +61,10 @@ export interface AttendeeData {
   rfid_status?: string;
   registration_status?: string;
   created_at: string;
+  // Location and RegFox fields
+  regfox_id?: string;
+  city?: string;
+  state?: string;
   // Additional fields for enhanced functionality
   waiver_signed?: boolean;
   activated_at?: string;
@@ -125,6 +129,9 @@ export const RfidAssignment = () => {
           waiver_signed,
           activated_at,
           created_at,
+          regfox_id,
+          city,
+          state,
           rfid_tags(uid, status, activated_at)
         `)
         .order('arrival_window', { ascending: true }) // Default: Thursday before Friday
@@ -176,6 +183,9 @@ export const RfidAssignment = () => {
           activated_at: (attendee as any).activated_at,
           created_at: attendee.created_at,
           registration_status: (attendee as any).registration_status,
+          regfox_id: (attendee as any).regfox_id,
+          city: (attendee as any).city,
+          state: (attendee as any).state,
           rfid_uid: rfidTag?.uid || null,
           rfid_status: rfidTag?.status || 'unissued',
         };
