@@ -34,6 +34,9 @@ import { UnifiedSearchFilter, QuickFilter } from "@/components/shared/UnifiedSea
 import { MobileAttendeeCard } from "@/components/shared/MobileAttendeeCard";
 import { rfidLookupService } from "@/services/rfidLookupService";
 import { enhancedActivationService, UnifiedSearchResult, EnhancedActivationService } from "@/services/enhancedActivationService";
+import { StationTransactionService } from '@/services/stationTransactionService';
+import { phoneActivationService } from '@/services/phoneActivationService';
+import { HeadphonesStatusService } from '@/services/headphonesStatusService';
 import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -129,7 +132,7 @@ export function StaffActivationHub() {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [visibleColumns] = useState<string[]>([
-    'first_name', 'last_name', 'phone', 'email', 'order_id', 'ticket_type', 'rfid_status', 'actions'
+    'first_name', 'last_name', 'phone', 'email', 'order_id', 'ticket_type', 'rfid_status', 'headphones', 'actions'
   ]);
   
   // Unified activation section state
@@ -164,6 +167,7 @@ export function StaffActivationHub() {
     { key: 'ticket_type', label: 'Ticket Type', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
     { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'headphones', label: 'Headphones', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
     { key: 'actions', label: 'Actions', mobile: true, desktop: true, width: 'min-w-32', sortable: false }
   ];
 
@@ -1052,10 +1056,31 @@ export function StaffActivationHub() {
                                  <div className="space-y-1 text-sm text-muted-foreground">
                                    <p>{attendee.email}</p>
                                    <p>{attendee.ticket_type}</p>
-                                   <div className="flex items-center gap-2">
+                                   <div className="flex items-center gap-2 flex-wrap">
                                      <Badge variant={getRegistrationStatusVariant(attendee.registration_status)} className="text-xs">
                                        {getRegistrationStatusDisplayText(attendee.registration_status)}
                                      </Badge>
+                                     {(() => {
+                                       if (attendee.headphones_status === 'checked_out') {
+                                         const duration = attendee.headphones_duration || 0;
+                                         const isLong = duration > 180;
+                                         return (
+                                           <Badge 
+                                             variant={isLong ? "destructive" : "secondary"}
+                                             className="text-xs"
+                                           >
+                                             Headphones ({HeadphonesStatusService.formatCheckoutDuration(duration)})
+                                           </Badge>
+                                         );
+                                       }
+                                       if (attendee.headphones_status === 'checked_in') {
+                                         return <Badge variant="outline" className="text-xs">Headphones Available</Badge>;
+                                       }
+                                       if (attendee.headphones_status === 'never_used') {
+                                         return <Badge variant="outline" className="text-xs text-muted-foreground">No Headphone Use</Badge>;
+                                       }
+                                       return null;
+                                     })()}
                                    </div>
                                    {attendee.rfid_uid && (
                                      <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
@@ -1172,14 +1197,34 @@ export function StaffActivationHub() {
                                    {getStatusDisplayText(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}
                                  </Badge>
                                </td>
-                              <td className="p-3 text-sm">
-                                <Badge variant={
-                                  attendee.rfid_status === 'active' ? 'default' :
-                                  attendee.rfid_status === 'assigned' ? 'secondary' : 'destructive'
-                                }>
-                                  {attendee.rfid_status}
-                                </Badge>
-                              </td>
+                               <td className="p-3 text-sm">
+                                 <Badge variant={
+                                   attendee.rfid_status === 'active' ? 'default' :
+                                   attendee.rfid_status === 'assigned' ? 'secondary' : 'destructive'
+                                 }>
+                                   {attendee.rfid_status}
+                                 </Badge>
+                               </td>
+                               <td className="p-3 text-sm">
+                                 {(() => {
+                                   if (attendee.headphones_status === 'checked_out') {
+                                     const duration = attendee.headphones_duration || 0;
+                                     const isLong = duration > 180;
+                                     return (
+                                       <Badge 
+                                         variant={isLong ? "destructive" : "secondary"}
+                                         className="text-xs"
+                                       >
+                                         Checked Out ({HeadphonesStatusService.formatCheckoutDuration(duration)})
+                                       </Badge>
+                                     );
+                                   }
+                                   if (attendee.headphones_status === 'checked_in') {
+                                     return <Badge variant="outline" className="text-xs">Available</Badge>;
+                                   }
+                                   return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
+                                 })()}
+                               </td>
                               <td className="p-3 text-sm">
                                 <div className="flex gap-2">
                                   {attendee.rfid_uid && !attendee.activated_at && (
