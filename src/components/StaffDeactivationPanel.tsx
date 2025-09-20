@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { RfidScanner } from "@/components/RfidScanner";
 import { rfidLookupService, AttendeeSearchResult } from "@/services/rfidLookupService";
+import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
 
 interface StaffDeactivationPanelProps {
   staffId?: string;
@@ -320,7 +321,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
                   <div className="text-right">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      {new Date(activity.created_at).toLocaleTimeString()}
+                      {formatStandardDateTime(activity.created_at, { compact: true })}
                     </div>
                   </div>
                 </div>

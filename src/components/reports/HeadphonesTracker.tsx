@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Headphones, Clock, User, Phone, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { formatStandardDateTime, formatDuration, isProlongedCheckout, getTimeBasedVariant } from "@/utils/dateTimeUtils";
 import { TimePeriod, getTimeBoundaries, formatTimePeriod } from "@/utils/etTimezone";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 
@@ -292,7 +293,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            {new Date(checkout.checkoutTime).toLocaleTimeString()}
+                            {formatStandardDateTime(checkout.checkoutTime, { compact: true })}
                           </div>
                         </TableCell>
                         <TableCell>

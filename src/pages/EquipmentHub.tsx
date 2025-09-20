@@ -16,7 +16,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import EquipmentTracker from "@/components/reports/EquipmentTracker";
-import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { useEnhancedBackgroundRefresh } from "@/hooks/useEnhancedBackgroundRefresh";
+import { formatStandardDateTime } from "@/utils/dateTimeUtils";
 
 interface EquipmentStats {
   type: string;
@@ -34,7 +35,6 @@ export default function EquipmentHub() {
   const [equipmentStats, setEquipmentStats] = useState<EquipmentStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchEquipmentStats = useCallback(async () => {
     try {
@@ -136,7 +136,6 @@ export default function EquipmentHub() {
       });
 
       setEquipmentStats(stats);
-      setLastUpdated(new Date());
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error('Error fetching equipment stats:', error);
@@ -145,9 +144,17 @@ export default function EquipmentHub() {
     }
   }, []);
 
-  useBackgroundRefresh({ 
-    onRefresh: fetchEquipmentStats, 
-    interval: 30000 
+  // Enhanced background refresh with better UX
+  const { isRefreshing, lastUpdated, manualRefresh } = useEnhancedBackgroundRefresh({
+    onRefresh: fetchEquipmentStats,
+    interval: 30000,
+    onSuccess: () => {
+      // Subtle success indication could be added here
+    },
+    onError: (error) => {
+      console.error('Background refresh failed:', error);
+      // Don't show toast for background refresh failures to avoid spam
+    }
   });
 
   if (isLoading) {
@@ -206,15 +213,23 @@ export default function EquipmentHub() {
                   <Activity className="h-4 w-4 mr-2" />
                   {totalCheckoutsToday} Today
                 </Badge>
-                {lastUpdated && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <RefreshCw className="h-3 w-3" />
-                    Updated {lastUpdated.toLocaleTimeString('en-US', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {isRefreshing && (
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"></div>
+                  )}
+                  <span>
+                    {lastUpdated ? `Updated ${formatStandardDateTime(lastUpdated, { compact: true })}` : 'Loading...'}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={manualRefresh}
+                    disabled={isRefreshing}
+                    className="h-6 px-2 text-xs hover:bg-muted/50"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
               </div>
             </div>
           </CardHeader>

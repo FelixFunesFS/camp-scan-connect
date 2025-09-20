@@ -43,6 +43,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import type { NotificationState } from "@/types/attendee";
 import { StaffAssistanceNotifications } from "@/components/StaffAssistanceNotifications";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
+import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {
@@ -1380,7 +1381,7 @@ export function StaffActivationHub() {
                       </Badge>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {new Date(activity.created_at).toLocaleTimeString()}
+                        {formatStandardDateTime(activity.created_at, { compact: true })}
                       </div>
                     </div>
                   </div>

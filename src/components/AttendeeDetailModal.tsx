@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { EnhancedAttendee } from "./StaffActivationHub";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
+import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
 
 interface AttendeeDetailModalProps {
   attendee: any; // Made flexible to work with different attendee types
@@ -211,7 +212,7 @@ export function AttendeeDetailModal({
                       <div>
                         <span className="text-sm font-medium">Activated:</span>
                         <span className="ml-2 text-sm">
-                          {new Date(attendee.activated_at).toLocaleString()}
+                          {formatWithRelativeTime(attendee.activated_at)}
                         </span>
                       </div>
                     )}
@@ -439,7 +440,7 @@ export function AttendeeDetailModal({
                                 <div>
                                   <span className="text-sm font-medium">Activated:</span>
                                   <span className="ml-2 text-sm">
-                                    {new Date(selectedCompanion.activated_at).toLocaleString()}
+                                    {formatWithRelativeTime(selectedCompanion.activated_at)}
                                   </span>
                                 </div>
                               )}

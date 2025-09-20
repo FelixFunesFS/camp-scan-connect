@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Phone, Clock, AlertTriangle } from "lucide-react";
 import { EquipmentStatusService, EquipmentCheckout, EquipmentStats } from "@/services/equipmentStatusService";
 import { StationType, TransactionType } from "@/types/station";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { formatStandardDateTime, formatDuration, isProlongedCheckout, getTimeBasedVariant } from "@/utils/dateTimeUtils";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 
 interface EquipmentTrackerProps {
@@ -66,9 +65,8 @@ export default function EquipmentTracker({
     fetchEquipmentData();
   }, [fetchEquipmentData]);
 
-  const formatUsageTime = (minutes: number): string => {
-    return EquipmentStatusService.formatUsageTime(minutes);
-  };
+  // Using centralized duration formatting
+  const formatUsageTime = formatDuration;
 
   if (isLoading) {
     return (
@@ -106,11 +104,11 @@ export default function EquipmentTracker({
             {checkouts.map((checkout, index) => (
               <TableRow 
                 key={`${checkout.attendeeId}-${index}`}
-                className={checkout.duration > 180 ? "bg-warning/5" : ""}
+                className={isProlongedCheckout(checkout.duration) ? "bg-warning/5" : ""}
               >
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    {checkout.duration > 180 && (
+                    {isProlongedCheckout(checkout.duration) && (
                       <AlertTriangle className="h-4 w-4 text-warning" />
                     )}
                     {checkout.attendeeName}
@@ -128,17 +126,13 @@ export default function EquipmentTracker({
                   <div className="flex items-center gap-2">
                     <Clock className="h-3 w-3 text-muted-foreground" />
                     <span className="text-sm">
-                      {checkout.checkoutTime.toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                      })}
+                      {formatStandardDateTime(checkout.checkoutTime, { compact: true })}
                     </span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <Badge 
-                    variant={checkout.duration > 180 ? "destructive" : "secondary"}
+                    variant={isProlongedCheckout(checkout.duration) ? "destructive" : getTimeBasedVariant(checkout.checkoutTime)}
                     className="text-xs"
                   >
                     {formatUsageTime(checkout.duration)}
