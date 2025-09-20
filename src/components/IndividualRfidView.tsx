@@ -212,6 +212,7 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                     </div>
                   </Button>
                 </TableHead>
+                <TableHead>Veteran</TableHead>
                 <TableHead>RFID Assignment</TableHead>
                 <TableHead>Headphones</TableHead>
                 <TableHead>
@@ -267,6 +268,13 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                     >
                       {attendee.registration_status}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {attendee.is_veteran ? (
+                      <Badge variant="default" className="text-xs bg-blue-600 text-white">
+                        Veteran
+                      </Badge>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <EnhancedRfidAssignmentCell

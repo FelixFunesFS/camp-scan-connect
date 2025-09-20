@@ -66,6 +66,16 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
     );
   };
 
+  const getVeteranBadge = () => {
+    if (!attendee.is_veteran) return null;
+    return (
+      <Badge variant="default" className="text-xs bg-blue-600 text-white">
+        <Usb className="h-3 w-3 mr-1" />
+        Veteran
+      </Badge>
+    );
+  };
+
   return (
     <Card className="transition-all duration-200 touch-target">
       <CardContent className="mobile-card">
@@ -133,6 +143,7 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
               <div className="space-y-2">
                 <span className="text-sm font-medium text-muted-foreground">Details</span>
                 <div className="flex flex-wrap gap-2">
+                  {getVeteranBadge()}
                   {getTicketTypeBadge()}
                   {getMealPlanBadge()}
                   {getArrivalDayBadge()}

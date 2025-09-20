@@ -68,6 +68,8 @@ export interface AttendeeData {
   // Additional fields for enhanced functionality
   waiver_signed?: boolean;
   activated_at?: string;
+  is_veteran?: boolean;
+  veteran_thanked_at?: string;
   order_companions?: AttendeeData[]; // Linked attendees
   group_assignment_progress?: { assigned: number; total: number; percentage: number };
 }
@@ -128,6 +130,8 @@ export const RfidAssignment = () => {
           registration_status,
           waiver_signed,
           activated_at,
+          is_veteran,
+          veteran_thanked_at,
           created_at,
           regfox_id,
           city,
@@ -181,6 +185,8 @@ export const RfidAssignment = () => {
           formatted_meal_plan: formattedMealPlan,
           waiver_signed: (attendee as any).waiver_signed,
           activated_at: (attendee as any).activated_at,
+          is_veteran: (attendee as any).is_veteran,
+          veteran_thanked_at: (attendee as any).veteran_thanked_at,
           created_at: attendee.created_at,
           registration_status: (attendee as any).registration_status,
           regfox_id: (attendee as any).regfox_id,
