@@ -121,17 +121,17 @@ const Index = () => {
               <p className="text-muted-foreground mb-6">
                 Attendee self-activation station
               </p>
-              <div className="flex justify-center">
+              <div className="grid gap-4">
                 <div 
-                  className="p-6 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item max-w-xs w-full"
+                  className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
                   onClick={() => navigate("/activation")}
                 >
-                  <div className="flex flex-col items-center text-center gap-3">
-                    <Zap className="h-8 w-8 text-accent" />
-                    <span className="font-medium text-lg">Self-Service Activation</span>
-                    <p className="text-sm text-muted-foreground">Activate your RFID wristband</p>
-                    <ArrowRight className="h-5 w-5 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                  <div className="flex items-center gap-3 mb-2">
+                    <Zap className="h-5 w-5 text-accent" />
+                    <span className="font-medium">Self-Service Activation</span>
+                    <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity" />
                   </div>
+                  <p className="text-sm text-muted-foreground">Activate your RFID wristband</p>
                 </div>
               </div>
             </CardContent>
