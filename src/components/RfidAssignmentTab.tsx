@@ -88,7 +88,6 @@ export const RfidAssignmentTab = () => {
   const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [testModeEnabled, setTestModeEnabled] = useState(false);
-  const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
   const [totalProgress, setTotalProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'groups' | 'individual'>('groups');
@@ -242,27 +241,16 @@ export const RfidAssignmentTab = () => {
     return `TEST${timestamp.slice(-8)}`;
   }, []);
 
-  // Enhanced RFID capture with auto-advance
+  // Enhanced RFID capture
   const handleRfidCapture = useCallback(async (uid: string) => {
     if (!uid.trim()) return;
 
     const finalUid = testModeEnabled ? generateSyntheticRfid() : uid.trim();
     
     console.log('RFID captured:', finalUid);
-    
-    if (autoAdvanceEnabled) {
-      // Auto-advance to next unassigned field after successful capture
-      setTimeout(() => {
-        const nextInput = document.querySelector('input[data-rfid-input="true"]:not([value])') as HTMLInputElement;
-        if (nextInput) {
-          nextInput.focus({ preventScroll: true });
-          nextInput.select();
-        }
-      }, 500);
-    }
 
     toast.info(`RFID Captured: UID: ${finalUid}${testModeEnabled ? ' (Test Mode)' : ''}`);
-  }, [testModeEnabled, autoAdvanceEnabled, generateSyntheticRfid, toast]);
+  }, [testModeEnabled, generateSyntheticRfid, toast]);
 
   // Focus first unassigned attendee overall
   const focusFirstUnassigned = useCallback((preventScroll: boolean = false) => {
@@ -287,11 +275,6 @@ export const RfidAssignmentTab = () => {
             e.preventDefault();
             // Focus first unassigned RFID input
             focusFirstUnassigned();
-            break;
-          case ' ':
-            e.preventDefault();
-            // Toggle auto-advance
-            setAutoAdvanceEnabled(prev => !prev);
             break;
           case 's':
             e.preventDefault();
@@ -588,15 +571,6 @@ export const RfidAssignmentTab = () => {
                   onCheckedChange={setTestModeEnabled}
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <SkipForward className="h-4 w-4" />
-                <Label htmlFor="auto-advance-bottom">Auto Advance</Label>
-                <Switch
-                  id="auto-advance-bottom"
-                  checked={autoAdvanceEnabled}  
-                  onCheckedChange={setAutoAdvanceEnabled}
-                />
-              </div>
             </div>
           </div>
         </CardHeader>
@@ -614,10 +588,6 @@ export const RfidAssignmentTab = () => {
             <div className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+S</kbd>
               <span>Skip current</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Ctrl+Space</kbd>
-              <span>Toggle auto-advance</span>
             </div>
             <div className="flex items-center gap-1">
               <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Esc</kbd>

@@ -76,7 +76,6 @@ export const RfidAssignment = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [mode, setMode] = useState<'pre-event' | 'day-of'>('pre-event');
   const [viewMode, setViewMode] = useState<'individual' | 'group'>('individual');
-  const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState(true);
   const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(false);
   const [showCancelledRegistrants, setShowCancelledRegistrants] = useState(false);
   const [currentFocusRow, setCurrentFocusRow] = useState(0);
@@ -515,11 +514,6 @@ export const RfidAssignment = () => {
             e.preventDefault();
             focusFirstUnassigned();
             break;
-          case ' ':
-            e.preventDefault();
-            setAutoAdvanceEnabled(prev => !prev);
-            toast.info(`Auto-advance ${autoAdvanceEnabled ? "disabled" : "enabled"}`);
-            break;
           case 'r':
             e.preventDefault();
             handleRegFoxSync();
@@ -528,13 +522,13 @@ export const RfidAssignment = () => {
       } else if (e.key === 'F1') {
         e.preventDefault();
         // Show help overlay (could be implemented later)
-        toast.info("Keyboard Shortcuts: Ctrl+G: Focus first unassigned • Ctrl+Space: Toggle auto-advance • Ctrl+R: Sync RegFox");
+        toast.info("Keyboard Shortcuts: Ctrl+G: Focus first unassigned • Ctrl+R: Sync RegFox");
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusFirstUnassigned, autoAdvanceEnabled, loadAttendees, toast]);
+  }, [focusFirstUnassigned, loadAttendees, toast]);
 
   // Monitor sync status to control real-time updates
   useEffect(() => {
@@ -838,17 +832,6 @@ export const RfidAssignment = () => {
                   Cancelled registrations
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="auto-advance"
-                  checked={autoAdvanceEnabled}
-                  onCheckedChange={setAutoAdvanceEnabled}
-                />
-                <Label htmlFor="auto-advance" className="text-sm flex items-center gap-1">
-                  <Zap className="h-3 w-3" />
-                  Auto-advance
-                </Label>
-              </div>
             </div>
           </div>
         </div>
@@ -1105,16 +1088,6 @@ export const RfidAssignment = () => {
             />
           )}
 
-        {/* Status Alert */}
-        {autoAdvanceEnabled && sortedAndPaginatedAttendees.length > 0 && (
-          <Alert className="mt-4">
-            <Zap className="h-4 w-4" />
-            <AlertDescription>
-              Auto-advance is enabled. After scanning an RFID, focus will automatically move to the next unassigned attendee.
-              <kbd className="ml-2 px-2 py-1 text-xs bg-muted rounded">Ctrl+Space</kbd> to toggle.
-            </AlertDescription>
-          </Alert>
-        )}
         </div>
       </div>
     </RfidCaptureProvider>

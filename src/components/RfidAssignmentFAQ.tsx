@@ -87,10 +87,6 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                     <Badge variant="secondary" className="text-xs">4</Badge>
                     <span className="text-sm">UID auto-fills and saves (or press Enter/click ✓)</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Badge variant="secondary" className="text-xs">5</Badge>
-                    <span className="text-sm">Auto-advance moves to next unassigned attendee</span>
-                  </div>
                 </div>
                 
                 <div className="pt-2 border-t">
@@ -256,10 +252,6 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Go to first unassigned</span>
                     <Badge variant="outline" className="text-xs">Ctrl+G</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Toggle auto-advance</span>
-                    <Badge variant="outline" className="text-xs">Ctrl+Space</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Sync with RegFox</span>

@@ -7,7 +7,6 @@ interface GroupRfidContextType {
   navigateToRow: (direction: 'up' | 'down') => void;
   focusFirstUnassignedRow: () => void;
   focusLastUnassignedRow: () => void;
-  focusNextUnassigned: () => void;
   startGroupProcessing: (groupId: string) => void;
   expandedGroups: Set<string>;
   expandAllGroups: () => void;
@@ -50,7 +49,6 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
       navigateToRow: () => {},
       focusFirstUnassignedRow: () => {},
       focusLastUnassignedRow: () => {},
-      focusNextUnassigned: () => {},
       startGroupProcessing: () => {},
       expandedGroups: new Set<string>(),
       expandAllGroups: () => {},
@@ -64,7 +62,6 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
     navigateToRow,
     focusFirstUnassignedRow,
     focusLastUnassignedRow,
-    focusNextUnassigned,
     startGroupProcessing,
     expandedGroups,
     expandAllGroups,
@@ -77,7 +74,6 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
     navigateToRow,
     focusFirstUnassignedRow,
     focusLastUnassignedRow,
-    focusNextUnassigned,
     startGroupProcessing,
     expandedGroups,
     expandAllGroups,

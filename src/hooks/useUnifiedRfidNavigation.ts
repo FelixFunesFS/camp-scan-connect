@@ -158,42 +158,6 @@ export const useUnifiedRfidNavigation = ({
     }, 50);
   }, [focusableRows, isGroupedView, expandedGroups, onRowFocus]);
 
-  // Focus next unassigned (for RFID auto-advance)
-  const focusNextUnassigned = useCallback((preventScroll = false) => {
-    if (!focusableRows.length) return;
-    
-    const currentFocusedElement = document.activeElement as HTMLInputElement;
-    const currentAttendeeId = currentFocusedElement?.getAttribute('data-attendee-id');
-    
-    let currentIndex = focusableRows.findIndex(attendee => attendee.id === currentAttendeeId);
-    const nextIndex = (currentIndex + 1) % focusableRows.length; // Wrap around
-    
-    const nextAttendee = focusableRows[nextIndex];
-    if (!nextAttendee) return;
-
-    // Auto-expand group if needed  
-    if (isGroupedView && nextAttendee.order_id) {
-      const groupKey = nextAttendee.order_id;
-      if (!expandedGroups.has(groupKey)) {
-        setExpandedGroups(prev => new Set(prev).add(groupKey));
-      }
-    }
-
-    setTimeout(() => {
-      const nextInput = document.querySelector(`input[data-attendee-id="${nextAttendee.id}"][data-rfid-input="true"]`) as HTMLInputElement;
-      if (nextInput) {
-        nextInput.focus({ preventScroll });
-        nextInput.select();
-        currentAttendeeIdRef.current = nextAttendee.id;
-        onRowFocus?.(nextIndex);
-        
-        // Only scroll for user-initiated navigation
-        if (!preventScroll) {
-          nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    }, 50);
-  }, [focusableRows, isGroupedView, expandedGroups, onRowFocus]);
 
   // Start processing a specific group
   const startGroupProcessing = useCallback((groupId: string) => {
@@ -283,7 +247,6 @@ export const useUnifiedRfidNavigation = ({
     navigateToRow,
     focusFirstUnassignedRow,
     focusLastUnassignedRow,
-    focusNextUnassigned,
     startGroupProcessing,
     expandedGroups,
     expandAllGroups,
