@@ -33,7 +33,7 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
       if (!workerRef.current) {
         const worker = await createWorker('eng');
         await worker.setParameters({
-          tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-',
+          tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ',
         });
         workerRef.current = worker;
       }
@@ -108,11 +108,11 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
       // Draw current video frame to canvas
       ctx.drawImage(video, 0, 0);
 
-      // Crop to center region for better OCR
-      const cropX = canvas.width * 0.1;
-      const cropY = canvas.height * 0.3;
-      const cropWidth = canvas.width * 0.8;
-      const cropHeight = canvas.height * 0.4;
+      // Crop to bottom region for bracelet ID (second row)
+      const cropX = canvas.width * 0.05;
+      const cropY = canvas.height * 0.4; // Focus on bottom area
+      const cropWidth = canvas.width * 0.9;
+      const cropHeight = canvas.height * 0.5;
 
       const imageData = ctx.getImageData(cropX, cropY, cropWidth, cropHeight);
       
@@ -132,16 +132,50 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
       // Perform OCR
       const { data: { text, confidence: ocrConfidence } } = await workerRef.current.recognize(cropCanvas);
       
-      const cleanText = text.trim().replace(/\s+/g, '');
-      setLastResult(cleanText);
+      // Split text by lines to get individual rows
+      const lines = text.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      
+      // Extract bracelet ID (second row) - filter out order numbers
+      let braceletId = '';
+      let extractedFromRow = '';
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].replace(/\s+/g, ''); // Remove spaces
+        
+        // Skip order numbers (short alphanumeric like SR16238)
+        if (line.length < 10 || /^[A-Z]{1,3}\d{3,6}$/.test(line)) {
+          continue;
+        }
+        
+        // Look for bracelet ID pattern (12-15 digit number)
+        if (/^\d{10,15}$/.test(line)) {
+          braceletId = line;
+          extractedFromRow = `Row ${i + 1}`;
+          break;
+        }
+      }
+      
+      // If no perfect match, try second row regardless
+      if (!braceletId && lines.length >= 2) {
+        const secondRow = lines[1].replace(/\s+/g, '');
+        if (secondRow.length >= 8) {
+          braceletId = secondRow;
+          extractedFromRow = 'Row 2 (fallback)';
+        }
+      }
+      
+      setLastResult(braceletId || lines.join(' | '));
       setConfidence(ocrConfidence);
 
-      // Only accept results with high confidence and reasonable length
-      if (ocrConfidence > 70 && cleanText.length >= 4 && cleanText.length <= 20) {
-        onScan(cleanText);
+      // Only accept bracelet ID results
+      if (ocrConfidence > 60 && braceletId && braceletId.length >= 10) {
+        console.log(`Bracelet ID extracted from ${extractedFromRow}:`, braceletId);
+        onScan(braceletId);
         onClose();
-      } else if (cleanText.length > 0) {
+      } else if (braceletId) {
         setError(`Low confidence (${Math.round(ocrConfidence)}%). Try repositioning bracelet.`);
+      } else if (lines.length > 0) {
+        setError(`No bracelet ID found. Detected: ${lines.join(', ')}`);
       }
     } catch (err) {
       setError('Failed to process image. Please try again.');
@@ -187,7 +221,7 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
                 <div className="absolute -bottom-2 -right-2 w-4 h-4 border-r-2 border-b-2 border-primary"></div>
               </div>
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black/50 px-2 py-1 rounded">
-                Position bracelet code in frame
+                Position BOTTOM number (longer code) in frame
               </div>
             </div>
 
