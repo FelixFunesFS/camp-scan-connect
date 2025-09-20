@@ -11,17 +11,16 @@ export interface TimeBoundary {
 
 // Get 3 AM ET for a given date (automatically handles DST)
 export const get3AMET = (date: Date): Date => {
-  const etDate = new Date(date.toLocaleString("en-US", { timeZone: "America/New_York" }));
-  etDate.setHours(3, 0, 0, 0);
+  // Create a new date at 3 AM ET on the given date
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
   
-  // Convert back to local timezone for database queries
-  const utcOffset = etDate.getTimezoneOffset() * 60000;
-  const etOffset = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
-  const etTimeMs = new Date(etOffset).getTime();
-  const localTimeMs = new Date().getTime();
-  const etOffsetMs = localTimeMs - etTimeMs;
+  // Create the date string for 3 AM ET
+  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T03:00:00-05:00`;
   
-  return new Date(etDate.getTime() - utcOffset - etOffsetMs);
+  // Return the date object in UTC for database queries
+  return new Date(dateStr);
 };
 
 // Get time boundaries for operational data based on 3 AM ET cutoff
@@ -33,20 +32,17 @@ export const getTimeBoundaries = (period: TimePeriod): TimeBoundary => {
   
   switch (period) {
     case 'today': {
-      const start3AM = get3AMET(yesterday); // 3 AM yesterday
-      const end3AM = get3AMET(today); // 3 AM today
+      const start3AM = get3AMET(today); // 3 AM today
       return {
         start: start3AM,
-        end: end3AM,
-        label: 'Today (3AM-3AM ET)'
+        end: now,
+        label: 'Today (since 3AM ET)'
       };
     }
     
     case 'yesterday': {
-      const twoDaysAgo = new Date(yesterday);
-      twoDaysAgo.setDate(twoDaysAgo.getDate() - 1);
-      const start3AM = get3AMET(twoDaysAgo); // 3 AM two days ago
-      const end3AM = get3AMET(yesterday); // 3 AM yesterday
+      const start3AM = get3AMET(yesterday); // 3 AM yesterday
+      const end3AM = get3AMET(today); // 3 AM today
       return {
         start: start3AM,
         end: end3AM,
@@ -55,8 +51,8 @@ export const getTimeBoundaries = (period: TimePeriod): TimeBoundary => {
     }
     
     case 'this_event': {
-      // Assuming event starts Thursday - adjust as needed
-      const eventStart = new Date('2024-01-25'); // Example event start date
+      // Current event start date - September 19, 2025
+      const eventStart = new Date('2025-09-19'); 
       const start3AM = get3AMET(eventStart);
       return {
         start: start3AM,
