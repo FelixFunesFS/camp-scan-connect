@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Wrench, BarChart3, Code, Key, Headphones, Utensils, Coffee, Zap, Scan } from "lucide-react";
+import { Users, Wrench, BarChart3, Code, Key, Headphones, Utensils, Wine, Zap, Scan } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -97,7 +97,7 @@ const Index = () => {
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-orange-200 bg-orange-50/30" onClick={() => navigate("/drinks-station")}>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <Coffee className="h-6 w-6 text-orange-600" />
+                  <Wine className="h-6 w-6 text-orange-600" />
                   <h3 className="font-semibold text-lg text-orange-700">Drinks Station</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">Beverage redemption service</p>
