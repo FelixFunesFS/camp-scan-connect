@@ -108,11 +108,11 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
       // Draw current video frame to canvas
       ctx.drawImage(video, 0, 0);
 
-      // Crop to bottom region for bracelet ID (second row)
+      // Crop to top region for 7-character unique ID (first row)
       const cropX = canvas.width * 0.05;
-      const cropY = canvas.height * 0.4; // Focus on bottom area
+      const cropY = canvas.height * 0.1; // Focus on top area where 5016230 appears
       const cropWidth = canvas.width * 0.9;
-      const cropHeight = canvas.height * 0.5;
+      const cropHeight = canvas.height * 0.4;
 
       const imageData = ctx.getImageData(cropX, cropY, cropWidth, cropHeight);
       
@@ -135,47 +135,38 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
       // Split text by lines to get individual rows
       const lines = text.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
       
-      // Extract bracelet ID (second row) - filter out order numbers
+      // Extract 7-character unique ID from FIRST row (top of bracelet)
       let braceletId = '';
       let extractedFromRow = '';
       
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].replace(/\s+/g, ''); // Remove spaces
+      // Target the FIRST row where the 7-character unique ID appears
+      if (lines.length > 0) {
+        const firstRow = lines[0].replace(/\s+/g, ''); // Remove spaces
         
-        // Skip order numbers (short alphanumeric like SR16238)
-        if (line.length < 10 || /^[A-Z]{1,3}\d{3,6}$/.test(line)) {
-          continue;
+        // Look for 7-character numeric pattern (like 5016230)
+        if (/^\d{7}$/.test(firstRow)) {
+          braceletId = firstRow;
+          extractedFromRow = 'Row 1 (top)';
         }
-        
-        // Look for bracelet ID pattern (12-15 digit number)
-        if (/^\d{10,15}$/.test(line)) {
-          braceletId = line;
-          extractedFromRow = `Row ${i + 1}`;
-          break;
-        }
-      }
-      
-      // If no perfect match, try second row regardless
-      if (!braceletId && lines.length >= 2) {
-        const secondRow = lines[1].replace(/\s+/g, '');
-        if (secondRow.length >= 8) {
-          braceletId = secondRow;
-          extractedFromRow = 'Row 2 (fallback)';
+        // Also accept 6-8 character alphanumeric if exact 7 digits not found
+        else if (/^[0-9A-Z]{6,8}$/.test(firstRow)) {
+          braceletId = firstRow;
+          extractedFromRow = 'Row 1 (top, alphanumeric)';
         }
       }
       
       setLastResult(braceletId || lines.join(' | '));
       setConfidence(ocrConfidence);
 
-      // Only accept bracelet ID results
-      if (ocrConfidence > 60 && braceletId && braceletId.length >= 10) {
-        console.log(`Bracelet ID extracted from ${extractedFromRow}:`, braceletId);
+      // Accept 7-character unique ID results
+      if (ocrConfidence > 60 && braceletId && braceletId.length >= 6 && braceletId.length <= 8) {
+        console.log(`7-character unique ID extracted from ${extractedFromRow}:`, braceletId);
         onScan(braceletId);
         onClose();
       } else if (braceletId) {
         setError(`Low confidence (${Math.round(ocrConfidence)}%). Try repositioning bracelet.`);
       } else if (lines.length > 0) {
-        setError(`No bracelet ID found. Detected: ${lines.join(', ')}`);
+        setError(`No 7-character ID found in top row. Detected: ${lines.join(', ')}`);
       }
     } catch (err) {
       setError('Failed to process image. Please try again.');
@@ -221,7 +212,7 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
                 <div className="absolute -bottom-2 -right-2 w-4 h-4 border-r-2 border-b-2 border-primary"></div>
               </div>
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black/50 px-2 py-1 rounded">
-                Position BOTTOM number (longer code) in frame
+                Position TOP number (7-digit code) in frame
               </div>
             </div>
 
