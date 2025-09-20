@@ -377,12 +377,14 @@ export function StaffActivationHub() {
     const activatedCount = attendees.filter(a => a.activated_at).length;
     const assignedCount = attendees.filter(a => a.rfid_status === 'assigned' || a.rfid_status === 'active').length;
     const unassignedCount = attendees.filter(a => a.rfid_status === 'unissued').length;
+    const veteransCount = attendees.filter(a => a.is_veteran).length;
 
     return [
       { key: "all", label: "All Attendees", count: totalCount },
       { key: "activated", label: "Activated", count: activatedCount },
       { key: "assigned", label: "RFID Assigned", count: assignedCount },
-      { key: "unassigned", label: "Needs RFID", count: unassignedCount }
+      { key: "unassigned", label: "Needs RFID", count: unassignedCount },
+      { key: "veterans", label: "Veterans Only", count: veteransCount }
     ];
   }, [attendees]);
 
@@ -396,6 +398,7 @@ export function StaffActivationHub() {
         case 'activated': filtered = filtered.filter(a => a.activated_at); break;
         case 'assigned': filtered = filtered.filter(a => a.rfid_status === 'assigned' || a.rfid_status === 'active'); break;
         case 'unassigned': filtered = filtered.filter(a => a.rfid_status === 'unissued'); break;
+        case 'veterans': filtered = filtered.filter(a => a.is_veteran); break;
       }
     }
     
