@@ -238,6 +238,8 @@ serve(async (req) => {
       console.log('Fetching attendees from RegFox API...');
       
       let regfoxAttendees: RegFoxAttendee[] = [];
+      
+      try {
       let startingAfter: string | null = null;
       let hasMore = true;
       
@@ -329,7 +331,7 @@ serve(async (req) => {
         }
       }
         
-        console.log(`Successfully retrieved ${regfoxAttendees.length} total attendees`);
+      console.log(`Successfully retrieved ${regfoxAttendees.length} total attendees`);
         
       } catch (apiError) {
         console.error('RegFox API call failed:', apiError.message);

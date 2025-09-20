@@ -61,7 +61,7 @@ export const useEnhancedBackgroundRefresh = ({
 
   // Handle manual refresh triggers
   useEffect(() => {
-    if (refreshTrigger !== refreshTriggerRef.current) {
+    if (refreshTrigger !== undefined && refreshTrigger !== refreshTriggerRef.current) {
       refreshTriggerRef.current = refreshTrigger;
       performRefresh();
     }

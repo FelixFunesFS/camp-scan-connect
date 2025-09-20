@@ -136,7 +136,6 @@ export default function EquipmentHub() {
       });
 
       setEquipmentStats(stats);
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error('Error fetching equipment stats:', error);
     } finally {
