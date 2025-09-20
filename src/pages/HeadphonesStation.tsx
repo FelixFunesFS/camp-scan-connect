@@ -32,9 +32,11 @@ function HeadphonesContent({
     try {
       const currentStatus = await getLatestStatus('current_status');
       
-      // Use the actual current_status value from the database
+      // Handle all three states: available, checked_out, checked_in
       if (currentStatus === 'checked_out') {
         setHeadphoneStatus('checked_out');
+      } else if (currentStatus === 'checked_in') {
+        setHeadphoneStatus('checked_in');
       } else {
         // Default to available for null, 'available', or any unknown status
         setHeadphoneStatus('available');
@@ -51,9 +53,20 @@ function HeadphonesContent({
     setIsProcessing(true);
 
     try {
-      const isCheckedOut = headphoneStatus === 'checked_out';
-      const transactionType = isCheckedOut ? 'headphone_checkin' : 'headphone_checkout';
-      const newStatus = isCheckedOut ? 'available' : 'checked_out';
+      let transactionType: 'headphone_checkout' | 'headphone_checkin';
+      let newStatus: string;
+
+      // 3-state workflow: available -> checked_out -> checked_in -> checked_out -> ...
+      if (headphoneStatus === 'available') {
+        transactionType = 'headphone_checkout';
+        newStatus = 'checked_out';
+      } else if (headphoneStatus === 'checked_out') {
+        transactionType = 'headphone_checkin';
+        newStatus = 'checked_in';
+      } else { // checked_in
+        transactionType = 'headphone_checkout';
+        newStatus = 'checked_out';
+      }
 
       await executeAction(transactionType, {
         current_status: newStatus
@@ -61,8 +74,9 @@ function HeadphonesContent({
 
       setHeadphoneStatus(newStatus);
 
+      const actionMessage = transactionType === 'headphone_checkout' ? 'checked out' : 'returned';
       toast.success(
-        `${isCheckedOut ? 'Headphones returned' : 'Headphones checked out'} for ${selectedRfid?.attendee?.first_name}`
+        `Headphones ${actionMessage} for ${selectedRfid?.attendee?.first_name}`
       );
       
       // Auto-reset after successful transaction
@@ -84,7 +98,7 @@ function HeadphonesContent({
     } finally {
       setIsProcessing(false);
     }
-  }, [attendeeReadiness, isProcessing, headphoneStatus, executeAction, selectedRfid, onReset]);
+  }, [attendeeReadiness, isProcessing, headphoneStatus, executeAction, selectedRfid, onReset, checkHeadphoneStatus]);
 
   useEffect(() => {
     if (selectedRfid && attendeeReadiness?.isReady) {
@@ -127,14 +141,17 @@ function HeadphonesContent({
           <div className="p-6 bg-muted rounded-lg">
             <div className="flex items-center justify-center gap-2 mb-2">
               <HeadphonesIcon className={`h-8 w-8 ${
-                headphoneStatus === 'checked_out' ? 'text-orange-500' : 'text-green-500'
+                headphoneStatus === 'checked_out' ? 'text-orange-500' : 
+                headphoneStatus === 'checked_in' ? 'text-blue-500' : 'text-green-500'
               }`} />
             </div>
             <div className="text-lg font-medium">
               Status: <span className={
-                headphoneStatus === 'checked_out' ? 'text-orange-600' : 'text-green-600'
+                headphoneStatus === 'checked_out' ? 'text-orange-600' : 
+                headphoneStatus === 'checked_in' ? 'text-blue-600' : 'text-green-600'
               }>
-                {headphoneStatus === 'checked_out' ? 'CHECKED OUT' : 'AVAILABLE'}
+                {headphoneStatus === 'checked_out' ? 'CHECKED OUT' : 
+                 headphoneStatus === 'checked_in' ? 'CHECKED IN' : 'AVAILABLE'}
               </span>
             </div>
           </div>
