@@ -40,20 +40,11 @@ export default function EquipmentHub() {
         const { data: transactions } = await supabase
           .from('station_transactions')
           .select('station_type, transaction_type, created_at, attendee_id')
-          .in('station_type', ['headphones', 'golf_carts', 'walkie_talkies', 'fanny_packs'] as any)
+          .in('station_type', ['golf_carts', 'walkie_talkies', 'fanny_packs'] as any)
           .gte('created_at', today);
 
         // Process stats for each equipment type
         const equipmentTypes = [
-          {
-            type: 'headphones',
-            name: 'Headphones',
-            icon: <Headphones className="h-6 w-6" />,
-            checkoutType: 'headphone_checkout',
-            checkinType: 'headphone_checkin',
-            stationPath: '/headphones-station',
-            color: 'text-blue-600'
-          },
           {
             type: 'golf_carts',
             name: 'Golf Carts',
@@ -157,8 +148,8 @@ export default function EquipmentHub() {
         <div className="max-w-6xl mx-auto">
           <div className="animate-pulse space-y-6">
             <div className="h-20 bg-muted rounded-lg"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1,2,3,4].map(i => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1,2,3].map(i => (
                 <div key={i} className="h-64 bg-muted rounded-lg"></div>
               ))}
             </div>
@@ -191,10 +182,10 @@ export default function EquipmentHub() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="h-6 w-6" />
-                    Equipment Management Hub
+                    Staff Equipment Hub
                   </CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Manage all equipment checkout stations and track usage
+                    Staff equipment checkout and management system
                   </p>
                 </div>
               </div>
@@ -213,7 +204,7 @@ export default function EquipmentHub() {
         </Card>
 
         {/* Equipment Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {equipmentStats.map((equipment) => (
             <Card key={equipment.type} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-4">

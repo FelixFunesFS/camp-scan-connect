@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Scan, Zap, Key, Code, BarChart3 } from "lucide-react";
+import { Scan, Zap, Key, Code, BarChart3, Headphones, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
@@ -18,9 +18,14 @@ const Index = () => {
     description: "Beverage redemption service",
     path: "/drinks-station"
   }, {
+    id: "headphones",
+    title: "Headphones Station",
+    description: "Silent disco headphone rental for attendees", 
+    path: "/headphones-station"
+  }, {
     id: "equipment",
-    title: "Equipment Hub",
-    description: "All equipment checkout stations",
+    title: "Staff Equipment Hub",
+    description: "Staff equipment checkout and management system",
     path: "/equipment-hub"
   }];
   return <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">

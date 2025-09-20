@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, RefreshCw, BarChart3 } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { CheckInStatusTables } from "@/components/reports/CheckInStatusTables";
@@ -138,26 +138,39 @@ const Reports = () => {
           {/* Check-in Status Tables */}
           <CheckInStatusTables key={`status-${lastUpdate.getTime()}`} />
 
-          {/* Equipment Tracking */}
-          <HeadphonesTracker 
-            key={`headphones-${lastUpdate.getTime()}-${selectedPeriod}`}
-            selectedPeriod={selectedPeriod}
-          />
-          
-          <GolfCartsTracker 
-            key={`golf-carts-${lastUpdate.getTime()}-${selectedPeriod}`}
-            selectedPeriod={selectedPeriod}
-          />
-          
-          <WalkieTalkiesTracker 
-            key={`walkie-talkies-${lastUpdate.getTime()}-${selectedPeriod}`}
-            selectedPeriod={selectedPeriod}
-          />
-          
-          <FannyPacksTracker 
-            key={`fanny-packs-${lastUpdate.getTime()}-${selectedPeriod}`}
-            selectedPeriod={selectedPeriod}
-          />
+          {/* Attendee Services */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Headphones className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Attendee Services</h2>
+            </div>
+            <HeadphonesTracker 
+              key={`headphones-${lastUpdate.getTime()}-${selectedPeriod}`}
+              selectedPeriod={selectedPeriod}
+            />
+          </div>
+
+          {/* Staff Equipment */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Package className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Staff Equipment</h2>
+            </div>
+            <GolfCartsTracker 
+              key={`golf-carts-${lastUpdate.getTime()}-${selectedPeriod}`}
+              selectedPeriod={selectedPeriod}
+            />
+            
+            <WalkieTalkiesTracker 
+              key={`walkie-talkies-${lastUpdate.getTime()}-${selectedPeriod}`}
+              selectedPeriod={selectedPeriod}
+            />
+            
+            <FannyPacksTracker 
+              key={`fanny-packs-${lastUpdate.getTime()}-${selectedPeriod}`}
+              selectedPeriod={selectedPeriod}
+            />
+          </div>
 
           {/* Analytics Cards */}
           <AnalyticsCards 
