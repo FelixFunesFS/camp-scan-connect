@@ -19,6 +19,7 @@ interface CheckInStats {
   peakHour: string;
 }
 
+// CheckInOverview component - displays daily check-in statistics
 export const CheckInOverview = () => {
   const [stats, setStats] = useState<CheckInStats>({
     totalExpected: 0,
