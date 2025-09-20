@@ -589,7 +589,14 @@ export type Database = {
       scan_action: "entry" | "exit" | "verify"
       scan_result: "allow" | "deny"
       staff_role: "admin" | "checkin" | "ranger" | "vendor"
-      station_type: "activation" | "meal" | "drinks" | "headphones"
+      station_type:
+        | "activation"
+        | "meal"
+        | "drinks"
+        | "headphones"
+        | "golf_carts"
+        | "walkie_talkies"
+        | "fanny_packs"
       tag_status:
         | "unissued"
         | "assigned"
@@ -621,6 +628,12 @@ export type Database = {
         | "meal_sat_lunch"
         | "meal_sat_dinner"
         | "meal_sun_breakfast"
+        | "golf_cart_checkout"
+        | "golf_cart_checkin"
+        | "walkie_talkie_checkout"
+        | "walkie_talkie_checkin"
+        | "fanny_pack_checkout"
+        | "fanny_pack_checkin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -758,7 +771,15 @@ export const Constants = {
       scan_action: ["entry", "exit", "verify"],
       scan_result: ["allow", "deny"],
       staff_role: ["admin", "checkin", "ranger", "vendor"],
-      station_type: ["activation", "meal", "drinks", "headphones"],
+      station_type: [
+        "activation",
+        "meal",
+        "drinks",
+        "headphones",
+        "golf_carts",
+        "walkie_talkies",
+        "fanny_packs",
+      ],
       tag_status: [
         "unissued",
         "assigned",
@@ -792,6 +813,12 @@ export const Constants = {
         "meal_sat_lunch",
         "meal_sat_dinner",
         "meal_sun_breakfast",
+        "golf_cart_checkout",
+        "golf_cart_checkin",
+        "walkie_talkie_checkout",
+        "walkie_talkie_checkin",
+        "fanny_pack_checkout",
+        "fanny_pack_checkin",
       ],
     },
   },

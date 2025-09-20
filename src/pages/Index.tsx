@@ -18,10 +18,10 @@ const Index = () => {
     description: "Beverage redemption service",
     path: "/drinks-station"
   }, {
-    id: "headphones",
-    title: "Headphones Station",
-    description: "Silent disco equipment checkout",
-    path: "/headphones-station"
+    id: "equipment",
+    title: "Equipment Hub",
+    description: "All equipment checkout stations",
+    path: "/equipment-hub"
   }];
   return <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
       <div className="max-w-4xl mx-auto">

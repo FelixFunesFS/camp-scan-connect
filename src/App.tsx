@@ -11,6 +11,10 @@ import { StaffActivationHub } from "./components/StaffActivationHub";
 import MealStation from "./pages/MealStation";
 import DrinksStation from "./pages/DrinksStation";
 import HeadphonesStation from "./pages/HeadphonesStation";
+import GolfCartsStation from "./pages/GolfCartsStation";
+import WalkieTalkiesStation from "./pages/WalkieTalkiesStation";
+import FannyPacksStation from "./pages/FannyPacksStation";
+import EquipmentHub from "./pages/EquipmentHub";
 import AttendeeDetail from "./pages/AttendeeDetail";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
 import Reports from "./pages/Reports";
@@ -31,6 +35,10 @@ const App = () => (
           <Route path="/meal-station" element={<MealStation />} />
           <Route path="/drinks-station" element={<DrinksStation />} />
           <Route path="/headphones-station" element={<HeadphonesStation />} />
+          <Route path="/golf-carts-station" element={<GolfCartsStation />} />
+          <Route path="/walkie-talkies-station" element={<WalkieTalkiesStation />} />
+          <Route path="/fanny-packs-station" element={<FannyPacksStation />} />
+          <Route path="/equipment-hub" element={<EquipmentHub />} />
           <Route path="/attendee/:id" element={<AttendeeDetail />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/dev" element={<DeveloperDashboard />} />

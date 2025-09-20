@@ -8,6 +8,9 @@ import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { CheckInStatusTables } from "@/components/reports/CheckInStatusTables";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
+import { GolfCartsTracker } from "@/components/reports/GolfCartsTracker";
+import { WalkieTalkiesTracker } from "@/components/reports/WalkieTalkiesTracker";
+import { FannyPacksTracker } from "@/components/reports/FannyPacksTracker";
 import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
@@ -135,9 +138,24 @@ const Reports = () => {
           {/* Check-in Status Tables */}
           <CheckInStatusTables key={`status-${lastUpdate.getTime()}`} />
 
-          {/* Headphones Tracking */}
+          {/* Equipment Tracking */}
           <HeadphonesTracker 
             key={`headphones-${lastUpdate.getTime()}-${selectedPeriod}`}
+            selectedPeriod={selectedPeriod}
+          />
+          
+          <GolfCartsTracker 
+            key={`golf-carts-${lastUpdate.getTime()}-${selectedPeriod}`}
+            selectedPeriod={selectedPeriod}
+          />
+          
+          <WalkieTalkiesTracker 
+            key={`walkie-talkies-${lastUpdate.getTime()}-${selectedPeriod}`}
+            selectedPeriod={selectedPeriod}
+          />
+          
+          <FannyPacksTracker 
+            key={`fanny-packs-${lastUpdate.getTime()}-${selectedPeriod}`}
             selectedPeriod={selectedPeriod}
           />
 
