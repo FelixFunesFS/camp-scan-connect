@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Scan, Zap, Key, Code } from "lucide-react";
+import { Scan, Zap, Key, Code, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
@@ -125,6 +125,33 @@ const Index = () => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+
+        {/* Admin Reports */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Admin Reports
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4 max-w-md mx-auto">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-green-200 bg-green-50/50" onClick={() => navigate("/reports")}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-lg mb-2 text-green-700">Daily Reports Dashboard</h3>
+                <p className="text-sm text-muted-foreground mb-3">Real-time check-ins, headphone tracking, and usage analytics</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/reports");
+                  }}
+                  className="w-full border-green-300 hover:bg-green-100"
+                >
+                  Access Reports Dashboard
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
