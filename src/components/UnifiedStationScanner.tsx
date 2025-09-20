@@ -251,14 +251,16 @@ export function UnifiedStationScanner({
                       <p className="font-medium">
                         {selectedRfid.attendee.first_name} {selectedRfid.attendee.last_name}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        Ticket: {selectedRfid.attendee.ticket_type}
-                        {selectedRfid.attendee.is_veteran && (
-                          <Badge variant="secondary" className="ml-2 text-xs">
-                            Veteran
-                          </Badge>
-                        )}
-                      </p>
+                      {!['meal', 'drinks', 'headphones'].includes(stationType) && (
+                        <p className="text-sm text-muted-foreground">
+                          Ticket: {selectedRfid.attendee.ticket_type}
+                        </p>
+                      )}
+                      {selectedRfid.attendee.is_veteran && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          Veteran
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
