@@ -12,7 +12,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Users, 
@@ -264,14 +263,6 @@ export const RfidAssignmentTab = () => {
 
     toast.info(`RFID Captured: UID: ${finalUid}${testModeEnabled ? ' (Test Mode)' : ''}`);
   }, [testModeEnabled, autoAdvanceEnabled, generateSyntheticRfid, toast]);
-
-  // RFID capture hook
-  useRfidCapture({
-      onCapture: handleRfidCapture,
-      enabled: true,
-      minLength: 8,
-      debounceMs: 50, // Faster for assignment workflow
-  });
 
   // Focus first unassigned attendee overall
   const focusFirstUnassigned = useCallback((preventScroll: boolean = false) => {

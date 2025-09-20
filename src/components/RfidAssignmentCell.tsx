@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Scan, Check, X, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useRfidCapture } from "@/hooks/useRfidCapture";
 
 interface RfidAssignmentCellProps {
   attendeeId: string;
@@ -31,6 +32,14 @@ export const RfidAssignmentCell = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [validationError, setValidationError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Local RFID capture - only active when this input is focused
+  useRfidCapture({
+    onCapture: setUid,
+    enabled: true,
+    minLength: 8,
+    debounceMs: 50
+  });
   
 
   // Auto-focus input when component mounts

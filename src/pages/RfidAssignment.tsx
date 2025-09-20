@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Search, 
@@ -462,21 +461,6 @@ export const RfidAssignment = () => {
     
     toast.success(`Export Complete - Exported ${exportData.length} attendee records to CSV`);
   };
-
-  // Enhanced RFID capture handler
-  const handleRfidCapture = useCallback(async (uid: string) => {
-    if (!uid.trim()) return;
-    
-    toast.info(`RFID Captured: ${uid} - Ready for assignment`);
-  }, []);
-
-  // RFID capture with optimized settings for assignment workflow
-  useRfidCapture({
-    onCapture: handleRfidCapture,
-    enabled: true,
-    minLength: 8,
-    debounceMs: 50, // Ultra-fast for assignment workflow
-  });
 
   // Auto-focus first unassigned row
   const focusFirstUnassigned = useCallback(() => {
