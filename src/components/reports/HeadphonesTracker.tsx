@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Headphones, Clock, User, Phone, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { TimePeriod, getTimeBoundaries, formatTimePeriod } from "@/utils/etTimezone";
 
 interface HeadphoneCheckout {
   id: string;
@@ -23,7 +24,11 @@ interface HeadphoneStats {
   longestUsageMinutes: number;
 }
 
-export const HeadphonesTracker = () => {
+interface HeadphonesTrackerProps {
+  selectedPeriod: TimePeriod;
+}
+
+export const HeadphonesTracker = ({ selectedPeriod }: HeadphonesTrackerProps) => {
   const [checkouts, setCheckouts] = useState<HeadphoneCheckout[]>([]);
   const [stats, setStats] = useState<HeadphoneStats>({
     currentlyCheckedOut: 0,
@@ -36,13 +41,16 @@ export const HeadphonesTracker = () => {
   useEffect(() => {
     const fetchHeadphoneData = async () => {
       try {
+        const boundaries = getTimeBoundaries(selectedPeriod);
+        
         // Get currently checked out headphones (checkout without matching checkin)
         const { data: currentCheckouts } = await supabase
           .from('station_transactions')
           .select('id, attendee_id, rfid_uid, created_at')
           .eq('station_type', 'headphones')
           .eq('transaction_type', 'headphone_checkout')
-          .gte('created_at', new Date().toISOString().split('T')[0]); // Today only
+          .gte('created_at', boundaries.start.toISOString())
+          .lt('created_at', boundaries.end.toISOString());
 
         // Get attendee details separately
         const attendeeIds = currentCheckouts?.map(co => co.attendee_id) || [];
@@ -60,13 +68,14 @@ export const HeadphonesTracker = () => {
           attendeesMap.set(a.id, a);
         });
 
-        // Get all checkins today to match against checkouts
+        // Get all checkins for the period to match against checkouts
         const { data: checkins } = await supabase
           .from('station_transactions')
           .select('attendee_id, created_at')
           .eq('station_type', 'headphones')
           .eq('transaction_type', 'headphone_checkin')
-          .gte('created_at', new Date().toISOString().split('T')[0]);
+          .gte('created_at', boundaries.start.toISOString())
+          .lt('created_at', boundaries.end.toISOString());
 
         // Filter out checkouts that have been checked in
         const checkinAttendeeIds = new Set(checkins?.map(c => c.attendee_id) || []);
@@ -104,7 +113,8 @@ export const HeadphonesTracker = () => {
           `)
           .eq('station_type', 'headphones')
           .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
-          .gte('created_at', new Date().toISOString().split('T')[0])
+          .gte('created_at', boundaries.start.toISOString())
+          .lt('created_at', boundaries.end.toISOString())
           .order('created_at', { ascending: true });
 
         // Calculate usage statistics
@@ -151,7 +161,7 @@ export const HeadphonesTracker = () => {
     };
 
     fetchHeadphoneData();
-  }, []);
+  }, [selectedPeriod]);
 
   const formatUsageTime = (minutes: number): string => {
     if (minutes === 0) return '0m';
@@ -189,7 +199,7 @@ export const HeadphonesTracker = () => {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Headphones className="h-5 w-5" />
-            Headphones Tracking
+            Headphones Tracking - {formatTimePeriod(selectedPeriod)}
           </div>
           <Badge 
             variant={stats.currentlyCheckedOut > 0 ? "default" : "outline"}

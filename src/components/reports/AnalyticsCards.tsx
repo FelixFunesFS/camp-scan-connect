@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { GlassWater, Clock, TrendingUp, Users } from "lucide-react";
+import { GlassWater, Clock, TrendingUp, Users, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { TimePeriod, getTimeBoundaries, getComparisonBoundaries, formatTimePeriod } from "@/utils/etTimezone";
 
 interface AnalyticsData {
   drinkCount: number;
@@ -16,9 +17,17 @@ interface AnalyticsData {
     lunch: number;
     dinner: number;
   };
+  comparison?: {
+    drinkChange: number;
+    partyTimeChange: number;
+  };
 }
 
-export const AnalyticsCards = () => {
+interface AnalyticsCardsProps {
+  selectedPeriod: TimePeriod;
+}
+
+export const AnalyticsCards = ({ selectedPeriod }: AnalyticsCardsProps) => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     drinkCount: 0,
     drinkHourlyData: [],
@@ -32,15 +41,17 @@ export const AnalyticsCards = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const boundaries = getTimeBoundaries(selectedPeriod);
+        const comparisonBoundaries = getComparisonBoundaries(selectedPeriod);
         
-        // Get drink counts
+        // Get drink counts for selected period
         const { data: drinks } = await supabase
           .from('station_transactions')
           .select('*')
           .eq('station_type', 'drinks')
           .eq('transaction_type', 'drink')
-          .gte('created_at', today);
+          .gte('created_at', boundaries.start.toISOString())
+          .lt('created_at', boundaries.end.toISOString());
 
         const drinkCount = drinks?.length || 0;
 
@@ -66,7 +77,8 @@ export const AnalyticsCards = () => {
           .select('attendee_id, created_at, transaction_type')
           .eq('station_type', 'headphones')
           .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
-          .gte('created_at', today)
+          .gte('created_at', boundaries.start.toISOString())
+          .lt('created_at', boundaries.end.toISOString())
           .order('created_at', { ascending: true });
 
         // Calculate average party time from headphone sessions
@@ -97,7 +109,8 @@ export const AnalyticsCards = () => {
         const { data: allTransactions } = await supabase
           .from('station_transactions')
           .select('created_at, transaction_type')
-          .gte('created_at', today);
+          .gte('created_at', boundaries.start.toISOString())
+          .lt('created_at', boundaries.end.toISOString());
 
         const hourlyData = Array.from({ length: 24 }, (_, i) => ({
           hour: `${i}:00`,
@@ -121,7 +134,8 @@ export const AnalyticsCards = () => {
           .select('transaction_type')
           .eq('station_type', 'meal')
           .like('transaction_type', 'meal_%')
-          .gte('created_at', today);
+          .gte('created_at', boundaries.start.toISOString())
+          .lt('created_at', boundaries.end.toISOString());
 
         const mealCounts = {
           breakfast: meals?.filter(m => m.transaction_type.includes('breakfast')).length || 0,
@@ -129,13 +143,65 @@ export const AnalyticsCards = () => {
           dinner: meals?.filter(m => m.transaction_type.includes('dinner')).length || 0
         };
 
+        // Get comparison data if available
+        let comparison = undefined;
+        if (comparisonBoundaries) {
+          const { data: compDrinks } = await supabase
+            .from('station_transactions')
+            .select('*')
+            .eq('station_type', 'drinks')
+            .eq('transaction_type', 'drink')
+            .gte('created_at', comparisonBoundaries.start.toISOString())
+            .lt('created_at', comparisonBoundaries.end.toISOString());
+
+          const { data: compHeadphones } = await supabase
+            .from('station_transactions')
+            .select('attendee_id, created_at, transaction_type')
+            .eq('station_type', 'headphones')
+            .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
+            .gte('created_at', comparisonBoundaries.start.toISOString())
+            .lt('created_at', comparisonBoundaries.end.toISOString())
+            .order('created_at', { ascending: true });
+
+          // Calculate comparison party time
+          let compTotalMinutes = 0;
+          let compCompletedSessions = 0;
+          const compSessionMap = new Map<string, Date>();
+
+          if (compHeadphones) {
+            compHeadphones.forEach(transaction => {
+              const key = transaction.attendee_id;
+              const time = new Date(transaction.created_at);
+              
+              if (transaction.transaction_type === 'headphone_checkout') {
+                compSessionMap.set(key, time);
+              } else if (transaction.transaction_type === 'headphone_checkin' && compSessionMap.has(key)) {
+                const checkoutTime = compSessionMap.get(key)!;
+                const sessionMinutes = Math.floor((time.getTime() - checkoutTime.getTime()) / (1000 * 60));
+                compTotalMinutes += sessionMinutes;
+                compCompletedSessions++;
+                compSessionMap.delete(key);
+              }
+            });
+          }
+
+          const compAvgPartyTime = compCompletedSessions > 0 ? Math.round(compTotalMinutes / compCompletedSessions) : 0;
+          const compDrinkCount = compDrinks?.length || 0;
+
+          comparison = {
+            drinkChange: compDrinkCount > 0 ? ((drinkCount - compDrinkCount) / compDrinkCount) * 100 : 0,
+            partyTimeChange: compAvgPartyTime > 0 ? ((avgPartyTime - compAvgPartyTime) / compAvgPartyTime) * 100 : 0
+          };
+        }
+
         setAnalytics({
           drinkCount,
           drinkHourlyData,
           drinkPeakHour,
           averagePartyTimeMinutes: avgPartyTime,
           peakHours,
-          mealCounts
+          mealCounts,
+          comparison
         });
 
       } catch (error) {
@@ -146,7 +212,7 @@ export const AnalyticsCards = () => {
     };
 
     fetchAnalytics();
-  }, []);
+  }, [selectedPeriod]);
 
   const formatTime = (minutes: number): string => {
     if (minutes === 0) return '0m';
@@ -185,9 +251,23 @@ export const AnalyticsCards = () => {
       {/* Drinks Counter */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <GlassWater className="h-5 w-5" />
-            Drinks Served Today
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <GlassWater className="h-5 w-5" />
+              Drinks Served {formatTimePeriod(selectedPeriod)}
+            </div>
+            {analytics.comparison && (
+              <div className="flex items-center gap-1 text-sm">
+                {analytics.comparison.drinkChange > 0 ? (
+                  <ArrowUp className="h-3 w-3 text-success" />
+                ) : analytics.comparison.drinkChange < 0 ? (
+                  <ArrowDown className="h-3 w-3 text-destructive" />
+                ) : null}
+                <span className={analytics.comparison.drinkChange > 0 ? 'text-success' : analytics.comparison.drinkChange < 0 ? 'text-destructive' : 'text-muted-foreground'}>
+                  {analytics.comparison.drinkChange > 0 ? '+' : ''}{Math.round(analytics.comparison.drinkChange)}%
+                </span>
+              </div>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -241,9 +321,23 @@ export const AnalyticsCards = () => {
       {/* Average Party Time */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Average Party Time
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Average Party Time
+            </div>
+            {analytics.comparison && (
+              <div className="flex items-center gap-1 text-sm">
+                {analytics.comparison.partyTimeChange > 0 ? (
+                  <ArrowUp className="h-3 w-3 text-success" />
+                ) : analytics.comparison.partyTimeChange < 0 ? (
+                  <ArrowDown className="h-3 w-3 text-destructive" />
+                ) : null}
+                <span className={analytics.comparison.partyTimeChange > 0 ? 'text-success' : analytics.comparison.partyTimeChange < 0 ? 'text-destructive' : 'text-muted-foreground'}>
+                  {analytics.comparison.partyTimeChange > 0 ? '+' : ''}{Math.round(analytics.comparison.partyTimeChange)}%
+                </span>
+              </div>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>

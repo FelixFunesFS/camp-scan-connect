@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download, RefreshCw, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
@@ -10,12 +11,14 @@ import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
 import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
+import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";
 
 const Reports = () => {
   const navigate = useNavigate();
   const { exportToCsv } = useCsvExport();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -86,12 +89,23 @@ const Reports = () => {
                 Admin Reports
               </h1>
               <p className="text-muted-foreground text-sm">
-                Last updated: {lastUpdate.toLocaleTimeString()}
+                Last updated: {lastUpdate.toLocaleTimeString()} • {formatTimePeriod(selectedPeriod)}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as TimePeriod)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="this_event">This Event</SelectItem>
+                <SelectItem value="all_time">All Time</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
               variant="outline"
               size="sm"
@@ -122,10 +136,16 @@ const Reports = () => {
           <CheckInStatusTables key={`status-${lastUpdate.getTime()}`} />
 
           {/* Headphones Tracking */}
-          <HeadphonesTracker key={`headphones-${lastUpdate.getTime()}`} />
+          <HeadphonesTracker 
+            key={`headphones-${lastUpdate.getTime()}-${selectedPeriod}`}
+            selectedPeriod={selectedPeriod}
+          />
 
           {/* Analytics Cards */}
-          <AnalyticsCards key={`analytics-${lastUpdate.getTime()}`} />
+          <AnalyticsCards 
+            key={`analytics-${lastUpdate.getTime()}-${selectedPeriod}`}
+            selectedPeriod={selectedPeriod}
+          />
         </div>
 
         {/* Auto-refresh indicator */}
