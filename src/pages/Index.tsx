@@ -20,6 +20,59 @@ const Index = () => {
           <Badge variant="outline" className="mb-4">Veterans Campground, Cordele, GA • Sep 26-28, 2025</Badge>
         </div>
 
+        {/* Staff Operations */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
+            <Wrench className="h-5 w-5 text-slate-600" />
+            Staff Operations
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+            {/* RFID Assignment */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-secondary/50 bg-secondary/5 flex flex-col" onClick={() => navigate("/rfid-assignment")}>
+              <CardContent className="p-6 flex flex-col flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <Key className="h-6 w-6 text-secondary" />
+                  <h3 className="font-semibold text-lg">RFID Assignment</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Assign RFID tags to attendees using USB scanner</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/rfid-assignment");
+                  }}
+                  className="w-full border-secondary/30 hover:bg-secondary/10 mt-auto"
+                >
+                  Access Assignment
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Staff Hub */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-slate-300 bg-slate-50/30 flex flex-col" onClick={() => navigate("/staff-hub")}>
+              <CardContent className="p-6 flex flex-col flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <Wrench className="h-6 w-6 text-slate-600" />
+                  <h3 className="font-semibold text-lg text-slate-700">Staff Hub</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Comprehensive staff tools for activation, deactivation, and management</p>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/staff-hub");
+                  }}
+                  className="w-full bg-slate-600 hover:bg-slate-700 mt-auto"
+                >
+                  Access Staff Tools
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         {/* Attendee Services */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
@@ -186,59 +239,6 @@ const Index = () => {
                   className="w-full border-rose-300 hover:bg-rose-100 mt-auto"
                 >
                   Access Fanny Packs
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Staff Operations */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
-            <Wrench className="h-5 w-5 text-slate-600" />
-            Staff Operations
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-            {/* Staff Hub */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-slate-300 bg-slate-50/30 flex flex-col" onClick={() => navigate("/staff-hub")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Wrench className="h-6 w-6 text-slate-600" />
-                  <h3 className="font-semibold text-lg text-slate-700">Staff Hub</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Comprehensive staff tools for activation, deactivation, and management</p>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/staff-hub");
-                  }}
-                  className="w-full bg-slate-600 hover:bg-slate-700 mt-auto"
-                >
-                  Access Staff Tools
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* RFID Assignment */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-secondary/50 bg-secondary/5 flex flex-col" onClick={() => navigate("/rfid-assignment")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Key className="h-6 w-6 text-secondary" />
-                  <h3 className="font-semibold text-lg">RFID Assignment</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Assign RFID tags to attendees using USB scanner</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/rfid-assignment");
-                  }}
-                  className="w-full border-secondary/30 hover:bg-secondary/10 mt-auto"
-                >
-                  Access Assignment
                 </Button>
               </CardContent>
             </Card>
