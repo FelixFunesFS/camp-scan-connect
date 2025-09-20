@@ -42,6 +42,13 @@ export function MobileActivationSuccess({
     attendee.has_rfid && !attendee.activated_at
   ) || [];
 
+  // Check for veterans who were thanked during this activation
+  const veteransActivated = [...newlyActivated, ...alreadyActive].filter((attendee: any) => 
+    attendee.is_veteran && attendee.veteran_thanked_at
+  ) || [];
+
+  const hasVeterans = veteransActivated.length > 0;
+
   const handleActivateRemaining = async () => {
     if (pendingRfidAttendees.length === 0) return;
     
@@ -163,6 +170,28 @@ export function MobileActivationSuccess({
         </Badge>
       </div>
 
+      {/* Veteran Recognition */}
+      {hasVeterans && (
+        <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="text-2xl mb-2">🇺🇸</div>
+              <h3 className="text-lg font-semibold text-blue-800 mb-2">
+                Thank You for Your Service!
+              </h3>
+              <p className="text-blue-700 text-sm mb-2">
+                {veteransActivated.length === 1 
+                  ? `We honor ${veteransActivated[0].name}'s military service` 
+                  : `We honor the military service of ${veteransActivated.length} veterans`}
+              </p>
+              <div className="text-xs text-blue-600">
+                Veterans: {veteransActivated.map(v => v.name).join(', ')}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* RFID Warnings */}
       {activationResult.warnings && activationResult.warnings.length > 0 && (
         <Alert className="border-warning bg-warning/5">
@@ -233,7 +262,9 @@ export function MobileActivationSuccess({
                       activated_at: attendee.activated_at,
                       meal_plan: attendee.meal_plan,
                       arrival_window: attendee.arrival_window,
-                      is_activated: true
+                      is_activated: true,
+                      is_veteran: attendee.is_veteran,
+                      veteran_thanked_at: attendee.veteran_thanked_at
                     }}
                     type="direct"
                   />

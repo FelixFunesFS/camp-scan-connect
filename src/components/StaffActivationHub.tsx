@@ -701,14 +701,34 @@ export function StaffActivationHub() {
       
       // Process successful activations
       if (result.activated_count > 0) {
-        // We'll assume activated attendees succeeded (could be enhanced with detailed results)
-        allAttendees.slice(0, result.activated_count).forEach(attendee => {
-          resultNotifications.push({
-            attendeeId: attendee.id,
-            state: 'success',
-            message: '✅ Activated successfully',
-            showNotification: true
-          });
+        // Enhanced notifications with veteran recognition
+        result.attendee_details?.forEach(attendee => {
+          if (attendee.can_use_services && !attendee.was_already_active) {
+            const message = attendee.is_veteran && attendee.veteran_thanked_at 
+              ? '✅ Activated - Thank you for your service! 🇺🇸'
+              : '✅ Activated successfully';
+              
+            resultNotifications.push({
+              attendeeId: attendee.id || attendee.name,
+              state: 'success',
+              message,
+              showNotification: true
+            });
+          } else if (attendee.was_already_active) {
+            resultNotifications.push({
+              attendeeId: attendee.id || attendee.name,
+              state: 'warning',
+              message: '⚠️ Already activated',
+              showNotification: true
+            });
+          } else if (!attendee.has_rfid) {
+            resultNotifications.push({
+              attendeeId: attendee.id || attendee.name,
+              state: 'error',
+              message: '❌ RFID tag required for activation',
+              showNotification: true
+            });
+          }
         });
       }
       
@@ -736,11 +756,19 @@ export function StaffActivationHub() {
       
       setAttendeeNotifications(resultNotifications);
 
-      // Only show summary toast for major issues or complete success
+      // Only show summary toast for major issues or complete success with veteran recognition
       if (result.activated_count === allAttendees.length) {
-        toast.success(`Successfully activated all ${result.activated_count} attendees`);
+        const veteranCount = result.attendee_details?.filter(a => a.is_veteran && a.veteran_thanked_at).length || 0;
+        const baseMessage = `Successfully activated all ${result.activated_count} attendees`;
+        const veteranMessage = veteranCount > 0 ? `! Thank you for your service to our ${veteranCount} veteran${veteranCount > 1 ? 's' : ''}!` : '';
+        toast.success(baseMessage + veteranMessage);
       } else if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
         toast.info("Check individual attendee cards for specific activation issues");
+      } else if (result.activated_count > 0) {
+        const veteranCount = result.attendee_details?.filter(a => a.is_veteran && a.veteran_thanked_at && a.can_use_services && !a.was_already_active).length || 0;
+        const baseMessage = `Successfully activated ${result.activated_count} of ${allAttendees.length} attendees`;
+        const veteranMessage = veteranCount > 0 ? `! Thank you for your service to our ${veteranCount} veteran${veteranCount > 1 ? 's' : ''}!` : '';
+        toast.success(baseMessage + veteranMessage);
       }
 
       // Refresh data

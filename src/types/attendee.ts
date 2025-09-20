@@ -39,4 +39,6 @@ export interface FlexibleAttendeeData {
   rfid_status?: string | null;
   is_activated?: boolean;
   has_rfid?: boolean;
+  is_veteran?: boolean;
+  veteran_thanked_at?: string | null;
 }

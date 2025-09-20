@@ -49,10 +49,21 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   const getTicketTypeBadge = () => {
     if (!attendee.ticket_type) return null;
     const ticketLabel = attendee.ticket_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    
     return (
       <Badge variant="outline" className="text-xs bg-secondary/10 text-secondary border-secondary/20">
         <Ticket className="h-3 w-3 mr-1" />
         {ticketLabel}
+      </Badge>
+    );
+  };
+
+  const getVeteranBadge = () => {
+    if (!attendee.is_veteran) return null;
+    
+    return (
+      <Badge className="text-xs bg-blue-600 text-white">
+        🇺🇸 Veteran
       </Badge>
     );
   };
@@ -160,6 +171,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {getTicketTypeBadge()}
+                  {getVeteranBadge()}
                   {getMealPlanBadge()}
                   {getArrivalDayBadge()}
                   {getHeadphonesBadge()}

@@ -411,12 +411,15 @@ export class EnhancedActivationService {
 
       if (rfidError) throw rfidError;
 
-      // Update attendee activation
+      // Update attendee activation and veteran thanking
+      const updateData: any = { activated_at: new Date().toISOString() };
+      if (attendee.is_veteran && !attendee.veteran_thanked_at) {
+        updateData.veteran_thanked_at = new Date().toISOString();
+      }
+
       const { error: attendeeError } = await supabase
         .from('attendees')
-        .update({
-          activated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', attendeeId);
 
       if (attendeeError) throw attendeeError;
@@ -433,13 +436,19 @@ export class EnhancedActivationService {
           staff_id: staffId,
           extra_data: {
             activation_source: 'staff_individual',
-            staff_id: staffId
+            staff_id: staffId,
+            is_veteran: attendee.is_veteran,
+            veteran_thanked: (attendee.is_veteran && updateData.veteran_thanked_at)
           }
         });
 
+      const message = attendee.is_veteran && updateData.veteran_thanked_at 
+        ? `${attendee.first_name} ${attendee.last_name} activated successfully! Thank you for your service.`
+        : `${attendee.first_name} ${attendee.last_name} activated successfully`;
+
       return { 
         success: true, 
-        message: `${attendee.first_name} ${attendee.last_name} activated successfully` 
+        message 
       };
 
     } catch (error) {
