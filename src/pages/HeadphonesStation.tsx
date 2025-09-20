@@ -30,11 +30,13 @@ function HeadphonesContent({
 
   const checkHeadphoneStatus = useCallback(async () => {
     try {
-      const latestTransaction = await getLatestStatus('transaction_type');
+      const currentStatus = await getLatestStatus('current_status');
       
-      if (latestTransaction === 'headphone_checkout') {
+      // Use the actual current_status value from the database
+      if (currentStatus === 'checked_out') {
         setHeadphoneStatus('checked_out');
       } else {
+        // Default to available for null, 'available', or any unknown status
         setHeadphoneStatus('available');
       }
     } catch (error) {
