@@ -3,6 +3,7 @@ import React, { createContext, useContext, useCallback, useEffect, useRef } from
 interface RfidCaptureContextType {
   registerInput: (element: HTMLInputElement, onCapture: (uid: string) => void) => void;
   unregisterInput: (element: HTMLInputElement) => void;
+  triggerCapture: (uid: string, targetElement?: HTMLInputElement) => void;
 }
 
 const RfidCaptureContext = createContext<RfidCaptureContextType | null>(null);
@@ -47,6 +48,24 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
 
   const unregisterInput = useCallback((element: HTMLInputElement) => {
     registeredInputsRef.current.delete(element);
+  }, []);
+
+  const triggerCapture = useCallback((uid: string, targetElement?: HTMLInputElement) => {
+    if (targetElement && registeredInputsRef.current.has(targetElement)) {
+      const onCapture = registeredInputsRef.current.get(targetElement);
+      if (onCapture) {
+        onCapture(uid);
+      }
+    } else {
+      // Find the currently focused RFID input
+      const activeElement = document.activeElement as HTMLInputElement;
+      if (activeElement?.getAttribute('data-rfid-input') === 'true') {
+        const onCapture = registeredInputsRef.current.get(activeElement);
+        if (onCapture) {
+          onCapture(uid);
+        }
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -126,7 +145,8 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
 
   const contextValue: RfidCaptureContextType = {
     registerInput,
-    unregisterInput
+    unregisterInput,
+    triggerCapture
   };
 
   return (

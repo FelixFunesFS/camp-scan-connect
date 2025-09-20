@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, AlertCircle, Loader2, Edit3, Save, XCircle } from "lucide-react";
+import { Check, X, AlertCircle, Loader2, Edit3, Save, XCircle, Camera, Usb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRfidCaptureContext } from "@/contexts/RfidCaptureContext";
+import { CameraBraceletScanner } from "@/components/CameraBraceletScanner";
 
 interface EnhancedRfidAssignmentCellProps {
   attendeeId: string;
@@ -30,9 +31,11 @@ export const EnhancedRfidAssignmentCell = ({
   const [isValidating, setIsValidating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
+  const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
+  const [scannerMode, setScannerMode] = useState<'usb' | 'camera'>('usb');
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
-  const { registerInput, unregisterInput } = useRfidCaptureContext();
+  const { registerInput, unregisterInput, triggerCapture } = useRfidCaptureContext();
 
   // Register main input with centralized RFID capture
   useEffect(() => {
@@ -561,12 +564,33 @@ export const EnhancedRfidAssignmentCell = ({
   return (
     <div className="flex items-start gap-2 min-w-[250px]">
       <div className="flex-1">
+        <div className="flex gap-1 mb-2">
+          <Button
+            variant={scannerMode === 'usb' ? "default" : "outline"}
+            size="sm"
+            onClick={() => setScannerMode('usb')}
+            className="h-7 px-2 text-xs"
+          >
+            <Usb className="h-3 w-3 mr-1" />
+            USB
+          </Button>
+          <Button
+            variant={scannerMode === 'camera' ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIsCameraScannerOpen(true)}
+            className="h-7 px-2 text-xs"
+          >
+            <Camera className="h-3 w-3 mr-1" />
+            Camera
+          </Button>
+        </div>
+        
         <Input
           ref={inputRef}
           type="text"
           value={uid}
           onChange={(e) => setUid(e.target.value)}
-          placeholder="Scan RFID or enter UID"
+          placeholder={scannerMode === 'usb' ? "Scan RFID or enter UID" : "Enter UID or use camera"}
           className={`font-mono text-sm rfid-input ${validationError ? 'border-destructive' : ''}`}
           disabled={isProcessing}
           data-rfid-input="true"
@@ -593,7 +617,7 @@ export const EnhancedRfidAssignmentCell = ({
         size="sm"
         onClick={handleAssignRfid}
         disabled={!uid.trim() || !!validationError || isProcessing || isValidating}
-        className="h-8 px-3"
+        className="h-8 px-3 mt-7"
       >
         {isProcessing ? (
           <Loader2 className="h-3 w-3 animate-spin" />
@@ -601,6 +625,15 @@ export const EnhancedRfidAssignmentCell = ({
           <Check className="h-3 w-3" />
         )}
       </Button>
+
+      <CameraBraceletScanner
+        isOpen={isCameraScannerOpen}
+        onClose={() => setIsCameraScannerOpen(false)}
+        onScan={(code) => {
+          triggerCapture(code, inputRef.current || undefined);
+          setIsCameraScannerOpen(false);
+        }}
+      />
     </div>
   );
 };
