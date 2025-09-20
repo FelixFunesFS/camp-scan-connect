@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Wrench, BarChart3, Code, Key, Headphones, Utensils, Wine, Zap, Scan } from "lucide-react";
+import { Users, Wrench, BarChart3, Code, Key, Headphones, Utensils, Wine, Zap, Scan, Car, Radio, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -117,13 +117,88 @@ const Index = () => {
           </div>
         </div>
 
+        {/* Equipment Stations */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
+            <Package className="h-5 w-5 text-amber-600" />
+            Equipment Stations
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Golf Carts Station */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-amber-200 bg-amber-50/30 flex flex-col" onClick={() => navigate("/golf-carts-station")}>
+              <CardContent className="p-6 flex flex-col flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <Car className="h-6 w-6 text-amber-600" />
+                  <h3 className="font-semibold text-lg text-amber-700">Golf Carts Station</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Golf cart rental and check-in/check-out service</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/golf-carts-station");
+                  }}
+                  className="w-full border-amber-300 hover:bg-amber-100 mt-auto"
+                >
+                  Access Golf Carts
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Walkie Talkies Station */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-cyan-200 bg-cyan-50/30 flex flex-col" onClick={() => navigate("/walkie-talkies-station")}>
+              <CardContent className="p-6 flex flex-col flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <Radio className="h-6 w-6 text-cyan-600" />
+                  <h3 className="font-semibold text-lg text-cyan-700">Walkie Talkies Station</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Two-way radio rental and management</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/walkie-talkies-station");
+                  }}
+                  className="w-full border-cyan-300 hover:bg-cyan-100 mt-auto"
+                >
+                  Access Walkie Talkies
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Fanny Packs Station */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-rose-200 bg-rose-50/30 flex flex-col" onClick={() => navigate("/fanny-packs-station")}>
+              <CardContent className="p-6 flex flex-col flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <Package className="h-6 w-6 text-rose-600" />
+                  <h3 className="font-semibold text-lg text-rose-700">Fanny Packs Station</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Fanny pack rental and check-in/check-out service</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/fanny-packs-station");
+                  }}
+                  className="w-full border-rose-300 hover:bg-rose-100 mt-auto"
+                >
+                  Access Fanny Packs
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         {/* Staff Operations */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
             <Wrench className="h-5 w-5 text-slate-600" />
             Staff Operations
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
             {/* Staff Hub */}
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-slate-300 bg-slate-50/30 flex flex-col" onClick={() => navigate("/staff-hub")}>
               <CardContent className="p-6 flex flex-col flex-1">
@@ -142,28 +217,6 @@ const Index = () => {
                   className="w-full bg-slate-600 hover:bg-slate-700 mt-auto"
                 >
                   Access Staff Tools
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Staff Equipment Hub */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-indigo-200 bg-indigo-50/30 flex flex-col" onClick={() => navigate("/equipment-hub")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Scan className="h-6 w-6 text-indigo-600" />
-                  <h3 className="font-semibold text-lg text-indigo-700">Staff Equipment Hub</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Staff equipment checkout and management system</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/equipment-hub");
-                  }}
-                  className="w-full border-indigo-300 hover:bg-indigo-100 mt-auto"
-                >
-                  Access Equipment
                 </Button>
               </CardContent>
             </Card>
@@ -198,15 +251,37 @@ const Index = () => {
             <BarChart3 className="h-5 w-5 text-emerald-600" />
             Management & Analytics
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Staff Equipment Hub */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-indigo-200 bg-indigo-50/30 flex flex-col" onClick={() => navigate("/equipment-hub")}>
+              <CardContent className="p-6 flex flex-col flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <Scan className="h-6 w-6 text-indigo-600" />
+                  <h3 className="font-semibold text-lg text-indigo-700">Staff Equipment Hub</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Staff equipment checkout and management system</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/equipment-hub");
+                  }}
+                  className="w-full border-indigo-300 hover:bg-indigo-100 mt-auto"
+                >
+                  Access Equipment
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Admin Reports */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-emerald-200 bg-emerald-50/30" onClick={() => navigate("/reports")}>
-              <CardContent className="p-6">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-emerald-200 bg-emerald-50/30 flex flex-col" onClick={() => navigate("/reports")}>
+              <CardContent className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-3 mb-3">
                   <BarChart3 className="h-6 w-6 text-emerald-600" />
                   <h3 className="font-semibold text-lg text-emerald-700">Admin Reports</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Real-time check-ins, headphone tracking, and usage analytics</p>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Real-time check-ins, headphone tracking, and usage analytics</p>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -214,7 +289,7 @@ const Index = () => {
                     e.stopPropagation();
                     navigate("/reports");
                   }}
-                  className="w-full border-emerald-300 hover:bg-emerald-100"
+                  className="w-full border-emerald-300 hover:bg-emerald-100 mt-auto"
                 >
                   Access Reports
                 </Button>
@@ -222,13 +297,13 @@ const Index = () => {
             </Card>
 
             {/* Developer Tools */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-violet-200 bg-violet-50/30" onClick={() => navigate("/dev")}>
-              <CardContent className="p-6">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-violet-200 bg-violet-50/30 flex flex-col" onClick={() => navigate("/dev")}>
+              <CardContent className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-3 mb-3">
                   <Code className="h-6 w-6 text-violet-600" />
                   <h3 className="font-semibold text-lg text-violet-700">Developer Tools</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Webhook monitoring, sync history, analytics, and debug tools</p>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Webhook monitoring, sync history, analytics, and debug tools</p>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -236,7 +311,7 @@ const Index = () => {
                     e.stopPropagation();
                     navigate("/dev");
                   }}
-                  className="w-full border-violet-300 hover:bg-violet-100"
+                  className="w-full border-violet-300 hover:bg-violet-100 mt-auto"
                 >
                   Access Dev Tools
                 </Button>
