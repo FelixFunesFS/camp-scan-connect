@@ -91,6 +91,7 @@ export const RfidAssignment = () => {
   const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
   const [arrivalDayFilter, setArrivalDayFilter] = useState<string>('all');
   const [showFAQ, setShowFAQ] = useState(false);
+  const [hasRfidInputFocused, setHasRfidInputFocused] = useState(false);
   
   const { exportToCsv } = useCsvExport();
 
@@ -431,6 +432,37 @@ export const RfidAssignment = () => {
 
   const totalPages = Math.ceil(filteredAttendees.length / ROWS_PER_PAGE);
 
+  // RFID input focus tracking for dynamic provider control
+  useEffect(() => {
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target as HTMLElement;
+      if (target?.getAttribute('data-rfid-input') === 'true') {
+        setHasRfidInputFocused(true);
+      }
+    };
+
+    const handleFocusOut = (event: FocusEvent) => {
+      const target = event.target as HTMLElement;
+      if (target?.getAttribute('data-rfid-input') === 'true') {
+        // Small delay to handle rapid focus changes
+        setTimeout(() => {
+          const currentFocus = document.activeElement as HTMLElement;
+          if (!currentFocus || currentFocus.getAttribute('data-rfid-input') !== 'true') {
+            setHasRfidInputFocused(false);
+          }
+        }, 10);
+      }
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+    
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
+
   // Sorting handler
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
@@ -604,7 +636,7 @@ export const RfidAssignment = () => {
   }
 
   return (
-    <RfidCaptureProvider>
+    <RfidCaptureProvider enabled={hasRfidInputFocused}>
       <div className="min-h-screen bg-background">
         {/* FAQ Panel */}
         <RfidAssignmentFAQ isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
