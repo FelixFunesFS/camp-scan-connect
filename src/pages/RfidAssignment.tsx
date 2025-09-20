@@ -536,30 +536,6 @@ export const RfidAssignment = () => {
     }, 200);
   }, []);
 
-  // Keyboard shortcuts optimized for assignment workflow
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key.toLowerCase()) {
-          case 'g':
-            e.preventDefault();
-            focusFirstUnassigned();
-            break;
-          case 'r':
-            e.preventDefault();
-            handleRegFoxSync();
-            break;
-        }
-      } else if (e.key === 'F1') {
-        e.preventDefault();
-        // Show help overlay (could be implemented later)
-        toast.info("Keyboard Shortcuts: Ctrl+G: Focus first unassigned • Ctrl+R: Sync RegFox");
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusFirstUnassigned, loadAttendees, toast]);
 
   // Monitor sync status to control real-time updates
   useEffect(() => {

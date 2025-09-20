@@ -239,35 +239,6 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               </AccordionContent>
             </AccordionItem>
 
-            {/* Keyboard Shortcuts */}
-            <AccordionItem value="shortcuts">
-              <AccordionTrigger className="text-left">
-                <div className="flex items-center gap-2">
-                  <Keyboard className="h-4 w-4" />
-                  Keyboard Shortcuts
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Go to first unassigned</span>
-                    <Badge variant="outline" className="text-xs">Ctrl+G</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Sync with RegFox</span>
-                    <Badge variant="outline" className="text-xs">Ctrl+R</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Save assignment</span>
-                    <Badge variant="outline" className="text-xs">Enter</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Focus search</span>
-                    <Badge variant="outline" className="text-xs">Ctrl+F</Badge>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
 
             {/* Status Indicators */}
             <AccordionItem value="status">
@@ -322,7 +293,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               <li>• <strong>Search:</strong> Find by name, order, or phone</li>
               <li>• <strong>Scan:</strong> Position tag near scanner, listen for beep</li>
               <li>• <strong>Save:</strong> Auto-saves on scan or press Enter</li>
-              <li>• <strong>Navigate:</strong> Use Ctrl+G to jump to next unassigned</li>
+              <li>• <strong>Navigate:</strong> Use mouse/touch to navigate between attendees</li>
               <li>• <strong>Filter:</strong> "Unassigned Only" for workflow, "Cancelled Registrations" for cleanup</li>
             </ul>
           </div>

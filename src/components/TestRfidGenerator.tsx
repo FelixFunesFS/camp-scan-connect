@@ -127,7 +127,7 @@ export const TestRfidGenerator: React.FC<TestRfidGeneratorProps> = ({ onGenerate
 
         <div className="text-xs text-muted-foreground space-y-1">
           <p><strong>Usage:</strong> Copy UIDs and paste into RFID input fields</p>
-          <p><strong>Shortcuts:</strong> Ctrl+Shift+T to generate, Ctrl+Shift+R to cleanup</p>
+          <p><strong>Cleanup:</strong> Use the cleanup button to remove test assignments</p>
         </div>
       </CardContent>
     </Card>

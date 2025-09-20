@@ -266,35 +266,6 @@ export const RfidAssignmentTab = () => {
     }, 200);
   }, [isViewModeSwitch]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key.toLowerCase()) {
-          case 'g':
-            e.preventDefault();
-            // Focus first unassigned RFID input
-            focusFirstUnassigned();
-            break;
-          case 's':
-            e.preventDefault();
-            // Skip current attendee - focus next
-            const nextInput = document.querySelector('input[data-rfid-input="true"]:not([value])') as HTMLInputElement;
-            if (nextInput) {
-              nextInput.focus({ preventScroll: false });
-              nextInput.select();
-            }
-            break;
-        }
-      } else if (e.key === 'Escape') {
-        // Reset focus to first unassigned
-        focusFirstUnassigned();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusFirstUnassigned]);
 
   // Load data on mount and auto-expand incomplete groups
   useEffect(() => {
