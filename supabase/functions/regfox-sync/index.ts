@@ -830,6 +830,31 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in regfox-sync function:', error);
+    
+    // Cleanup in error case
+    clearInterval(heartbeatInterval);
+    
+    // Update sync log with error
+    try {
+      await supabase
+        .from('regfox_sync_log')
+        .update({
+          status: 'error',
+          error_message: error.message,
+          sync_completed_at: new Date().toISOString()
+        })
+        .eq('id', syncLog.id);
+    } catch (logError) {
+      console.error('Error updating sync log with error:', logError);
+    }
+    
+    // Release sync lock
+    try {
+      await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
+    } catch (lockError) {
+      console.error('Error releasing sync lock:', lockError);
+    }
+    
     return new Response(JSON.stringify({ 
       error: error.message,
       success: false
