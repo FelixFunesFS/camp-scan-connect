@@ -604,11 +604,11 @@ export const RfidAssignment = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* FAQ Panel */}
-      <RfidAssignmentFAQ isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
-      
-      <RfidCaptureProvider>
+    <RfidCaptureProvider>
+      <div className="min-h-screen bg-background">
+        {/* FAQ Panel */}
+        <RfidAssignmentFAQ isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
+        
         <div className="container mx-auto p-6 max-w-7xl">
         {/* Header */}
         <div className="mb-6">
@@ -1089,7 +1089,7 @@ export const RfidAssignment = () => {
           </Alert>
         )}
         </div>
-      </RfidCaptureProvider>
-    </div>
+      </div>
+    </RfidCaptureProvider>
   );
 };
