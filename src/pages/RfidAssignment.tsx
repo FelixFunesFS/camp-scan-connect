@@ -82,6 +82,7 @@ export const RfidAssignment = () => {
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [lastInteraction, setLastInteraction] = useState<'data-load' | 'search' | 'filter' | 'rfid-assignment'>('data-load');
+  const [recentRfidAssignment, setRecentRfidAssignment] = useState(false);
   const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
   const [realtimeDisabled, setRealtimeDisabled] = useState(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -626,19 +627,29 @@ export const RfidAssignment = () => {
 
   // Load data on mount and when mode changes
   useEffect(() => {
-    setLastInteraction('data-load');
+    // Only set to 'data-load' if this is initial load or mode change, not a refresh
+    if (attendees.length === 0 || lastInteraction === 'data-load') {
+      setLastInteraction('data-load');
+    }
     loadAttendees();
   }, [loadAttendees]);
 
-  // Safe auto-focus: only on data load, not during search/filter operations
+  // Safe auto-focus: only on data load, not during search/filter operations or recent RFID assignments
   useEffect(() => {
-    if (sortedAndPaginatedAttendees.length > 0 && !loading && !isSearching && lastInteraction === 'data-load') {
+    if (sortedAndPaginatedAttendees.length > 0 && !loading && !isSearching && lastInteraction === 'data-load' && !recentRfidAssignment) {
       focusFirstUnassigned();
     }
-  }, [sortedAndPaginatedAttendees, loading, focusFirstUnassigned, isSearching, lastInteraction]);
+  }, [sortedAndPaginatedAttendees, loading, focusFirstUnassigned, isSearching, lastInteraction, recentRfidAssignment]);
 
   const handleAssignmentComplete = useCallback(() => {
-    setLastInteraction('rfid-assignment');
+    // Set flag to prevent auto-focus after RFID assignment
+    setRecentRfidAssignment(true);
+    
+    // Clear flag after 1 second to allow normal auto-focus behavior to resume
+    setTimeout(() => {
+      setRecentRfidAssignment(false);
+    }, 1000);
+    
     debouncedLoadAttendees(); // Use debounced refresh after assignment
   }, [debouncedLoadAttendees]);
 
