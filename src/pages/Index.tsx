@@ -20,301 +20,183 @@ const Index = () => {
           <Badge variant="outline" className="mb-4">Veterans Campground, Cordele, GA • Sep 26-28, 2025</Badge>
         </div>
 
-        {/* Staff Operations */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
-            <Wrench className="h-5 w-5 text-slate-600" />
+        {/* Staff Operations - Hero Section */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold mb-8 text-center flex items-center justify-center gap-3">
+            <Wrench className="h-6 w-6 text-primary" />
             Staff Operations
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-            {/* RFID Assignment */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-secondary/50 bg-secondary/5 flex flex-col" onClick={() => navigate("/rfid-assignment")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Key className="h-6 w-6 text-secondary" />
-                  <h3 className="font-semibold text-lg">RFID Assignment</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            {/* RFID Assignment - Hero Card */}
+            <Card className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 hover:scale-[1.02] animate-fade-in" onClick={() => navigate("/rfid-assignment")}>
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                    <Key className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-xl text-primary">RFID Assignment</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Assign RFID tags to attendees using USB scanner</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/rfid-assignment");
-                  }}
-                  className="w-full border-secondary/30 hover:bg-secondary/10 mt-auto"
-                >
-                  Access Assignment
-                </Button>
+                <p className="text-muted-foreground mb-6 text-base leading-relaxed">
+                  Assign RFID tags to attendees using USB scanner. Primary staff function for event setup.
+                </p>
+                <div className="flex items-center text-sm text-primary/70 font-medium">
+                  <span>Click to access →</span>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Staff Hub */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-slate-300 bg-slate-50/30 flex flex-col" onClick={() => navigate("/staff-hub")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Wrench className="h-6 w-6 text-slate-600" />
-                  <h3 className="font-semibold text-lg text-slate-700">Staff Hub</h3>
+            {/* Staff Hub - Hero Card */}
+            <Card className="group hover:shadow-xl transition-all duration-300 cursor-pointer border-secondary/20 bg-gradient-to-br from-secondary/5 to-secondary/10 hover:scale-[1.02] animate-fade-in" onClick={() => navigate("/staff-hub")}>
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 rounded-full bg-secondary/10 group-hover:bg-secondary/20 transition-colors">
+                    <Wrench className="h-8 w-8 text-secondary" />
+                  </div>
+                  <h3 className="font-bold text-xl text-secondary">Staff Hub</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Comprehensive staff tools for activation, deactivation, and management</p>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/staff-hub");
-                  }}
-                  className="w-full bg-slate-600 hover:bg-slate-700 mt-auto"
-                >
-                  Access Staff Tools
-                </Button>
+                <p className="text-muted-foreground mb-6 text-base leading-relaxed">
+                  Comprehensive staff tools for activation, deactivation, and attendee management.
+                </p>
+                <div className="flex items-center text-sm text-secondary/70 font-medium">
+                  <span>Click to access →</span>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Attendee Services */}
-        <div className="mb-8">
+        {/* Attendee Services - Standard Section */}
+        <div className="mb-10">
           <h2 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
-            <Users className="h-5 w-5 text-blue-600" />
+            <Users className="h-5 w-5 text-accent" />
             Attendee Services
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Self-Service Activation */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-blue-200 bg-blue-50/30" onClick={() => navigate("/activation")}>
-              <CardContent className="p-6">
+            <Card className="group hover:shadow-lg transition-all duration-200 cursor-pointer border-accent/20 bg-accent/5 hover:bg-accent/10" onClick={() => navigate("/activation")}>
+              <CardContent className="p-5">
                 <div className="flex items-center gap-3 mb-3">
-                  <Zap className="h-6 w-6 text-blue-600" />
-                  <h3 className="font-semibold text-lg text-blue-700">Self-Service Activation</h3>
+                  <Zap className="h-5 w-5 text-accent" />
+                  <h3 className="font-semibold text-accent">Self-Service</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Attendees activate their own wristbands using phone numbers</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/activation");
-                  }}
-                  className="w-full border-blue-300 hover:bg-blue-100"
-                >
-                  Access Self-Service
-                </Button>
+                <p className="text-sm text-muted-foreground">Attendees activate their own wristbands</p>
               </CardContent>
             </Card>
 
             {/* Headphones Station */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-purple-200 bg-purple-50/30" onClick={() => navigate("/headphones-station")}>
-              <CardContent className="p-6">
+            <Card className="group hover:shadow-lg transition-all duration-200 cursor-pointer border-success/20 bg-success/5 hover:bg-success/10" onClick={() => navigate("/headphones-station")}>
+              <CardContent className="p-5">
                 <div className="flex items-center gap-3 mb-3">
-                  <Headphones className="h-6 w-6 text-purple-600" />
-                  <h3 className="font-semibold text-lg text-purple-700">Headphones Station</h3>
+                  <Headphones className="h-5 w-5 text-success" />
+                  <h3 className="font-semibold text-success">Headphones</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Silent disco headphone rental for attendees</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/headphones-station");
-                  }}
-                  className="w-full border-purple-300 hover:bg-purple-100"
-                >
-                  Access Headphones
-                </Button>
+                <p className="text-sm text-muted-foreground">Silent disco headphone rental</p>
               </CardContent>
             </Card>
 
             {/* Meal Station */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-green-200 bg-green-50/30" onClick={() => navigate("/meal-station")}>
-              <CardContent className="p-6">
+            <Card className="group hover:shadow-lg transition-all duration-200 cursor-pointer border-warning/20 bg-warning/5 hover:bg-warning/10" onClick={() => navigate("/meal-station")}>
+              <CardContent className="p-5">
                 <div className="flex items-center gap-3 mb-3">
-                  <Utensils className="h-6 w-6 text-green-600" />
-                  <h3 className="font-semibold text-lg text-green-700">Meal Station</h3>
+                  <Utensils className="h-5 w-5 text-warning" />
+                  <h3 className="font-semibold text-warning">Meals</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Breakfast, lunch, and dinner service</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/meal-station");
-                  }}
-                  className="w-full border-green-300 hover:bg-green-100"
-                >
-                  Access Meals
-                </Button>
+                <p className="text-sm text-muted-foreground">Breakfast, lunch, and dinner service</p>
               </CardContent>
             </Card>
 
             {/* Drinks Station */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-orange-200 bg-orange-50/30" onClick={() => navigate("/drinks-station")}>
-              <CardContent className="p-6">
+            <Card className="group hover:shadow-lg transition-all duration-200 cursor-pointer border-info/20 bg-info/5 hover:bg-info/10" onClick={() => navigate("/drinks-station")}>
+              <CardContent className="p-5">
                 <div className="flex items-center gap-3 mb-3">
-                  <Wine className="h-6 w-6 text-orange-600" />
-                  <h3 className="font-semibold text-lg text-orange-700">Drinks Station</h3>
+                  <Wine className="h-5 w-5 text-info" />
+                  <h3 className="font-semibold text-info">Drinks</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Beverage redemption service</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/drinks-station");
-                  }}
-                  className="w-full border-orange-300 hover:bg-orange-100"
-                >
-                  Access Drinks
-                </Button>
+                <p className="text-sm text-muted-foreground">Beverage redemption service</p>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Equipment Stations */}
+        {/* Equipment Stations - Compact Section */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
-            <Package className="h-5 w-5 text-amber-600" />
+          <h2 className="text-lg font-medium mb-5 text-center flex items-center justify-center gap-2">
+            <Package className="h-4 w-4 text-muted-foreground" />
             Equipment Stations
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-4xl mx-auto">
             {/* Golf Carts Station */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-amber-200 bg-amber-50/30 flex flex-col" onClick={() => navigate("/golf-carts-station")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Car className="h-6 w-6 text-amber-600" />
-                  <h3 className="font-semibold text-lg text-amber-700">Golf Carts Station</h3>
+            <Card className="group hover:shadow-md transition-all duration-200 cursor-pointer border-muted/20 hover:border-warning/30 bg-card" onClick={() => navigate("/golf-carts-station")}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Car className="h-4 w-4 text-warning" />
+                  <h3 className="font-medium text-sm">Golf Carts</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Golf cart rental and check-in/check-out service</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/golf-carts-station");
-                  }}
-                  className="w-full border-amber-300 hover:bg-amber-100 mt-auto"
-                >
-                  Access Golf Carts
-                </Button>
+                <p className="text-xs text-muted-foreground">Rental & check-in/out</p>
               </CardContent>
             </Card>
 
             {/* Walkie Talkies Station */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-cyan-200 bg-cyan-50/30 flex flex-col" onClick={() => navigate("/walkie-talkies-station")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Radio className="h-6 w-6 text-cyan-600" />
-                  <h3 className="font-semibold text-lg text-cyan-700">Walkie Talkies Station</h3>
+            <Card className="group hover:shadow-md transition-all duration-200 cursor-pointer border-muted/20 hover:border-info/30 bg-card" onClick={() => navigate("/walkie-talkies-station")}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Radio className="h-4 w-4 text-info" />
+                  <h3 className="font-medium text-sm">Walkie Talkies</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Two-way radio rental and management</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/walkie-talkies-station");
-                  }}
-                  className="w-full border-cyan-300 hover:bg-cyan-100 mt-auto"
-                >
-                  Access Walkie Talkies
-                </Button>
+                <p className="text-xs text-muted-foreground">Two-way radio rental</p>
               </CardContent>
             </Card>
 
             {/* Fanny Packs Station */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-rose-200 bg-rose-50/30 flex flex-col" onClick={() => navigate("/fanny-packs-station")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Package className="h-6 w-6 text-rose-600" />
-                  <h3 className="font-semibold text-lg text-rose-700">Fanny Packs Station</h3>
+            <Card className="group hover:shadow-md transition-all duration-200 cursor-pointer border-muted/20 hover:border-accent/30 bg-card" onClick={() => navigate("/fanny-packs-station")}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Package className="h-4 w-4 text-accent" />
+                  <h3 className="font-medium text-sm">Fanny Packs</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Fanny pack rental and check-in/check-out service</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/fanny-packs-station");
-                  }}
-                  className="w-full border-rose-300 hover:bg-rose-100 mt-auto"
-                >
-                  Access Fanny Packs
-                </Button>
+                <p className="text-xs text-muted-foreground">Rental & check-in/out</p>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Management & Analytics */}
+        {/* Management & Analytics - Minimal Section */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
-            <BarChart3 className="h-5 w-5 text-emerald-600" />
+          <h2 className="text-lg font-medium mb-5 text-center flex items-center justify-center gap-2">
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
             Management & Analytics
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto">
             {/* Staff Equipment Hub */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-indigo-200 bg-indigo-50/30 flex flex-col" onClick={() => navigate("/equipment-hub")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Scan className="h-6 w-6 text-indigo-600" />
-                  <h3 className="font-semibold text-lg text-indigo-700">Staff Equipment Hub</h3>
+            <Card className="group hover:shadow-md transition-all duration-200 cursor-pointer border-muted/20 hover:border-primary/30 bg-card flex-shrink-0" onClick={() => navigate("/equipment-hub")}>
+              <CardContent className="p-3 flex items-center gap-3">
+                <Scan className="h-4 w-4 text-primary flex-shrink-0" />
+                <div>
+                  <h3 className="font-medium text-sm">Equipment Hub</h3>
+                  <p className="text-xs text-muted-foreground">Staff checkout</p>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Staff equipment checkout and management system</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/equipment-hub");
-                  }}
-                  className="w-full border-indigo-300 hover:bg-indigo-100 mt-auto"
-                >
-                  Access Equipment
-                </Button>
               </CardContent>
             </Card>
 
             {/* Admin Reports */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-emerald-200 bg-emerald-50/30 flex flex-col" onClick={() => navigate("/reports")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <BarChart3 className="h-6 w-6 text-emerald-600" />
-                  <h3 className="font-semibold text-lg text-emerald-700">Admin Reports</h3>
+            <Card className="group hover:shadow-md transition-all duration-200 cursor-pointer border-muted/20 hover:border-secondary/30 bg-card flex-shrink-0" onClick={() => navigate("/reports")}>
+              <CardContent className="p-3 flex items-center gap-3">
+                <BarChart3 className="h-4 w-4 text-secondary flex-shrink-0" />
+                <div>
+                  <h3 className="font-medium text-sm">Reports</h3>
+                  <p className="text-xs text-muted-foreground">Analytics</p>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Real-time check-ins, headphone tracking, and usage analytics</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/reports");
-                  }}
-                  className="w-full border-emerald-300 hover:bg-emerald-100 mt-auto"
-                >
-                  Access Reports
-                </Button>
               </CardContent>
             </Card>
 
             {/* Developer Tools */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-violet-200 bg-violet-50/30 flex flex-col" onClick={() => navigate("/dev")}>
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Code className="h-6 w-6 text-violet-600" />
-                  <h3 className="font-semibold text-lg text-violet-700">Developer Tools</h3>
+            <Card className="group hover:shadow-md transition-all duration-200 cursor-pointer border-muted/20 hover:border-accent/30 bg-card flex-shrink-0" onClick={() => navigate("/dev")}>
+              <CardContent className="p-3 flex items-center gap-3">
+                <Code className="h-4 w-4 text-accent flex-shrink-0" />
+                <div>
+                  <h3 className="font-medium text-sm">Dev Tools</h3>
+                  <p className="text-xs text-muted-foreground">Debug</p>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">Webhook monitoring, sync history, analytics, and debug tools</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate("/dev");
-                  }}
-                  className="w-full border-violet-300 hover:bg-violet-100 mt-auto"
-                >
-                  Access Dev Tools
-                </Button>
               </CardContent>
             </Card>
           </div>
