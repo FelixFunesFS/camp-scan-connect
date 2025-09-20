@@ -17,18 +17,18 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Melanated Campout Brand Colors */
-    --primary: 200 100% 14%;  /* Dark Blue #023047 */
+    /* Melanated Campout Brand Colors - Modern Refined */
+    --primary: 220 91% 56%;      /* Modern Blue #2563eb */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 24 100% 49%;  /* Orange #FB8500 */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 142 76% 36%;    /* Clean Green #16a34a */  
+    --secondary-foreground: 355 7% 97%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 24 100% 49%;  /* Orange accent */
-    --accent-foreground: 0 0% 100%;
+    --accent: 25 95% 53%;        /* Vibrant Orange #fb7c37 */
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
