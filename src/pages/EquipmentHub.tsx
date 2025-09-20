@@ -5,7 +5,6 @@ import {
   Car, 
   Radio, 
   Package, 
-  Headphones, 
   ArrowLeft, 
   Activity,
   Timer,
@@ -14,6 +13,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import EquipmentTracker from "@/components/reports/EquipmentTracker";
 
 interface EquipmentStats {
   type: string;
@@ -238,6 +238,23 @@ export default function EquipmentHub() {
                   <div className="text-sm text-muted-foreground">Average Usage</div>
                 </div>
 
+                <EquipmentTracker
+                  equipmentType={equipment.type as any}
+                  equipmentName={equipment.name}
+                  checkoutType={
+                    equipment.type === 'golf_carts' ? 'golf_cart_checkout' :
+                    equipment.type === 'walkie_talkies' ? 'walkie_talkie_checkout' :
+                    'fanny_pack_checkout'
+                  }
+                  checkinType={
+                    equipment.type === 'golf_carts' ? 'golf_cart_checkin' :
+                    equipment.type === 'walkie_talkies' ? 'walkie_talkie_checkin' :
+                    'fanny_pack_checkin'
+                  }
+                  icon={equipment.icon}
+                  timePeriod="today"
+                />
+                
                 <Link to={equipment.stationPath}>
                   <Button className="w-full" variant="outline">
                     Open {equipment.name} Station
@@ -247,32 +264,6 @@ export default function EquipmentHub() {
             </Card>
           ))}
         </div>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link to="/reports">
-                <Button variant="outline" className="w-full">
-                  View Equipment Reports
-                </Button>
-              </Link>
-              <Link to="/rfid-assignment">
-                <Button variant="outline" className="w-full">
-                  RFID Assignment
-                </Button>
-              </Link>
-              <Link to="/staff-hub">
-                <Button variant="outline" className="w-full">
-                  Staff Hub
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
