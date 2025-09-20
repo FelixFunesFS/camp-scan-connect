@@ -26,6 +26,7 @@ function HeadphonesContent({
   getLatestStatus, 
   onReset 
 }: StationActionProps) {
+  const [headphoneStatus, setHeadphoneStatus] = useState<string>('available');
   const [scanCount, setScanCount] = useState<number>(0);
 
   const handleHeadphoneToggle = useCallback(async () => {
@@ -55,6 +56,8 @@ function HeadphonesContent({
       await executeAction(transactionType, {
         current_status: newStatus
       });
+
+      setHeadphoneStatus(newStatus);
 
       const actionMessage = transactionType === 'headphone_checkout' ? 'checked out' : 'returned';
       toast.success(
@@ -110,11 +113,18 @@ function HeadphonesContent({
           {/* Current Status */}
           <div className="p-6 bg-muted rounded-lg">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <HeadphonesIcon className="h-8 w-8 text-green-500" />
+              <HeadphonesIcon className={`h-8 w-8 ${
+                headphoneStatus === 'checked_out' ? 'text-orange-500' : 
+                headphoneStatus === 'checked_in' ? 'text-blue-500' : 'text-green-500'
+              }`} />
             </div>
             <div className="text-lg font-medium">
-              Status: <span className="text-green-600">
-                AVAILABLE
+              Status: <span className={
+                headphoneStatus === 'checked_out' ? 'text-orange-600' : 
+                headphoneStatus === 'checked_in' ? 'text-blue-600' : 'text-green-600'
+              }>
+                {headphoneStatus === 'checked_out' ? 'CHECKED OUT' : 
+                 headphoneStatus === 'checked_in' ? 'CHECKED IN' : 'AVAILABLE'}
               </span>
             </div>
           </div>
