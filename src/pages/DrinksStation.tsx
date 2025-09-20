@@ -1,35 +1,22 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Droplets } from "lucide-react";
 import { toast } from "sonner";
-import { BaseStationComponent, StationChildProps } from "@/components/BaseStationComponent";
+import { UnifiedStationScanner } from "@/components/UnifiedStationScanner";
+import { StationActionProps } from "@/components/UnifiedStationScanner";
 
 export default function DrinksStation() {
-  
-
   return (
-    <BaseStationComponent
+    <UnifiedStationScanner
       stationType="drinks"
       stationTitle="Drinks Station"
+      mode="quick"
+      autoTrigger={false}
     >
-      {({ selectedRfid, attendeeReadiness, isProcessing, setIsProcessing, recordTransaction, loadDailyCount }: StationChildProps) => (
-        <DrinksContent
-          selectedRfid={selectedRfid}
-          attendeeReadiness={attendeeReadiness}
-          isProcessing={isProcessing}
-          setIsProcessing={setIsProcessing}
-          recordTransaction={recordTransaction}
-          loadDailyCount={loadDailyCount}
-          toast={toast}
-        />
-      )}
-    </BaseStationComponent>
+      {(props) => <DrinksContent {...props} />}
+    </UnifiedStationScanner>
   );
-}
-
-interface DrinksContentProps extends Omit<StationChildProps, 'getLatestStatus'> {
-  toast: any;
 }
 
 function DrinksContent({ 
@@ -37,10 +24,10 @@ function DrinksContent({
   attendeeReadiness, 
   isProcessing, 
   setIsProcessing, 
-  recordTransaction, 
+  executeAction, 
   loadDailyCount, 
-  toast 
-}: DrinksContentProps) {
+  onReset 
+}: StationActionProps) {
   const [drinkCount, setDrinkCount] = useState(0);
 
   useEffect(() => {
@@ -60,70 +47,74 @@ function DrinksContent({
     setIsProcessing(true);
 
     try {
-      await recordTransaction({
-        transaction_type: 'drink',
+      await executeAction('drink', {
         daily_count: drinkCount + 1
       });
 
+      // Update local count
       setDrinkCount(prev => prev + 1);
-      toast({
-        title: "Drink Recorded",
-        description: `Drink #${drinkCount + 1} recorded successfully`,
-      });
+
+      toast.success(`Drink recorded for ${selectedRfid?.attendee?.first_name}`);
+      
+      // Auto-reset after successful transaction for quick workflow
+      setTimeout(() => {
+        onReset();
+      }, 1500);
     } catch (error) {
       console.error("Error recording drink:", error);
-      toast({
-        title: "Error",
-        description: "Failed to record drink",
-        variant: "destructive",
-      });
+      toast.error("Failed to record drink");
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // Don't render if attendee is not ready
+  if (!attendeeReadiness?.isReady) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center p-6 text-muted-foreground">
+            {attendeeReadiness ? attendeeReadiness.message : "Ready to scan RFID tag..."}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardContent className="pt-6">
         <div className="text-center space-y-4">
-          {!attendeeReadiness?.isReady && attendeeReadiness && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
-              <p className="text-sm text-destructive font-medium">
-                {attendeeReadiness.message}
-              </p>
+          {/* Drink Counter */}
+          <div className="p-6 bg-muted rounded-lg">
+            <div className="text-4xl font-bold text-primary mb-2">{drinkCount}</div>
+            <div className="text-sm text-muted-foreground">
+              Drinks served today
             </div>
-          )}
-          
-          {/* Drink Counter Display */}
-          <div className="p-8 bg-muted rounded-lg">
-            <div className="text-6xl font-bold text-primary mb-2">
-              {drinkCount}
-            </div>
-            <p className="text-lg text-muted-foreground">
-              Drinks Today
-            </p>
           </div>
 
+          {/* Action Button */}
           <Button
             onClick={handleDrinkScan}
-            disabled={isProcessing || !attendeeReadiness?.isReady}
+            disabled={isProcessing}
             size="lg"
             className="w-full h-16 text-lg"
           >
             {isProcessing ? (
-              "Processing..."
-            ) : !attendeeReadiness?.isReady ? (
-              "Service Not Available"
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                Recording...
+              </div>
             ) : (
               <>
-                <Plus className="h-5 w-5 mr-2" />
+                <Droplets className="h-6 w-6 mr-2" />
                 ADD DRINK
               </>
             )}
           </Button>
 
           <div className="text-center text-sm text-muted-foreground">
-            <p>No daily limits - tap to record each drink served</p>
+            <p>Refreshments and beverages service</p>
           </div>
         </div>
       </CardContent>

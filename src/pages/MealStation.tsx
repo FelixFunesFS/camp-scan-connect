@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Utensils, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { BaseStationComponent, StationChildProps } from "@/components/BaseStationComponent";
+import { UnifiedStationScanner, StationActionProps } from "@/components/UnifiedStationScanner";
 import { supabase } from "@/integrations/supabase/client";
 
 // Meal windows configuration
@@ -14,30 +14,16 @@ const MEAL_WINDOWS = [
 ];
 
 export default function MealStation() {
-  
-
   return (
-    <BaseStationComponent
+    <UnifiedStationScanner
       stationType="meal"
       stationTitle="Meal Station"
+      mode="confirm"
+      autoTrigger={false}
     >
-      {({ selectedRfid, attendeeReadiness, isProcessing, setIsProcessing, recordTransaction, loadDailyCount }: StationChildProps) => (
-        <MealContent
-          selectedRfid={selectedRfid}
-          attendeeReadiness={attendeeReadiness}
-          isProcessing={isProcessing}
-          setIsProcessing={setIsProcessing}
-          recordTransaction={recordTransaction}
-          loadDailyCount={loadDailyCount}
-          toast={toast}
-        />
-      )}
-    </BaseStationComponent>
+      {(props) => <MealContent {...props} />}
+    </UnifiedStationScanner>
   );
-}
-
-interface MealContentProps extends Omit<StationChildProps, 'getLatestStatus'> {
-  toast: any;
 }
 
 function MealContent({ 
@@ -45,10 +31,10 @@ function MealContent({
   attendeeReadiness, 
   isProcessing, 
   setIsProcessing, 
-  recordTransaction, 
+  executeAction, 
   loadDailyCount, 
-  toast 
-}: MealContentProps) {
+  onReset 
+}: StationActionProps) {
   const [mealCounts, setMealCounts] = useState({ breakfast: 0, lunch: 0, dinner: 0 });
   const [currentMealWindow, setCurrentMealWindow] = useState<any>(null);
   const [attendeeMealPlan, setAttendeeMealPlan] = useState<string | null>(null);
@@ -126,21 +112,16 @@ function MealContent({
 
     const eligibility = canGetMeal();
     if (!eligibility.can) {
-      toast({
-        title: "Meal Not Available",
-        description: eligibility.reason,
-        variant: "destructive"
-      });
+      toast.error(eligibility.reason);
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      const transactionType = `meal_${currentMealWindow.type}` as const;
+      const transactionType = `meal_${currentMealWindow.type}` as 'meal_breakfast' | 'meal_lunch' | 'meal_dinner';
       
-      await recordTransaction({
-        transaction_type: transactionType,
+      await executeAction(transactionType, {
         daily_count: mealCounts[currentMealWindow.type as keyof typeof mealCounts] + 1
       });
 
@@ -150,21 +131,27 @@ function MealContent({
         [currentMealWindow.type]: prev[currentMealWindow.type as keyof typeof prev] + 1
       }));
 
-      toast({
-        title: "Meal Recorded",
-        description: `${currentMealWindow.label} recorded for ${selectedRfid?.attendee?.first_name}`,
-      });
+      toast.success(`${currentMealWindow.label} recorded for ${selectedRfid?.attendee?.first_name}`);
     } catch (error) {
       console.error("Error recording meal:", error);
-      toast({
-        title: "Error",
-        description: "Failed to record meal",
-        variant: "destructive",
-      });
+      toast.error("Failed to record meal");
     } finally {
       setIsProcessing(false);
     }
   };
+
+  // Don't render if attendee is not ready
+  if (!attendeeReadiness?.isReady) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center p-6 text-muted-foreground">
+            {attendeeReadiness ? attendeeReadiness.message : "Ready to scan RFID tag..."}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const eligibility = canGetMeal();
 
@@ -172,14 +159,6 @@ function MealContent({
     <Card>
       <CardContent className="pt-6">
         <div className="text-center space-y-4">
-          {!attendeeReadiness?.isReady && attendeeReadiness && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
-              <p className="text-sm text-destructive font-medium">
-                {attendeeReadiness.message}
-              </p>
-            </div>
-          )}
-
           {/* Current Meal Window */}
           <div className="p-4 bg-muted rounded-lg">
             <div className="flex items-center justify-center gap-2 mb-2">
@@ -229,7 +208,10 @@ function MealContent({
             className="w-full h-16 text-lg"
           >
             {isProcessing ? (
-              "Processing..."
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                Processing...
+              </div>
             ) : !attendeeReadiness?.isReady ? (
               "Service Not Available"
             ) : !currentMealWindow ? (

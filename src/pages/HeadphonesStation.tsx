@@ -3,33 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Headphones, HeadphonesIcon } from "lucide-react";
 import { toast } from "sonner";
-import { BaseStationComponent, StationChildProps } from "@/components/BaseStationComponent";
+import { UnifiedStationScanner, StationActionProps } from "@/components/UnifiedStationScanner";
 
 export default function HeadphonesStation() {
-  
-
   return (
-    <BaseStationComponent
+    <UnifiedStationScanner
       stationType="headphones"
       stationTitle="Headphones Station"
+      mode="quick"
+      autoTrigger={false}
     >
-      {({ selectedRfid, attendeeReadiness, isProcessing, setIsProcessing, recordTransaction, getLatestStatus }: StationChildProps) => (
-        <HeadphonesContent
-          selectedRfid={selectedRfid}
-          attendeeReadiness={attendeeReadiness}
-          isProcessing={isProcessing}
-          setIsProcessing={setIsProcessing}
-          recordTransaction={recordTransaction}
-          getLatestStatus={getLatestStatus}
-          toast={toast}
-        />
-      )}
-    </BaseStationComponent>
+      {(props) => <HeadphonesContent {...props} />}
+    </UnifiedStationScanner>
   );
-}
-
-interface HeadphonesContentProps extends Omit<StationChildProps, 'loadDailyCount'> {
-  toast: any;
 }
 
 function HeadphonesContent({ 
@@ -37,10 +23,10 @@ function HeadphonesContent({
   attendeeReadiness, 
   isProcessing, 
   setIsProcessing, 
-  recordTransaction, 
+  executeAction, 
   getLatestStatus, 
-  toast 
-}: HeadphonesContentProps) {
+  onReset 
+}: StationActionProps) {
   const [headphoneStatus, setHeadphoneStatus] = useState<string>('available');
 
   useEffect(() => {
@@ -69,41 +55,45 @@ function HeadphonesContent({
       const transactionType = isCheckedOut ? 'headphone_checkin' : 'headphone_checkout';
       const newStatus = isCheckedOut ? 'available' : 'checked_out';
 
-      await recordTransaction({
-        transaction_type: transactionType,
+      await executeAction(transactionType, {
         current_status: newStatus
       });
 
       setHeadphoneStatus(newStatus);
 
-      toast({
-        title: isCheckedOut ? "Headphones Returned" : "Headphones Checked Out",
-        description: `${selectedRfid?.attendee?.first_name} ${isCheckedOut ? 'returned' : 'checked out'} headphones`,
-      });
+      toast.success(
+        `${isCheckedOut ? 'Headphones returned' : 'Headphones checked out'} for ${selectedRfid?.attendee?.first_name}`
+      );
+      
+      // Auto-reset after successful transaction
+      setTimeout(() => {
+        onReset();
+      }, 1500);
     } catch (error) {
       console.error("Error updating headphone status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update headphone status",
-        variant: "destructive",
-      });
+      toast.error("Failed to update headphone status");
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // Don't render if attendee is not ready
+  if (!attendeeReadiness?.isReady) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center p-6 text-muted-foreground">
+            {attendeeReadiness ? attendeeReadiness.message : "Ready to scan RFID tag..."}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardContent className="pt-6">
         <div className="text-center space-y-4">
-          {!attendeeReadiness?.isReady && attendeeReadiness && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
-              <p className="text-sm text-destructive font-medium">
-                {attendeeReadiness.message}
-              </p>
-            </div>
-          )}
-
           {/* Current Status */}
           <div className="p-6 bg-muted rounded-lg">
             <div className="flex items-center justify-center gap-2 mb-2">
@@ -123,15 +113,16 @@ function HeadphonesContent({
           {/* Action Button */}
           <Button
             onClick={handleHeadphoneToggle}
-            disabled={isProcessing || !attendeeReadiness?.isReady}
+            disabled={isProcessing}
             size="lg"
             className="w-full h-16 text-lg"
             variant={headphoneStatus === 'checked_out' ? "secondary" : "default"}
           >
             {isProcessing ? (
-              "Processing..."
-            ) : !attendeeReadiness?.isReady ? (
-              "Service Not Available"
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                Processing...
+              </div>
             ) : headphoneStatus === 'checked_out' ? (
               <>
                 <Headphones className="h-5 w-5 mr-2" />
