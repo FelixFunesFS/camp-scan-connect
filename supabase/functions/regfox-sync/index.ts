@@ -41,6 +41,21 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body to check if webhook triggered
+    let requestBody: any = {};
+    try {
+      const bodyText = await req.text();
+      if (bodyText) {
+        requestBody = JSON.parse(bodyText);
+      }
+    } catch (e) {
+      // Ignore body parse errors for GET requests
+    }
+
+    const isWebhookTriggered = requestBody.webhook_triggered === true;
+    const eventType = requestBody.event_type;
+    const registrantId = requestBody.registrant_id;
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -58,7 +73,10 @@ serve(async (req) => {
       throw new Error('RegFox Form ID not configured');
     }
 
-    console.log('Starting RegFox sync...');
+    console.log(`Starting RegFox ${isWebhookTriggered ? 'webhook-triggered' : 'manual'} sync...`);
+    if (isWebhookTriggered) {
+      console.log(`Webhook details - Event: ${eventType}, Registrant ID: ${registrantId}`);
+    }
 
     // First, run cleanup to clear any stuck syncs
     console.log('Running pre-sync cleanup...');
@@ -86,11 +104,11 @@ serve(async (req) => {
     const { data: syncLog, error: syncLogError } = await supabase
       .from('regfox_sync_log')
       .insert({
-        sync_type: 'initial_sync',
+        sync_type: isWebhookTriggered ? 'webhook_triggered_sync' : 'initial_sync',
         status: 'in_progress',
         sync_started_at: new Date().toISOString(),
         heartbeat_at: new Date().toISOString(),
-        sync_timeout_minutes: 3
+        sync_timeout_minutes: isWebhookTriggered ? 1 : 3 // Shorter timeout for webhook syncs
       })
       .select()
       .single();
@@ -100,27 +118,34 @@ serve(async (req) => {
       throw syncLogError;
     }
 
-    // Acquire sync lock
-    const { data: lockId, error: lockError } = await supabase.rpc('acquire_sync_lock', {
-      p_sync_id: syncLog.id,
-      p_timeout_minutes: 3
-    });
+    // Skip lock acquisition for webhook-triggered syncs (they should be fast and incremental)
+    let lockId = null;
+    if (!isWebhookTriggered) {
+      // Acquire sync lock for manual syncs only
+      const { data: acquiredLockId, error: lockError } = await supabase.rpc('acquire_sync_lock', {
+        p_sync_id: syncLog.id,
+        p_timeout_minutes: 3
+      });
 
-    if (lockError || !lockId) {
-      // Failed to acquire lock, mark sync as failed
-      await supabase
-        .from('regfox_sync_log')
-        .update({
-          status: 'error',
-          error_message: 'Failed to acquire sync lock - another sync may be running',
-          sync_completed_at: new Date().toISOString()
-        })
-        .eq('id', syncLog.id);
+      if (lockError || !acquiredLockId) {
+        // Failed to acquire lock, mark sync as failed
+        await supabase
+          .from('regfox_sync_log')
+          .update({
+            status: 'error',
+            error_message: 'Failed to acquire sync lock - another sync may be running',
+            sync_completed_at: new Date().toISOString()
+          })
+          .eq('id', syncLog.id);
+        
+        throw new Error('Failed to acquire sync lock - another sync may be running');
+      }
       
-      throw new Error('Failed to acquire sync lock - another sync may be running');
+      lockId = acquiredLockId;
+      console.log(`Acquired sync lock: ${lockId}`);
+    } else {
+      console.log('Webhook-triggered sync - skipping lock acquisition for fast processing');
     }
-
-    console.log(`Acquired sync lock: ${lockId}`);
 
     const syncResult: SyncResult = {
       totalRecords: 0,
@@ -216,11 +241,40 @@ serve(async (req) => {
       let startingAfter: string | null = null;
       let hasMore = true;
       
-      try {
-        // Use pagination to fetch all registrants
+      // For webhook-triggered syncs, fetch only the specific registrant if provided
+      if (isWebhookTriggered && registrantId) {
+        console.log(`Webhook sync - fetching specific registrant: ${registrantId}`);
+        
+        let requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=regfox.com&formId=${encodeURIComponent(regfoxFormId)}&registrantIds=${encodeURIComponent(registrantId)}`;
+        
+        console.log(`Making targeted RegFox API call: ${requestUrl}`);
+        
+        const regfoxResponse = await fetch(requestUrl, {
+          method: 'GET',
+          headers: {
+            'apiKey': regfoxApiKey,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!regfoxResponse.ok) {
+          const errorText = await regfoxResponse.text();
+          console.error(`RegFox API error response:`, errorText);
+          throw new Error(`RegFox API error: ${regfoxResponse.status} ${regfoxResponse.statusText} - ${errorText}`);
+        }
+
+        const responseData = await regfoxResponse.json();
+        regfoxAttendees = responseData.data || responseData || [];
+        
+        if (!Array.isArray(regfoxAttendees)) {
+          regfoxAttendees = [regfoxAttendees];
+        }
+        
+        console.log(`Webhook sync fetched ${regfoxAttendees.length} specific attendee(s)`);
+      } else {
+        // Full sync - use pagination to fetch all registrants
         while (hasMore) {
           let requestUrl = `https://api.webconnex.com/v2/public/search/registrants?product=regfox.com&formId=${encodeURIComponent(regfoxFormId)}&limit=250&sort=asc`;
-          
           if (startingAfter) {
             requestUrl += `&startingAfter=${encodeURIComponent(startingAfter)}`;
           }
@@ -273,6 +327,7 @@ serve(async (req) => {
             break;
           }
         }
+      }
         
         console.log(`Successfully retrieved ${regfoxAttendees.length} total attendees`);
         
