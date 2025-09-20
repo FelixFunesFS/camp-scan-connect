@@ -15,7 +15,7 @@ export interface AttendeeReadiness {
 }
 
 export type StationType = 'meal' | 'drinks' | 'headphones' | 'activation';
-export type TransactionType = 'activate' | 'deactivate' | 'meal_breakfast' | 'meal_lunch' | 'meal_dinner' | 'drink' | 'headphone_checkout' | 'headphone_checkin';
+export type TransactionType = 'activate' | 'deactivate' | 'meal_breakfast' | 'meal_lunch' | 'meal_dinner' | 'meal_fri_lunch' | 'meal_fri_dinner' | 'meal_sat_breakfast' | 'meal_sat_lunch' | 'meal_sat_dinner' | 'meal_sun_breakfast' | 'drink' | 'headphone_checkout' | 'headphone_checkin';
 
 export interface StationTransaction {
   attendee_id: string;
