@@ -125,13 +125,13 @@ const Index = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Staff Hub */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-slate-300 bg-slate-50/30" onClick={() => navigate("/staff-hub")}>
-              <CardContent className="p-6">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-slate-300 bg-slate-50/30 flex flex-col" onClick={() => navigate("/staff-hub")}>
+              <CardContent className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-3 mb-3">
                   <Wrench className="h-6 w-6 text-slate-600" />
                   <h3 className="font-semibold text-lg text-slate-700">Staff Hub</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Comprehensive staff tools for activation, deactivation, and management</p>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Comprehensive staff tools for activation, deactivation, and management</p>
                 <Button 
                   variant="default" 
                   size="sm" 
@@ -139,7 +139,7 @@ const Index = () => {
                     e.stopPropagation();
                     navigate("/staff-hub");
                   }}
-                  className="w-full bg-slate-600 hover:bg-slate-700"
+                  className="w-full bg-slate-600 hover:bg-slate-700 mt-auto"
                 >
                   Access Staff Tools
                 </Button>
@@ -147,13 +147,13 @@ const Index = () => {
             </Card>
 
             {/* Staff Equipment Hub */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-indigo-200 bg-indigo-50/30" onClick={() => navigate("/equipment-hub")}>
-              <CardContent className="p-6">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-indigo-200 bg-indigo-50/30 flex flex-col" onClick={() => navigate("/equipment-hub")}>
+              <CardContent className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-3 mb-3">
                   <Scan className="h-6 w-6 text-indigo-600" />
                   <h3 className="font-semibold text-lg text-indigo-700">Staff Equipment Hub</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Staff equipment checkout and management system</p>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Staff equipment checkout and management system</p>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -161,7 +161,7 @@ const Index = () => {
                     e.stopPropagation();
                     navigate("/equipment-hub");
                   }}
-                  className="w-full border-indigo-300 hover:bg-indigo-100"
+                  className="w-full border-indigo-300 hover:bg-indigo-100 mt-auto"
                 >
                   Access Equipment
                 </Button>
@@ -169,13 +169,13 @@ const Index = () => {
             </Card>
 
             {/* RFID Assignment */}
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-secondary/50 bg-secondary/5" onClick={() => navigate("/rfid-assignment")}>
-              <CardContent className="p-6">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer border-secondary/50 bg-secondary/5 flex flex-col" onClick={() => navigate("/rfid-assignment")}>
+              <CardContent className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-3 mb-3">
                   <Key className="h-6 w-6 text-secondary" />
                   <h3 className="font-semibold text-lg">RFID Assignment</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Assign RFID tags to attendees using USB scanner</p>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">Assign RFID tags to attendees using USB scanner</p>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -183,7 +183,7 @@ const Index = () => {
                     e.stopPropagation();
                     navigate("/rfid-assignment");
                   }}
-                  className="w-full border-secondary/30 hover:bg-secondary/10"
+                  className="w-full border-secondary/30 hover:bg-secondary/10 mt-auto"
                 >
                   Access Assignment
                 </Button>
