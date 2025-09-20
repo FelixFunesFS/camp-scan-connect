@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface AnalyticsData {
   drinkCount: number;
+  drinkHourlyData: Array<{ hour: string; drinks: number }>;
+  drinkPeakHour: { hour: string; drinks: number } | null;
   averagePartyTimeMinutes: number;
   peakHours: Array<{ hour: string; checkouts: number }>;
   mealCounts: {
@@ -19,6 +21,8 @@ interface AnalyticsData {
 export const AnalyticsCards = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     drinkCount: 0,
+    drinkHourlyData: [],
+    drinkPeakHour: null,
     averagePartyTimeMinutes: 0,
     peakHours: [],
     mealCounts: { breakfast: 0, lunch: 0, dinner: 0 }
@@ -39,6 +43,22 @@ export const AnalyticsCards = () => {
           .gte('created_at', today);
 
         const drinkCount = drinks?.length || 0;
+
+        // Get hourly drink data
+        const drinkHourlyData = Array.from({ length: 24 }, (_, i) => ({
+          hour: `${i}:00`,
+          drinks: 0
+        }));
+
+        drinks?.forEach(drink => {
+          const hour = new Date(drink.created_at).getHours();
+          drinkHourlyData[hour].drinks++;
+        });
+
+        // Find peak hour for drinks
+        const drinkPeakHour = drinkHourlyData
+          .filter(h => h.drinks > 0)
+          .sort((a, b) => b.drinks - a.drinks)[0] || null;
 
         // Get headphone data to calculate average party time
         const { data: headphoneTransactions } = await supabase
@@ -111,6 +131,8 @@ export const AnalyticsCards = () => {
 
         setAnalytics({
           drinkCount,
+          drinkHourlyData,
+          drinkPeakHour,
           averagePartyTimeMinutes: avgPartyTime,
           peakHours,
           mealCounts
@@ -169,12 +191,49 @@ export const AnalyticsCards = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center space-y-4">
-            <div className="text-4xl font-bold text-info">{analytics.drinkCount}</div>
-            <div className="text-muted-foreground">Total beverages served</div>
-            <Badge variant="outline" className="bg-info/10 text-info">
-              Live Counter
-            </Badge>
+          <div className="space-y-4">
+            {/* Total Count */}
+            <div className="text-center space-y-2">
+              <div className="text-4xl font-bold text-info">{analytics.drinkCount}</div>
+              <div className="text-muted-foreground">Total beverages served</div>
+            </div>
+            
+            {/* Mini Chart */}
+            <div className="h-16">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analytics.drinkHourlyData}>
+                  <XAxis 
+                    dataKey="hour" 
+                    tick={{ fontSize: 10 }}
+                    tickFormatter={formatHour}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis hide />
+                  <Tooltip 
+                    formatter={(value) => [value, 'Drinks']}
+                    labelFormatter={(hour) => `Time: ${formatHour(hour)}`}
+                  />
+                  <Bar 
+                    dataKey="drinks" 
+                    fill="hsl(var(--info))" 
+                    radius={[2, 2, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Peak Hour Indicator */}
+            {analytics.drinkPeakHour && (
+              <div className="text-center text-sm text-muted-foreground">
+                Peak: {formatHour(analytics.drinkPeakHour.hour)} ({analytics.drinkPeakHour.drinks} drinks)
+              </div>
+            )}
+            
+            <div className="text-center">
+              <Badge variant="outline" className="bg-info/10 text-info">
+                Live Counter
+              </Badge>
+            </div>
           </div>
         </CardContent>
       </Card>
