@@ -485,7 +485,7 @@ export const RfidAssignment = () => {
       document.removeEventListener('focusin', handleFocusChange);
       document.removeEventListener('focusout', handleFocusChange);
     };
-  }, [hasRfidInputFocused]);
+  }, []);
 
   // Sorting handler
   const handleSort = (field: typeof sortField) => {
