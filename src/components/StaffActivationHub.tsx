@@ -251,7 +251,7 @@ export function StaffActivationHub() {
         ).length;
 
         const rfid_status = rfidTag?.status || 'unissued';
-        const arrival_day = attendee.arrival_window; // Direct mapping to match RfidAssignmentTab
+        const arrival_day = attendee.arrival_window === 'early' ? 'Thursday' : 'Friday';
 
         const duplicateEmails = attendeesData?.filter(a => 
           a.email && a.email === attendee.email && a.id !== attendee.id
