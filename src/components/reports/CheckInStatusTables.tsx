@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { UserCheck, UserX, Search, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { formatStandardDateTime } from "@/utils/dateTimeUtils";
 
 interface AttendeeStatus {
   id: string;
@@ -143,7 +144,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                       <TableHead>Name</TableHead>
                       <TableHead>Contact</TableHead>
                       <TableHead>Ticket Type</TableHead>
-                      <TableHead>Check-in Time</TableHead>
+                      <TableHead>Check-in Date/Time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -173,7 +174,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                         <TableCell>
                           {attendee.activatedAt && (
                             <div className="text-sm">
-                              {new Date(attendee.activatedAt).toLocaleTimeString()}
+                              {formatStandardDateTime(attendee.activatedAt)}
                             </div>
                           )}
                         </TableCell>
