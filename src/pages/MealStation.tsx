@@ -8,9 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Meal windows configuration
 const MEAL_WINDOWS = [
-  { type: 'breakfast', label: 'Breakfast', start: '07:00', end: '10:00', days: [5, 6, 0] }, // Fri, Sat, Sun
-  { type: 'lunch', label: 'Lunch', start: '12:00', end: '15:00', days: [5, 6, 0] },
-  { type: 'dinner', label: 'Dinner', start: '18:00', end: '21:00', days: [5, 6, 0] }
+  { type: 'breakfast', label: 'Breakfast', start: '07:00', end: '10:00', days: [6, 0] }, // Sat, Sun
+  { type: 'lunch', label: 'Lunch', start: '12:00', end: '15:00', days: [6] }, // Sat only
+  { type: 'dinner', label: 'Dinner', start: '18:00', end: '21:00', days: [5, 6] } // Fri, Sat
 ];
 
 export default function MealStation() {
@@ -197,6 +197,18 @@ function MealContent({
             )}
           </div>
 
+          {/* Attendee Meal Plan */}
+          {attendeeMealPlan && (
+            <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-sm font-medium text-primary">
+                Meal Plan: {attendeeMealPlan === '1' ? 'Full Weekend Meals' : 
+                           attendeeMealPlan === '2' ? 'Saturday Only' : 
+                           attendeeMealPlan === '3' ? 'Sunday Only' : 
+                           attendeeMealPlan}
+              </p>
+            </div>
+          )}
+
           {/* Meal Counts */}
           <div className="grid grid-cols-3 gap-2">
             {Object.entries(mealCounts).map(([meal, count]) => (
@@ -233,7 +245,7 @@ function MealContent({
           </Button>
 
           <div className="text-center text-sm text-muted-foreground">
-            <p>One meal per window - breakfast, lunch, and dinner</p>
+            <p>Fri: 1 dinner • Sat: 3 meals • Sun: 1 breakfast</p>
           </div>
         </div>
       </CardContent>

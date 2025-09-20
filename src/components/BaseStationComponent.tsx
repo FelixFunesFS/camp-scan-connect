@@ -95,6 +95,7 @@ export function BaseStationComponent({ stationType, stationTitle, children }: Ba
           disabled={isProcessing}
           title={stationTitle}
           placeholder="Select RFID tag..."
+          showTicketType={!['meal', 'drinks', 'headphones'].includes(stationType)}
         />
 
         {/* Station-specific content */}

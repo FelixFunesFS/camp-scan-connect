@@ -23,6 +23,7 @@ interface StationRfidScannerProps {
   disabled?: boolean;
   title?: string;
   isProcessing?: boolean;
+  showTicketType?: boolean;
 }
 
 export const StationRfidScanner = ({ 
@@ -30,7 +31,8 @@ export const StationRfidScanner = ({
   stationType, 
   disabled = false, 
   title = "RFID Scanner",
-  isProcessing = false
+  isProcessing = false,
+  showTicketType = true
 }: StationRfidScannerProps) => {
   const [manualUid, setManualUid] = useState("");
   const [lastScannedUid, setLastScannedUid] = useState("");
@@ -146,9 +148,11 @@ export const StationRfidScanner = ({
                   {attendeeInfo.first_name} {attendeeInfo.last_name}
                 </span>
               </div>
-              <Badge variant="outline">
-                {attendeeInfo.ticket_type.replace('_', ' ').toUpperCase()}
-              </Badge>
+              {showTicketType && (
+                <Badge variant="outline">
+                  {attendeeInfo.ticket_type.replace('_', ' ').toUpperCase()}
+                </Badge>
+              )}
             </div>
             
             {attendeeInfo.email && (

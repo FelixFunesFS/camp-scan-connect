@@ -27,6 +27,7 @@ interface RfidScannerProps {
   showAttendeeInfo?: boolean;
   autoTrigger?: boolean;
   isProcessing?: boolean;
+  showTicketType?: boolean;
 }
 
 export const RfidScanner = ({ 
@@ -37,7 +38,8 @@ export const RfidScanner = ({
   title = "RFID Scanner",
   showAttendeeInfo = true,
   autoTrigger = false,
-  isProcessing = false
+  isProcessing = false,
+  showTicketType = true
 }: RfidScannerProps) => {
   const [selectedRfid, setSelectedRfid] = useState<string>("");
   const [availableRfids, setAvailableRfids] = useState<RfidTag[]>([]);
@@ -175,9 +177,11 @@ export const RfidScanner = ({
                 {selectedRfidData.attendee.first_name} {selectedRfidData.attendee.last_name}
               </span>
             </div>
-            <Badge variant="outline">
-              {selectedRfidData.attendee.ticket_type.replace('_', ' ').toUpperCase()}
-            </Badge>
+            {showTicketType && (
+              <Badge variant="outline">
+                {selectedRfidData.attendee.ticket_type.replace('_', ' ').toUpperCase()}
+              </Badge>
+            )}
           </div>
         )}
 
