@@ -30,15 +30,16 @@ function HeadphonesContent({
 
   const checkHeadphoneStatus = useCallback(async () => {
     try {
-      const currentStatus = await getLatestStatus('current_status');
+      // Get the latest transaction type to determine current status
+      const latestTransactionType = await getLatestStatus('transaction_type');
       
-      // Handle all three states: available, checked_out, checked_in
-      if (currentStatus === 'checked_out') {
+      // Determine status based on latest transaction
+      if (latestTransactionType === 'headphone_checkout') {
         setHeadphoneStatus('checked_out');
-      } else if (currentStatus === 'checked_in') {
+      } else if (latestTransactionType === 'headphone_checkin') {
         setHeadphoneStatus('checked_in');
       } else {
-        // Default to available for null, 'available', or any unknown status
+        // No headphone transactions yet, default to available
         setHeadphoneStatus('available');
       }
     } catch (error) {
