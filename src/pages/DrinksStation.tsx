@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Droplets } from "lucide-react";
@@ -30,31 +30,18 @@ function DrinksContent({
 }: StationActionProps) {
   const [drinkCount, setDrinkCount] = useState(0);
 
-  useEffect(() => {
-    if (selectedRfid && attendeeReadiness?.isReady) {
-      loadDrinkCount();
+  const loadDrinkCount = useCallback(async () => {
+    try {
+      const count = await loadDailyCount(['drink']);
+      setDrinkCount(count);
+    } catch (error) {
+      console.error("Error loading drink count:", error);
+      setDrinkCount(0);
     }
-  }, [selectedRfid, attendeeReadiness]);
+  }, [loadDailyCount]);
 
-  // Auto-trigger drink recording when ready
-  useEffect(() => {
-    const handleAutoTrigger = () => {
-      if (selectedRfid && attendeeReadiness?.isReady && !isProcessing) {
-        handleDrinkScan();
-      }
-    };
-
-    window.addEventListener('autoTrigger', handleAutoTrigger);
-    return () => window.removeEventListener('autoTrigger', handleAutoTrigger);
-  }, [selectedRfid, attendeeReadiness, isProcessing]);
-
-  const loadDrinkCount = async () => {
-    const count = await loadDailyCount(['drink']);
-    setDrinkCount(count);
-  };
-
-  const handleDrinkScan = async () => {
-    if (!attendeeReadiness?.isReady) return;
+  const handleDrinkScan = useCallback(async () => {
+    if (!attendeeReadiness?.isReady || isProcessing) return;
 
     setIsProcessing(true);
 
@@ -63,8 +50,8 @@ function DrinksContent({
         daily_count: drinkCount + 1
       });
 
-      // Update local count
-      setDrinkCount(prev => prev + 1);
+      // Reload count from database to ensure accuracy
+      await loadDrinkCount();
 
       toast.success(`Drink recorded for ${selectedRfid?.attendee?.first_name}`);
       
@@ -75,10 +62,32 @@ function DrinksContent({
     } catch (error) {
       console.error("Error recording drink:", error);
       toast.error("Failed to record drink");
+      // Reload count even on error to ensure UI is accurate
+      await loadDrinkCount();
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [attendeeReadiness, isProcessing, drinkCount, executeAction, selectedRfid, onReset, loadDrinkCount]);
+
+  useEffect(() => {
+    if (selectedRfid && attendeeReadiness?.isReady) {
+      loadDrinkCount();
+    }
+  }, [selectedRfid, attendeeReadiness, loadDrinkCount]);
+
+  // Auto-trigger drink recording when ready
+  useEffect(() => {
+    const handleAutoTrigger = () => {
+      if (selectedRfid && attendeeReadiness?.isReady && !isProcessing) {
+        handleDrinkScan();
+      }
+    };
+
+    if (selectedRfid && attendeeReadiness?.isReady && !isProcessing) {
+      window.addEventListener('autoTrigger', handleAutoTrigger);
+      return () => window.removeEventListener('autoTrigger', handleAutoTrigger);
+    }
+  }, [selectedRfid, attendeeReadiness, isProcessing, handleDrinkScan]);
 
   // Don't render if attendee is not ready
   if (!attendeeReadiness?.isReady) {
