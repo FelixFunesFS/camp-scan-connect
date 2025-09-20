@@ -434,32 +434,27 @@ export const RfidAssignment = () => {
 
   // RFID input focus tracking for dynamic provider control
   useEffect(() => {
-    const handleFocusIn = (event: FocusEvent) => {
-      const target = event.target as HTMLElement;
-      if (target?.getAttribute('data-rfid-input') === 'true') {
-        setHasRfidInputFocused(true);
-      }
+    const checkRfidFocus = () => {
+      const currentFocus = document.activeElement as HTMLElement;
+      const isRfidInputFocused = currentFocus?.getAttribute('data-rfid-input') === 'true';
+      setHasRfidInputFocused(isRfidInputFocused);
     };
 
-    const handleFocusOut = (event: FocusEvent) => {
-      const target = event.target as HTMLElement;
-      if (target?.getAttribute('data-rfid-input') === 'true') {
-        // Small delay to handle rapid focus changes
-        setTimeout(() => {
-          const currentFocus = document.activeElement as HTMLElement;
-          if (!currentFocus || currentFocus.getAttribute('data-rfid-input') !== 'true') {
-            setHasRfidInputFocused(false);
-          }
-        }, 10);
-      }
+    const handleFocusChange = () => {
+      // Small delay to ensure focus has fully changed
+      setTimeout(checkRfidFocus, 10);
     };
 
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
+    // Check initial state
+    checkRfidFocus();
+
+    // Listen for any focus changes
+    document.addEventListener('focusin', handleFocusChange);
+    document.addEventListener('focusout', handleFocusChange);
     
     return () => {
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
+      document.removeEventListener('focusin', handleFocusChange);
+      document.removeEventListener('focusout', handleFocusChange);
     };
   }, []);
 
