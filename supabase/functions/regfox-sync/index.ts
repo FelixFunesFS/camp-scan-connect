@@ -789,60 +789,42 @@ serve(async (req) => {
         } catch (error) {
           syncResult.errors.push(`Error processing attendee ${regfoxAttendee.id}: ${error.message}`);
         }
-      } // End of batch processing loop
+      } // End of attendee processing loop
       
       console.log(`Completed batch ${batchIndex + 1}/${batches.length}`);
     } // End of batch iteration loop
 
-      // Update sync log with results
-      const { error: updateSyncLogError } = await supabase
-        .from('regfox_sync_log')
-        .update({
-          status: syncResult.errors.length > 0 ? 'error' : 'success',
-          total_records: syncResult.totalRecords,
-          new_records: syncResult.newRecords,
-          updated_records: syncResult.updatedRecords,
-          error_message: syncResult.errors.length > 0 ? syncResult.errors.join('; ') : null,
-          sync_completed_at: new Date().toISOString(),
-          heartbeat_at: new Date().toISOString()
-        })
-        .eq('id', syncLog.id);
+    // Update sync log with results
+    const { error: updateSyncLogError } = await supabase
+      .from('regfox_sync_log')
+      .update({
+        status: syncResult.errors.length > 0 ? 'error' : 'success',
+        total_records: syncResult.totalRecords,
+        new_records: syncResult.newRecords,
+        updated_records: syncResult.updatedRecords,
+        error_message: syncResult.errors.length > 0 ? syncResult.errors.join('; ') : null,
+        sync_completed_at: new Date().toISOString(),
+        heartbeat_at: new Date().toISOString()
+      })
+      .eq('id', syncLog.id);
 
-      if (updateSyncLogError) {
-        console.error('Error updating sync log:', updateSyncLogError);
-      }
-
-      // Clear heartbeat interval and release sync lock
-      clearInterval(heartbeatInterval);
-      await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
-
-      console.log('RegFox sync completed:', syncResult);
-
-      return new Response(JSON.stringify({
-        success: true,
-        syncId: syncLog.id,
-        result: syncResult
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
-    } catch (error) {
-      // Clear heartbeat interval and release sync lock on error
-      clearInterval(heartbeatInterval);
-      await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
-      
-      // Update sync log with error
-      await supabase
-        .from('regfox_sync_log')
-        .update({
-          status: 'error',
-          error_message: error.message,
-          sync_completed_at: new Date().toISOString()
-        })
-        .eq('id', syncLog.id);
-
-      throw error;
+    if (updateSyncLogError) {
+      console.error('Error updating sync log:', updateSyncLogError);
     }
+
+    // Clear heartbeat interval and release sync lock
+    clearInterval(heartbeatInterval);
+    await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
+
+    console.log('RegFox sync completed:', syncResult);
+
+    return new Response(JSON.stringify({
+      success: true,
+      syncId: syncLog.id,
+      result: syncResult
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
     console.error('Error in regfox-sync function:', error);
