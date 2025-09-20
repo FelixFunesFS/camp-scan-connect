@@ -615,6 +615,12 @@ export type Database = {
         | "drink"
         | "headphone_checkout"
         | "headphone_checkin"
+        | "meal_fri_lunch"
+        | "meal_fri_dinner"
+        | "meal_sat_breakfast"
+        | "meal_sat_lunch"
+        | "meal_sat_dinner"
+        | "meal_sun_breakfast"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -780,6 +786,12 @@ export const Constants = {
         "drink",
         "headphone_checkout",
         "headphone_checkin",
+        "meal_fri_lunch",
+        "meal_fri_dinner",
+        "meal_sat_breakfast",
+        "meal_sat_lunch",
+        "meal_sat_dinner",
+        "meal_sun_breakfast",
       ],
     },
   },

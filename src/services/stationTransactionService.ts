@@ -5,7 +5,7 @@ export class StationTransactionService {
   static async recordTransaction(transaction: StationTransaction) {
     const { error } = await supabase
       .from("station_transactions")
-      .insert(transaction);
+      .insert(transaction as any);
 
     if (error) {
       throw new Error(`Failed to record transaction: ${error.message}`);
@@ -25,7 +25,7 @@ export class StationTransactionService {
       .gte("created_at", new Date().toISOString().split('T')[0]);
 
     if (transactionTypes) {
-      query = query.in("transaction_type", transactionTypes);
+      query = query.in("transaction_type", transactionTypes as any);
     }
 
     const { data, error } = await query;

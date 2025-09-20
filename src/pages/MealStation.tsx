@@ -167,7 +167,7 @@ function MealContent({
     setIsProcessing(true);
 
     try {
-      await executeAction(mealId as TransactionType, {
+      await executeAction(mealId as any, {
         daily_count: 1
       });
 
@@ -201,7 +201,7 @@ function MealContent({
         .delete()
         .eq('attendee_id', selectedRfid.attendee_id)
         .eq('station_type', 'meal')
-        .in('transaction_type', mealIds);
+        .in('transaction_type', mealIds as any);
 
       if (error) throw error;
 
