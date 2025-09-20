@@ -63,7 +63,9 @@ export const useEnhancedBackgroundRefresh = ({
   useEffect(() => {
     if (refreshTrigger !== undefined && refreshTrigger !== refreshTriggerRef.current) {
       refreshTriggerRef.current = refreshTrigger;
-      performRefresh();
+      if (refreshTriggerRef.current !== undefined) { // Only trigger if not initial render
+        performRefresh();
+      }
     }
   }, [refreshTrigger, performRefresh]);
 
@@ -78,9 +80,6 @@ export const useEnhancedBackgroundRefresh = ({
     intervalRef.current = setInterval(() => {
       performRefresh();
     }, interval);
-
-    // Initial fetch
-    performRefresh();
 
     // Cleanup
     return () => {

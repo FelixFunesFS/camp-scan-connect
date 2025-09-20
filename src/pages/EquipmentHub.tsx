@@ -33,10 +33,9 @@ interface EquipmentStats {
 export default function EquipmentHub() {
   const navigate = useNavigate();
   const [equipmentStats, setEquipmentStats] = useState<EquipmentStats[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  const fetchEquipmentStats = useCallback(async () => {
+  const fetchEquipmentStats = useCallback(async (isBackground = false) => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
@@ -136,16 +135,21 @@ export default function EquipmentHub() {
       });
 
       setEquipmentStats(stats);
+      // Only set loading to false on initial load, not during background refreshes
+      if (!isBackground) {
+        setIsInitialLoading(false);
+      }
     } catch (error) {
       console.error('Error fetching equipment stats:', error);
-    } finally {
-      setIsLoading(false);
+      if (!isBackground) {
+        setIsInitialLoading(false);
+      }
     }
   }, []);
 
   // Enhanced background refresh with better UX
   const { isRefreshing, lastUpdated, manualRefresh } = useEnhancedBackgroundRefresh({
-    onRefresh: fetchEquipmentStats,
+    onRefresh: () => fetchEquipmentStats(true), // Mark as background refresh
     interval: 30000,
     onSuccess: () => {
       // Subtle success indication could be added here
@@ -156,7 +160,12 @@ export default function EquipmentHub() {
     }
   });
 
-  if (isLoading) {
+  // Initial data fetch
+  useEffect(() => {
+    fetchEquipmentStats(false); // Initial load
+  }, [fetchEquipmentStats]);
+
+  if (isInitialLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
         <div className="max-w-6xl mx-auto">
@@ -305,7 +314,6 @@ export default function EquipmentHub() {
                       }
                       icon={equipment.icon}
                       timePeriod="today"
-                      refreshTrigger={refreshTrigger}
                     />
                   </div>
                 )}
