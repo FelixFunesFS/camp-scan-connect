@@ -90,12 +90,17 @@ export class EquipmentStatusService {
         ? new Date().toISOString().split('T')[0]
         : '1900-01-01';
 
-      // Get all transactions for this equipment type
+      // Get all transactions for this equipment type with manual JOIN
       const { data: transactions, error } = await supabase
         .from('station_transactions')
         .select(`
-          *,
-          attendees (
+          id,
+          attendee_id,
+          station_type,
+          transaction_type,
+          created_at,
+          rfid_uid,
+          attendees!inner (
             first_name,
             last_name,
             phone

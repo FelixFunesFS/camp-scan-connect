@@ -251,7 +251,7 @@ export function UnifiedStationScanner({
                       <p className="font-medium">
                         {selectedRfid.attendee.first_name} {selectedRfid.attendee.last_name}
                       </p>
-                      {!['meal', 'drinks', 'headphones'].includes(stationType) && (
+                      {stationType === 'activation' && (
                         <p className="text-sm text-muted-foreground">
                           Ticket: {selectedRfid.attendee.ticket_type}
                         </p>

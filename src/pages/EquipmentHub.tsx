@@ -222,21 +222,6 @@ export default function EquipmentHub() {
                 <CardTitle className="text-lg">{equipment.name}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="text-center p-3 bg-warning/10 rounded-lg">
-                    <div className="text-xl font-bold text-warning">{equipment.currentlyOut}</div>
-                    <div className="text-muted-foreground">Currently Out</div>
-                  </div>
-                  <div className="text-center p-3 bg-info/10 rounded-lg">
-                    <div className="text-xl font-bold text-info">{equipment.totalToday}</div>
-                    <div className="text-muted-foreground">Total Today</div>
-                  </div>
-                </div>
-                
-                <div className="text-center p-3 bg-success/10 rounded-lg">
-                  <div className="text-lg font-bold text-success">{equipment.averageUsage}</div>
-                  <div className="text-sm text-muted-foreground">Average Usage</div>
-                </div>
 
                 <EquipmentTracker
                   equipmentType={equipment.type as any}
