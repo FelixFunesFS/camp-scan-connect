@@ -189,7 +189,7 @@ export const RfidAssignmentTab = () => {
           headphones_status,
           headphones_duration,
           bar_hits: 0,
-          arrival_day: attendee.arrival_window,
+          arrival_day: attendee.arrival_window === 'early' ? 'Thursday' : 'Friday',
           is_duplicate: false,
           is_phone_duplicate: false,
           group_size: 1,

@@ -238,6 +238,7 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                   <TableCell className="font-medium">
                     <AttendeeDetailModal
                       attendee={attendee}
+                      allAttendees={attendees}
                       trigger={
                         <Button variant="link" className="p-0 h-auto font-medium text-left hover:underline">
                           {attendee.first_name} {attendee.last_name}
