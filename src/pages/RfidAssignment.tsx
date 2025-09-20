@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { RfidCaptureProvider } from '@/contexts/RfidCaptureContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -607,7 +608,8 @@ export const RfidAssignment = () => {
       {/* FAQ Panel */}
       <RfidAssignmentFAQ isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
       
-      <div className="container mx-auto p-6 max-w-7xl">
+      <RfidCaptureProvider>
+        <div className="container mx-auto p-6 max-w-7xl">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -1086,7 +1088,8 @@ export const RfidAssignment = () => {
             </AlertDescription>
           </Alert>
         )}
-      </div>
+        </div>
+      </RfidCaptureProvider>
     </div>
   );
 };

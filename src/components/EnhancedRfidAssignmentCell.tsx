@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, X, AlertCircle, Loader2, Edit3, Save, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useRfidCapture } from "@/hooks/useRfidCapture";
+import { useRfidCaptureContext } from "@/contexts/RfidCaptureContext";
 
 interface EnhancedRfidAssignmentCellProps {
   attendeeId: string;
@@ -32,20 +32,39 @@ export const EnhancedRfidAssignmentCell = ({
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const { registerInput, unregisterInput } = useRfidCaptureContext();
 
-  // Local RFID capture - only active when this input is focused
-  useRfidCapture({
-    onCapture: (capturedUid) => {
-      if (isEditing) {
-        setEditValue(capturedUid);
-      } else {
-        setUid(capturedUid);
-      }
-    },
-    enabled: true,
-    minLength: 8,
-    debounceMs: 50
-  });
+  // Register main input with centralized RFID capture
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input || isEditing) return;
+
+    const onCapture = (capturedUid: string) => {
+      setUid(capturedUid);
+    };
+
+    registerInput(input, onCapture);
+    
+    return () => {
+      unregisterInput(input);
+    };
+  }, [registerInput, unregisterInput, isEditing]);
+
+  // Register edit input with centralized RFID capture
+  useEffect(() => {
+    const editInput = editInputRef.current;
+    if (!editInput || !isEditing) return;
+
+    const onCapture = (capturedUid: string) => {
+      setEditValue(capturedUid);
+    };
+
+    registerInput(editInput, onCapture);
+    
+    return () => {
+      unregisterInput(editInput);
+    };
+  }, [registerInput, unregisterInput, isEditing]);
   
 
   // Auto-focus input when component mounts or when becomes active
