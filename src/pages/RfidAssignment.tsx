@@ -435,8 +435,38 @@ export const RfidAssignment = () => {
   useEffect(() => {
     const checkRfidFocus = () => {
       const currentFocus = document.activeElement as HTMLElement;
-      const isRfidInputFocused = currentFocus?.getAttribute('data-rfid-input') === 'true';
-      setHasRfidInputFocused(isRfidInputFocused);
+      
+      // Debug logging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Focus check:', {
+          element: currentFocus?.tagName,
+          className: currentFocus?.className,
+          dataRfidInput: currentFocus?.getAttribute('data-rfid-input'),
+          dataSearchInput: currentFocus?.getAttribute('data-search-input'),
+          dataExcludeRfid: currentFocus?.getAttribute('data-exclude-rfid')
+        });
+      }
+      
+      // Check if current element is an RFID input
+      const isRfidInput = currentFocus?.getAttribute('data-rfid-input') === 'true';
+      
+      // Exclude search inputs and other non-RFID inputs
+      const isSearchInput = currentFocus?.getAttribute('data-search-input') === 'true' || 
+                           currentFocus?.getAttribute('data-exclude-rfid') === 'true';
+      
+      // Only enable RFID capture if it's specifically an RFID input and not a search input
+      const shouldEnableRfidCapture = isRfidInput && !isSearchInput;
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('RFID Focus Decision:', {
+          isRfidInput,
+          isSearchInput,
+          shouldEnableRfidCapture,
+          previousState: hasRfidInputFocused
+        });
+      }
+      
+      setHasRfidInputFocused(shouldEnableRfidCapture);
     };
 
     const handleFocusChange = () => {
@@ -455,7 +485,7 @@ export const RfidAssignment = () => {
       document.removeEventListener('focusin', handleFocusChange);
       document.removeEventListener('focusout', handleFocusChange);
     };
-  }, []);
+  }, [hasRfidInputFocused]);
 
   // Sorting handler
   const handleSort = (field: typeof sortField) => {

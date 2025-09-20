@@ -71,6 +71,8 @@ export const UnifiedSearchFilter: React.FC<UnifiedSearchFilterProps> = ({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={placeholder}
             className="pl-10 pr-10"
+            data-search-input="true"
+            data-exclude-rfid="true"
           />
           {searchValue && (
             <Button
@@ -127,6 +129,8 @@ export const UnifiedSearchFilter: React.FC<UnifiedSearchFilterProps> = ({
                       placeholder={`Filter by ${option.label.toLowerCase()}`}
                       onChange={(e) => onFilterChange?.(option.key, e.target.value)}
                       className="text-sm"
+                      data-search-input="true"
+                      data-exclude-rfid="true"
                     />
                   </div>
                 ))}
