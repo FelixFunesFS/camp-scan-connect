@@ -63,6 +63,11 @@ function HeadphonesContent({
       toast.success(
         `Headphones ${actionMessage} for ${selectedRfid?.attendee?.first_name}`
       );
+
+      // Auto-reset after brief delay to refocus input for next scan
+      setTimeout(() => {
+        onReset();
+      }, 1500);
     } catch (error) {
       console.error("Error updating headphone status:", error);
       toast.error("Failed to update headphone status");
