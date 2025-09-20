@@ -41,9 +41,9 @@ const Index = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground mb-6">
-                Complete RFID management tools for event staff
+                Complete RFID management tools and staff-operated stations
               </p>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
                 <div 
                   className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
                   onClick={() => navigate("/rfid-assignment")}
@@ -67,97 +67,123 @@ const Index = () => {
                   <p className="text-sm text-muted-foreground">Activation & management</p>
                 </div>
               </div>
+              
+              {/* Staff-Operated Stations */}
+              <div className="pt-4 border-t">
+                <h4 className="font-medium text-sm text-muted-foreground mb-3">Staff-Operated Stations</h4>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div 
+                    className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
+                    onClick={() => navigate("/headphones-station")}
+                  >
+                    <div className="flex flex-col items-center text-center gap-2">
+                      <Headphones className="h-5 w-5 text-primary" />
+                      <span className="font-medium text-sm">Headphones</span>
+                      <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                  <div 
+                    className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
+                    onClick={() => navigate("/meal-station")}
+                  >
+                    <div className="flex flex-col items-center text-center gap-2">
+                      <Utensils className="h-5 w-5 text-primary" />
+                      <span className="font-medium text-sm">Meals</span>
+                      <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                  <div 
+                    className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
+                    onClick={() => navigate("/drinks-station")}
+                  >
+                    <div className="flex flex-col items-center text-center gap-2">
+                      <Wine className="h-5 w-5 text-primary" />
+                      <span className="font-medium text-sm">Drinks</span>
+                      <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Attendee Services */}
+          {/* Self-Service */}
           <Card className="group hover:shadow-xl transition-all duration-300 border-accent/20 hover:border-accent/40">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-3 text-2xl">
                 <div className="p-2 rounded-lg bg-accent/10">
-                  <Users className="h-6 w-6 text-accent" />
+                  <Zap className="h-6 w-6 text-accent" />
                 </div>
-                Attendee Services
+                Self-Service
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground mb-6">
-                Self-service stations and rental equipment for attendees
+                Attendee self-activation station
               </p>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex justify-center">
                 <div 
-                  className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
+                  className="p-6 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item max-w-xs w-full"
                   onClick={() => navigate("/activation")}
                 >
-                  <div className="flex flex-col items-center text-center gap-2">
-                    <Zap className="h-5 w-5 text-accent" />
-                    <span className="font-medium text-sm">Self-Service</span>
-                    <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
-                  </div>
-                </div>
-                <div 
-                  className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
-                  onClick={() => navigate("/headphones-station")}
-                >
-                  <div className="flex flex-col items-center text-center gap-2">
-                    <Headphones className="h-5 w-5 text-accent" />
-                    <span className="font-medium text-sm">Headphones</span>
-                    <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
-                  </div>
-                </div>
-                <div 
-                  className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
-                  onClick={() => navigate("/meal-station")}
-                >
-                  <div className="flex flex-col items-center text-center gap-2">
-                    <Utensils className="h-5 w-5 text-accent" />
-                    <span className="font-medium text-sm">Meals</span>
-                    <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
-                  </div>
-                </div>
-                <div 
-                  className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
-                  onClick={() => navigate("/drinks-station")}
-                >
-                  <div className="flex flex-col items-center text-center gap-2">
-                    <Wine className="h-5 w-5 text-accent" />
-                    <span className="font-medium text-sm">Drinks</span>
-                    <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <Zap className="h-8 w-8 text-accent" />
+                    <span className="font-medium text-lg">Self-Service Activation</span>
+                    <p className="text-sm text-muted-foreground">Activate your RFID wristband</p>
+                    <ArrowRight className="h-5 w-5 opacity-0 group-hover/item:opacity-100 transition-opacity" />
                   </div>
                 </div>
               </div>
-              
-              {/* Equipment Subsection */}
-              <div className="pt-4 border-t">
-                <h4 className="font-medium text-sm text-muted-foreground mb-3">Equipment Rentals</h4>
-                <div className="grid grid-cols-3 gap-3">
-                  <div 
-                    className="p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
-                    onClick={() => navigate("/golf-carts-station")}
-                  >
-                    <div className="flex flex-col items-center text-center gap-1">
-                      <Car className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-medium">Golf Carts</span>
-                    </div>
+            </CardContent>
+          </Card>
+
+          {/* Equipment Rentals */}
+          <Card className="group hover:shadow-xl transition-all duration-300 border-muted/20 hover:border-muted/40">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-2xl">
+                <div className="p-2 rounded-lg bg-muted/10">
+                  <Package className="h-6 w-6 text-muted-foreground" />
+                </div>
+                Equipment Rentals
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground mb-6">
+                Independent rental equipment checkout and return
+              </p>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div 
+                  className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
+                  onClick={() => navigate("/golf-carts-station")}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <Car className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">Golf Carts</span>
+                    <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity" />
                   </div>
-                  <div 
-                    className="p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
-                    onClick={() => navigate("/walkie-talkies-station")}
-                  >
-                    <div className="flex flex-col items-center text-center gap-1">
-                      <Radio className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-medium">Walkies</span>
-                    </div>
+                  <p className="text-sm text-muted-foreground">Rental checkout</p>
+                </div>
+                <div 
+                  className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
+                  onClick={() => navigate("/walkie-talkies-station")}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <Radio className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">Walkie-Talkies</span>
+                    <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity" />
                   </div>
-                  <div 
-                    className="p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
-                    onClick={() => navigate("/fanny-packs-station")}
-                  >
-                    <div className="flex flex-col items-center text-center gap-1">
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-medium">Fanny Packs</span>
-                    </div>
+                  <p className="text-sm text-muted-foreground">Radio rentals</p>
+                </div>
+                <div 
+                  className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
+                  onClick={() => navigate("/fanny-packs-station")}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">Fanny Packs</span>
+                    <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity" />
                   </div>
+                  <p className="text-sm text-muted-foreground">Storage solutions</p>
                 </div>
               </div>
             </CardContent>
