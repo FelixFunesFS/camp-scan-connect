@@ -26,28 +26,7 @@ function HeadphonesContent({
   getLatestStatus, 
   onReset 
 }: StationActionProps) {
-  const [headphoneStatus, setHeadphoneStatus] = useState<string>('available');
   const [scanCount, setScanCount] = useState<number>(0);
-
-  const checkHeadphoneStatus = useCallback(async () => {
-    try {
-      // Get the latest transaction type to determine current status
-      const latestTransactionType = await getLatestStatus('transaction_type');
-      
-      // Determine status based on latest transaction
-      if (latestTransactionType === 'headphone_checkout') {
-        setHeadphoneStatus('checked_out');
-      } else if (latestTransactionType === 'headphone_checkin') {
-        setHeadphoneStatus('checked_in');
-      } else {
-        // No headphone transactions yet, default to available
-        setHeadphoneStatus('available');
-      }
-    } catch (error) {
-      console.error("Error checking headphone status:", error);
-      setHeadphoneStatus('available');
-    }
-  }, [getLatestStatus]);
 
   const handleHeadphoneToggle = useCallback(async () => {
     if (!attendeeReadiness?.isReady || isProcessing) return;
@@ -77,17 +56,10 @@ function HeadphonesContent({
         current_status: newStatus
       });
 
-      setHeadphoneStatus(newStatus);
-
       const actionMessage = transactionType === 'headphone_checkout' ? 'checked out' : 'returned';
       toast.success(
         `Headphones ${actionMessage} for ${selectedRfid?.attendee?.first_name}`
       );
-      
-      // Auto-reset after successful transaction
-      setTimeout(() => {
-        onReset();
-      }, 1500);
     } catch (error) {
       console.error("Error updating headphone status:", error);
       toast.error("Failed to update headphone status");
@@ -102,7 +74,6 @@ function HeadphonesContent({
   // Reset scan count when RFID changes
   useEffect(() => {
     setScanCount(0);
-    setHeadphoneStatus('available');
   }, [selectedRfid?.uid]);
 
   // Auto-trigger headphone checkout/checkin when ready
@@ -139,18 +110,11 @@ function HeadphonesContent({
           {/* Current Status */}
           <div className="p-6 bg-muted rounded-lg">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <HeadphonesIcon className={`h-8 w-8 ${
-                headphoneStatus === 'checked_out' ? 'text-orange-500' : 
-                headphoneStatus === 'checked_in' ? 'text-blue-500' : 'text-green-500'
-              }`} />
+              <HeadphonesIcon className="h-8 w-8 text-green-500" />
             </div>
             <div className="text-lg font-medium">
-              Status: <span className={
-                headphoneStatus === 'checked_out' ? 'text-orange-600' : 
-                headphoneStatus === 'checked_in' ? 'text-blue-600' : 'text-green-600'
-              }>
-                {headphoneStatus === 'checked_out' ? 'CHECKED OUT' : 
-                 headphoneStatus === 'checked_in' ? 'CHECKED IN' : 'AVAILABLE'}
+              Status: <span className="text-green-600">
+                AVAILABLE
               </span>
             </div>
           </div>
@@ -160,9 +124,9 @@ function HeadphonesContent({
             <div className="p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center justify-center gap-2">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
-                <span className="text-blue-600 font-medium">
-                  {headphoneStatus === 'checked_out' ? 'Checking in headphones...' : 'Checking out headphones...'}
-                </span>
+                 <span className="text-blue-600 font-medium">
+                   {scanCount % 2 === 1 ? 'Checking out headphones...' : 'Checking in headphones...'}
+                 </span>
               </div>
             </div>
           )}
