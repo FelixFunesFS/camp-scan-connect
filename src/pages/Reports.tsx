@@ -18,7 +18,7 @@ const Reports = () => {
   const { exportToCsv } = useCsvExport();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('this_event');
 
   const handleRefresh = () => {
     setIsRefreshing(true);
