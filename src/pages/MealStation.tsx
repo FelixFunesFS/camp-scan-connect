@@ -106,18 +106,28 @@ function MealContent({
     }
   };
 
-  const canGetMeal = () => {
+  const canGetMeal = (mealType?: string) => {
     // Check if attendee has a meal plan
     if (!attendeeMealPlan || attendeeMealPlan === '0' || attendeeMealPlan === 'none') {
       return { can: false, reason: "No meal plan - meals not included in ticket" };
     }
     
+    // For testing mode, allow any meal type
+    if (TESTING_MODE && mealType) {
+      const hasAlreadyEaten = mealCounts[mealType as keyof typeof mealCounts] > 0;
+      if (hasAlreadyEaten) {
+        return { can: false, reason: `Already received ${mealType} today` };
+      }
+      return { can: true, reason: `${mealType} available` };
+    }
+    
+    // Production mode logic
     if (!currentMealWindow) {
       return { can: false, reason: "No active meal window" };
     }
     
-    const mealType = currentMealWindow.type as keyof typeof mealCounts;
-    const hasAlreadyEaten = mealCounts[mealType] > 0;
+    const windowMealType = currentMealWindow.type as keyof typeof mealCounts;
+    const hasAlreadyEaten = mealCounts[windowMealType] > 0;
     
     if (hasAlreadyEaten) {
       return { can: false, reason: `Already received ${currentMealWindow.label.toLowerCase()} today` };
@@ -126,8 +136,45 @@ function MealContent({
     return { can: true, reason: `${currentMealWindow.label} available` };
   };
 
-  const handleMealScan = async () => {
-    if (!attendeeReadiness?.isReady || !currentMealWindow) return;
+  const handleMealScan = async (mealType?: string) => {
+    if (!attendeeReadiness?.isReady) return;
+
+    // For testing mode with specific meal type
+    if (TESTING_MODE && mealType) {
+      const eligibility = canGetMeal(mealType);
+      if (!eligibility.can) {
+        toast.error(eligibility.reason);
+        return;
+      }
+
+      setIsProcessing(true);
+
+      try {
+        const transactionType = `meal_${mealType}` as 'meal_breakfast' | 'meal_lunch' | 'meal_dinner';
+        
+        await executeAction(transactionType, {
+          daily_count: mealCounts[mealType as keyof typeof mealCounts] + 1
+        });
+
+        // Update local count
+        setMealCounts(prev => ({
+          ...prev,
+          [mealType]: prev[mealType as keyof typeof prev] + 1
+        }));
+
+        const mealLabel = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+        toast.success(`${mealLabel} recorded for ${selectedRfid?.attendee?.first_name}`);
+      } catch (error) {
+        console.error("Error recording meal:", error);
+        toast.error("Failed to record meal");
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+
+    // Production mode logic
+    if (!currentMealWindow) return;
 
     const eligibility = canGetMeal();
     if (!eligibility.can) {
@@ -159,6 +206,34 @@ function MealContent({
     }
   };
 
+  const resetTodaysMeals = async () => {
+    if (!selectedRfid?.attendee_id || !TESTING_MODE) return;
+
+    try {
+      setIsProcessing(true);
+      
+      // Delete today's meal transactions for this attendee
+      const { error } = await supabase
+        .from('station_transactions')
+        .delete()
+        .eq('attendee_id', selectedRfid.attendee_id)
+        .eq('station_type', 'meal')
+        .gte('created_at', new Date().toISOString().split('T')[0]);
+
+      if (error) throw error;
+
+      // Reset local counts
+      setMealCounts({ breakfast: 0, lunch: 0, dinner: 0 });
+      
+      toast.success("Today's meal records cleared for testing");
+    } catch (error) {
+      console.error("Error clearing meals:", error);
+      toast.error("Failed to clear meal records");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Don't render if attendee is not ready
   if (!attendeeReadiness?.isReady) {
     return (
@@ -171,8 +246,6 @@ function MealContent({
       </Card>
     );
   }
-
-  const eligibility = canGetMeal();
 
   return (
     <Card>
@@ -224,31 +297,85 @@ function MealContent({
             ))}
           </div>
 
-          {/* Action Button */}
-          <Button
-            onClick={handleMealScan}
-            disabled={isProcessing || !attendeeReadiness?.isReady || !eligibility.can}
-            size="lg"
-            className="w-full h-16 text-lg"
-          >
-            {isProcessing ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                Processing...
+          {/* Action Buttons */}
+          {TESTING_MODE ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3">
+                {['breakfast', 'lunch', 'dinner'].map((mealType) => {
+                  const mealEligibility = canGetMeal(mealType);
+                  const isConsumed = mealCounts[mealType as keyof typeof mealCounts] > 0;
+                  const mealLabel = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+                  
+                  return (
+                    <Button
+                      key={mealType}
+                      onClick={() => handleMealScan(mealType)}
+                      disabled={isProcessing || !attendeeReadiness?.isReady || !mealEligibility.can}
+                      size="lg"
+                      variant={isConsumed ? "secondary" : "default"}
+                      className="w-full h-14 text-base"
+                    >
+                      {isProcessing ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                          Processing...
+                        </div>
+                      ) : !attendeeReadiness?.isReady ? (
+                        "Service Not Available"
+                      ) : isConsumed ? (
+                        <>
+                          <Utensils className="h-4 w-4 mr-2" />
+                          {mealLabel} ✓ (Already Consumed)
+                        </>
+                      ) : !mealEligibility.can ? (
+                        mealEligibility.reason
+                      ) : (
+                        <>
+                          <Utensils className="h-4 w-4 mr-2" />
+                          RECORD {mealLabel.toUpperCase()}
+                        </>
+                      )}
+                    </Button>
+                  );
+                })}
               </div>
-            ) : !attendeeReadiness?.isReady ? (
-              "Service Not Available"
-            ) : !currentMealWindow ? (
-              "No Active Meal Window"
-            ) : !eligibility.can ? (
-              eligibility.reason
-            ) : (
-              <>
-                <Utensils className="h-5 w-5 mr-2" />
-                RECORD {currentMealWindow.label.toUpperCase()}
-              </>
-            )}
-          </Button>
+              
+              <Button
+                onClick={resetTodaysMeals}
+                disabled={isProcessing}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                Reset Today's Meals (Testing)
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={() => handleMealScan()}
+              disabled={isProcessing || !attendeeReadiness?.isReady || !canGetMeal().can}
+              size="lg"
+              className="w-full h-16 text-lg"
+            >
+              {isProcessing ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                  Processing...
+                </div>
+              ) : !attendeeReadiness?.isReady ? (
+                "Service Not Available"
+              ) : !currentMealWindow ? (
+                "No Active Meal Window"
+              ) : !canGetMeal().can ? (
+                canGetMeal().reason
+              ) : (
+                <>
+                  <Utensils className="h-5 w-5 mr-2" />
+                  RECORD {currentMealWindow.label.toUpperCase()}
+                </>
+              )}
+            </Button>
+          )}
 
           <div className="text-center text-sm text-muted-foreground">
             <p>Fri: 1 dinner • Sat: 3 meals • Sun: 1 breakfast</p>
