@@ -69,9 +69,8 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
   const getVeteranBadge = () => {
     if (!attendee.is_veteran) return null;
     return (
-      <Badge variant="default" className="text-xs bg-blue-600 text-white">
-        <Usb className="h-3 w-3 mr-1" />
-        Veteran
+      <Badge variant="veteran" className="text-xs">
+        🇺🇸 Veteran
       </Badge>
     );
   };

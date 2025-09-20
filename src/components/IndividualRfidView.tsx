@@ -271,7 +271,7 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                   </TableCell>
                   <TableCell>
                     {attendee.is_veteran ? (
-                      <Badge variant="default" className="text-xs bg-blue-600 text-white">
+                      <Badge variant="veteran" className="text-xs">
                         Veteran
                       </Badge>
                     ) : null}

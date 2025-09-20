@@ -74,6 +74,10 @@ All colors MUST be HSL.
     --warning-foreground: 0 0% 100%;
     --info: 217 91% 60%;
     --info-foreground: 0 0% 100%;
+    
+    /* Veteran Colors - Deep forest green for military association */
+    --veteran: 120 100% 25%;
+    --veteran-foreground: 0 0% 100%;
 
     --sidebar-background: 0 0% 98%;
 

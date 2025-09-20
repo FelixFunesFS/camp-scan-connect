@@ -62,7 +62,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
     if (!attendee.is_veteran) return null;
     
     return (
-      <Badge className="text-xs bg-blue-600 text-white">
+      <Badge variant="veteran" className="text-xs">
         🇺🇸 Veteran
       </Badge>
     );
