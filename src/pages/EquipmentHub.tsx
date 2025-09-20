@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 import { 
   Car, 
   Radio, 
@@ -169,9 +169,6 @@ export default function EquipmentHub() {
 
   const totalCurrentlyOut = equipmentStats.reduce((sum, stat) => sum + stat.currentlyOut, 0);
   const totalCheckoutsToday = equipmentStats.reduce((sum, stat) => sum + stat.totalToday, 0);
-  
-  // Get equipment types that have items currently checked out
-  const equipmentWithCheckouts = equipmentStats.filter(eq => eq.currentlyOut > 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
@@ -223,83 +220,62 @@ export default function EquipmentHub() {
           </CardHeader>
         </Card>
 
-        {/* Equipment Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Equipment Sections */}
+        <div className="space-y-6">
           {equipmentStats.map((equipment) => (
-            <Card key={equipment.type} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-4">
+            <Card key={equipment.type}>
+              <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className={`p-3 bg-muted rounded-lg ${equipment.color}`}>
-                    {equipment.icon}
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 bg-muted rounded-lg ${equipment.color}`}>
+                      {equipment.icon}
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">{equipment.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Equipment management and tracking
+                      </p>
+                    </div>
                   </div>
-                  {equipment.currentlyOut > 0 && (
-                    <Badge variant="outline" className="text-warning">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      {equipment.currentlyOut}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {equipment.currentlyOut > 0 && (
+                      <Badge variant="outline" className="text-warning">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {equipment.currentlyOut} Active
+                      </Badge>
+                    )}
+                    <Link to={equipment.stationPath}>
+                      <Button variant="outline">
+                        Open Station
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-                <CardTitle className="text-lg">{equipment.name}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Clean Stats Display */}
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  <div className="text-center p-3 bg-warning/10 rounded-lg">
-                    <div className="text-xl font-bold text-warning">{equipment.currentlyOut}</div>
-                    <div className="text-muted-foreground text-xs">Currently Out</div>
+                {/* Summary Stats */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-warning/10 rounded-lg">
+                    <div className="text-2xl font-bold text-warning">{equipment.currentlyOut}</div>
+                    <div className="text-sm text-muted-foreground">Currently Out</div>
                   </div>
-                  <div className="text-center p-3 bg-info/10 rounded-lg">
-                    <div className="text-xl font-bold text-info">{equipment.totalToday}</div>
-                    <div className="text-muted-foreground text-xs">Total Today</div>
+                  <div className="text-center p-4 bg-info/10 rounded-lg">
+                    <div className="text-2xl font-bold text-info">{equipment.totalToday}</div>
+                    <div className="text-sm text-muted-foreground">Total Today</div>
                   </div>
-                  <div className="text-center p-3 bg-success/10 rounded-lg">
-                    <div className="text-sm font-bold text-success">{equipment.averageUsage}</div>
-                    <div className="text-muted-foreground text-xs">Avg Usage</div>
+                  <div className="text-center p-4 bg-success/10 rounded-lg">
+                    <div className="text-lg font-bold text-success">{equipment.averageUsage}</div>
+                    <div className="text-sm text-muted-foreground">Average Usage</div>
                   </div>
                 </div>
-                
-                <Link to={equipment.stationPath}>
-                  <Button className="w-full" variant="outline">
-                    Open {equipment.name} Station
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
 
-        {/* Consolidated Equipment Details Section */}
-        {equipmentWithCheckouts.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-warning" />
-                Equipment Currently Checked Out
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Detailed checkout information for all equipment currently in use
-              </p>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue={equipmentWithCheckouts[0]?.type} className="w-full">
-                <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
-                  {equipmentWithCheckouts.map((equipment) => (
-                    <TabsTrigger 
-                      key={equipment.type} 
-                      value={equipment.type}
-                      className="flex items-center gap-2"
-                    >
-                      {equipment.icon}
-                      {equipment.name}
-                      <Badge variant="secondary" className="ml-2">
-                        {equipment.currentlyOut}
-                      </Badge>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                
-                {equipmentWithCheckouts.map((equipment) => (
-                  <TabsContent key={equipment.type} value={equipment.type} className="mt-4">
+                {/* Detailed Checkout Table - Only show if items are checked out */}
+                {equipment.currentlyOut > 0 && (
+                  <div className="pt-4 border-t">
+                    <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-warning" />
+                      Currently Checked Out
+                    </h4>
                     <EquipmentTracker
                       equipmentType={equipment.type as any}
                       equipmentName={equipment.name}
@@ -317,12 +293,12 @@ export default function EquipmentHub() {
                       timePeriod="today"
                       refreshTrigger={refreshTrigger}
                     />
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </CardContent>
-          </Card>
-        )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

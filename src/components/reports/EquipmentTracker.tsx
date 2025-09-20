@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Phone, Clock, AlertTriangle } from "lucide-react";
+import { Phone, Clock, AlertTriangle } from "lucide-react";
 import { EquipmentStatusService, EquipmentCheckout, EquipmentStats } from "@/services/equipmentStatusService";
 import { StationType, TransactionType } from "@/types/station";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
@@ -37,7 +36,7 @@ export default function EquipmentTracker({
     longestSession: 0
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(false);
+  
 
   const fetchEquipmentData = useCallback(async () => {
     try {
@@ -82,125 +81,78 @@ export default function EquipmentTracker({
     );
   }
 
+  // Just return the detailed checkout table - no stats, no collapsible wrapper
   return (
-    <div className="space-y-4">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div className="text-center p-3 bg-warning/10 rounded-lg">
-          <div className="text-xl font-bold text-warning">{stats.currentlyOut}</div>
-          <div className="text-muted-foreground">Currently Out</div>
+    <div className="overflow-x-auto">
+      {checkouts.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <div className="flex flex-col items-center gap-2">
+            {icon}
+            <p>No {equipmentName.toLowerCase()} currently checked out</p>
+          </div>
         </div>
-        <div className="text-center p-3 bg-info/10 rounded-lg">
-          <div className="text-xl font-bold text-info">{stats.totalCheckouts}</div>
-          <div className="text-muted-foreground">Total Today</div>
-        </div>
-      </div>
-      
-      <div className="text-center p-3 bg-success/10 rounded-lg">
-        <div className="text-lg font-bold text-success">{formatUsageTime(stats.averageUsage)}</div>
-        <div className="text-sm text-muted-foreground">Average Usage</div>
-      </div>
-
-      {/* Checkout Details */}
-      {stats.currentlyOut > 0 && (
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full flex items-center justify-between"
-            >
-              <span className="flex items-center gap-2">
-                {icon}
-                Show {equipmentName} Details ({stats.currentlyOut})
-              </span>
-              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  {icon}
-                  {equipmentName} Currently Checked Out
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {checkouts.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <div className="flex flex-col items-center gap-2">
-                      {icon}
-                      <p>No {equipmentName.toLowerCase()} currently checked out</p>
-                    </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Attendee</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Checkout Time</TableHead>
+              <TableHead>Duration</TableHead>
+              <TableHead>RFID</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {checkouts.map((checkout, index) => (
+              <TableRow 
+                key={`${checkout.attendeeId}-${index}`}
+                className={checkout.duration > 180 ? "bg-warning/5" : ""}
+              >
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {checkout.duration > 180 && (
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                    )}
+                    {checkout.attendeeName}
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Attendee</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Checkout Time</TableHead>
-                          <TableHead>Duration</TableHead>
-                          <TableHead>RFID</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {checkouts.map((checkout, index) => (
-                          <TableRow 
-                            key={`${checkout.attendeeId}-${index}`}
-                            className={checkout.duration > 180 ? "bg-warning/5" : ""}
-                          >
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                {checkout.duration > 180 && (
-                                  <AlertTriangle className="h-4 w-4 text-warning" />
-                                )}
-                                {checkout.attendeeName}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Phone className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-sm">
-                                  {checkout.attendeePhone ? formatPhoneNumber(checkout.attendeePhone) : 'N/A'}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-sm">
-                                  {checkout.checkoutTime.toLocaleTimeString('en-US', {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: true
-                                  })}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge 
-                                variant={checkout.duration > 180 ? "destructive" : "secondary"}
-                                className="text-xs"
-                              >
-                                {formatUsageTime(checkout.duration)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <code className="text-xs bg-muted px-2 py-1 rounded">
-                                {checkout.rfidUid || 'N/A'}
-                              </code>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-sm">
+                      {checkout.attendeePhone ? formatPhoneNumber(checkout.attendeePhone) : 'N/A'}
+                    </span>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </CollapsibleContent>
-        </Collapsible>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-sm">
+                      {checkout.checkoutTime.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge 
+                    variant={checkout.duration > 180 ? "destructive" : "secondary"}
+                    className="text-xs"
+                  >
+                    {formatUsageTime(checkout.duration)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <code className="text-xs bg-muted px-2 py-1 rounded">
+                    {checkout.rfidUid || 'N/A'}
+                  </code>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </div>
   );
