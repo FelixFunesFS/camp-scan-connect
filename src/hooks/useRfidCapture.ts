@@ -62,16 +62,23 @@ export const useRfidCapture = ({
     const handleKeyPress = (event: KeyboardEvent) => {
       // Ignore if user is typing in an input field (unless it's our RFID input)
       const target = event.target as HTMLElement;
-      const isRfidInput = target.classList.contains('rfid-input') || 
-                         target.getAttribute('data-rfid-input') === 'true';
       
-      // Enhanced exclusions for search fields and other inputs
+      // Enhanced exclusions for search fields and other inputs - check first
       const isSearchInput = target.getAttribute('data-search-input') === 'true' ||
                            target.getAttribute('data-exclude-rfid') === 'true' ||
                            target.classList.contains('search-input') ||
                            (target as HTMLInputElement).placeholder?.toLowerCase().includes('search');
       
-      if (target.tagName === 'INPUT' && (!isRfidInput || isSearchInput)) {
+      // If it's explicitly marked as a search input or excluded, always ignore
+      if (isSearchInput) {
+        return;
+      }
+      
+      const isRfidInput = target.classList.contains('rfid-input') || 
+                         target.getAttribute('data-rfid-input') === 'true';
+      
+      // For any other input that's not explicitly an RFID input, ignore
+      if (target.tagName === 'INPUT' && !isRfidInput) {
         return;
       }
       
