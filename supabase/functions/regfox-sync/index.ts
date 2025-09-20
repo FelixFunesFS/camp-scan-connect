@@ -828,7 +828,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+    } catch (error) {
     console.error('Error in regfox-sync function:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
