@@ -265,7 +265,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
                       <p className="font-medium">
                         {attendee.first_name} {attendee.last_name}
                         {attendee.is_veteran && (
-                          <Badge variant="secondary" className="ml-2">Veteran</Badge>
+                          <Badge variant="veteran" className="ml-2">Veteran</Badge>
                         )}
                       </p>
                       <p className="text-sm text-muted-foreground">

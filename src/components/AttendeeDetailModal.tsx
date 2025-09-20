@@ -93,7 +93,7 @@ export function AttendeeDetailModal({
                 {getStatusDisplayText(calculateAttendeeStatus(!!attendee.is_activated, !!attendee.has_rfid))}
               </Badge>
               {attendee.is_veteran && (
-                <Badge variant="outline">Veteran</Badge>
+                <Badge variant="veteran">Veteran</Badge>
               )}
             </div>
           </DialogTitle>
@@ -321,7 +321,7 @@ export function AttendeeDetailModal({
                           {getStatusDisplayText(calculateAttendeeStatus(!!selectedCompanion.is_activated, !!selectedCompanion.has_rfid))}
                         </Badge>
                         {selectedCompanion.is_veteran && (
-                          <Badge variant="outline">Veteran</Badge>
+                          <Badge variant="veteran">Veteran</Badge>
                         )}
                       </div>
                     </DialogTitle>

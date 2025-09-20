@@ -247,7 +247,7 @@ export default function AttendeeDetail() {
               </div>
               <div>
                 <p className="font-medium text-muted-foreground">Veteran Status</p>
-                <Badge variant={attendee.is_veteran ? "default" : "secondary"}>
+                <Badge variant={attendee.is_veteran ? "veteran" : "secondary"}>
                   {attendee.is_veteran ? "Veteran" : "Civilian"}
                 </Badge>
               </div>
