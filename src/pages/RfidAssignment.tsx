@@ -647,7 +647,7 @@ export const RfidAssignment = () => {
         {/* FAQ Panel */}
         <RfidAssignmentFAQ isOpen={showFAQ} onClose={() => setShowFAQ(false)} />
         
-        <div className="container mx-auto p-6 max-w-7xl">
+        <div className="container mx-auto p-6 max-w-none lg:max-w-[95vw] xl:max-w-[90vw]">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -875,12 +875,12 @@ export const RfidAssignment = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-            <div className="rounded-md border">
-              <Table>
+            <div className="rounded-md border overflow-x-auto">
+              <Table className="min-w-fit">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>
+                    <TableHead className="w-16 min-w-16">#</TableHead>
+                    <TableHead className="min-w-[180px]">
                       <Button
                         variant="ghost"
                         className="h-auto p-0 font-semibold hover:bg-transparent"
@@ -892,7 +892,7 @@ export const RfidAssignment = () => {
                         </div>
                       </Button>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="min-w-[140px]">
                       <Button
                         variant="ghost"
                         className="h-auto p-0 font-semibold hover:bg-transparent"
@@ -904,7 +904,7 @@ export const RfidAssignment = () => {
                         </div>
                       </Button>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="min-w-[120px]">
                       <Button
                         variant="ghost"
                         className="h-auto p-0 font-semibold hover:bg-transparent"
@@ -916,7 +916,7 @@ export const RfidAssignment = () => {
                         </div>
                       </Button>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="min-w-[120px]">
                       <Button
                         variant="ghost"
                         className="h-auto p-0 font-semibold hover:bg-transparent"
@@ -928,7 +928,7 @@ export const RfidAssignment = () => {
                         </div>
                       </Button>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="min-w-[120px]">
                       <Button
                         variant="ghost"
                         className="h-auto p-0 font-semibold hover:bg-transparent"
@@ -940,7 +940,7 @@ export const RfidAssignment = () => {
                         </div>
                       </Button>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="min-w-[140px]">
                       <Button
                         variant="ghost"
                         className="h-auto p-0 font-semibold hover:bg-transparent"
@@ -952,8 +952,8 @@ export const RfidAssignment = () => {
                         </div>
                       </Button>
                     </TableHead>
-                    <TableHead className="w-64">RFID Assignment</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="w-80 min-w-80">RFID Assignment</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

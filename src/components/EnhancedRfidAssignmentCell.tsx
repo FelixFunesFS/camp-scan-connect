@@ -67,16 +67,6 @@ export const EnhancedRfidAssignmentCell = ({
   }, [registerInput, unregisterInput, isEditing]);
   
 
-  // Auto-focus input when component mounts or when becomes active
-  useEffect(() => {
-    if (inputRef.current && !currentRfidUid && !isEditing) {
-      // Only auto-focus on initial mount, not during view switches
-      const timer = setTimeout(() => {
-        inputRef.current?.focus({ preventScroll: true });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [currentRfidUid, isEditing]);
 
   // Auto-focus edit input when entering edit mode
   useEffect(() => {
