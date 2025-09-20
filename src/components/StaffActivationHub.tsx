@@ -57,6 +57,8 @@ export interface EnhancedAttendee {
   rfid_uid?: string;
   rfid_status: string;
   has_headphones?: boolean;
+  headphones_status?: 'checked_out' | 'checked_in' | 'never_used';
+  headphones_duration?: number;
   bar_hits?: number;
   arrival_day?: string;
   is_duplicate?: boolean;
@@ -219,9 +221,26 @@ export function StaffActivationHub() {
         const rfidTag = rfidData?.find(tag => tag.attendee_id === attendee.id);
         const transactions = transactionData?.filter(t => t.attendee_id === attendee.id) || [];
         
-        const has_headphones = transactions.some(t => 
-          t.station_type === 'headphones' && t.transaction_type === 'activate'
-        );
+        // Get latest headphones transaction to determine current status
+        const headphonesTransactions = transactions
+          .filter(t => t.station_type === 'headphones' && 
+                      ['headphone_checkout', 'headphone_checkin'].includes(t.transaction_type))
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        const latestHeadphonesTransaction = headphonesTransactions[0];
+        const has_headphones = latestHeadphonesTransaction?.transaction_type === 'headphone_checkout';
+        
+        let headphones_status: 'checked_out' | 'checked_in' | 'never_used' = 'never_used';
+        let headphones_duration: number | undefined;
+        
+        if (latestHeadphonesTransaction) {
+          if (latestHeadphonesTransaction.transaction_type === 'headphone_checkout') {
+            headphones_status = 'checked_out';
+            headphones_duration = Math.floor((Date.now() - new Date(latestHeadphonesTransaction.created_at).getTime()) / (1000 * 60));
+          } else {
+            headphones_status = 'checked_in';
+          }
+        }
         
         const bar_hits = transactions.filter(t => 
           t.station_type === 'drinks' && t.transaction_type === 'drink'
@@ -249,6 +268,8 @@ export function StaffActivationHub() {
           rfid_uid: rfidTag?.uid || undefined,
           rfid_status,
           has_headphones,
+          headphones_status,
+          headphones_duration,
           bar_hits,
           arrival_day,
           is_duplicate,

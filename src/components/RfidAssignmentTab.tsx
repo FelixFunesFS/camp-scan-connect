@@ -48,6 +48,8 @@ interface AttendeeWithRfid {
   rfid_uid?: string;
   rfid_status: string;
   has_headphones?: boolean;
+  headphones_status?: 'checked_out' | 'checked_in' | 'never_used';
+  headphones_duration?: number;
   bar_hits?: number;
   arrival_day?: string;
   is_duplicate?: boolean;
@@ -129,9 +131,39 @@ export const RfidAssignmentTab = () => {
 
       if (error) throw error;
 
-      // Flatten and enhance the data
+      // Get headphones transactions for status calculation
+      const { data: transactionData, error: transactionError } = await supabase
+        .from('station_transactions')
+        .select('attendee_id, transaction_type, created_at')
+        .eq('station_type', 'headphones')
+        .in('transaction_type', ['headphone_checkout', 'headphone_checkin']);
+
+      if (transactionError) throw transactionError;
+
+      // Flatten and enhance the data with headphones status
       const enhancedAttendees: AttendeeWithRfid[] = data.map(attendee => {
         const rfidTag = (attendee.rfid_tags as any)?.[0];
+        
+        // Calculate headphones status
+        const attendeeTransactions = transactionData?.filter(t => t.attendee_id === attendee.id) || [];
+        const latestHeadphonesTransaction = attendeeTransactions
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+        
+        let headphones_status: 'checked_out' | 'checked_in' | 'never_used' = 'never_used';
+        let headphones_duration: number | undefined;
+        let has_headphones = false;
+        
+        if (latestHeadphonesTransaction) {
+          if (latestHeadphonesTransaction.transaction_type === 'headphone_checkout') {
+            headphones_status = 'checked_out';
+            has_headphones = true;
+            headphones_duration = Math.floor((Date.now() - new Date(latestHeadphonesTransaction.created_at).getTime()) / (1000 * 60));
+          } else {
+            headphones_status = 'checked_in';
+            has_headphones = false;
+          }
+        }
+        
         return {
           id: attendee.id,
           first_name: attendee.first_name,
@@ -153,7 +185,9 @@ export const RfidAssignmentTab = () => {
           state: attendee.state,
           rfid_uid: rfidTag?.uid || null,
           rfid_status: rfidTag?.status || 'unissued',
-          has_headphones: false, // Default values for computed fields
+          has_headphones,
+          headphones_status,
+          headphones_duration,
           bar_hits: 0,
           arrival_day: attendee.arrival_window,
           is_duplicate: false,
@@ -637,14 +671,48 @@ const GroupCard: React.FC<GroupCardProps> = ({
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>RFID Assignment</TableHead>
+                    <TableHead>Headphones</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {group.attendees.map((attendee, index) => (
+                 <TableBody>
+                  {group.attendees.map((attendee, index) => {
+                    const getHeadphonesBadge = () => {
+                      if (attendee.headphones_status === 'checked_out') {
+                        const duration = attendee.headphones_duration || 0;
+                        const isLong = duration > 180;
+                        const formatDuration = (minutes: number) => {
+                          if (minutes < 60) return `${minutes}m`;
+                          const hours = Math.floor(minutes / 60);
+                          const mins = minutes % 60;
+                          return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+                        };
+                        return (
+                          <Badge 
+                            variant={isLong ? "destructive" : "secondary"}
+                            className="text-xs"
+                          >
+                            Checked Out ({formatDuration(duration)})
+                          </Badge>
+                        );
+                      }
+                      if (attendee.headphones_status === 'checked_in') {
+                        return <Badge variant="outline" className="text-xs">Available</Badge>;
+                      }
+                      return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
+                    };
+
+                    return (
                     <TableRow key={attendee.id}>
                       <TableCell>
-                        {attendee.first_name} {attendee.last_name}
+                        <div className="font-medium text-sm">
+                          {attendee.first_name} {attendee.last_name}
+                        </div>
+                        {attendee.phone && (
+                          <div className="text-xs text-muted-foreground font-mono">
+                            {attendee.phone}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <EnhancedRfidAssignmentCell
@@ -656,18 +724,23 @@ const GroupCard: React.FC<GroupCardProps> = ({
                         />
                       </TableCell>
                       <TableCell>
-                        <Badge variant={
-                          attendee.rfid_uid && attendee.rfid_status === 'assigned' 
-                            ? 'default' 
-                            : 'secondary'
-                        }>
-                          {attendee.rfid_uid && attendee.rfid_status === 'assigned' 
-                            ? 'Assigned' 
-                            : 'Pending'}
+                        {getHeadphonesBadge()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            attendee.activated_at ? 'default' : 
+                            attendee.rfid_uid ? 'secondary' : 'outline'
+                          }
+                          className="text-xs"
+                        >
+                          {attendee.activated_at ? 'Active' : 
+                           attendee.rfid_uid ? 'Assigned' : 'Unassigned'}
                         </Badge>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

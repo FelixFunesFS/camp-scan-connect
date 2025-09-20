@@ -28,6 +28,8 @@ interface AttendeeWithRfid {
   rfid_uid?: string;
   rfid_status: string;
   has_headphones?: boolean;
+  headphones_status?: 'checked_out' | 'checked_in' | 'never_used';
+  headphones_duration?: number;
   bar_hits?: number;
   arrival_day?: string;
   is_duplicate?: boolean;
@@ -211,6 +213,7 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                   </Button>
                 </TableHead>
                 <TableHead>RFID Assignment</TableHead>
+                <TableHead>Headphones</TableHead>
                 <TableHead>
                   <Button
                     variant="ghost"
@@ -273,6 +276,32 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                       onAssignmentComplete={onRefresh}
                       onOptimisticUpdate={onOptimisticUpdate}
                     />
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      if (attendee.headphones_status === 'checked_out') {
+                        const duration = attendee.headphones_duration || 0;
+                        const isLong = duration > 180;
+                        const formatDuration = (minutes: number) => {
+                          if (minutes < 60) return `${minutes}m`;
+                          const hours = Math.floor(minutes / 60);
+                          const mins = minutes % 60;
+                          return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+                        };
+                        return (
+                          <Badge 
+                            variant={isLong ? "destructive" : "secondary"}
+                            className="text-xs"
+                          >
+                            Checked Out ({formatDuration(duration)})
+                          </Badge>
+                        );
+                      }
+                      if (attendee.headphones_status === 'checked_in') {
+                        return <Badge variant="outline" className="text-xs">Available</Badge>;
+                      }
+                      return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
+                    })()}
                   </TableCell>
                   <TableCell>
                     <Badge 

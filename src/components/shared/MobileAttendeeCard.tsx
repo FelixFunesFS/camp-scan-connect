@@ -2,12 +2,15 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio, Ticket } from "lucide-react";
+import { User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio, Ticket, Headphones } from "lucide-react";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import type { NotificationState, FlexibleAttendeeData } from "@/types/attendee";
 
 interface MobileAttendeeCardProps {
-  attendee: FlexibleAttendeeData;
+  attendee: FlexibleAttendeeData & {
+    headphones_status?: 'checked_out' | 'checked_in' | 'never_used';
+    headphones_duration?: number;
+  };
   type?: 'direct' | 'companion' | 'standard';
   notificationState?: NotificationState;
   notificationMessage?: string;
@@ -77,6 +80,42 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
     );
   };
 
+  const getHeadphonesBadge = () => {
+    if (attendee.headphones_status === 'checked_out') {
+      const duration = attendee.headphones_duration || 0;
+      const isLong = duration > 180;
+      const formatDuration = (minutes: number) => {
+        if (minutes < 60) return `${minutes}m`;
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+      };
+      return (
+        <Badge variant={isLong ? "destructive" : "secondary"} className="text-xs">
+          <Headphones className="h-3 w-3 mr-1" />
+          Out ({formatDuration(duration)})
+        </Badge>
+      );
+    }
+    if (attendee.headphones_status === 'checked_in') {
+      return (
+        <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
+          <Headphones className="h-3 w-3 mr-1" />
+          Available
+        </Badge>
+      );
+    }
+    if (attendee.headphones_status === 'never_used') {
+      return (
+        <Badge variant="outline" className="text-xs text-muted-foreground">
+          <Headphones className="h-3 w-3 mr-1" />
+          Never Used
+        </Badge>
+      );
+    }
+    return null;
+  };
+
   const getTypeIndicator = () => {
     if (type === 'companion') return <Badge variant="secondary" className="text-xs">Order Companion</Badge>;
     return null;
@@ -123,6 +162,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
                   {getTicketTypeBadge()}
                   {getMealPlanBadge()}
                   {getArrivalDayBadge()}
+                  {getHeadphonesBadge()}
                 </div>
               </div>
             </div>
