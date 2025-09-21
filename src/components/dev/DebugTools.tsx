@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { WebhookStatus } from "@/components/WebhookStatus";
+
 import { RegFoxSyncPanel } from "@/components/RegFoxSyncPanel";
 import { 
   Play, 
@@ -24,48 +24,7 @@ import {
 } from "lucide-react";
 
 export const DebugTools = () => {
-  const [testWebhookPayload, setTestWebhookPayload] = useState(`{
-  "first_name": "John",
-  "last_name": "Doe",
-  "email": "john.doe@example.com",
-  "phone": "+1234567890",
-  "ticket_type": "dry_site",
-  "meal_plan": "none",
-  "order_id": "TEST123"
-}`);
   const [loading, setLoading] = useState(false);
-  const [lastResponse, setLastResponse] = useState<any>(null);
-
-  const testWebhookEndpoint = async () => {
-    setLoading(true);
-    try {
-      const payload = JSON.parse(testWebhookPayload);
-      
-      // Send to our webhook endpoint
-      const response = await fetch(`${window.location.origin}/api/webhook/regfox`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-      setLastResponse({ status: response.status, data: result });
-      
-      if (response.ok) {
-        toast.success("Test webhook sent successfully");
-      } else {
-        toast.error(`Webhook test failed: ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error('Webhook test error:', error);
-      toast.error("Failed to send test webhook");
-      setLastResponse({ error: error instanceof Error ? error.message : 'Unknown error' });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const exportSyncData = async () => {
     try {
@@ -121,36 +80,11 @@ export const DebugTools = () => {
     }
   };
 
-  const copyWebhookUrl = () => {
-    const webhookUrl = `${window.location.origin}/api/webhook/regfox`;
-    navigator.clipboard.writeText(webhookUrl);
-    toast.success("Webhook URL copied to clipboard");
-  };
 
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              Quick Test
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={testWebhookEndpoint}
-              disabled={loading}
-              className="w-full"
-              size="sm"
-            >
-              {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Test Webhook
-            </Button>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -167,26 +101,6 @@ export const DebugTools = () => {
             >
               <Download className="h-4 w-4" />
               Export Debug
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Copy className="h-4 w-4" />
-              Webhook URL
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={copyWebhookUrl}
-              variant="outline"
-              className="w-full"
-              size="sm"
-            >
-              <Copy className="h-4 w-4" />
-              Copy URL
             </Button>
           </CardContent>
         </Card>
@@ -212,99 +126,22 @@ export const DebugTools = () => {
         </Card>
       </div>
 
-      {/* Webhook Test Panel */}
+
+      {/* RegFox Sync Panel */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Code className="h-5 w-5" />
-            Webhook Payload Tester
+            <Database className="h-5 w-5" />
+            RegFox Sync Control
           </CardTitle>
           <CardDescription>
-            Test webhook endpoint with custom payload
+            Manual sync operations and monitoring
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium">Test Payload (JSON)</label>
-            <Textarea
-              value={testWebhookPayload}
-              onChange={(e) => setTestWebhookPayload(e.target.value)}
-              className="mt-2 font-mono text-xs"
-              rows={8}
-              placeholder="Enter JSON payload..."
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Button 
-              onClick={testWebhookEndpoint}
-              disabled={loading}
-              className="gap-2"
-            >
-              {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Send Test Webhook
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => setTestWebhookPayload(JSON.stringify(JSON.parse(testWebhookPayload), null, 2))}
-            >
-              Format JSON
-            </Button>
-          </div>
-
-          {lastResponse && (
-            <div className="mt-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Eye className="h-4 w-4" />
-                <span className="text-sm font-medium">Last Response</span>
-                <Badge 
-                  variant={lastResponse.status === 200 ? "default" : "destructive"}
-                >
-                  {lastResponse.status || "Error"}
-                </Badge>
-              </div>
-              <ScrollArea className="h-32 w-full border rounded-md p-3">
-                <pre className="text-xs font-mono">
-                  {JSON.stringify(lastResponse, null, 2)}
-                </pre>
-              </ScrollArea>
-            </div>
-          )}
+        <CardContent>
+          <RegFoxSyncPanel />
         </CardContent>
       </Card>
-
-      {/* Existing Components */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5" />
-              Webhook Status
-            </CardTitle>
-            <CardDescription>
-              Monitor webhook connection and recent activity
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WebhookStatus />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              API Sync Control
-            </CardTitle>
-            <CardDescription>
-              Manual sync operations and monitoring
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RegFoxSyncPanel />
-          </CardContent>
-        </Card>
-      </div>
 
       {/* System Status */}
       <Card>
@@ -320,10 +157,10 @@ export const DebugTools = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <div className="text-sm font-medium">Webhook Endpoint</div>
-              <code className="text-xs bg-muted p-2 rounded block">
-                {window.location.origin}/api/webhook/regfox
-              </code>
+              <div className="text-sm font-medium">Sync Method</div>
+              <Badge variant="outline">
+                Scheduled API Sync Only
+              </Badge>
             </div>
             
             <div className="space-y-2">

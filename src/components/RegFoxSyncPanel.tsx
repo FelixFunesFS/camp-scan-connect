@@ -212,8 +212,6 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
     switch (syncType) {
       case 'initial_sync':
         return 'Initial Sync';
-      case 'webhook':
-        return 'Webhook';
       case 'manual_sync':
         return 'Manual Sync';
       default:

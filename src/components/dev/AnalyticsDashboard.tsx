@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
-import { Activity, Users, Database, Webhook, TrendingUp, AlertTriangle } from "lucide-react";
+import { Activity, Users, Database, TrendingUp, AlertTriangle } from "lucide-react";
 
 interface AnalyticsData {
-  totalWebhooks: number;
+  totalRegistrations: number;
   totalApiSyncs: number;
   successRate: number;
   ticketBreakdown: Array<{ name: string; value: number; color: string }>;
-  registrationVelocity: Array<{ date: string; webhooks: number; syncs: number }>;
+  registrationVelocity: Array<{ date: string; registrations: number; syncs: number }>;
   errorRate: number;
   avgSyncDuration: number;
 }
@@ -22,7 +22,7 @@ export const AnalyticsDashboard = () => {
 
   const fetchAnalytics = async () => {
     try {
-      // Fetch webhook data (attendee registrations)
+      // Fetch registration data (attendee registrations)
       const { data: attendeeData, error: attendeeError } = await supabase
         .from('attendees')
         .select('ticket_type, created_at, registration_status')
@@ -38,7 +38,7 @@ export const AnalyticsDashboard = () => {
       if (syncError) throw syncError;
 
       // Calculate metrics
-      const totalWebhooks = attendeeData?.length || 0;
+      const totalRegistrations = attendeeData?.length || 0;
       const totalApiSyncs = syncData?.length || 0;
       
       const successfulSyncs = syncData?.filter(s => s.status === 'completed').length || 0;
@@ -76,7 +76,7 @@ export const AnalyticsDashboard = () => {
       }).reverse();
 
       const registrationVelocity = last7Days.map(date => {
-        const webhooks = attendeeData?.filter(a => 
+        const registrations = attendeeData?.filter(a => 
           a.created_at.split('T')[0] === date
         ).length || 0;
         
@@ -86,13 +86,13 @@ export const AnalyticsDashboard = () => {
 
         return {
           date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          webhooks,
+          registrations,
           syncs
         };
       });
 
       setAnalytics({
-        totalWebhooks,
+        totalRegistrations,
         totalApiSyncs,
         successRate,
         ticketBreakdown,
@@ -139,12 +139,12 @@ export const AnalyticsDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Webhook Events</CardTitle>
-            <Webhook className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium">Registrations</CardTitle>
+            <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.totalWebhooks}</div>
-            <p className="text-xs text-muted-foreground">Individual registrations</p>
+            <div className="text-2xl font-bold">{analytics.totalRegistrations}</div>
+            <p className="text-xs text-muted-foreground">Total attendees registered</p>
           </CardContent>
         </Card>
 
@@ -190,7 +190,7 @@ export const AnalyticsDashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Registration Activity (Last 7 Days)</CardTitle>
-            <CardDescription>Daily webhook and API sync activity</CardDescription>
+            <CardDescription>Daily registrations and API sync activity</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -199,7 +199,7 @@ export const AnalyticsDashboard = () => {
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="webhooks" fill="#3b82f6" name="Webhooks" />
+                <Bar dataKey="registrations" fill="#3b82f6" name="Registrations" />
                 <Bar dataKey="syncs" fill="#10b981" name="API Syncs" />
               </BarChart>
             </ResponsiveContainer>
@@ -252,10 +252,10 @@ export const AnalyticsDashboard = () => {
             <div className="space-y-2">
               <div className="text-sm font-medium">Data Consistency</div>
               <div className="text-2xl font-bold">
-                {analytics.totalWebhooks > 0 && analytics.totalApiSyncs > 0 ? '✓' : '⚠️'}
+                {analytics.totalRegistrations > 0 && analytics.totalApiSyncs > 0 ? '✓' : '⚠️'}
               </div>
               <div className="text-xs text-muted-foreground">
-                Both webhook and API sync active
+                Registrations and API syncs active
               </div>
             </div>
 
