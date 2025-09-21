@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow, format } from "date-fns";
-import { RefreshCw, Search, Filter, Database, Webhook, AlertCircle, CheckCircle, Clock, X } from "lucide-react";
+import { RefreshCw, Search, Filter, Database, Webhook, AlertCircle, CheckCircle, Clock, X, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SyncEvent {
   id: string;
@@ -234,71 +235,104 @@ export const SyncHistoryTable = () => {
             </Select>
           </div>
 
-          <ScrollArea className="h-[500px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Type</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[150px]">Timestamp</TableHead>
-                  <TableHead className="w-[100px]">Duration</TableHead>
-                  <TableHead className="w-[100px]">Records</TableHead>
-                  <TableHead>Details</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEvents.map((event) => (
-                  <TableRow key={`${event.type}-${event.id}`}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getTypeIcon(event.type)}
-                        <span className="text-sm font-medium">
-                          {event.type === 'webhook' ? 'Webhook' : 'API Sync'}
-                        </span>
+          <TooltipProvider>
+            <ScrollArea className="h-[500px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Type</TableHead>
+                    <TableHead className="w-[120px]">Status</TableHead>
+                    <TableHead className="w-[150px]">Timestamp</TableHead>
+                    <TableHead className="w-[100px]">Duration</TableHead>
+                    <TableHead className="w-[100px]">
+                      <div className="flex items-center gap-1">
+                        Records
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs max-w-[200px]">
+                              Number of records processed. API syncs process in batches of 50 for performance. 
+                              Webhook events process 1 record each.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(event.status)}
-                        {getStatusBadge(event.status)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="text-sm">{format(new Date(event.timestamp), 'MMM d, HH:mm')}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {event.duration !== undefined ? `${event.duration}s` : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{event.records || 0}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="text-sm">{event.details}</div>
-                        {event.error && (
-                          <div className="text-xs text-red-600 bg-red-50 p-1 rounded">
-                            {event.error}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
+                    </TableHead>
+                    <TableHead>Details</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            
-            {filteredEvents.length === 0 && !loading && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No events found matching your filters</p>
-              </div>
-            )}
-          </ScrollArea>
+                </TableHeader>
+                <TableBody>
+                  {filteredEvents.map((event) => (
+                    <TableRow key={`${event.type}-${event.id}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getTypeIcon(event.type)}
+                          <span className="text-sm font-medium">
+                            {event.type === 'webhook' ? 'Webhook' : 'API Sync'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(event.status)}
+                          {getStatusBadge(event.status)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{format(new Date(event.timestamp), 'MMM d, HH:mm')}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {event.duration !== undefined ? `${event.duration}s` : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="secondary" className="cursor-help">
+                              {event.records || 0}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs max-w-[200px]">
+                              {event.type === 'api_sync' && event.records === 50 
+                                ? "This sync processed 50 records in a batch. Large datasets are processed incrementally for better performance."
+                                : event.type === 'webhook' 
+                                  ? "Webhook events process one registration record at a time."
+                                  : `This sync processed ${event.records} record(s).`
+                              }
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{event.details}</div>
+                          {event.error && (
+                            <div className="text-xs text-red-600 bg-red-50 p-1 rounded">
+                              {event.error}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              {filteredEvents.length === 0 && !loading && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No events found matching your filters</p>
+                </div>
+              )}
+            </ScrollArea>
+          </TooltipProvider>
         </CardContent>
       </Card>
     </div>
