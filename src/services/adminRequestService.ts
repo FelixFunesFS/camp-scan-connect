@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface AdminTask {
+export interface AdminRequest {
   id?: string;
   title: string;
   description?: string;
@@ -20,15 +20,15 @@ export interface AdminTask {
   metadata?: Record<string, any>;
 }
 
-export class AdminTaskService {
-  static async createTask(task: Omit<AdminTask, 'id' | 'created_at' | 'updated_at'>): Promise<AdminTask> {
+export class AdminRequestService {
+  static async createRequest(request: Omit<AdminRequest, 'id' | 'created_at' | 'updated_at'>): Promise<AdminRequest> {
     try {
-      console.log('Creating admin task:', task);
+      console.log('Creating admin request:', request);
       
       const { data, error } = await supabase
         .from('admin_tasks')
         .insert([{
-          ...task,
+          ...request,
           created_at: new Date().toISOString()
         }])
         .select()
@@ -40,14 +40,14 @@ export class AdminTaskService {
       }
 
       console.log('Admin task created successfully:', data);
-      return data as AdminTask;
+      return data as AdminRequest;
     } catch (error) {
       console.error('Failed to create admin task:', error);
       throw error;
     }
   }
 
-  static async getAllTasks(): Promise<AdminTask[]> {
+  static async getAllRequests(): Promise<AdminRequest[]> {
     try {
       const { data, error } = await supabase
         .from('admin_tasks')
@@ -59,14 +59,14 @@ export class AdminTaskService {
         throw error;
       }
 
-      return (data as AdminTask[]) || [];
+      return (data as AdminRequest[]) || [];
     } catch (error) {
       console.error('Failed to fetch admin tasks:', error);
       throw error;
     }
   }
 
-  static async getTasksByStatus(status: AdminTask['status'][]): Promise<AdminTask[]> {
+  static async getRequestsByStatus(status: AdminRequest['status'][]): Promise<AdminRequest[]> {
     try {
       const { data, error } = await supabase
         .from('admin_tasks')
@@ -80,14 +80,14 @@ export class AdminTaskService {
         throw error;
       }
 
-      return (data as AdminTask[]) || [];
+      return (data as AdminRequest[]) || [];
     } catch (error) {
       console.error('Failed to fetch tasks by status:', error);
       throw error;
     }
   }
 
-  static async updateTask(id: string, updates: Partial<AdminTask>): Promise<void> {
+  static async updateRequest(id: string, updates: Partial<AdminRequest>): Promise<void> {
     try {
       const updateData: any = { ...updates };
       
@@ -110,7 +110,7 @@ export class AdminTaskService {
     }
   }
 
-  static async deleteTask(id: string): Promise<void> {
+  static async deleteRequest(id: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('admin_tasks')
@@ -127,7 +127,7 @@ export class AdminTaskService {
     }
   }
 
-  static async getTaskStats(): Promise<{
+  static async getRequestStats(): Promise<{
     total: number;
     open: number;
     inProgress: number;
