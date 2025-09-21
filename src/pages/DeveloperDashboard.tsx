@@ -10,7 +10,7 @@ import { AnalyticsDashboard } from "@/components/dev/AnalyticsDashboard";
 import { DebugTools } from "@/components/dev/DebugTools";
 import AdminRequestManager from "@/components/dev/AdminRequestManager";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Activity, Database, BarChart, Wrench, Settings } from "lucide-react";
+import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare } from "lucide-react";
 
 const DeveloperDashboard = () => {
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ const DeveloperDashboard = () => {
               Analytics
             </TabsTrigger>
             <TabsTrigger value="requests" className="gap-2">
-              <Settings className="h-4 w-4" />
+              <CheckSquare className="h-4 w-4" />
               Admin Requests
             </TabsTrigger>
             <TabsTrigger value="debug" className="gap-2">
