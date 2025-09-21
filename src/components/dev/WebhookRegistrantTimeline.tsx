@@ -7,8 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Phone, Mail, MapPin, Clock, User } from "lucide-react";
+import { ExternalLink, Phone, Mail, MapPin, Clock, User, HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { EnhancedAttendee } from "@/types/attendee";
 
 interface WebhookRegistrant extends EnhancedAttendee {
@@ -99,45 +100,82 @@ export const WebhookRegistrantTimeline = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Live Registrants</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{liveCount}</div>
-            <p className="text-xs text-muted-foreground">Total in timeline</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {registrants.filter(r => 
-                new Date(r.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
-              ).length}
-            </div>
-            <p className="text-xs text-muted-foreground">Last 24 hours</p>
-          </CardContent>
-        </Card>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-1">
+                Live Registrants
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-[200px]">
+                      Shows the most recent 50 registrants in the timeline. This is a rolling window of the latest webhook-registered attendees.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{liveCount}</div>
+              <p className="text-xs text-muted-foreground">Total in timeline</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-1">
+                Recent Activity
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-[200px]">
+                      Number of new registrations received via webhook in the last 24 hours. Updates in real-time as new attendees register.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {registrants.filter(r => 
+                  new Date(r.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+                ).length}
+              </div>
+              <p className="text-xs text-muted-foreground">Last 24 hours</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Connection Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-sm font-medium">Live</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Webhook active</p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-1">
+                Connection Status
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs max-w-[200px]">
+                      Real-time webhook connection status. When "Live", new registrations from RegFox automatically appear in the timeline.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-sm font-medium">Live</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Webhook active</p>
+            </CardContent>
+          </Card>
+        </div>
 
       <Card>
         <CardHeader>
@@ -236,6 +274,7 @@ export const WebhookRegistrantTimeline = () => {
           </ScrollArea>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
