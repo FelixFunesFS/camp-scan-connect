@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import EquipmentTracker from "@/components/reports/EquipmentTracker";
 import { useEnhancedBackgroundRefresh } from "@/hooks/useEnhancedBackgroundRefresh";
 import { formatStandardDateTime } from "@/utils/dateTimeUtils";
+import { EquipmentStatusService } from "@/services/equipmentStatusService";
 
 interface EquipmentStats {
   type: string;
@@ -40,16 +41,7 @@ export default function EquipmentHub() {
 
   const fetchEquipmentStats = useCallback(async (isBackground = false) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Fetch all equipment transactions for today
-      const { data: transactions } = await supabase
-        .from('station_transactions')
-        .select('station_type, transaction_type, created_at, attendee_id')
-        .in('station_type', ['golf_carts', 'walkie_talkies', 'fanny_packs'] as any)
-        .gte('created_at', today);
-
-      // Process stats for each equipment type
+      // Process stats for each equipment type using EquipmentStatusService
       const equipmentTypes = [
         {
           type: 'golf_carts',
@@ -80,62 +72,31 @@ export default function EquipmentHub() {
         }
       ];
 
-      const stats: EquipmentStats[] = equipmentTypes.map(equipment => {
-        const equipmentTransactions = transactions?.filter(
-          t => t.station_type === equipment.type
-        ) || [];
+      const stats: EquipmentStats[] = await Promise.all(
+        equipmentTypes.map(async (equipment) => {
+          const data = await EquipmentStatusService.getEquipmentData(
+            equipment.type as any,
+            equipment.checkoutType as any,
+            equipment.checkinType as any,
+            'today'
+          );
 
-        const checkouts = equipmentTransactions.filter(
-          t => t.transaction_type === equipment.checkoutType
-        );
+          const avgUsageFormatted = data.stats.averageUsage > 60 
+            ? `${Math.floor(data.stats.averageUsage / 60)}h ${data.stats.averageUsage % 60}m`
+            : `${data.stats.averageUsage}m`;
 
-        const checkins = equipmentTransactions.filter(
-          t => t.transaction_type === equipment.checkinType
-        );
-
-        const checkinAttendeeIds = new Set(checkins.map(c => c.attendee_id));
-        const currentlyOut = checkouts.filter(
-          c => !checkinAttendeeIds.has(c.attendee_id)
-        ).length;
-
-        // Calculate average usage for completed sessions
-        let totalUsageMinutes = 0;
-        let completedSessions = 0;
-        const sessionMap = new Map<string, Date>();
-
-        equipmentTransactions
-          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-          .forEach(transaction => {
-            const attendeeId = transaction.attendee_id;
-            const time = new Date(transaction.created_at);
-            
-            if (transaction.transaction_type === equipment.checkoutType) {
-              sessionMap.set(attendeeId, time);
-            } else if (transaction.transaction_type === equipment.checkinType && sessionMap.has(attendeeId)) {
-              const checkoutTime = sessionMap.get(attendeeId)!;
-              const usageMinutes = Math.floor((time.getTime() - checkoutTime.getTime()) / (1000 * 60));
-              totalUsageMinutes += usageMinutes;
-              completedSessions++;
-              sessionMap.delete(attendeeId);
-            }
-          });
-
-        const avgUsageMinutes = completedSessions > 0 ? Math.round(totalUsageMinutes / completedSessions) : 0;
-        const avgUsageFormatted = avgUsageMinutes > 60 
-          ? `${Math.floor(avgUsageMinutes / 60)}h ${avgUsageMinutes % 60}m`
-          : `${avgUsageMinutes}m`;
-
-        return {
-          type: equipment.type,
-          name: equipment.name,
-          icon: equipment.icon,
-          currentlyOut,
-          totalToday: checkouts.length,
-          averageUsage: avgUsageFormatted,
-          stationPath: equipment.stationPath,
-          color: equipment.color
-        };
-      });
+          return {
+            type: equipment.type,
+            name: equipment.name,
+            icon: equipment.icon,
+            currentlyOut: data.stats.currentlyOut,
+            totalToday: data.stats.totalCheckouts,
+            averageUsage: avgUsageFormatted,
+            stationPath: equipment.stationPath,
+            color: equipment.color
+          };
+        })
+      );
 
       setEquipmentStats(stats);
       // Trigger refresh for EquipmentTracker components
@@ -277,9 +238,6 @@ export default function EquipmentHub() {
                     </div>
                     <div>
                       <CardTitle className="text-xl">{equipment.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        Equipment management and tracking
-                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
