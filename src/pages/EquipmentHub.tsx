@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { 
   Car, 
@@ -10,7 +11,8 @@ import {
   Activity,
   Timer,
   AlertCircle,
-  RefreshCw 
+  RefreshCw,
+  HelpCircle
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
@@ -34,6 +36,7 @@ export default function EquipmentHub() {
   const navigate = useNavigate();
   const [equipmentStats, setEquipmentStats] = useState<EquipmentStats[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const fetchEquipmentStats = useCallback(async (isBackground = false) => {
     try {
@@ -135,6 +138,8 @@ export default function EquipmentHub() {
       });
 
       setEquipmentStats(stats);
+      // Trigger refresh for EquipmentTracker components
+      setRefreshTrigger(prev => prev + 1);
       // Only set loading to false on initial load, not during background refreshes
       if (!isBackground) {
         setIsInitialLoading(false);
@@ -186,10 +191,11 @@ export default function EquipmentHub() {
   const totalCheckoutsToday = equipmentStats.reduce((sum, stat) => sum + stat.totalToday, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <Card>
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Header */}
+          <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -213,14 +219,30 @@ export default function EquipmentHub() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <Badge variant="outline" className="text-lg px-4 py-2">
-                  <Timer className="h-4 w-4 mr-2" />
-                  {totalCurrentlyOut} Currently Out
-                </Badge>
-                <Badge variant="outline" className="text-lg px-4 py-2">
-                  <Activity className="h-4 w-4 mr-2" />
-                  {totalCheckoutsToday} Today
-                </Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="text-lg px-4 py-2 cursor-help">
+                      <Timer className="h-4 w-4 mr-2" />
+                      {totalCurrentlyOut} Currently Out
+                      <HelpCircle className="h-3 w-3 ml-2 opacity-60" />
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Equipment currently checked out and not yet returned</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="text-lg px-4 py-2 cursor-help">
+                      <Activity className="h-4 w-4 mr-2" />
+                      {totalCheckoutsToday} Today
+                      <HelpCircle className="h-3 w-3 ml-2 opacity-60" />
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Total checkout transactions processed today since midnight</p>
+                  </TooltipContent>
+                </Tooltip>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   {isRefreshing && (
                     <div className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"></div>
@@ -262,10 +284,18 @@ export default function EquipmentHub() {
                   </div>
                   <div className="flex items-center gap-3">
                     {equipment.currentlyOut > 0 && (
-                      <Badge variant="outline" className="text-warning">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        {equipment.currentlyOut} Active
-                      </Badge>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="text-warning cursor-help">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            {equipment.currentlyOut} Active
+                            <HelpCircle className="h-3 w-3 ml-1 opacity-60" />
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Items currently checked out to attendees</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                     <Link to={equipment.stationPath}>
                       <Button variant="outline">
@@ -278,18 +308,48 @@ export default function EquipmentHub() {
               <CardContent className="space-y-4">
                 {/* Summary Stats */}
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-warning/10 rounded-lg">
-                    <div className="text-2xl font-bold text-warning">{equipment.currentlyOut}</div>
-                    <div className="text-sm text-muted-foreground">Currently Out</div>
-                  </div>
-                  <div className="text-center p-4 bg-info/10 rounded-lg">
-                    <div className="text-2xl font-bold text-info">{equipment.totalToday}</div>
-                    <div className="text-sm text-muted-foreground">Total Today</div>
-                  </div>
-                  <div className="text-center p-4 bg-success/10 rounded-lg">
-                    <div className="text-lg font-bold text-success">{equipment.averageUsage}</div>
-                    <div className="text-sm text-muted-foreground">Average Usage</div>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="text-center p-4 bg-warning/10 rounded-lg cursor-help border-2 border-transparent hover:border-warning/20 transition-colors">
+                        <div className="text-2xl font-bold text-warning flex items-center justify-center gap-2">
+                          {equipment.currentlyOut}
+                          <HelpCircle className="h-4 w-4 opacity-60" />
+                        </div>
+                        <div className="text-sm text-muted-foreground">Currently Out</div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Equipment checked out but not yet returned</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="text-center p-4 bg-info/10 rounded-lg cursor-help border-2 border-transparent hover:border-info/20 transition-colors">
+                        <div className="text-2xl font-bold text-info flex items-center justify-center gap-2">
+                          {equipment.totalToday}
+                          <HelpCircle className="h-4 w-4 opacity-60" />
+                        </div>
+                        <div className="text-sm text-muted-foreground">Total Today</div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>All checkout transactions since midnight today</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="text-center p-4 bg-success/10 rounded-lg cursor-help border-2 border-transparent hover:border-success/20 transition-colors">
+                        <div className="text-lg font-bold text-success flex items-center justify-center gap-2">
+                          {equipment.averageUsage}
+                          <HelpCircle className="h-4 w-4 opacity-60" />
+                        </div>
+                        <div className="text-sm text-muted-foreground">Average Usage</div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Average duration of completed rental sessions</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
                 {/* Detailed Checkout Table - Only show if items are checked out */}
@@ -314,6 +374,7 @@ export default function EquipmentHub() {
                       }
                       icon={equipment.icon}
                       timePeriod="today"
+                      refreshTrigger={refreshTrigger}
                     />
                   </div>
                 )}
@@ -321,7 +382,8 @@ export default function EquipmentHub() {
             </Card>
           ))}
         </div>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
