@@ -6,6 +6,12 @@ import { GlassWater, Clock, TrendingUp, Users, ArrowUp, ArrowDown } from "lucide
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, getTimeBoundaries, getComparisonBoundaries, formatTimePeriod } from "@/utils/etTimezone";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { 
+  Tooltip as UITooltip, 
+  TooltipContent as UITooltipContent, 
+  TooltipProvider as UITooltipProvider, 
+  TooltipTrigger as UITooltipTrigger 
+} from "@/components/ui/tooltip";
 
 interface AnalyticsData {
   drinkCount: number;
@@ -250,7 +256,8 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <UITooltipProvider>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Drinks Counter */}
       <Card>
         <CardHeader>
@@ -325,10 +332,18 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Average Party Time
-            </div>
+            <UITooltip>
+              <UITooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Average Party Time
+                </div>
+              </UITooltipTrigger>
+              <UITooltipContent>
+                <p>Average duration of headphone rentals</p>
+                <p className="text-xs text-muted-foreground mt-1">Calculated from checkout to check-in times</p>
+              </UITooltipContent>
+            </UITooltip>
             {analytics.comparison && (
               <div className="flex items-center gap-1 text-sm">
                 {analytics.comparison.partyTimeChange > 0 ? (
@@ -362,8 +377,18 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Peak Usage Hours
+            <UITooltip>
+              <UITooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Peak Usage Hours
+                </div>
+              </UITooltipTrigger>
+              <UITooltipContent>
+                <p>Hours with highest activity across all stations</p>
+                <p className="text-xs text-muted-foreground mt-1">Helps with staffing and resource allocation</p>
+              </UITooltipContent>
+            </UITooltip>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -391,8 +416,18 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Meal Service Today
+            <UITooltip>
+              <UITooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Meal Service Today
+                </div>
+              </UITooltipTrigger>
+              <UITooltipContent>
+                <p>Meals served by type throughout the day</p>
+                <p className="text-xs text-muted-foreground mt-1">Tracked via meal station check-ins</p>
+              </UITooltipContent>
+            </UITooltip>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -418,13 +453,22 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
               </div>
             </div>
             <div className="text-center">
-              <Badge variant="outline" className="text-success">
-                Total: {analytics.mealCounts.breakfast + analytics.mealCounts.lunch + analytics.mealCounts.dinner} meals served
-              </Badge>
+              <UITooltip>
+                <UITooltipTrigger asChild>
+                  <Badge variant="outline" className="text-success">
+                    Total: {analytics.mealCounts.breakfast + analytics.mealCounts.lunch + analytics.mealCounts.dinner} meals served
+                  </Badge>
+                </UITooltipTrigger>
+                <UITooltipContent>
+                  <p>Combined total of all meal types served</p>
+                  <p className="text-xs text-muted-foreground mt-1">Real-time count based on station activity</p>
+                </UITooltipContent>
+              </UITooltip>
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
+    </UITooltipProvider>
   );
 };

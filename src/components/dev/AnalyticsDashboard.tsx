@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { Activity, Users, Database, TrendingUp, AlertTriangle } from "lucide-react";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AnalyticsData {
   totalRegistrations: number;
@@ -134,7 +135,8 @@ export const AnalyticsDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -165,8 +167,27 @@ export const AnalyticsDashboard = () => {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.successRate.toFixed(1)}%</div>
-            <Progress value={analytics.successRate} className="mt-2" />
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <div className="text-2xl font-bold">{analytics.successRate.toFixed(1)}%</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Percentage of successful API sync operations</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {analytics.successRate > 90 ? 'Excellent performance' : 
+                   analytics.successRate > 70 ? 'Good performance' : 'Needs attention - below 70%'}
+                </p>
+              </TooltipContent>
+            </UITooltip>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <Progress value={analytics.successRate} className="mt-2" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Visual indicator of sync reliability</p>
+                <p className="text-xs text-muted-foreground">Green: {'>'}90% | Yellow: 70-90% | Red: {'<'}70%</p>
+              </TooltipContent>
+            </UITooltip>
           </CardContent>
         </Card>
 
@@ -189,7 +210,15 @@ export const AnalyticsDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Registration Activity (Last 7 Days)</CardTitle>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <CardTitle>Registration Activity (Last 7 Days)</CardTitle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Shows new attendee registrations vs API sync operations</p>
+                <p className="text-xs text-muted-foreground mt-1">Blue bars: New registrations | Green bars: API syncs</p>
+              </TooltipContent>
+            </UITooltip>
             <CardDescription>Daily registrations and API sync activity</CardDescription>
           </CardHeader>
           <CardContent>
@@ -208,7 +237,15 @@ export const AnalyticsDashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Ticket Type Distribution</CardTitle>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <CardTitle>Ticket Type Distribution</CardTitle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Breakdown of attendees by accommodation preference</p>
+                <p className="text-xs text-muted-foreground mt-1">Helps with resource planning and logistics</p>
+              </TooltipContent>
+            </UITooltip>
             <CardDescription>Breakdown by accommodation type</CardDescription>
           </CardHeader>
           <CardContent>
@@ -244,13 +281,29 @@ export const AnalyticsDashboard = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <div className="text-sm font-medium">Average Sync Duration</div>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-sm font-medium">Average Sync Duration</div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>How long each API sync typically takes</p>
+                  <p className="text-xs text-muted-foreground mt-1">Under 30s is excellent, over 60s may indicate issues</p>
+                </TooltipContent>
+              </UITooltip>
               <div className="text-2xl font-bold">{analytics.avgSyncDuration.toFixed(1)}s</div>
               <Progress value={Math.min((analytics.avgSyncDuration / 60) * 100, 100)} />
             </div>
             
             <div className="space-y-2">
-              <div className="text-sm font-medium">Data Consistency</div>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-sm font-medium">Data Consistency</div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Checks if both registration and sync systems are active</p>
+                  <p className="text-xs text-muted-foreground mt-1">✓ = Both systems working | ⚠️ = One system inactive</p>
+                </TooltipContent>
+              </UITooltip>
               <div className="text-2xl font-bold">
                 {analytics.totalRegistrations > 0 && analytics.totalApiSyncs > 0 ? '✓' : '⚠️'}
               </div>
@@ -260,7 +313,20 @@ export const AnalyticsDashboard = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium">System Health</div>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-sm font-medium">System Health</div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Overall system health based on success rate</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ✓ Excellent ({'>'}90%) | ⚠️ Good (70-90%) | ❌ Needs attention ({'<'}70%)
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Red X often indicates past webhook failures - now resolved with scheduled syncing
+                  </p>
+                </TooltipContent>
+              </UITooltip>
               <div className="text-2xl font-bold">
                 {analytics.successRate > 90 ? '✓' : analytics.successRate > 70 ? '⚠️' : '❌'}
               </div>
@@ -273,5 +339,6 @@ export const AnalyticsDashboard = () => {
         </CardContent>
       </Card>
     </div>
+    </TooltipProvider>
   );
 };

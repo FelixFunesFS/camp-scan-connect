@@ -12,6 +12,7 @@ import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -61,7 +62,8 @@ const Reports = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -86,36 +88,60 @@ const Reports = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as TimePeriod)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="yesterday">Yesterday</SelectItem>
-                <SelectItem value="this_event">This Event</SelectItem>
-                <SelectItem value="all_time">All Time</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleExportReport}
-              className="flex items-center gap-2 bg-secondary hover:bg-secondary/90"
-            >
-              <Download className="h-4 w-4" />
-              Export CSV
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as TimePeriod)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                    <SelectItem value="this_event">This Event</SelectItem>
+                    <SelectItem value="all_time">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Select time period for report data</p>
+                <p className="text-xs text-muted-foreground mt-1">All times in Eastern Time (event timezone)</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Manually refresh all report data</p>
+                <p className="text-xs text-muted-foreground mt-1">Reports auto-refresh every 30 seconds</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleExportReport}
+                  className="flex items-center gap-2 bg-secondary hover:bg-secondary/90"
+                >
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Download complete attendee data as CSV</p>
+                <p className="text-xs text-muted-foreground mt-1">Includes RFID assignments, check-in status, and contact info</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -147,12 +173,21 @@ const Reports = () => {
 
         {/* Auto-refresh indicator */}
         <div className="text-center mt-8">
-          <Badge variant="outline" className="text-xs">
-            Auto-refreshing every 30 seconds - No page flashing ✓
-          </Badge>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="text-xs">
+                Auto-refreshing every 30 seconds - No page flashing ✓
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Reports update automatically in the background</p>
+              <p className="text-xs text-muted-foreground mt-1">Uses background refresh to avoid disrupting your workflow</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 

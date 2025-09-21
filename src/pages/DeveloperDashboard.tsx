@@ -11,12 +11,14 @@ import { DebugTools } from "@/components/dev/DebugTools";
 import AdminRequestManager from "@/components/dev/AdminRequestManager";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const DeveloperDashboard = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background">
+    <TooltipProvider>
+      <div className="min-h-screen bg-background">
       <div className="border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -38,10 +40,17 @@ const DeveloperDashboard = () => {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="gap-1">
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              Live
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="gap-1">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  Live
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Real-time data updates - No need to refresh pages</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -49,26 +58,61 @@ const DeveloperDashboard = () => {
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="timeline" className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="timeline" className="gap-2">
-              <Activity className="h-4 w-4" />
-              Registrant Timeline
-            </TabsTrigger>
-            <TabsTrigger value="sync" className="gap-2">
-              <Database className="h-4 w-4" />
-              Sync History
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
-              <BarChart className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="requests" className="gap-2">
-              <CheckSquare className="h-4 w-4" />
-              Admin Requests
-            </TabsTrigger>
-            <TabsTrigger value="debug" className="gap-2">
-              <Wrench className="h-4 w-4" />
-              Debug Tools
-            </TabsTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="timeline" className="gap-2">
+                  <Activity className="h-4 w-4" />
+                  Registrant Timeline
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Real-time timeline of attendee registrations and changes</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="sync" className="gap-2">
+                  <Database className="h-4 w-4" />
+                  Sync History
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>History of RegFox API synchronizations - both scheduled and manual</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="analytics" className="gap-2">
+                  <BarChart className="h-4 w-4" />
+                  Analytics
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Registration metrics, sync performance, and system health indicators</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="requests" className="gap-2">
+                  <CheckSquare className="h-4 w-4" />
+                  Admin Requests
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Management interface for admin tasks and maintenance operations</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="debug" className="gap-2">
+                  <Wrench className="h-4 w-4" />
+                  Debug Tools
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Developer tools for testing, data export, and system diagnostics</p>
+              </TooltipContent>
+            </Tooltip>
           </TabsList>
 
           <TabsContent value="timeline" className="space-y-6">
@@ -93,6 +137,7 @@ const DeveloperDashboard = () => {
         </Tabs>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 
