@@ -8,13 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { Plus, Calendar, User, Clock, AlertCircle, CheckCircle2, Circle, PlayCircle } from 'lucide-react';
+import { Plus, Calendar, User, Clock, AlertCircle, CheckCircle2, Circle, PlayCircle, Pencil } from 'lucide-react';
 import { AdminTaskService, AdminTask } from '@/services/adminTaskService';
 
 export const AdminTaskManager = () => {
   const [tasks, setTasks] = useState<AdminTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isEditingTask, setIsEditingTask] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'open' | 'in_progress' | 'completed'>('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'urgent' | 'high' | 'normal' | 'low'>('all');
 
@@ -24,9 +26,11 @@ export const AdminTaskManager = () => {
     description: '',
     task_type: 'feature_request',
     priority: 'normal',
-    category: '',
-    estimated_hours: undefined
+    category: ''
   });
+
+  // Edit task form state
+  const [editTask, setEditTask] = useState<Partial<AdminTask>>({});
 
   useEffect(() => {
     loadTasks();
@@ -59,8 +63,7 @@ export const AdminTaskManager = () => {
         description: '',
         task_type: 'feature_request',
         priority: 'normal',
-        category: '',
-        estimated_hours: undefined
+        category: ''
       });
       setIsAddingTask(false);
       loadTasks();
@@ -74,6 +77,38 @@ export const AdminTaskManager = () => {
     try {
       await AdminTaskService.updateTask(taskId, { status });
       toast.success(`Task marked as ${status.replace('_', ' ')}`);
+      loadTasks();
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast.error('Failed to update task');
+    }
+  };
+
+  const handleEditTask = (task: AdminTask) => {
+    setEditTask({
+      title: task.title,
+      description: task.description,
+      task_type: task.task_type,
+      priority: task.priority,
+      category: task.category,
+      due_date: task.due_date
+    });
+    setEditingTaskId(task.id!);
+    setIsEditingTask(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTask.title?.trim()) {
+      toast.error('Task title is required');
+      return;
+    }
+
+    try {
+      await AdminTaskService.updateTask(editingTaskId!, editTask);
+      toast.success('Task updated successfully');
+      setIsEditingTask(false);
+      setEditingTaskId(null);
+      setEditTask({});
       loadTasks();
     } catch (error) {
       console.error('Error updating task:', error);
@@ -188,25 +223,81 @@ export const AdminTaskManager = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    placeholder="Category (optional)"
-                    value={newTask.category || ''}
-                    onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Est. hours"
-                    value={newTask.estimated_hours || ''}
-                    onChange={(e) => setNewTask({ ...newTask, estimated_hours: parseInt(e.target.value) || undefined })}
-                  />
-                </div>
+                <Input
+                  placeholder="Category (optional)"
+                  value={newTask.category || ''}
+                  onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
+                />
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => setIsAddingTask(false)}>
                     Cancel
                   </Button>
                   <Button onClick={handleCreateTask}>
                     Create Task
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Task Dialog */}
+          <Dialog open={isEditingTask} onOpenChange={setIsEditingTask}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Task</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Task title"
+                  value={editTask.title || ''}
+                  onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
+                />
+                <Textarea
+                  placeholder="Task description"
+                  value={editTask.description || ''}
+                  onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <Select
+                    value={editTask.task_type}
+                    onValueChange={(value) => setEditTask({ ...editTask, task_type: value as AdminTask['task_type'] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="feature_request">Feature Request</SelectItem>
+                      <SelectItem value="bug_fix">Bug Fix</SelectItem>
+                      <SelectItem value="improvement">Improvement</SelectItem>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={editTask.priority}
+                    onValueChange={(value) => setEditTask({ ...editTask, priority: value as AdminTask['priority'] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Input
+                  placeholder="Category (optional)"
+                  value={editTask.category || ''}
+                  onChange={(e) => setEditTask({ ...editTask, category: e.target.value })}
+                />
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setIsEditingTask(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveEdit}>
+                    Save Changes
                   </Button>
                 </div>
               </div>
@@ -284,6 +375,14 @@ export const AdminTaskManager = () => {
                       </div>
                     </div>
                     <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditTask(task)}
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
                       {task.status === 'open' && (
                         <Button
                           size="sm"
