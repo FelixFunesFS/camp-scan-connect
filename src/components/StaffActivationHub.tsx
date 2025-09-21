@@ -37,6 +37,7 @@ import { enhancedActivationService, UnifiedSearchResult, EnhancedActivationServi
 import { StationTransactionService } from '@/services/stationTransactionService';
 import { phoneActivationService } from '@/services/phoneActivationService';
 import { HeadphonesStatusService } from '@/services/headphonesStatusService';
+import { EquipmentStatusService } from '@/services/equipmentStatusService';
 import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -63,6 +64,15 @@ export interface EnhancedAttendee {
   has_headphones?: boolean;
   headphones_status?: 'checked_out' | 'checked_in' | 'never_used';
   headphones_duration?: number;
+  golf_cart_status?: 'checked_out' | 'checked_in' | 'never_used';
+  golf_cart_duration?: number;
+  golf_cart_checkout_at?: string;
+  walkie_talkie_status?: 'checked_out' | 'checked_in' | 'never_used';
+  walkie_talkie_duration?: number;
+  walkie_talkie_checkout_at?: string;
+  fanny_pack_status?: 'checked_out' | 'checked_in' | 'never_used';
+  fanny_pack_duration?: number;
+  fanny_pack_checkout_at?: string;
   bar_hits?: number;
   arrival_day?: string;
   is_duplicate?: boolean;
@@ -133,7 +143,7 @@ export function StaffActivationHub() {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [visibleColumns] = useState<string[]>([
-    'first_name', 'email', 'phone', 'order_id', 'ticket_type', 'registration_status', 'rfid_status', 'headphones', 'actions'
+    'first_name', 'email', 'phone', 'order_id', 'ticket_type', 'registration_status', 'rfid_status', 'headphones', 'golf_carts', 'walkie_talkies', 'fanny_packs', 'actions'
   ]);
   
   // Unified activation section state
@@ -169,6 +179,9 @@ export function StaffActivationHub() {
     { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
     { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'headphones', label: 'Headphones', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
+    { key: 'golf_carts', label: 'Golf Carts', desktop: true, width: 'min-w-28', sortable: true },
+    { key: 'walkie_talkies', label: 'Walkie Talkies', desktop: true, width: 'min-w-32', sortable: true },
+    { key: 'fanny_packs', label: 'Fanny Packs', desktop: true, width: 'min-w-28', sortable: true },
     { key: 'actions', label: 'Actions', mobile: true, desktop: true, width: 'min-w-32', sortable: false }
   ];
 
@@ -246,6 +259,69 @@ export function StaffActivationHub() {
             headphones_status = 'checked_in';
           }
         }
+
+        // Get latest golf cart transaction to determine current status
+        const golfCartTransactions = transactions
+          .filter(t => t.station_type === 'golf_carts' && 
+                      ['golf_cart_checkout', 'golf_cart_checkin'].includes(t.transaction_type))
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        const latestGolfCartTransaction = golfCartTransactions[0];
+        let golf_cart_status: 'checked_out' | 'checked_in' | 'never_used' = 'never_used';
+        let golf_cart_duration: number | undefined;
+        let golf_cart_checkout_at: string | undefined;
+        
+        if (latestGolfCartTransaction) {
+          if (latestGolfCartTransaction.transaction_type === 'golf_cart_checkout') {
+            golf_cart_status = 'checked_out';
+            golf_cart_duration = Math.floor((Date.now() - new Date(latestGolfCartTransaction.created_at).getTime()) / (1000 * 60));
+            golf_cart_checkout_at = latestGolfCartTransaction.created_at;
+          } else {
+            golf_cart_status = 'checked_in';
+          }
+        }
+
+        // Get latest walkie talkie transaction to determine current status
+        const walkieTalkieTransactions = transactions
+          .filter(t => t.station_type === 'walkie_talkies' && 
+                      ['walkie_talkie_checkout', 'walkie_talkie_checkin'].includes(t.transaction_type))
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        const latestWalkieTalkieTransaction = walkieTalkieTransactions[0];
+        let walkie_talkie_status: 'checked_out' | 'checked_in' | 'never_used' = 'never_used';
+        let walkie_talkie_duration: number | undefined;
+        let walkie_talkie_checkout_at: string | undefined;
+        
+        if (latestWalkieTalkieTransaction) {
+          if (latestWalkieTalkieTransaction.transaction_type === 'walkie_talkie_checkout') {
+            walkie_talkie_status = 'checked_out';
+            walkie_talkie_duration = Math.floor((Date.now() - new Date(latestWalkieTalkieTransaction.created_at).getTime()) / (1000 * 60));
+            walkie_talkie_checkout_at = latestWalkieTalkieTransaction.created_at;
+          } else {
+            walkie_talkie_status = 'checked_in';
+          }
+        }
+
+        // Get latest fanny pack transaction to determine current status
+        const fannyPackTransactions = transactions
+          .filter(t => t.station_type === 'fanny_packs' && 
+                      ['fanny_pack_checkout', 'fanny_pack_checkin'].includes(t.transaction_type))
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        const latestFannyPackTransaction = fannyPackTransactions[0];
+        let fanny_pack_status: 'checked_out' | 'checked_in' | 'never_used' = 'never_used';
+        let fanny_pack_duration: number | undefined;
+        let fanny_pack_checkout_at: string | undefined;
+        
+        if (latestFannyPackTransaction) {
+          if (latestFannyPackTransaction.transaction_type === 'fanny_pack_checkout') {
+            fanny_pack_status = 'checked_out';
+            fanny_pack_duration = Math.floor((Date.now() - new Date(latestFannyPackTransaction.created_at).getTime()) / (1000 * 60));
+            fanny_pack_checkout_at = latestFannyPackTransaction.created_at;
+          } else {
+            fanny_pack_status = 'checked_in';
+          }
+        }
         
         const bar_hits = transactions.filter(t => 
           t.station_type === 'drinks' && t.transaction_type === 'drink'
@@ -275,6 +351,15 @@ export function StaffActivationHub() {
           has_headphones,
           headphones_status,
           headphones_duration,
+          golf_cart_status,
+          golf_cart_duration,
+          golf_cart_checkout_at,
+          walkie_talkie_status,
+          walkie_talkie_duration,
+          walkie_talkie_checkout_at,
+          fanny_pack_status,
+          fanny_pack_duration,
+          fanny_pack_checkout_at,
           bar_hits,
           arrival_day,
           is_duplicate,
@@ -1112,14 +1197,71 @@ export function StaffActivationHub() {
                                          return <Badge variant="outline" className="text-xs text-muted-foreground">No Headphone Use</Badge>;
                                        }
                                        return null;
-                                     })()}
-                                   </div>
-                                   {attendee.rfid_uid && (
-                                     <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
-                                   )}
-                                   {attendee.order_id && (
-                                     <p className="font-mono text-xs">Order: {attendee.order_id}</p>
-                                   )}
+                                      })()}
+                                      {/* Golf Cart Status */}
+                                      {(() => {
+                                        if (attendee.golf_cart_status === 'checked_out') {
+                                          const duration = attendee.golf_cart_duration || 0;
+                                          const isLong = duration > 480; // 8 hours
+                                          return (
+                                            <Badge 
+                                              variant={isLong ? "destructive" : "secondary"}
+                                              className="text-xs"
+                                            >
+                                              Golf Cart ({EquipmentStatusService.formatUsageTime(duration)})
+                                            </Badge>
+                                          );
+                                        }
+                                        if (attendee.golf_cart_status === 'checked_in') {
+                                          return <Badge variant="outline" className="text-xs">Golf Cart Available</Badge>;
+                                        }
+                                        return null;
+                                      })()}
+                                      {/* Walkie Talkie Status */}
+                                      {(() => {
+                                        if (attendee.walkie_talkie_status === 'checked_out') {
+                                          const duration = attendee.walkie_talkie_duration || 0;
+                                          const isLong = duration > 480; // 8 hours
+                                          return (
+                                            <Badge 
+                                              variant={isLong ? "destructive" : "secondary"}
+                                              className="text-xs"
+                                            >
+                                              Walkie Talkie ({EquipmentStatusService.formatUsageTime(duration)})
+                                            </Badge>
+                                          );
+                                        }
+                                        if (attendee.walkie_talkie_status === 'checked_in') {
+                                          return <Badge variant="outline" className="text-xs">Walkie Talkie Available</Badge>;
+                                        }
+                                        return null;
+                                      })()}
+                                      {/* Fanny Pack Status */}
+                                      {(() => {
+                                        if (attendee.fanny_pack_status === 'checked_out') {
+                                          const duration = attendee.fanny_pack_duration || 0;
+                                          const isLong = duration > 1440; // 24 hours
+                                          return (
+                                            <Badge 
+                                              variant={isLong ? "destructive" : "secondary"}
+                                              className="text-xs"
+                                            >
+                                              Fanny Pack ({EquipmentStatusService.formatUsageTime(duration)})
+                                            </Badge>
+                                          );
+                                        }
+                                        if (attendee.fanny_pack_status === 'checked_in') {
+                                          return <Badge variant="outline" className="text-xs">Fanny Pack Available</Badge>;
+                                        }
+                                        return null;
+                                      })()}
+                                    </div>
+                                    {attendee.rfid_uid && (
+                                      <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
+                                    )}
+                                    {attendee.order_id && (
+                                      <p className="font-mono text-xs">Order: {attendee.order_id}</p>
+                                    )}
                                  </div>
                               </div>
                               
@@ -1247,6 +1389,66 @@ export function StaffActivationHub() {
                                      );
                                    }
                                    if (attendee.headphones_status === 'checked_in') {
+                                     return <Badge variant="outline" className="text-xs">Available</Badge>;
+                                   }
+                                   return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
+                                 })()}
+                               </td>
+                               <td className="p-3 text-sm">
+                                 {(() => {
+                                   if (attendee.golf_cart_status === 'checked_out') {
+                                     const duration = attendee.golf_cart_duration || 0;
+                                     const isLong = duration > 480; // 8 hours
+                                     return (
+                                       <Badge 
+                                         variant={isLong ? "destructive" : "secondary"}
+                                         className="text-xs"
+                                       >
+                                         Checked Out ({EquipmentStatusService.formatUsageTime(duration)})
+                                       </Badge>
+                                     );
+                                   }
+                                   if (attendee.golf_cart_status === 'checked_in') {
+                                     return <Badge variant="outline" className="text-xs">Available</Badge>;
+                                   }
+                                   return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
+                                 })()}
+                               </td>
+                               <td className="p-3 text-sm">
+                                 {(() => {
+                                   if (attendee.walkie_talkie_status === 'checked_out') {
+                                     const duration = attendee.walkie_talkie_duration || 0;
+                                     const isLong = duration > 480; // 8 hours
+                                     return (
+                                       <Badge 
+                                         variant={isLong ? "destructive" : "secondary"}
+                                         className="text-xs"
+                                       >
+                                         Checked Out ({EquipmentStatusService.formatUsageTime(duration)})
+                                       </Badge>
+                                     );
+                                   }
+                                   if (attendee.walkie_talkie_status === 'checked_in') {
+                                     return <Badge variant="outline" className="text-xs">Available</Badge>;
+                                   }
+                                   return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
+                                 })()}
+                               </td>
+                               <td className="p-3 text-sm">
+                                 {(() => {
+                                   if (attendee.fanny_pack_status === 'checked_out') {
+                                     const duration = attendee.fanny_pack_duration || 0;
+                                     const isLong = duration > 1440; // 24 hours
+                                     return (
+                                       <Badge 
+                                         variant={isLong ? "destructive" : "secondary"}
+                                         className="text-xs"
+                                       >
+                                         Checked Out ({EquipmentStatusService.formatUsageTime(duration)})
+                                       </Badge>
+                                     );
+                                   }
+                                   if (attendee.fanny_pack_status === 'checked_in') {
                                      return <Badge variant="outline" className="text-xs">Available</Badge>;
                                    }
                                    return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
