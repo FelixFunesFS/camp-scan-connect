@@ -8,8 +8,9 @@ import { WebhookRegistrantTimeline } from "@/components/dev/WebhookRegistrantTim
 import { SyncHistoryTable } from "@/components/dev/SyncHistoryTable";
 import { AnalyticsDashboard } from "@/components/dev/AnalyticsDashboard";
 import { DebugTools } from "@/components/dev/DebugTools";
+import { AdminTaskManager } from "@/components/dev/AdminTaskManager";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Activity, Database, BarChart, Wrench } from "lucide-react";
+import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare } from "lucide-react";
 
 const DeveloperDashboard = () => {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ const DeveloperDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="timeline" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="timeline" className="gap-2">
               <Activity className="h-4 w-4" />
               Registrant Timeline
@@ -59,6 +60,10 @@ const DeveloperDashboard = () => {
             <TabsTrigger value="analytics" className="gap-2">
               <BarChart className="h-4 w-4" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="gap-2">
+              <CheckSquare className="h-4 w-4" />
+              Admin Tasks
             </TabsTrigger>
             <TabsTrigger value="debug" className="gap-2">
               <Wrench className="h-4 w-4" />
@@ -76,6 +81,10 @@ const DeveloperDashboard = () => {
 
           <TabsContent value="analytics" className="space-y-6">
             <AnalyticsDashboard />
+          </TabsContent>
+
+          <TabsContent value="tasks" className="space-y-6">
+            <AdminTaskManager />
           </TabsContent>
 
           <TabsContent value="debug" className="space-y-6">
