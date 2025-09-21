@@ -78,7 +78,7 @@ export default function EquipmentHub() {
             equipment.type as any,
             equipment.checkoutType as any,
             equipment.checkinType as any,
-            'today'
+            'all'
           );
 
           const avgUsageFormatted = data.stats.averageUsage > 60 
@@ -331,7 +331,7 @@ export default function EquipmentHub() {
                         'fanny_pack_checkin'
                       }
                       icon={equipment.icon}
-                      timePeriod="today"
+                      timePeriod="all"
                       refreshTrigger={refreshTrigger}
                     />
                   </div>

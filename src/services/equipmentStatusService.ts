@@ -86,12 +86,8 @@ export class EquipmentStatusService {
     timePeriod: 'today' | 'all' = 'today'
   ): Promise<{ checkouts: EquipmentCheckout[]; stats: EquipmentStats }> {
     try {
-      const startDate = timePeriod === 'today' 
-        ? new Date().toISOString().split('T')[0]
-        : '1900-01-01';
-
-      // Get all transactions for this equipment type
-      const { data: transactions, error } = await supabase
+      // Always get ALL transactions to determine current checkout status
+      const { data: allTransactions, error: allError } = await supabase
         .from('station_transactions')
         .select(`
           id,
@@ -103,22 +99,42 @@ export class EquipmentStatusService {
         `)
         .eq('station_type', stationType)
         .in('transaction_type', [checkoutType, checkinType])
-        .gte('created_at', startDate)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error(`Error fetching ${stationType} data:`, error);
+      if (allError) {
+        console.error(`Error fetching all ${stationType} transactions:`, allError);
         return { checkouts: [], stats: { currentlyOut: 0, totalCheckouts: 0, averageUsage: 0, longestSession: 0 } };
       }
 
-      // Get unique attendee IDs from transactions
-      const attendeeIds = [...new Set(transactions?.map(t => t.attendee_id).filter(Boolean) || [])];
+      // Get today's transactions for daily stats
+      const todayStart = new Date().toISOString().split('T')[0];
+      const { data: todayTransactions, error: todayError } = await supabase
+        .from('station_transactions')
+        .select(`
+          id,
+          attendee_id,
+          station_type,
+          transaction_type,
+          created_at,
+          rfid_uid
+        `)
+        .eq('station_type', stationType)
+        .in('transaction_type', [checkoutType, checkinType])
+        .gte('created_at', todayStart)
+        .order('created_at', { ascending: false });
+
+      if (todayError) {
+        console.error(`Error fetching today's ${stationType} transactions:`, todayError);
+      }
+
+      // Get unique attendee IDs from all transactions
+      const allAttendeeIds = [...new Set(allTransactions?.map(t => t.attendee_id).filter(Boolean) || [])];
       
       // Fetch attendee data separately
       const { data: attendees, error: attendeeError } = await supabase
         .from('attendees')
         .select('id, first_name, last_name, phone')
-        .in('id', attendeeIds);
+        .in('id', allAttendeeIds);
 
       if (attendeeError) {
         console.error(`Error fetching attendee data:`, attendeeError);
@@ -127,12 +143,13 @@ export class EquipmentStatusService {
       // Create attendee lookup map
       const attendeeMap = new Map(attendees?.map(a => [a.id, a]) || []);
 
-      // Process transactions to find current checkouts
+      // Process ALL transactions to find current checkouts (use all transactions for status)
       const checkoutMap = new Map<string, any>();
       const checkinMap = new Map<string, any>();
       const completedSessions: number[] = [];
 
-      transactions?.forEach(transaction => {
+      // Use all transactions to determine current status
+      allTransactions?.forEach(transaction => {
         const attendeeId = transaction.attendee_id;
         
         if (transaction.transaction_type === checkoutType) {
@@ -180,8 +197,11 @@ export class EquipmentStatusService {
         }
       });
 
+      // Calculate daily checkout count from today's transactions
+      const todayCheckouts = todayTransactions?.filter(t => t.transaction_type === checkoutType).length || 0;
+
       // Calculate stats
-      const totalCheckouts = checkoutMap.size;
+      const totalCheckouts = todayCheckouts; // This should be today's checkouts for the "Total Today" metric
       const averageUsage = completedSessions.length > 0 
         ? Math.round(completedSessions.reduce((sum, duration) => sum + duration, 0) / completedSessions.length)
         : 0;

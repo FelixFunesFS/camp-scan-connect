@@ -24,7 +24,7 @@ export default function EquipmentTracker({
   checkoutType,
   checkinType,
   icon,
-  timePeriod = 'today',
+  timePeriod = 'all',
   refreshTrigger = 0
 }: EquipmentTrackerProps) {
   const [checkouts, setCheckouts] = useState<EquipmentCheckout[]>([]);
