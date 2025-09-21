@@ -8,7 +8,7 @@ import { WebhookRegistrantTimeline } from "@/components/dev/WebhookRegistrantTim
 import { SyncHistoryTable } from "@/components/dev/SyncHistoryTable";
 import { AnalyticsDashboard } from "@/components/dev/AnalyticsDashboard";
 import { DebugTools } from "@/components/dev/DebugTools";
-import { AdminRequestManager } from "@/components/dev/AdminRequestManager";
+import AdminRequestManager from "@/components/dev/AdminRequestManager";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Activity, Database, BarChart, Wrench, Settings } from "lucide-react";
 

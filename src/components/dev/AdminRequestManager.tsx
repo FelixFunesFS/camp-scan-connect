@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Plus, Calendar, Circle, PlayCircle, CheckCircle2, Pencil, Bug, Wrench, Settings, AlertTriangle, Clock } from 'lucide-react';
 import { AdminRequestService, AdminRequest } from '@/services/adminRequestService';
 
-export const AdminRequestManager = () => {
+const AdminRequestManager = () => {
   const [requests, setRequests] = useState<AdminRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddingRequest, setIsAddingRequest] = useState(false);
@@ -459,3 +459,5 @@ export const AdminRequestManager = () => {
     </Card>
   );
 };
+
+export default AdminRequestManager;
