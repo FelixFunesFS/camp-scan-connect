@@ -40,7 +40,7 @@ export const get3AMET = (date: Date): Date => {
 };
 
 // Helper function to get current ET date (not UTC date)
-const getCurrentETDate = (): Date => {
+export const getCurrentETDate = (): Date => {
   const now = new Date();
   // Use JavaScript's built-in timezone conversion - much more reliable
   const etDateString = now.toLocaleString("en-US", {

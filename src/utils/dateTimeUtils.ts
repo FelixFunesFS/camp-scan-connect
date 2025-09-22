@@ -42,6 +42,47 @@ export const formatStandardDateTime = (
 };
 
 /**
+ * ET timezone-aware date/time formatting that always displays in ET timezone
+ * Converts UTC database timestamps to ET timezone for display
+ * Example: "Jan 15, 2:30 PM (ET)"
+ */
+export const formatStandardDateTimeET = (
+  date: Date | string, 
+  options: DateTimeDisplayOptions = {}
+): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid Date';
+  }
+
+  const { compact = false } = options;
+  
+  // Convert to ET timezone for display
+  const etDateString = dateObj.toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric', 
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+  
+  if (compact) {
+    // For compact display, just show time if today in ET
+    const etDate = new Date(dateObj.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const etToday = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+    
+    if (etDate.toDateString() === etToday.toDateString()) {
+      return etDateString.split(', ')[1] + ' (ET)';
+    }
+  }
+  
+  return etDateString + ' (ET)';
+};
+
+/**
  * Format with relative time for recent activities
  * Example: "Jan 15, 2:30 PM (2 hours ago)"
  */
@@ -66,6 +107,39 @@ export const formatWithRelativeTime = (
   }
   
   return `${standardTime} (${relativeTime})`;
+};
+
+/**
+ * ET timezone-aware relative time formatting
+ * Example: "Jan 15, 2:30 PM (ET) (2 hours ago)"
+ */
+export const formatWithRelativeTimeET = (
+  date: Date | string,
+  options: DateTimeDisplayOptions = {}
+): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid Date';
+  }
+
+  const standardTimeET = formatStandardDateTimeET(dateObj, options);
+  const relativeTime = formatDistanceToNow(dateObj, { addSuffix: true });
+  
+  // For very recent items (< 1 hour), prioritize relative time with ET time
+  const hoursDiff = (Date.now() - dateObj.getTime()) / (1000 * 60 * 60);
+  
+  if (hoursDiff < 1) {
+    const etTimeOnly = dateObj.toLocaleString("en-US", {
+      timeZone: "America/New_York",
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    return `${relativeTime} (${etTimeOnly} ET)`;
+  }
+  
+  return `${standardTimeET} (${relativeTime})`;
 };
 
 /**

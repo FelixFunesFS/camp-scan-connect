@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Users, UserCheck, AlertTriangle, TrendingUp, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getStandardTimeBoundaries, getCurrentETDate } from "@/utils/etTimezone";
 
 interface CheckInStats {
   totalExpected: number;
@@ -72,9 +73,12 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
         const pending = totalExpected - checkedIn;
         const percentage = totalExpected > 0 ? Math.round((checkedIn / totalExpected) * 100) : 0;
 
-        // Get attendees checked in today for peak hour calculation
+        // Get attendees checked in today (ET timezone) for peak hour calculation
+        const todayBoundaries = getStandardTimeBoundaries('today');
         const checkedInToday = attendees.filter(a => 
-          a.activated_at && new Date(a.activated_at).toDateString() === new Date().toDateString()
+          a.activated_at && 
+          new Date(a.activated_at) >= todayBoundaries.start && 
+          new Date(a.activated_at) < todayBoundaries.end
         );
 
         // Get pending staff assistance requests
@@ -107,10 +111,12 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
         const fridayCheckedIn = fridayAttendees.filter(a => a.activated_at).length; 
         const fridayPercentage = fridayExpected > 0 ? Math.round((fridayCheckedIn / fridayExpected) * 100) : 0;
 
-        // Find peak hour
+        // Find peak hour using ET timezone conversion
         const hourCounts = checkedInToday.reduce((acc, a) => {
-          const hour = new Date(a.activated_at!).getHours();
-          acc[hour] = (acc[hour] || 0) + 1;
+          // Convert UTC time to ET hour for accurate hour calculation
+          const utcDate = new Date(a.activated_at!);
+          const etHour = new Date(utcDate.toLocaleString("en-US", { timeZone: "America/New_York" })).getHours();
+          acc[etHour] = (acc[etHour] || 0) + 1;
           return acc;
         }, {} as Record<number, number>);
 
@@ -120,7 +126,7 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
         let peakHour = 'N/A';
         if (peakHourNum) {
           const hour = parseInt(peakHourNum);
-          peakHour = `${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}${hour >= 12 ? 'PM' : 'AM'}`;
+          peakHour = `${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}${hour >= 12 ? 'PM' : 'AM'} ET`;
         }
 
         setStats({

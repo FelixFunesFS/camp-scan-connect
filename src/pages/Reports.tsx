@@ -152,18 +152,20 @@ const Reports = () => {
           {/* Check-in Status Tables */}
           <CheckInStatusTables refreshTrigger={refreshTrigger} />
 
-          {/* Analytics Cards */}
-          <AnalyticsCards 
-            selectedPeriod={selectedPeriod}
-            refreshTrigger={refreshTrigger}
-          />
-
           {/* Attendee Services */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <Headphones className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold">Attendee Services</h2>
             </div>
+            
+            {/* Analytics Cards - Meal Service, Drinks, Peak Hours, etc. */}
+            <AnalyticsCards 
+              selectedPeriod={selectedPeriod}
+              refreshTrigger={refreshTrigger}
+            />
+            
+            {/* Equipment Services */}
             <HeadphonesTracker 
               selectedPeriod={selectedPeriod}
               refreshTrigger={refreshTrigger}

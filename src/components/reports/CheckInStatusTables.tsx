@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { UserCheck, UserX, Search, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
-import { formatStandardDateTime } from "@/utils/dateTimeUtils";
+import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
+import { getStandardTimeBoundaries } from "@/utils/etTimezone";
 
 interface AttendeeStatus {
   id: string;
@@ -32,39 +33,49 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
   useEffect(() => {
     const fetchStatusData = async () => {
       try {
-        // Get recent check-ins (last 50, today only)
+        // Use ET timezone boundaries for "today" calculation
+        const todayBoundaries = getStandardTimeBoundaries('today');
+        
+        // Get recent check-ins (last 50, today only in ET) - join with rfid_tags for activation timestamps
         const { data: recentData } = await supabase
           .from('attendees')
-          .select('id, first_name, last_name, phone, email, activated_at, ticket_type, order_id')
+          .select(`
+            id, first_name, last_name, phone, email, ticket_type, order_id,
+            rfid_tags!inner(activated_at)
+          `)
           .eq('registration_status', 'registered')
-          .not('activated_at', 'is', null)
-          .gte('activated_at', new Date().toISOString().split('T')[0])
-          .order('activated_at', { ascending: false })
+          .not('rfid_tags.activated_at', 'is', null)
+          .gte('rfid_tags.activated_at', todayBoundaries.start.toISOString())
+          .lt('rfid_tags.activated_at', todayBoundaries.end.toISOString())
+          .order('rfid_tags.activated_at', { ascending: false })
           .limit(50);
 
-        // Get pending check-ins
+        // Get pending check-ins (attendees without RFID activation)
         const { data: pendingData } = await supabase
           .from('attendees')
-          .select('id, first_name, last_name, phone, email, activated_at, ticket_type, order_id')
+          .select(`
+            id, first_name, last_name, phone, email, ticket_type, order_id,
+            rfid_tags(activated_at)
+          `)
           .eq('registration_status', 'registered')
-          .is('activated_at', null)
+          .or('rfid_tags.activated_at.is.null,rfid_tags.id.is.null')
           .order('created_at', { ascending: true })
           .limit(500);
 
-        const formatAttendeeData = (data: any[]): AttendeeStatus[] => {
+        const formatAttendeeData = (data: any[], isRecent: boolean = false): AttendeeStatus[] => {
           return data.map(attendee => ({
             id: attendee.id,
             name: `${attendee.first_name} ${attendee.last_name}`,
             phone: attendee.phone,
             email: attendee.email,
-            activatedAt: attendee.activated_at,
+            activatedAt: isRecent ? attendee.rfid_tags?.activated_at : null,
             ticketType: attendee.ticket_type || 'Standard',
             orderInfo: attendee.order_id || 'No Order'
           }));
         };
 
-        setRecentCheckIns(formatAttendeeData(recentData || []));
-        setPendingCheckIns(formatAttendeeData(pendingData || []));
+        setRecentCheckIns(formatAttendeeData(recentData || [], true));
+        setPendingCheckIns(formatAttendeeData(pendingData || [], false));
       } catch (error) {
         console.error('Error fetching status data:', error);
       } finally {
@@ -135,7 +146,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
           <TabsContent value="recent">
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                Last {recentCheckIns.length} check-ins today
+                Last {recentCheckIns.length} check-ins today (ET timezone)
               </div>
               <div className="border rounded-lg">
                 <Table>
@@ -174,7 +185,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                         <TableCell>
                           {attendee.activatedAt && (
                             <div className="text-sm">
-                              {formatStandardDateTime(attendee.activatedAt)}
+                              {formatStandardDateTimeET(attendee.activatedAt)}
                             </div>
                           )}
                         </TableCell>
