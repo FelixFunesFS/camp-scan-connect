@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AppLayout } from "./components/AppLayout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -27,27 +28,29 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          
-          <Route path="/activation" element={<ActivationStation />} />
-          <Route path="/rfid-assignment" element={<RfidAssignment />} />
-          <Route path="/staff-hub" element={<StaffActivationHub />} />
-          <Route path="/meal-station" element={<MealStation />} />
-          <Route path="/drinks-station" element={<DrinksStation />} />
-          <Route path="/headphones-station" element={<HeadphonesStation />} />
-          <Route path="/golf-carts-station" element={<GolfCartsStation />} />
-          <Route path="/walkie-talkies-station" element={<WalkieTalkiesStation />} />
-          <Route path="/fanny-packs-station" element={<FannyPacksStation />} />
-          <Route path="/main-gate-station" element={<MainGateStation />} />
-          <Route path="/equipment-hub" element={<EquipmentHub />} />
-          <Route path="/attendee/:id" element={<AttendeeDetail />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/dev" element={<DeveloperDashboard />} />
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            
+            <Route path="/activation" element={<ActivationStation />} />
+            <Route path="/rfid-assignment" element={<RfidAssignment />} />
+            <Route path="/staff-hub" element={<StaffActivationHub />} />
+            <Route path="/meal-station" element={<MealStation />} />
+            <Route path="/drinks-station" element={<DrinksStation />} />
+            <Route path="/headphones-station" element={<HeadphonesStation />} />
+            <Route path="/golf-carts-station" element={<GolfCartsStation />} />
+            <Route path="/walkie-talkies-station" element={<WalkieTalkiesStation />} />
+            <Route path="/fanny-packs-station" element={<FannyPacksStation />} />
+            <Route path="/main-gate-station" element={<MainGateStation />} />
+            <Route path="/equipment-hub" element={<EquipmentHub />} />
+            <Route path="/attendee/:id" element={<AttendeeDetail />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/dev" element={<DeveloperDashboard />} />
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AppLayout>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
