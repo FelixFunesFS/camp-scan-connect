@@ -260,17 +260,43 @@ export class TShirtService {
     const tshirtFields: Record<string, any> = {};
     const allKeys = Object.keys(customFields).filter(key => this.isTShirtProduct(key));
     
-    // Pre-filter: Remove obvious generic quantity fields that don't represent actual products
+    // Step 1: Identify descriptive fields first
+    const descriptiveFields = allKeys.filter(key => this.isDescriptiveTShirtField(key));
+    const descriptiveSizes = new Set<string>();
+    
+    // Collect sizes from descriptive fields
+    descriptiveFields.forEach(key => {
+      const { size } = this.parseTShirtProduct(key);
+      if (size) {
+        descriptiveSizes.add(size.toLowerCase());
+      }
+    });
+    
+    // Step 2: Pre-filter: Remove coded fields when descriptive alternatives exist for the same size
     const filteredKeys = allKeys.filter(key => {
       const normalized = key.toLowerCase();
-      // Skip pure quantity indicators
-      if (normalized === 'souvenir 2025 t-shirt' || normalized === 't-shirt' || normalized === 'merchandise.tshirt') {
+      
+      // Always skip generic quantity indicators
+      if (normalized === 'souvenir 2025 t-shirt' || normalized === 't-shirt') {
         return false;
       }
+      
+      // Skip ALL merchandise.tshirt variations when descriptive alternatives exist
+      if (normalized.startsWith('merchandise.tshirt')) {
+        const { size } = this.parseTShirtProduct(key);
+        if (size && descriptiveSizes.has(size.toLowerCase())) {
+          console.log(`T-Shirt Debug - Excluding coded field "${key}" because descriptive field exists for size ${size}`);
+          return false;
+        }
+      }
+      
       return true;
     });
     
-    // Group fields by detected size and style relationship
+    console.log('T-Shirt Debug - Descriptive fields found:', descriptiveFields);
+    console.log('T-Shirt Debug - Final filtered keys:', filteredKeys);
+    
+    // Step 3: Group fields by detected size and style relationship
     const sizeToFields = new Map<string, { descriptive: string[], coded: string[], generic: string[] }>();
     
     filteredKeys.forEach(key => {
@@ -284,10 +310,10 @@ export class TShirtService {
       const group = sizeToFields.get(normalizedSize)!;
       const normalized = key.toLowerCase();
       
-      // Categorize field type
+      // Categorize field type with improved coded field detection
       if (this.isDescriptiveTShirtField(key)) {
         group.descriptive.push(key);
-      } else if (normalized.includes('merchandise.') || normalized.match(/\w+\.\w+\.(xs|sm|med|lg|xl)/)) {
+      } else if (normalized.startsWith('merchandise.') || normalized.match(/^\w+\.\w+\.\w+/)) {
         group.coded.push(key);
       } else {
         group.generic.push(key);
