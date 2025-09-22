@@ -40,6 +40,8 @@ export interface TShirtOrder {
 
 export class TShirtService {
   static extractTShirtInfo(customFields: any): TShirtInfo {
+    console.log('T-Shirt Debug - extractTShirtInfo called with customFields:', customFields);
+    
     if (!customFields || typeof customFields !== 'object') {
       return {
         size: null,
@@ -63,7 +65,9 @@ export class TShirtService {
     for (const fieldName of orderStringFields) {
       if (customFields[fieldName] && typeof customFields[fieldName] === 'string') {
         const orderString = customFields[fieldName];
+        console.log(`T-Shirt Debug - Processing order string field "${fieldName}":`, orderString);
         const parsedOrders = this.parseOrderString(orderString);
+        console.log(`T-Shirt Debug - Parsed orders from "${fieldName}":`, parsedOrders);
         purchaseDetails.push(...parsedOrders);
       }
     }
@@ -91,6 +95,9 @@ export class TShirtService {
       primarySize = purchaseDetails[0].size;
       primaryType = purchaseDetails[0].type;
     }
+
+    console.log('T-Shirt Debug - Final purchase details:', purchaseDetails);
+    console.log('T-Shirt Debug - Primary size/type:', { primarySize, primaryType });
 
     return {
       size: primarySize,
@@ -168,12 +175,25 @@ export class TShirtService {
     // Remove quantity from string for style/size parsing
     const styleString = cleanItem.replace(/^\d+\s+/, '');
     
-    // Determine type
-    let type = 'Unisex';
-    if (styleString.toLowerCase().includes("women's") || styleString.toLowerCase().includes('fitted')) {
-      type = "Women's";
-    } else if (styleString.toLowerCase().includes("men's")) {
-      type = "Men's";
+    // Determine full style name
+    let type = 'T-Shirt'; // default
+    const normalized = styleString.toLowerCase();
+    
+    if (normalized.includes("women's fitted v-neck") || 
+        (normalized.includes("women's") && normalized.includes("fitted") && normalized.includes("v-neck"))) {
+      type = "Women's Fitted V-Neck";
+    } else if (normalized.includes("unisex crew neck") || 
+               (normalized.includes("unisex") && normalized.includes("crew"))) {
+      type = "Unisex Crew Neck";
+    } else if (normalized.includes("men's fitted v-neck") || 
+               (normalized.includes("men's") && normalized.includes("fitted") && normalized.includes("v-neck"))) {
+      type = "Men's Fitted V-Neck";
+    } else if (normalized.includes("women's") || normalized.includes('fitted')) {
+      type = "Women's Fitted V-Neck"; // Default women's style
+    } else if (normalized.includes("men's")) {
+      type = "Men's Fitted V-Neck"; // Default men's style
+    } else if (normalized.includes("unisex") || normalized.includes("crew")) {
+      type = "Unisex Crew Neck"; // Default unisex style
     }
 
     // Extract size using enhanced patterns
@@ -192,14 +212,14 @@ export class TShirtService {
     
     // Size patterns with word boundaries for better matching
     const sizePatterns = [
-      { pattern: /\b(?:extra\s*)?small\b|\bxs\b|\bs\b(?!\w)/i, size: 'S' },
-      { pattern: /\bmedium\b|\bmed\b|\bm\b(?!\w)/i, size: 'M' },
-      { pattern: /\blarge\b|\blg\b|\bl\b(?!\w)/i, size: 'L' },
-      { pattern: /\b(?:x-?large|extra\s*large)\b|\bxl\b/i, size: 'XL' },
-      { pattern: /\b(?:2x|2xl|xx-?large|double\s*x)\b/i, size: '2X' },
-      { pattern: /\b(?:3x|3xl|xxx-?large|triple\s*x)\b/i, size: '3X' },
-      { pattern: /\b(?:4x|4xl|xxxx-?large)\b/i, size: '4X' },
-      { pattern: /\b(?:5x|5xl)\b/i, size: '5X' }
+      { pattern: /\b(?:extra\s*)?small\b|\bxs\b|\bs\b(?!\w)/i, size: 'Small' },
+      { pattern: /\bmedium\b|\bmed\b|\bm\b(?!\w)/i, size: 'Medium' },
+      { pattern: /\blarge\b|\blg\b|\bl\b(?!\w)/i, size: 'Large' },
+      { pattern: /\b(?:x-?large|extra\s*large)\b|\bxl\b/i, size: 'X-Large' },
+      { pattern: /\b(?:2x|2xl|xx-?large|double\s*x)\b/i, size: '2X-Large' },
+      { pattern: /\b(?:3x|3xl|xxx-?large|triple\s*x)\b/i, size: '3X-Large' },
+      { pattern: /\b(?:4x|4xl|xxxx-?large)\b/i, size: '4X-Large' },
+      { pattern: /\b(?:5x|5xl)\b/i, size: '5X-Large' }
     ];
 
     for (const { pattern, size } of sizePatterns) {
@@ -413,12 +433,25 @@ export class TShirtService {
   private static parseTShirtProduct(productName: string): { size: string; type: string } {
     const normalized = productName.toLowerCase();
     
-    // Determine type
-    let type = 'Unisex'; // default
-    if (normalized.includes("women's") || normalized.includes('fitted')) {
-      type = "Women's";
+    // Determine full style name from the product name
+    let type = 'T-Shirt'; // default
+    
+    // Check for specific style patterns in order of specificity
+    if (normalized.includes("women's fitted v-neck") || 
+        (normalized.includes("women's") && normalized.includes("fitted") && normalized.includes("v-neck"))) {
+      type = "Women's Fitted V-Neck";
+    } else if (normalized.includes("unisex crew neck") || 
+               (normalized.includes("unisex") && normalized.includes("crew"))) {
+      type = "Unisex Crew Neck";
+    } else if (normalized.includes("men's fitted v-neck") || 
+               (normalized.includes("men's") && normalized.includes("fitted") && normalized.includes("v-neck"))) {
+      type = "Men's Fitted V-Neck";
+    } else if (normalized.includes("women's") || normalized.includes('fitted')) {
+      type = "Women's Fitted V-Neck"; // Default women's style
     } else if (normalized.includes("men's")) {
-      type = "Men's";
+      type = "Men's Fitted V-Neck"; // Default men's style
+    } else if (normalized.includes("unisex") || normalized.includes("crew")) {
+      type = "Unisex Crew Neck"; // Default unisex style
     }
 
     // Extract size - look for size patterns (ordered from most specific to least specific)
@@ -426,7 +459,7 @@ export class TShirtService {
       /\b(4x|4xl|xxxx-large|xxxxl)\b/i,
       /\b(3x|3xl|xxx-large|xxxl)\b/i,
       /\b(2x|2xl|xx-large|xxl)\b/i,
-      /\b(x-large|xl|extra large)\b/i,
+      /\b(x-?large|xl|extra\s*large)\b/i,
       /\b(large|lg)\b/i,
       /\b(medium|med)\b/i,
       /\b(small|sm)\b/i,
@@ -437,13 +470,13 @@ export class TShirtService {
     ];
 
     const sizeMap: Record<string, string> = {
-      'small': 'S', 'sm': 'S', 's': 'S',
-      'medium': 'M', 'med': 'M', 'm': 'M',
-      'large': 'L', 'lg': 'L', 'l': 'L',
-      'x-large': 'XL', 'xl': 'XL', 'extra large': 'XL',
-      '2x': '2X', '2xl': '2X', 'xx-large': '2X', 'xxl': '2X',
-      '3x': '3X', '3xl': '3X', 'xxx-large': '3X', 'xxxl': '3X',
-      '4x': '4X', '4xl': '4X', 'xxxx-large': '4X', 'xxxxl': '4X'
+      'small': 'Small', 'sm': 'Small', 's': 'Small',
+      'medium': 'Medium', 'med': 'Medium', 'm': 'Medium',
+      'large': 'Large', 'lg': 'Large', 'l': 'Large',
+      'x-large': 'X-Large', 'xl': 'X-Large', 'extra large': 'X-Large',
+      '2x': '2X-Large', '2xl': '2X-Large', 'xx-large': '2X-Large', 'xxl': '2X-Large',
+      '3x': '3X-Large', '3xl': '3X-Large', 'xxx-large': '3X-Large', 'xxxl': '3X-Large',
+      '4x': '4X-Large', '4xl': '4X-Large', 'xxxx-large': '4X-Large', 'xxxxl': '4X-Large'
     };
 
     for (const pattern of sizePatterns) {
@@ -625,6 +658,12 @@ export class TShirtService {
 
       tshirtInfo.purchaseDetails.forEach(detail => {
         const key = `${detail.type}-${detail.size}`;
+        console.log(`T-Shirt Debug - checkAttendeeHasTShirt processing detail:`, {
+          product: detail.product,
+          type: detail.type,
+          size: detail.size,
+          key: key
+        });
         if (orderGroups.has(key)) {
           orderGroups.get(key)!.quantity++;
         } else {
@@ -636,6 +675,8 @@ export class TShirtService {
           });
         }
       });
+
+      console.log(`T-Shirt Debug - Order groups created:`, Array.from(orderGroups.entries()));
 
       // Match transactions with orders
       transactions?.forEach(transaction => {
@@ -668,6 +709,8 @@ export class TShirtService {
           pickedUpCount // Internal tracking
         };
       });
+
+      console.log(`T-Shirt Debug - Final orders being returned:`, orders);
 
       return {
         hasTShirt: tshirtInfo.hasAnyTShirt,
