@@ -57,13 +57,10 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
         label: boundaries.label
       });
       
-      // Get all gate transactions for the period
+      // Get all gate transactions for the period (using same logic as AnalyticsCards)
       const { data: gateTransactions, error } = await supabase
         .from('station_transactions')
-        .select(`
-          *,
-          attendees!inner(first_name, last_name)
-        `)
+        .select('*')
         .eq('station_type', 'main_gate')
         .in('transaction_type', ['gate_entry', 'gate_exit'])
         .gte('created_at', boundaries.start.toISOString())
@@ -95,7 +92,7 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
         gateTransactions.map(t => ({
           type: t.transaction_type,
           time: t.created_at,
-          attendee: (t as any).attendees ? `${(t as any).attendees.first_name} ${(t as any).attendees.last_name}` : 'Unknown',
+          attendee_id: t.attendee_id,
           rfid: t.rfid_uid
         }))
       );
@@ -146,21 +143,42 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
       });
 
       // Get currently on-site attendees with details
-      const onSiteAttendees = Array.from(attendeeStatus.entries())
+      const onSiteAttendeeIds = Array.from(attendeeStatus.entries())
         .filter(([_, status]) => status.isOnSite)
-        .map(([attendeeId, status]) => {
-          const transaction = status.lastTransaction;
-          const entryTime = new Date(transaction.created_at);
-          const durationMinutes = Math.floor((Date.now() - entryTime.getTime()) / (1000 * 60));
-          
-          return {
-            name: `${transaction.attendees.first_name} ${transaction.attendees.last_name}`,
-            rfid_uid: transaction.rfid_uid || 'Unknown',
-            entry_time: transaction.created_at,
-            duration_minutes: durationMinutes
-          };
-        })
-        .sort((a, b) => b.duration_minutes - a.duration_minutes);
+        .map(([attendeeId, _]) => attendeeId);
+
+      let onSiteAttendees: Array<{
+        name: string;
+        rfid_uid: string;
+        entry_time: string;
+        duration_minutes: number;
+      }> = [];
+
+      // If we have on-site attendees, fetch their names separately
+      if (onSiteAttendeeIds.length > 0) {
+        const { data: attendeeData } = await supabase
+          .from('attendees')
+          .select('id, first_name, last_name')
+          .in('id', onSiteAttendeeIds);
+
+        const attendeeMap = new Map(attendeeData?.map(a => [a.id, `${a.first_name} ${a.last_name}`]) || []);
+
+        onSiteAttendees = Array.from(attendeeStatus.entries())
+          .filter(([_, status]) => status.isOnSite)
+          .map(([attendeeId, status]) => {
+            const transaction = status.lastTransaction;
+            const entryTime = new Date(transaction.created_at);
+            const durationMinutes = Math.floor((Date.now() - entryTime.getTime()) / (1000 * 60));
+            
+            return {
+              name: attendeeMap.get(attendeeId) || 'Unknown',
+              rfid_uid: transaction.rfid_uid || 'Unknown',
+              entry_time: transaction.created_at,
+              duration_minutes: durationMinutes
+            };
+          })
+          .sort((a, b) => b.duration_minutes - a.duration_minutes);
+      }
 
       // Calculate average visit duration from completed visits
       const completedVisits = new Map<string, Date>();
