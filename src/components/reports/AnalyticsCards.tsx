@@ -470,105 +470,6 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
         </CardContent>
       </Card>
 
-      {/* Gate Access Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UITooltip>
-              <UITooltipTrigger asChild>
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Main Gate Access
-                </div>
-              </UITooltipTrigger>
-              <UITooltipContent>
-                <p>Current occupancy and daily gate activity</p>
-                <p className="text-xs text-muted-foreground mt-1">Real-time tracking of site entry/exit</p>
-              </UITooltipContent>
-            </UITooltip>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-primary/10 rounded-lg">
-                <div className="text-2xl font-bold text-primary">
-                  {analytics.gateAccess.currentOccupancy}
-                </div>
-                <div className="text-sm text-muted-foreground">On-Site</div>
-              </div>
-              <div className="text-center p-3 bg-success/10 rounded-lg">
-                <div className="text-2xl font-bold text-success">
-                  {analytics.gateAccess.dailyEntries}
-                </div>
-                <div className="text-sm text-muted-foreground">Entries</div>
-              </div>
-              <div className="text-center p-3 bg-warning/10 rounded-lg">
-                <div className="text-2xl font-bold text-warning">
-                  {analytics.gateAccess.dailyExits}
-                </div>
-                <div className="text-sm text-muted-foreground">Exits</div>
-              </div>
-            </div>
-            <div className="text-center">
-              <UITooltip>
-                <UITooltipTrigger asChild>
-                  <Badge variant="outline" className="text-primary">
-                    {analytics.gateAccess.peakHour ? 
-                      `Peak: ${formatHour(analytics.gateAccess.peakHour)}` : 
-                      'No peak activity yet'
-                    }
-                  </Badge>
-                </UITooltipTrigger>
-                <UITooltipContent>
-                  <p>Hour with highest gate activity</p>
-                  <p className="text-xs text-muted-foreground mt-1">Helps with security staffing</p>
-                </UITooltipContent>
-              </UITooltip>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Peak Usage Hours */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UITooltip>
-              <UITooltipTrigger asChild>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Peak Usage Hours
-                </div>
-              </UITooltipTrigger>
-              <UITooltipContent>
-                <p>Hours with highest activity across all stations</p>
-                <p className="text-xs text-muted-foreground mt-1">Helps with staffing and resource allocation</p>
-              </UITooltipContent>
-            </UITooltip>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics.peakHours}>
-                <XAxis 
-                  dataKey="hour" 
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={formatHour}
-                />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip 
-                  formatter={(value) => [value, 'Activities']}
-                  labelFormatter={(hour) => `Time: ${formatHour(hour)}`}
-                />
-                <Bar dataKey="checkouts" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Average Party Time */}
       <Card>
         <CardHeader>
@@ -613,6 +514,46 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
           </div>
         </CardContent>
       </Card>
+
+      {/* Peak Usage Hours */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UITooltip>
+              <UITooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Peak Usage Hours
+                </div>
+              </UITooltipTrigger>
+              <UITooltipContent>
+                <p>Hours with highest activity across all stations</p>
+                <p className="text-xs text-muted-foreground mt-1">Helps with staffing and resource allocation</p>
+              </UITooltipContent>
+            </UITooltip>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analytics.peakHours}>
+                <XAxis 
+                  dataKey="hour" 
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={formatHour}
+                />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip 
+                  formatter={(value) => [value, 'Activities']}
+                  labelFormatter={(hour) => `Time: ${formatHour(hour)}`}
+                />
+                <Bar dataKey="checkouts" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
     </div>
     </UITooltipProvider>
   );
