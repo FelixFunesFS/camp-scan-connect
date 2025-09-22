@@ -42,10 +42,17 @@ export const get3AMET = (date: Date): Date => {
 // Helper function to get current ET date (not UTC date)
 const getCurrentETDate = (): Date => {
   const now = new Date();
-  // Convert to ET timezone
-  const etOffset = isDST(now) ? -4 : -5; // EDT is UTC-4, EST is UTC-5
-  const etTime = new Date(now.getTime() + (etOffset * 60 * 60 * 1000));
-  return new Date(etTime.getFullYear(), etTime.getMonth(), etTime.getDate());
+  // Use JavaScript's built-in timezone conversion - much more reliable
+  const etDateString = now.toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit'
+  });
+  
+  // Parse the ET date string to get year, month, day
+  const [month, day, year] = etDateString.split('/');
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
 };
 
 // Get time boundaries for drinks/headphones operational data based on 3 AM ET cutoff
