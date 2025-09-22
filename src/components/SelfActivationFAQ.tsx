@@ -68,11 +68,11 @@ export function SelfActivationFAQ() {
                 </div>
                 <div className="flex items-start gap-2">
                   <Users className="h-4 w-4 text-primary mt-0.5" />
-                  <span className="text-sm">Staff need to program your wristband with your unique ID before you can activate</span>
+                  <span className="text-sm">Staff need to program your wristband with your unique ID before you can check-in</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />
-                  <span className="text-sm">Find staff to program your wristband, then return here to activate</span>
+                  <span className="text-sm">Find staff to program your wristband, then return here to check-in</span>
                 </div>
               </div>
             </AccordionContent>
@@ -82,21 +82,21 @@ export function SelfActivationFAQ() {
             <AccordionTrigger className="text-left">
               <span className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Should I activate just myself or my whole group?
+                Should I check-in just myself or my whole group?
               </span>
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
               <div className="space-y-3">
                 <div>
-                  <p className="font-medium text-sm mb-1">Activate Just Yourself:</p>
+                  <p className="font-medium text-sm mb-1">Check-In Just Yourself:</p>
                   <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                     <li>• Your companions aren't here yet</li>
                     <li>• You want to start using services immediately</li>
-                    <li>• Others prefer to activate themselves</li>
+                    <li>• Others prefer to check-in themselves</li>
                   </ul>
                 </div>
                 <div>
-                  <p className="font-medium text-sm mb-1">Activate Entire Group:</p>
+                  <p className="font-medium text-sm mb-1">Check-In Entire Group:</p>
                   <ul className="text-sm text-muted-foreground space-y-1 ml-4">
                     <li>• Everyone in your party is present</li>
                     <li>• You're the group organizer</li>
@@ -105,7 +105,7 @@ export function SelfActivationFAQ() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Don't worry - you can always activate remaining people later!
+                Don't worry - you can always check-in remaining people later!
               </p>
             </AccordionContent>
           </AccordionItem>
@@ -142,7 +142,7 @@ export function SelfActivationFAQ() {
             <AccordionTrigger className="text-left">
               <span className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                Activation failed - what should I do?
+                Check-in failed - what should I do?
               </span>
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
@@ -166,7 +166,7 @@ export function SelfActivationFAQ() {
               <Alert>
                 <Clock className="h-4 w-4" />
                 <AlertDescription className="text-sm">
-                  Staff can manually activate your account and troubleshoot any technical issues.
+                  Staff can manually check you in and troubleshoot any technical issues.
                 </AlertDescription>
               </Alert>
             </AccordionContent>
@@ -185,7 +185,7 @@ export function SelfActivationFAQ() {
               </p>
               <div className="space-y-1 text-sm text-muted-foreground ml-4">
                 <div>• Finding your registration by name or email</div>
-                <div>• Manual activation if technical issues occur</div>
+                <div>• Manual check-in if technical issues occur</div>
                 <div>• RFID wristband assignment</div>
                 <div>• Registration corrections or updates</div>
               </div>

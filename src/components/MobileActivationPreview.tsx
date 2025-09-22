@@ -115,12 +115,12 @@ export function MobileActivationPreview({
             {isProcessing ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Activating...
+                Checking in...
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
-                Activate My Registration ({directCount})
+                Check-In My Registration ({directCount})
               </div>
             )}
           </Button>
@@ -134,7 +134,7 @@ export function MobileActivationPreview({
               size="lg"
               className="w-full h-12 text-base font-medium border-accent text-accent hover:bg-accent hover:text-accent-foreground"
             >
-              {isProcessing ? "Activating..." : `Activate Entire Order (${totalInOrder})`}
+              {isProcessing ? "Checking in..." : `Check-In Entire Order (${totalInOrder})`}
             </Button>
           )}
 

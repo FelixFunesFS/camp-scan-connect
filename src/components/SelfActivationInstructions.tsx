@@ -41,8 +41,8 @@ export function SelfActivationInstructions() {
                 3
               </div>
               <div>
-                <p className="font-medium text-sm">Activate Your Service</p>
-                <p className="text-xs text-muted-foreground">Choose individual or group activation</p>
+                <p className="font-medium text-sm">Complete Your Check-In</p>
+                <p className="text-xs text-muted-foreground">Choose individual or group check-in</p>
               </div>
             </div>
           </div>

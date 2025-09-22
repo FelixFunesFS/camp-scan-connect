@@ -119,7 +119,7 @@ const Index = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground mb-6">
-                Attendee self-activation station
+                Attendee self-service check-in station
               </p>
               <div className="grid gap-4">
                 <div 
@@ -128,10 +128,10 @@ const Index = () => {
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <Zap className="h-5 w-5 text-accent" />
-                    <span className="font-medium">Self-Service Activation</span>
+                    <span className="font-medium">Self-Service Check-In</span>
                     <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity" />
                   </div>
-                  <p className="text-sm text-muted-foreground">Activate your RFID wristband</p>
+                  <p className="text-sm text-muted-foreground">Check-in and activate your RFID wristband</p>
                 </div>
               </div>
             </CardContent>

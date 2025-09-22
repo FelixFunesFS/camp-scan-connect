@@ -76,15 +76,15 @@ export default function ActivationStation() {
 
       if (result) {
         setActivationResult(result);
-        toast.success(`Activation Successful! Activated ${result.activated_count - result.already_active_count} new attendee(s)`);
+        toast.success(`Check-In Complete! Activated ${result.activated_count - result.already_active_count} new attendee(s)`);
         setShowPreview(false);
         setLookupResult(null);
       } else {
-        toast.error("Activation Failed - Unable to activate attendees");
+        toast.error("Check-In Failed - Unable to activate attendees");
       }
     } catch (error) {
       console.error('Activation error:', error);
-      toast.error("Activation Failed - There was an error activating your group. Please try again.");
+      toast.error("Check-In Failed - There was an error activating your group. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -102,15 +102,15 @@ export default function ActivationStation() {
 
       if (result) {
         setActivationResult(result);
-        toast.success(`Order Activation Successful! Activated ${result.activated_count - result.already_active_count} new attendee(s) from the entire order`);
+        toast.success(`Order Check-In Complete! Activated ${result.activated_count - result.already_active_count} new attendee(s) from the entire order`);
         setShowPreview(false);
         setLookupResult(null);
       } else {
-        toast.error("Order Activation Failed - Unable to activate entire order");
+        toast.error("Order Check-In Failed - Unable to activate entire order");
       }
     } catch (error) {
       console.error('Order activation error:', error);
-      toast.error("Order Activation Failed - There was an error activating the entire order. Please try again.");
+      toast.error("Order Check-In Failed - There was an error activating the entire order. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -137,7 +137,7 @@ export default function ActivationStation() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold md:text-2xl">Self-Service Activation</h1>
+          <h1 className="text-lg font-bold md:text-2xl">Self-Service Check-In</h1>
           <div className="w-9" /> {/* Spacer for centering */}
         </div>
 
@@ -145,7 +145,7 @@ export default function ActivationStation() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="activate" className="flex items-center gap-1">
               <Smartphone className="h-4 w-4" />
-              <span className="hidden sm:inline">Activate</span>
+              <span className="hidden sm:inline">Check-In</span>
             </TabsTrigger>
             <TabsTrigger value="instructions" className="flex items-center gap-1">
               <BookOpen className="h-4 w-4" />
@@ -158,11 +158,27 @@ export default function ActivationStation() {
           </TabsList>
 
           <TabsContent value="activate">
+            {/* Camp Cousin Welcome Message */}
+            <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5 mb-4">
+              <CardContent className="p-6 text-center">
+                <div className="text-3xl mb-2">🏕️</div>
+                <h2 className="text-2xl font-bold text-primary mb-2">
+                  Welcome, Camp Cousin!
+                </h2>
+                <p className="text-lg text-foreground mb-2">
+                  Ready to get your campout experience started? Let's get you checked in and ready for an amazing weekend of music, food, and memories at Melanated Campout 2025!
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Your RFID wristband is your key to meals, drinks, and all the fun - let's activate it together!
+                </p>
+              </CardContent>
+            </Card>
+            
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Smartphone className="h-5 w-5" />
-                  Phone Activation
+                  Phone Check-In
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -189,7 +205,7 @@ export default function ActivationStation() {
                               Looking up...
                             </div>
                           ) : (
-                            "Look Up My Registration"
+                            "Find My Registration"
                           )}
                         </Button>
                       </div>

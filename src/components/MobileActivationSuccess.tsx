@@ -72,7 +72,7 @@ export function MobileActivationSuccess({
     if (totalServiceReady === activationResult.total_attendees) {
       return {
         type: 'complete',
-        title: 'Activation Complete!',
+        title: 'Check-In Complete!',
         subtitle: 'All attendees are ready for services',
         icon: CheckCircle,
         cardClass: 'border-success/30 bg-success/5',
@@ -83,7 +83,7 @@ export function MobileActivationSuccess({
     } else if (totalServiceReady > 0) {
       return {
         type: 'partial',
-        title: 'Partial Activation Complete',
+        title: 'Partial Check-In Complete',
         subtitle: `${totalServiceReady} of ${activationResult.total_attendees} attendees activated`,
         icon: AlertTriangle,
         cardClass: 'border-warning/30 bg-warning/5',
@@ -334,7 +334,7 @@ export function MobileActivationSuccess({
             className="w-full h-12 text-base font-medium"
           >
             <RotateCcw className="h-5 w-5 mr-2" />
-            {status.type === 'complete' ? 'Activate Another Group' : 'Activate More Attendees'}
+            {status.type === 'complete' ? 'Check-In Another Group' : 'Check-In More Attendees'}
           </Button>
           <Button
             onClick={onGoHome}
