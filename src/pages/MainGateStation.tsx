@@ -54,7 +54,9 @@ const MainGateContent = ({
     setIsProcessing(true);
     
     try {
-      const isCurrentlyOnSite = currentStatus === 'on_site' || currentStatus === 'gate_entry';
+      // Get the latest status directly from database to avoid race conditions
+      const latestStatus = await getLatestStatus('current_status') || 'off_site';
+      const isCurrentlyOnSite = latestStatus === 'on_site' || latestStatus === 'gate_entry';
       const transactionType = isCurrentlyOnSite ? 'gate_exit' : 'gate_entry';
       const newStatus = isCurrentlyOnSite ? 'off_site' : 'on_site';
       const actionText = isCurrentlyOnSite ? 'exit' : 'entry';
@@ -88,7 +90,7 @@ const MainGateContent = ({
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedRfid, isProcessing, currentStatus, executeAction, setIsProcessing, onReset]);
+  }, [selectedRfid, isProcessing, executeAction, setIsProcessing, onReset, getLatestStatus]);
 
   // Auto-trigger gate toggle when conditions are met
   useEffect(() => {
