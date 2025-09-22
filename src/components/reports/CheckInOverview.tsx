@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Users, UserCheck, AlertTriangle, TrendingUp, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getStandardTimeBoundaries, getCurrentETDate } from "@/utils/etTimezone";
+import { PendingIssuesModal } from "./PendingIssuesModal";
 
 interface CheckInStats {
   totalExpected: number;
@@ -56,17 +57,17 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [showPendingIssuesModal, setShowPendingIssuesModal] = useState(false);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Get total attendees and activated count with arrival day info
-        const { data: attendees } = await supabase
-          .from('attendees')
-          .select('id, activated_at, created_at, arrival_window, early_access')
-          .eq('registration_status', 'registered');
+  const fetchStats = async () => {
+    try {
+      // Get total attendees and activated count with arrival day info
+      const { data: attendees } = await supabase
+        .from('attendees')
+        .select('id, activated_at, created_at, arrival_window, early_access')
+        .eq('registration_status', 'registered');
 
-        if (!attendees) return;
+      if (!attendees) return;
 
         const totalExpected = attendees.length;
         const checkedIn = attendees.filter(a => a.activated_at).length;
@@ -129,39 +130,44 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
           peakHour = `${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}${hour >= 12 ? 'PM' : 'AM'} ET`;
         }
 
-        setStats({
-          totalExpected,
-          checkedIn,
-          pending,
-          percentage,
-          pendingIssues,
-          activationBreakdown: {
-            selfActivated,
-            staffAssisted
+      setStats({
+        totalExpected,
+        checkedIn,
+        pending,
+        percentage,
+        pendingIssues,
+        activationBreakdown: {
+          selfActivated,
+          staffAssisted
+        },
+        peakHour,
+        arrivalDayBreakdown: {
+          thursday: {
+            expected: thursdayExpected,
+            checkedIn: thursdayCheckedIn,
+            percentage: thursdayPercentage
           },
-          peakHour,
-          arrivalDayBreakdown: {
-            thursday: {
-              expected: thursdayExpected,
-              checkedIn: thursdayCheckedIn,
-              percentage: thursdayPercentage
-            },
-            friday: {
-              expected: fridayExpected,
-              checkedIn: fridayCheckedIn,
-              percentage: fridayPercentage
-            }
+          friday: {
+            expected: fridayExpected,
+            checkedIn: fridayCheckedIn,
+            percentage: fridayPercentage
           }
-        });
-      } catch (error) {
-        console.error('Error fetching check-in stats:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching check-in stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchStats();
   }, [refreshTrigger]);
+
+  const handleIssuesUpdated = () => {
+    fetchStats(); // Refresh stats when issues are updated
+  };
 
   if (isLoading) {
     return (
@@ -257,7 +263,10 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="text-center p-4 bg-destructive/10 rounded-lg cursor-help">
+                <div 
+                  className="text-center p-4 bg-destructive/10 rounded-lg cursor-pointer hover:bg-destructive/20 transition-colors"
+                  onClick={() => setShowPendingIssuesModal(true)}
+                >
                   <div className="flex items-center justify-center gap-1 mb-2">
                     <AlertTriangle className="h-6 w-6 text-destructive" />
                     <Info className="h-3 w-3 text-muted-foreground" />
@@ -267,7 +276,7 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-sm">Open staff assistance requests requiring attention</p>
+                <p className="text-sm">Click to view open staff assistance requests</p>
               </TooltipContent>
             </Tooltip>
             
@@ -339,6 +348,12 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
             </Card>
           </div>
         </div>
+
+        <PendingIssuesModal
+          open={showPendingIssuesModal}
+          onOpenChange={setShowPendingIssuesModal}
+          onIssuesUpdated={handleIssuesUpdated}
+        />
       </CardContent>
     </Card>
   );
