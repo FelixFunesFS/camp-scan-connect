@@ -421,15 +421,19 @@ export class TShirtService {
       type = "Men's";
     }
 
-    // Extract size - look for size patterns
+    // Extract size - look for size patterns (ordered from most specific to least specific)
     const sizePatterns = [
-      /\b(small|sm|s)\b/i,
-      /\b(medium|med|m)\b/i,
-      /\b(large|lg|l)\b/i,
-      /\b(x-large|xl|extra large)\b/i,
-      /\b(2x|2xl|xx-large|xxl)\b/i,
-      /\b(3x|3xl|xxx-large|xxxl)\b/i,
       /\b(4x|4xl|xxxx-large|xxxxl)\b/i,
+      /\b(3x|3xl|xxx-large|xxxl)\b/i,
+      /\b(2x|2xl|xx-large|xxl)\b/i,
+      /\b(x-large|xl|extra large)\b/i,
+      /\b(large|lg)\b/i,
+      /\b(medium|med)\b/i,
+      /\b(small|sm)\b/i,
+      // Single letter patterns last, with negative lookbehind to avoid matching within words
+      /(?<![a-zA-Z])(l)(?![a-zA-Z])/i,
+      /(?<![a-zA-Z])(m)(?![a-zA-Z])/i,
+      /(?<![a-zA-Z])(s)(?![a-zA-Z])/i,
     ];
 
     const sizeMap: Record<string, string> = {
