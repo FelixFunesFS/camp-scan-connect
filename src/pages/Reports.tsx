@@ -150,6 +150,15 @@ const Reports = () => {
           {/* Event Check-in Overview */}
           <CheckInOverview refreshTrigger={refreshTrigger} />
 
+          {/* Analytics Cards - Meal Service, Drinks, Peak Hours, etc. */}
+          <AnalyticsCards 
+            selectedPeriod={selectedPeriod}
+            refreshTrigger={refreshTrigger}
+          />
+
+          {/* Check-in Status and Currently On-Site - Side by Side */}
+          <CheckInStatusAndOnSite refreshTrigger={refreshTrigger} selectedPeriod={selectedPeriod} />
+
           {/* Attendee Services */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -157,27 +166,18 @@ const Reports = () => {
               <h2 className="text-xl font-semibold">Attendee Services</h2>
             </div>
             
-            {/* Analytics Cards - Meal Service, Drinks, Peak Hours, etc. */}
-            <AnalyticsCards 
+            {/* Gate Access Report */}
+            <GateAccessReport 
+              selectedPeriod={selectedPeriod}
+              refreshTrigger={refreshTrigger}
+            />
+            
+            {/* Equipment Services */}
+            <HeadphonesTracker 
               selectedPeriod={selectedPeriod}
               refreshTrigger={refreshTrigger}
             />
           </div>
-
-          {/* Check-in Status and Currently On-Site - Side by Side */}
-          <CheckInStatusAndOnSite refreshTrigger={refreshTrigger} selectedPeriod={selectedPeriod} />
-
-          {/* Gate Access Report */}
-          <GateAccessReport 
-            selectedPeriod={selectedPeriod}
-            refreshTrigger={refreshTrigger}
-          />
-          
-          {/* Equipment Services */}
-          <HeadphonesTracker 
-            selectedPeriod={selectedPeriod}
-            refreshTrigger={refreshTrigger}
-          />
         </div>
 
         {/* Auto-refresh indicator */}
