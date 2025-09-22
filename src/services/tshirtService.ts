@@ -110,6 +110,11 @@ export class TShirtService {
   private static parseOrderString(orderString: string): Array<{ product: string; size: string; type: string }> {
     const orders: Array<{ product: string; size: string; type: string }> = [];
     
+    // Smart detection: Only parse strings that contain actual order details
+    if (!this.isDetailedOrderString(orderString)) {
+      return orders;
+    }
+    
     // Split by commas for multiple orders
     const orderItems = orderString.split(',').map(item => item.trim());
     
@@ -128,6 +133,27 @@ export class TShirtService {
     }
     
     return orders;
+  }
+
+  /**
+   * Detect if a string contains detailed order information vs just quantities
+   */
+  private static isDetailedOrderString(str: string): boolean {
+    if (!str || typeof str !== 'string') return false;
+    
+    // Skip simple numeric values or booleans
+    if (/^\s*\d+\s*$/.test(str) || str.toLowerCase() === 'true' || str.toLowerCase() === 'false') {
+      return false;
+    }
+    
+    // Look for style indicators (Women's, Men's, Fitted, V-Neck, etc.)
+    const styleKeywords = [
+      "women's", "men's", "fitted", "v-neck", "vneck", "crew", "crewneck",
+      "unisex", "small", "medium", "large", "extra", "xl", "2x", "3x"
+    ];
+    
+    const lowerStr = str.toLowerCase();
+    return styleKeywords.some(keyword => lowerStr.includes(keyword));
   }
 
   /**
