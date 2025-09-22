@@ -362,20 +362,22 @@ export class TShirtService {
     console.log('T-Shirt Debug - Descriptive fields found:', descriptiveFields);
     console.log('T-Shirt Debug - Final filtered keys:', filteredKeys);
     
-    // Step 3: Group fields by detected size and style relationship
-    const sizeToFields = new Map<string, { descriptive: string[], coded: string[], generic: string[] }>();
+    // Step 3: Group fields by detected size AND type to avoid losing different products of same size
+    const sizeTypeToFields = new Map<string, { descriptive: string[], coded: string[], generic: string[] }>();
     
     console.log('T-Shirt Debug - Starting field grouping process...');
     filteredKeys.forEach(key => {
-      const { size } = this.parseTShirtProduct(key);
+      const { size, type } = this.parseTShirtProduct(key);
       const normalizedSize = size.toLowerCase() || 'unknown';
-      console.log(`T-Shirt Debug - Processing key "${key}": detected size="${size}", normalized="${normalizedSize}"`);
+      const normalizedType = type.toLowerCase().replace(/[^a-z0-9]/g, '') || 'tshirt';
+      const groupKey = `${normalizedSize}-${normalizedType}`;
+      console.log(`T-Shirt Debug - Processing key "${key}": detected size="${size}", type="${type}", groupKey="${groupKey}"`);
       
-      if (!sizeToFields.has(normalizedSize)) {
-        sizeToFields.set(normalizedSize, { descriptive: [], coded: [], generic: [] });
+      if (!sizeTypeToFields.has(groupKey)) {
+        sizeTypeToFields.set(groupKey, { descriptive: [], coded: [], generic: [] });
       }
       
-      const group = sizeToFields.get(normalizedSize)!;
+      const group = sizeTypeToFields.get(groupKey)!;
       const normalized = key.toLowerCase();
       
       // Categorize field type with improved coded field detection
@@ -391,34 +393,34 @@ export class TShirtService {
       }
     });
     
-    console.log('T-Shirt Debug - Size groups created:', Array.from(sizeToFields.entries()));
+    console.log('T-Shirt Debug - Size groups created:', Array.from(sizeTypeToFields.entries()));
     
-    // For each size, select the best representative field
-    sizeToFields.forEach((fieldGroups, size) => {
-      console.log(`T-Shirt Debug - Processing size "${size}" with groups:`, fieldGroups);
+    // For each size-type combination, select the best representative field
+    sizeTypeToFields.forEach((fieldGroups, groupKey) => {
+      console.log(`T-Shirt Debug - Processing group "${groupKey}" with groups:`, fieldGroups);
       let selectedField: string | null = null;
       
       // Priority 1: Use descriptive field if available
       if (fieldGroups.descriptive.length > 0) {
         selectedField = fieldGroups.descriptive[0];
-        console.log(`T-Shirt Debug - Selected descriptive field "${selectedField}" for size "${size}"`);
+        console.log(`T-Shirt Debug - Selected descriptive field "${selectedField}" for group "${groupKey}"`);
       }
       // Priority 2: Use coded field only if no descriptive field exists
       else if (fieldGroups.coded.length > 0) {
         selectedField = fieldGroups.coded[0];
-        console.log(`T-Shirt Debug - Selected coded field "${selectedField}" for size "${size}"`);
+        console.log(`T-Shirt Debug - Selected coded field "${selectedField}" for group "${groupKey}"`);
       }
       // Priority 3: Use generic field as last resort
       else if (fieldGroups.generic.length > 0) {
         selectedField = fieldGroups.generic[0];
-        console.log(`T-Shirt Debug - Selected generic field "${selectedField}" for size "${size}"`);
+        console.log(`T-Shirt Debug - Selected generic field "${selectedField}" for group "${groupKey}"`);
       }
       
       if (selectedField) {
         console.log(`T-Shirt Debug - Adding to final fields: "${selectedField}" = ${JSON.stringify(customFields[selectedField])}`);
         tshirtFields[selectedField] = customFields[selectedField];
       } else {
-        console.log(`T-Shirt Debug - No field selected for size "${size}"`);
+        console.log(`T-Shirt Debug - No field selected for group "${groupKey}"`);
       }
     });
     
