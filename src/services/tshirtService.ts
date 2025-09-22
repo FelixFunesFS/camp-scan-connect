@@ -260,34 +260,88 @@ export class TShirtService {
     const tshirtFields: Record<string, any> = {};
     const allKeys = Object.keys(customFields).filter(key => this.isTShirtProduct(key));
     
-    // Group keys by specificity (more specific = higher priority)
-    const specificFields: string[] = [];
+    // Group keys by descriptiveness (more descriptive = higher priority)
+    const descriptiveFields: string[] = [];
+    const codeFields: string[] = [];
     const genericFields: string[] = [];
     
     allKeys.forEach(key => {
       const normalized = key.toLowerCase();
-      // Specific fields contain style/size information
-      if (this.isSpecificTShirtField(key)) {
-        specificFields.push(key);
-      } else {
-        // Generic fields like "merchandise.tshirt"
+      
+      // Descriptive fields have human-readable style names
+      if (this.isDescriptiveTShirtField(key)) {
+        descriptiveFields.push(key);
+      }
+      // Code fields like "merchandise.tshirt.med"
+      else if (normalized.includes('merchandise') || normalized.match(/\.(xs|sm|med|lg|xl|small|medium|large)/)) {
+        codeFields.push(key);
+      }
+      // Generic fields like "t-shirt", "souvenir"
+      else {
         genericFields.push(key);
       }
     });
     
-    // If we have specific fields, prioritize them over generic ones
-    if (specificFields.length > 0) {
-      specificFields.forEach(key => {
+    // Smart deduplication: group by detected size and prioritize descriptive fields
+    const sizeGroups = new Map<string, string[]>();
+    
+    [...descriptiveFields, ...codeFields].forEach(key => {
+      const { size } = this.parseTShirtProduct(key);
+      const normalizedSize = size.toLowerCase();
+      
+      if (!sizeGroups.has(normalizedSize)) {
+        sizeGroups.set(normalizedSize, []);
+      }
+      sizeGroups.get(normalizedSize)!.push(key);
+    });
+    
+    // For each size group, pick the most descriptive field
+    sizeGroups.forEach(fieldsForSize => {
+      if (fieldsForSize.length === 1) {
+        // Only one field for this size, use it
+        const key = fieldsForSize[0];
         tshirtFields[key] = customFields[key];
-      });
-    } else {
-      // Only use generic fields if no specific ones exist
+      } else {
+        // Multiple fields for same size, prioritize descriptive ones
+        const descriptive = fieldsForSize.filter(key => this.isDescriptiveTShirtField(key));
+        const bestField = descriptive.length > 0 ? descriptive[0] : fieldsForSize[0];
+        tshirtFields[bestField] = customFields[bestField];
+      }
+    });
+    
+    // If no size-specific fields found, fall back to generic ones
+    if (Object.keys(tshirtFields).length === 0) {
       genericFields.forEach(key => {
         tshirtFields[key] = customFields[key];
       });
     }
     
     return tshirtFields;
+  }
+
+  /**
+   * Check if a field name contains descriptive style information (human-readable)
+   */
+  private static isDescriptiveTShirtField(fieldName: string): boolean {
+    const normalized = fieldName.toLowerCase();
+    
+    // Descriptive style indicators
+    const descriptiveStyles = [
+      "women's fitted v-neck", "women's fitted", "men's fitted", 
+      "fitted v-neck", "v-neck", "vneck", "crew neck", "crewneck",
+      "women's", "men's", "unisex", "ladies", "mens"
+    ];
+    
+    // Check if it contains descriptive style terms (not just codes)
+    const hasDescriptiveStyle = descriptiveStyles.some(style => 
+      normalized.includes(style)
+    );
+    
+    // Avoid code-like patterns
+    const isCodeLike = normalized.includes('merchandise.') || 
+                       normalized.match(/^\w+\.\w+(\.\w+)*$/);
+    
+    return hasDescriptiveStyle && !isCodeLike;
   }
 
   /**
