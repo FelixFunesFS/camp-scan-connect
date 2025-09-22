@@ -430,10 +430,10 @@ export class TShirtService {
       /\b(large|lg)\b/i,
       /\b(medium|med)\b/i,
       /\b(small|sm)\b/i,
-      // Single letter patterns last, with negative lookbehind to avoid matching within words
-      /(?<![a-zA-Z])(l)(?![a-zA-Z])/i,
-      /(?<![a-zA-Z])(m)(?![a-zA-Z])/i,
-      /(?<![a-zA-Z])(s)(?![a-zA-Z])/i,
+      // Single letter patterns last, with word boundaries and space/end checks
+      /\b(l)\b(?!\w)/i,
+      /\b(m)\b(?!\w)/i,
+      /\b(s)\b(?!\w)/i,
     ];
 
     const sizeMap: Record<string, string> = {
