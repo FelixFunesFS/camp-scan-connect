@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
@@ -150,20 +150,19 @@ const Reports = () => {
           {/* Event Check-in Overview */}
           <CheckInOverview refreshTrigger={refreshTrigger} />
 
-          {/* Gate Access Report - 4 gate activity cards */}
-          <GateAccessReport 
-            selectedPeriod={selectedPeriod}
-            refreshTrigger={refreshTrigger}
-          />
-
-          {/* Analytics Cards - Meal Service, Drinks, Peak Hours, etc. */}
-          <AnalyticsCards 
-            selectedPeriod={selectedPeriod}
-            refreshTrigger={refreshTrigger}
-          />
-
-          {/* Check-in Status and Currently On-Site - Side by Side */}
-          <CheckInStatusAndOnSite refreshTrigger={refreshTrigger} selectedPeriod={selectedPeriod} />
+          {/* Main Gate Access */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Shield className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Main Gate Access</h2>
+            </div>
+            
+            {/* Gate Access Report - 4 gate activity cards */}
+            <GateAccessReport 
+              selectedPeriod={selectedPeriod}
+              refreshTrigger={refreshTrigger}
+            />
+          </div>
 
           {/* Attendee Services */}
           <div className="space-y-4">
@@ -172,12 +171,21 @@ const Reports = () => {
               <h2 className="text-xl font-semibold">Attendee Services</h2>
             </div>
             
-            {/* Equipment Services */}
+            {/* Analytics Cards - Meal Service, Drinks, Peak Hours, etc. */}
+            <AnalyticsCards 
+              selectedPeriod={selectedPeriod}
+              refreshTrigger={refreshTrigger}
+            />
+            
+            {/* Equipment Services - positioned above Average Party Time and Peak Usage */}
             <HeadphonesTracker 
               selectedPeriod={selectedPeriod}
               refreshTrigger={refreshTrigger}
             />
           </div>
+
+          {/* Check-in Status and Currently On-Site - Side by Side */}
+          <CheckInStatusAndOnSite refreshTrigger={refreshTrigger} selectedPeriod={selectedPeriod} />
         </div>
 
         {/* Auto-refresh indicator */}
