@@ -174,22 +174,6 @@ export default function ActivationStation() {
               </CardContent>
             </Card>
 
-            {/* Meal Package Info Card */}
-            <Card className="border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20 mb-4">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="text-xl">🍽️</div>
-                  <div>
-                    <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">
-                      About Meal Service
-                    </h3>
-                    <p className="text-sm text-orange-800 dark:text-orange-200">
-                      Meal access requires a purchased meal package. Check your registration details during check-in to see your meal plan status.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
             
             <Card>
               <CardHeader className="pb-4">
