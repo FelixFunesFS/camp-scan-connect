@@ -296,6 +296,63 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
   return (
     <UITooltipProvider>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Meal Service Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UITooltip>
+              <UITooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Meal Service Today
+                </div>
+              </UITooltipTrigger>
+              <UITooltipContent>
+                <p>Meals served by type throughout the day</p>
+                <p className="text-xs text-muted-foreground mt-1">Tracked via meal station check-ins</p>
+              </UITooltipContent>
+            </UITooltip>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-3 bg-warning/10 rounded-lg">
+                <div className="text-2xl font-bold text-warning">
+                  {analytics.mealCounts.breakfast}
+                </div>
+                <div className="text-sm text-muted-foreground">Breakfast</div>
+              </div>
+              <div className="text-center p-3 bg-info/10 rounded-lg">
+                <div className="text-2xl font-bold text-info">
+                  {analytics.mealCounts.lunch}
+                </div>
+                <div className="text-sm text-muted-foreground">Lunch</div>
+              </div>
+              <div className="text-center p-3 bg-primary/10 rounded-lg">
+                <div className="text-2xl font-bold text-primary">
+                  {analytics.mealCounts.dinner}
+                </div>
+                <div className="text-sm text-muted-foreground">Dinner</div>
+              </div>
+            </div>
+            <div className="text-center">
+              <UITooltip>
+                <UITooltipTrigger asChild>
+                  <Badge variant="outline" className="text-success">
+                    Total: {analytics.mealCounts.breakfast + analytics.mealCounts.lunch + analytics.mealCounts.dinner} meals served
+                  </Badge>
+                </UITooltipTrigger>
+                <UITooltipContent>
+                  <p>Combined total of all meal types served</p>
+                  <p className="text-xs text-muted-foreground mt-1">Real-time count based on station activity</p>
+                </UITooltipContent>
+              </UITooltip>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Drinks Counter */}
       <Card>
         <CardHeader>
@@ -401,63 +458,6 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
                 <Bar dataKey="checkouts" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Meal Service Stats */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UITooltip>
-              <UITooltipTrigger asChild>
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Meal Service Today
-                </div>
-              </UITooltipTrigger>
-              <UITooltipContent>
-                <p>Meals served by type throughout the day</p>
-                <p className="text-xs text-muted-foreground mt-1">Tracked via meal station check-ins</p>
-              </UITooltipContent>
-            </UITooltip>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-warning/10 rounded-lg">
-                <div className="text-2xl font-bold text-warning">
-                  {analytics.mealCounts.breakfast}
-                </div>
-                <div className="text-sm text-muted-foreground">Breakfast</div>
-              </div>
-              <div className="text-center p-3 bg-info/10 rounded-lg">
-                <div className="text-2xl font-bold text-info">
-                  {analytics.mealCounts.lunch}
-                </div>
-                <div className="text-sm text-muted-foreground">Lunch</div>
-              </div>
-              <div className="text-center p-3 bg-primary/10 rounded-lg">
-                <div className="text-2xl font-bold text-primary">
-                  {analytics.mealCounts.dinner}
-                </div>
-                <div className="text-sm text-muted-foreground">Dinner</div>
-              </div>
-            </div>
-            <div className="text-center">
-              <UITooltip>
-                <UITooltipTrigger asChild>
-                  <Badge variant="outline" className="text-success">
-                    Total: {analytics.mealCounts.breakfast + analytics.mealCounts.lunch + analytics.mealCounts.dinner} meals served
-                  </Badge>
-                </UITooltipTrigger>
-                <UITooltipContent>
-                  <p>Combined total of all meal types served</p>
-                  <p className="text-xs text-muted-foreground mt-1">Real-time count based on station activity</p>
-                </UITooltipContent>
-              </UITooltip>
-            </div>
           </div>
         </CardContent>
       </Card>
