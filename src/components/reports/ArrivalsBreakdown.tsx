@@ -108,16 +108,39 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
     }
   };
 
-  const getProgressColor = (percentage: number): string => {
-    if (percentage >= 80) return 'bg-success';
-    if (percentage >= 40) return 'bg-warning';
-    return 'bg-destructive';
-  };
-
-  const getCardBackground = (percentage: number): string => {
-    if (percentage >= 80) return 'bg-success/5 border-success/20';
-    if (percentage >= 40) return 'bg-warning/5 border-warning/20';
-    return 'bg-destructive/5 border-destructive/20';
+  const getTicketTypeColors = (ticketType: string) => {
+    switch (ticketType) {
+      case 'glamping':
+        return {
+          progress: 'bg-primary',
+          background: 'bg-primary/5 border-primary/20',
+          badge: 'bg-primary/20 text-primary'
+        };
+      case 'cabin':
+        return {
+          progress: 'bg-accent',
+          background: 'bg-accent/5 border-accent/20',
+          badge: 'bg-accent/20 text-accent'
+        };
+      case 'rv_site':
+        return {
+          progress: 'bg-secondary',
+          background: 'bg-secondary/5 border-secondary/20',
+          badge: 'bg-secondary/20 text-secondary'
+        };
+      case 'dry_site':
+        return {
+          progress: 'bg-info',
+          background: 'bg-info/5 border-info/20',
+          badge: 'bg-info/20 text-info'
+        };
+      default:
+        return {
+          progress: 'bg-primary',
+          background: 'bg-primary/5 border-primary/20',
+          badge: 'bg-primary/20 text-primary'
+        };
+    }
   };
 
   if (isLoading) {
@@ -154,7 +177,7 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
             {stats.map((stat) => (
               <Tooltip key={stat.ticket_type}>
                 <TooltipTrigger asChild>
-                  <Card className={`cursor-help transition-all hover:scale-105 ${getCardBackground(stat.percentage)}`}>
+                  <Card className={`cursor-help transition-all hover:scale-105 ${getTicketTypeColors(stat.ticket_type).background}`}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="font-medium text-sm">
@@ -162,11 +185,7 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
                         </div>
                         <Badge 
                           variant="secondary" 
-                          className={`text-xs ${
-                            stat.percentage >= 80 ? 'bg-success/20 text-success' :
-                            stat.percentage >= 40 ? 'bg-warning/20 text-warning' :
-                            'bg-destructive/20 text-destructive'
-                          }`}
+                          className={`text-xs ${getTicketTypeColors(stat.ticket_type).badge}`}
                         >
                           {stat.percentage}%
                         </Badge>
@@ -184,7 +203,7 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
                         
                         <Progress 
                           value={stat.percentage} 
-                          className={`h-2 ${getProgressColor(stat.percentage)}`}
+                          className={`h-2 [&>div]:${getTicketTypeColors(stat.ticket_type).progress}`}
                         />
                         
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -210,9 +229,7 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
                     <div className="flex items-center gap-1 mt-2">
                       <Info className="h-3 w-3" />
                       <span className="text-xs">
-                        {stat.percentage >= 80 ? 'High completion rate' :
-                         stat.percentage >= 40 ? 'Moderate completion rate' :
-                         'Low completion rate'}
+                        {formatTicketType(stat.ticket_type)} ticket holders
                       </span>
                     </div>
                   </div>
