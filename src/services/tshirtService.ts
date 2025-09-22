@@ -365,9 +365,11 @@ export class TShirtService {
     // Step 3: Group fields by detected size and style relationship
     const sizeToFields = new Map<string, { descriptive: string[], coded: string[], generic: string[] }>();
     
+    console.log('T-Shirt Debug - Starting field grouping process...');
     filteredKeys.forEach(key => {
       const { size } = this.parseTShirtProduct(key);
       const normalizedSize = size.toLowerCase() || 'unknown';
+      console.log(`T-Shirt Debug - Processing key "${key}": detected size="${size}", normalized="${normalizedSize}"`);
       
       if (!sizeToFields.has(normalizedSize)) {
         sizeToFields.set(normalizedSize, { descriptive: [], coded: [], generic: [] });
@@ -378,33 +380,45 @@ export class TShirtService {
       
       // Categorize field type with improved coded field detection
       if (this.isDescriptiveTShirtField(key)) {
+        console.log(`T-Shirt Debug - Categorized "${key}" as DESCRIPTIVE`);
         group.descriptive.push(key);
       } else if (normalized.startsWith('merchandise.') || normalized.match(/^\w+\.\w+\.\w+/)) {
+        console.log(`T-Shirt Debug - Categorized "${key}" as CODED`);
         group.coded.push(key);
       } else {
+        console.log(`T-Shirt Debug - Categorized "${key}" as GENERIC`);
         group.generic.push(key);
       }
     });
     
+    console.log('T-Shirt Debug - Size groups created:', Array.from(sizeToFields.entries()));
+    
     // For each size, select the best representative field
     sizeToFields.forEach((fieldGroups, size) => {
+      console.log(`T-Shirt Debug - Processing size "${size}" with groups:`, fieldGroups);
       let selectedField: string | null = null;
       
       // Priority 1: Use descriptive field if available
       if (fieldGroups.descriptive.length > 0) {
         selectedField = fieldGroups.descriptive[0];
+        console.log(`T-Shirt Debug - Selected descriptive field "${selectedField}" for size "${size}"`);
       }
       // Priority 2: Use coded field only if no descriptive field exists
       else if (fieldGroups.coded.length > 0) {
         selectedField = fieldGroups.coded[0];
+        console.log(`T-Shirt Debug - Selected coded field "${selectedField}" for size "${size}"`);
       }
       // Priority 3: Use generic field as last resort
       else if (fieldGroups.generic.length > 0) {
         selectedField = fieldGroups.generic[0];
+        console.log(`T-Shirt Debug - Selected generic field "${selectedField}" for size "${size}"`);
       }
       
       if (selectedField) {
+        console.log(`T-Shirt Debug - Adding to final fields: "${selectedField}" = ${JSON.stringify(customFields[selectedField])}`);
         tshirtFields[selectedField] = customFields[selectedField];
+      } else {
+        console.log(`T-Shirt Debug - No field selected for size "${size}"`);
       }
     });
     
