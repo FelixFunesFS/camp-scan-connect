@@ -431,63 +431,62 @@ export class TShirtService {
   }
 
   private static parseTShirtProduct(productName: string): { size: string; type: string } {
-    const normalized = productName.toLowerCase();
+    console.log('Parsing T-shirt product:', productName);
+    
+    // First, clean up the product name by normalizing hyphens and spaces
+    const cleanProduct = productName.toLowerCase().trim().replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
+    console.log('Cleaned product name:', cleanProduct);
     
     // Determine full style name from the product name
     let type = 'T-Shirt'; // default
     
-    // Check for specific style patterns in order of specificity
-    if (normalized.includes("women's fitted v-neck") || 
-        (normalized.includes("women's") && normalized.includes("fitted") && normalized.includes("v-neck"))) {
+    // Check for specific style patterns in order of specificity - improved to handle hyphens
+    if (cleanProduct.includes("women's fitted v neck") || cleanProduct.includes("women's fitted vneck") ||
+        (cleanProduct.includes("women's") && cleanProduct.includes("fitted") && cleanProduct.includes("v neck"))) {
       type = "Women's Fitted V-Neck";
-    } else if (normalized.includes("unisex crew neck") || 
-               (normalized.includes("unisex") && normalized.includes("crew"))) {
+    } else if (cleanProduct.includes("unisex crew neck") || cleanProduct.includes("unisex crewneck") ||
+               (cleanProduct.includes("unisex") && cleanProduct.includes("crew"))) {
       type = "Unisex Crew Neck";
-    } else if (normalized.includes("men's fitted v-neck") || 
-               (normalized.includes("men's") && normalized.includes("fitted") && normalized.includes("v-neck"))) {
+    } else if (cleanProduct.includes("men's fitted v neck") || cleanProduct.includes("men's fitted vneck") ||
+               (cleanProduct.includes("men's") && cleanProduct.includes("fitted") && cleanProduct.includes("v neck"))) {
       type = "Men's Fitted V-Neck";
-    } else if (normalized.includes("women's") || normalized.includes('fitted')) {
+    } else if (cleanProduct.includes("women's") || cleanProduct.includes('fitted')) {
       type = "Women's Fitted V-Neck"; // Default women's style
-    } else if (normalized.includes("men's")) {
+    } else if (cleanProduct.includes("men's")) {
       type = "Men's Fitted V-Neck"; // Default men's style
-    } else if (normalized.includes("unisex") || normalized.includes("crew")) {
+    } else if (cleanProduct.includes("unisex") || cleanProduct.includes("crew")) {
       type = "Unisex Crew Neck"; // Default unisex style
     }
 
-    // Extract size - look for size patterns (ordered from most specific to least specific)
+    console.log('Detected type:', type);
+
+    // Extract size - improved patterns to handle "med" properly
     const sizePatterns = [
-      /\b(4x|4xl|xxxx-large|xxxxl)\b/i,
-      /\b(3x|3xl|xxx-large|xxxl)\b/i,
-      /\b(2x|2xl|xx-large|xxl)\b/i,
-      /\b(x-?large|xl|extra\s*large)\b/i,
-      /\b(large|lg)\b/i,
-      /\b(medium|med)\b/i,
-      /\b(small|sm)\b/i,
+      { pattern: /\b(4x|4xl|xxxx large|xxxxl)\b/i, size: '4X-Large' },
+      { pattern: /\b(3x|3xl|xxx large|xxxl)\b/i, size: '3X-Large' },
+      { pattern: /\b(2x|2xl|xx large|xxl)\b/i, size: '2X-Large' },
+      { pattern: /\b(x large|xl|extra large)\b/i, size: 'X-Large' },
+      { pattern: /\b(large|lg)\b/i, size: 'Large' },
+      { pattern: /\b(medium|med)\b/i, size: 'Medium' },
+      { pattern: /\b(small|sm)\b/i, size: 'Small' },
       // Single letter patterns last, with word boundaries and space/end checks
-      /\b(l)\b(?!\w)/i,
-      /\b(m)\b(?!\w)/i,
-      /\b(s)\b(?!\w)/i,
+      { pattern: /\b(l)\b(?!\w)/i, size: 'Large' },
+      { pattern: /\b(m)\b(?!\w)/i, size: 'Medium' },
+      { pattern: /\b(s)\b(?!\w)/i, size: 'Small' },
     ];
 
-    const sizeMap: Record<string, string> = {
-      'small': 'Small', 'sm': 'Small', 's': 'Small',
-      'medium': 'Medium', 'med': 'Medium', 'm': 'Medium',
-      'large': 'Large', 'lg': 'Large', 'l': 'Large',
-      'x-large': 'X-Large', 'xl': 'X-Large', 'extra large': 'X-Large',
-      '2x': '2X-Large', '2xl': '2X-Large', 'xx-large': '2X-Large', 'xxl': '2X-Large',
-      '3x': '3X-Large', '3xl': '3X-Large', 'xxx-large': '3X-Large', 'xxxl': '3X-Large',
-      '4x': '4X-Large', '4xl': '4X-Large', 'xxxx-large': '4X-Large', 'xxxxl': '4X-Large'
-    };
-
-    for (const pattern of sizePatterns) {
-      const match = normalized.match(pattern);
+    let detectedSize = '';
+    for (const { pattern, size } of sizePatterns) {
+      const match = cleanProduct.match(pattern);
       if (match) {
-        const matchedSize = match[1].toLowerCase();
-        return { size: sizeMap[matchedSize] || matchedSize.toUpperCase(), type };
+        detectedSize = size;
+        console.log('Detected size:', detectedSize);
+        break;
       }
     }
 
-    return { size: '', type };
+    console.log('Final parsed result:', { size: detectedSize, type });
+    return { size: detectedSize, type };
   }
 
   static async getTShirtPickupData(): Promise<{ pickups: TShirtPickupData[]; stats: TShirtStats }> {
