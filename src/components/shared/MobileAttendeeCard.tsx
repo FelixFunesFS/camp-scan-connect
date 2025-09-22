@@ -32,6 +32,15 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   backgroundColor,
   className = ""
 }) => {
+  // Debug: Log the attendee data to see what's being passed
+  console.log('MobileAttendeeCard received attendee:', {
+    name: attendee.name,
+    ticket_type: attendee.ticket_type,
+    meal_plan: attendee.meal_plan,
+    arrival_window: attendee.arrival_window,
+    full_attendee: attendee
+  });
+
   const displayName = attendee.name || `${attendee.first_name || ''} ${attendee.last_name || ''}`.trim();
   const isActivated = attendee.is_activated || attendee.activated_at;
   const hasRfid = attendee.has_rfid || attendee.rfid_uid;
