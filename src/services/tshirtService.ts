@@ -44,9 +44,9 @@ export class TShirtService {
     let primarySize: string | null = null;
     let primaryType: string | null = null;
 
-    // Look through all fields for t-shirt purchases
+    // Look through all fields for t-shirt purchases with expanded detection
     Object.entries(customFields).forEach(([key, value]) => {
-      if (typeof key === 'string' && key.toLowerCase().includes('t-shirt') && value) {
+      if (typeof key === 'string' && this.isTShirtProduct(key) && value) {
         const product = key;
         const { size, type } = this.parseTShirtProduct(product);
         
@@ -66,6 +66,19 @@ export class TShirtService {
       hasAnyTShirt: purchaseDetails.length > 0,
       purchaseDetails
     };
+  }
+
+  private static isTShirtProduct(productName: string): boolean {
+    const normalized = productName.toLowerCase();
+    
+    // Check for various t-shirt related keywords
+    const tshirtKeywords = [
+      't-shirt', 't shirt', 'tshirt',
+      'souvenir', 'fitted', 'crew neck', 'v-neck',
+      'vneck', 'crewneck', 'unisex', "women's", "men's"
+    ];
+    
+    return tshirtKeywords.some(keyword => normalized.includes(keyword));
   }
 
   private static parseTShirtProduct(productName: string): { size: string; type: string } {
