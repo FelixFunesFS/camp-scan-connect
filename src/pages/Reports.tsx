@@ -150,6 +150,12 @@ const Reports = () => {
           {/* Event Check-in Overview */}
           <CheckInOverview refreshTrigger={refreshTrigger} />
 
+          {/* Gate Access Report - 4 gate activity cards */}
+          <GateAccessReport 
+            selectedPeriod={selectedPeriod}
+            refreshTrigger={refreshTrigger}
+          />
+
           {/* Analytics Cards - Meal Service, Drinks, Peak Hours, etc. */}
           <AnalyticsCards 
             selectedPeriod={selectedPeriod}
@@ -165,12 +171,6 @@ const Reports = () => {
               <Headphones className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold">Attendee Services</h2>
             </div>
-            
-            {/* Gate Access Report */}
-            <GateAccessReport 
-              selectedPeriod={selectedPeriod}
-              refreshTrigger={refreshTrigger}
-            />
             
             {/* Equipment Services */}
             <HeadphonesTracker 
