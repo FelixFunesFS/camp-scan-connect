@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plane, Users, TrendingUp, Info } from "lucide-react";
+import { Plane, Users, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 
@@ -22,7 +22,6 @@ interface ArrivalsBreakdownProps {
 export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) => {
   const [stats, setStats] = useState<TicketTypeStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [totalStats, setTotalStats] = useState({ total: 0, activated: 0, remaining: 0, percentage: 0 });
 
   const fetchArrivalsData = useCallback(async () => {
     try {
@@ -81,19 +80,7 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
       // Sort by total count (largest first)
       ticketStats.sort((a, b) => b.total - a.total);
 
-      // Calculate overall totals
-      const overallTotal = ticketStats.reduce((sum, stat) => sum + stat.total, 0);
-      const overallActivated = ticketStats.reduce((sum, stat) => sum + stat.activated, 0);
-      const overallRemaining = overallTotal - overallActivated;
-      const overallPercentage = overallTotal > 0 ? Math.round((overallActivated / overallTotal) * 100) : 0;
-
       setStats(ticketStats);
-      setTotalStats({
-        total: overallTotal,
-        activated: overallActivated,
-        remaining: overallRemaining,
-        percentage: overallPercentage
-      });
     } catch (error) {
       console.error('Error fetching arrivals data:', error);
     } finally {
@@ -143,13 +130,10 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-20 bg-muted rounded"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[1,2,3,4].map(i => (
-                <div key={i} className="h-24 bg-muted rounded"></div>
-              ))}
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-24 bg-muted rounded animate-pulse"></div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -165,29 +149,8 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
             Arrivals by Ticket Type
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Overall Summary */}
-          <div className="text-center space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
-            <div className="text-3xl font-bold text-primary">
-              {totalStats.activated} / {totalStats.total}
-            </div>
-            <div className="text-lg text-muted-foreground">
-              Total Arrivals Processed
-            </div>
-            <Progress value={totalStats.percentage} className="h-3" />
-            <div className="flex items-center justify-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <span className="text-primary font-medium">{totalStats.percentage}% Complete</span>
-              </div>
-              <div className="text-muted-foreground">
-                {totalStats.remaining} Remaining
-              </div>
-            </div>
-          </div>
-
-          {/* Ticket Type Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map((stat) => (
               <Tooltip key={stat.ticket_type}>
                 <TooltipTrigger asChild>
