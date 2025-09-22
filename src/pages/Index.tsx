@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Settings, BarChart3, ArrowRight, Key, Headphones, Utensils, Wine, Zap, Scan, Car, Radio, Package } from "lucide-react";
+import { Users, Settings, BarChart3, ArrowRight, Key, Headphones, Utensils, Wine, Zap, Scan, Car, Radio, Package, DoorOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -71,7 +71,17 @@ const Index = () => {
               {/* Staff-Operated Stations */}
               <div className="pt-4 border-t">
                 <h4 className="font-medium text-sm text-muted-foreground mb-3">Staff-Operated Stations</h4>
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid md:grid-cols-4 gap-4">
+                  <div 
+                    className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
+                    onClick={() => navigate("/main-gate-station")}
+                  >
+                    <div className="flex flex-col items-center text-center gap-2">
+                      <DoorOpen className="h-5 w-5 text-primary" />
+                      <span className="font-medium text-sm">Main Gate</span>
+                      <ArrowRight className="h-4 w-4 opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
                   <div 
                     className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
                     onClick={() => navigate("/headphones-station")}

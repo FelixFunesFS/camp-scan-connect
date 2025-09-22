@@ -14,6 +14,7 @@ import HeadphonesStation from "./pages/HeadphonesStation";
 import GolfCartsStation from "./pages/GolfCartsStation";
 import WalkieTalkiesStation from "./pages/WalkieTalkiesStation";
 import FannyPacksStation from "./pages/FannyPacksStation";
+import MainGateStation from "./pages/MainGateStation";
 import EquipmentHub from "./pages/EquipmentHub";
 import AttendeeDetail from "./pages/AttendeeDetail";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/golf-carts-station" element={<GolfCartsStation />} />
           <Route path="/walkie-talkies-station" element={<WalkieTalkiesStation />} />
           <Route path="/fanny-packs-station" element={<FannyPacksStation />} />
+          <Route path="/main-gate-station" element={<MainGateStation />} />
           <Route path="/equipment-hub" element={<EquipmentHub />} />
           <Route path="/attendee/:id" element={<AttendeeDetail />} />
           <Route path="/reports" element={<Reports />} />

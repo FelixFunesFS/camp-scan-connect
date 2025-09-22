@@ -657,6 +657,7 @@ export type Database = {
         | "golf_carts"
         | "walkie_talkies"
         | "fanny_packs"
+        | "main_gate"
       tag_status:
         | "unissued"
         | "assigned"
@@ -694,6 +695,8 @@ export type Database = {
         | "walkie_talkie_checkin"
         | "fanny_pack_checkout"
         | "fanny_pack_checkin"
+        | "gate_entry"
+        | "gate_exit"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -839,6 +842,7 @@ export const Constants = {
         "golf_carts",
         "walkie_talkies",
         "fanny_packs",
+        "main_gate",
       ],
       tag_status: [
         "unissued",
@@ -879,6 +883,8 @@ export const Constants = {
         "walkie_talkie_checkin",
         "fanny_pack_checkout",
         "fanny_pack_checkin",
+        "gate_entry",
+        "gate_exit",
       ],
     },
   },
