@@ -81,12 +81,15 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
           <div className="flex items-center gap-2">
             <Shirt className="h-5 w-5" />
             T-Shirt Distribution Tracking
+            <Badge variant="outline" className="text-xs font-normal">
+              Items Tracking
+            </Badge>
           </div>
           <Badge 
             variant={stats.remaining > 0 ? "default" : "outline"}
             className={stats.remaining > 0 ? "bg-warning" : "bg-success"}
           >
-            {stats.remaining} Remaining
+            {stats.remaining} Items Remaining
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -96,19 +99,19 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
           <div className="text-center p-4 bg-info/10 rounded-lg">
             <Package className="h-6 w-6 text-info mx-auto mb-2" />
             <div className="text-2xl font-bold text-info">{stats.totalOrdered}</div>
-            <div className="text-sm text-muted-foreground">Total Ordered</div>
+            <div className="text-sm text-muted-foreground">Total Items Ordered</div>
           </div>
           
           <div className="text-center p-4 bg-success/10 rounded-lg">
             <CheckCircle className="h-6 w-6 text-success mx-auto mb-2" />
             <div className="text-2xl font-bold text-success">{stats.pickedUp}</div>
-            <div className="text-sm text-muted-foreground">Picked Up</div>
+            <div className="text-sm text-muted-foreground">Items Picked Up</div>
           </div>
           
           <div className="text-center p-4 bg-warning/10 rounded-lg">
             <Clock className="h-6 w-6 text-warning mx-auto mb-2" />
             <div className="text-2xl font-bold text-warning">{stats.remaining}</div>
-            <div className="text-sm text-muted-foreground">Remaining</div>
+            <div className="text-sm text-muted-foreground">Items Remaining</div>
           </div>
         </div>
 
@@ -157,7 +160,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
           {pendingPickups.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Shirt className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>All t-shirts have been picked up!</p>
+              <p>All t-shirt items have been picked up!</p>
               <p className="text-sm">Distribution complete ✓</p>
             </div>
           ) : (

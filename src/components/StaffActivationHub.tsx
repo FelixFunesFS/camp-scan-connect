@@ -346,8 +346,8 @@ export function StaffActivationHub() {
         const tshirtData = await TShirtService.checkAttendeeHasTShirt(attendee.id);
         const tshirtOrders = tshirtData.orders || [];
         const tshirtSummary = {
-          totalOrders: tshirtOrders.length,
-          totalPickedUp: tshirtOrders.filter(order => order.isPickedUp).length,
+          totalOrders: tshirtOrders.reduce((sum, order) => sum + order.quantity, 0), // Total items, not just order groups
+          totalPickedUp: tshirtOrders.filter(order => order.isPickedUp).reduce((sum, order) => sum + order.quantity, 0), // Total picked up items
           hasAnyTShirt: tshirtOrders.length > 0
         };
 

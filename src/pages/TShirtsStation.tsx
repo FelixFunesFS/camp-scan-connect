@@ -101,7 +101,9 @@ function TShirtsContent({
 
       setSelectedOrderIds([]);
 
-      const orderDetails = selectedOrders.map(o => `${o.style} ${o.size}`).join(", ");
+      const orderDetails = selectedOrders
+        .map(o => o.quantity > 1 ? `${o.quantity}× ${o.style} ${o.size}` : `${o.style} ${o.size}`)
+        .join(", ");
       toast.success(
         `T-shirts picked up by ${selectedRfid?.attendee?.first_name}: ${orderDetails}`
       );
@@ -176,10 +178,10 @@ function TShirtsContent({
               <Package className="h-6 w-6 text-primary" />
             </div>
             <div className="text-lg font-medium">
-              T-Shirt Orders ({tshirtOrders.length} total)
+              T-Shirt Orders ({tshirtOrders.reduce((sum, order) => sum + order.quantity, 0)} items, {tshirtOrders.length} order groups)
             </div>
             <div className="text-sm text-muted-foreground">
-              {pickedUpOrders.length} picked up • {availableOrders.length} remaining
+              {pickedUpOrders.reduce((sum, order) => sum + order.quantity, 0)} items picked up • {availableOrders.reduce((sum, order) => sum + order.quantity, 0)} items remaining
             </div>
           </div>
 
@@ -211,9 +213,14 @@ function TShirtsContent({
                     <div className="font-medium flex items-center gap-2">
                       <Shirt className="h-4 w-4" />
                       {order.style} - {order.size}
+                      {order.quantity > 1 && (
+                        <span className="text-sm text-muted-foreground">
+                          (×{order.quantity})
+                        </span>
+                      )}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Quantity: {order.quantity}
+                      {order.quantity === 1 ? '1 item' : `${order.quantity} items`}
                       {order.isPickedUp && order.pickupTime && (
                         <span className="ml-2 text-green-600">
                           • Picked up {new Date(order.pickupTime).toLocaleDateString()}
