@@ -47,11 +47,18 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
 
   const fetchGateData = useCallback(async () => {
     try {
+      console.log('🚪 GateAccessReport: Starting data fetch for period:', selectedPeriod);
+      
       // Use midnight boundaries for gate access
       const boundaries = getStandardTimeBoundaries(selectedPeriod);
+      console.log('🚪 GateAccessReport: Time boundaries:', {
+        start: boundaries.start.toISOString(),
+        end: boundaries.end.toISOString(),
+        label: boundaries.label
+      });
       
       // Get all gate transactions for the period
-      const { data: gateTransactions } = await supabase
+      const { data: gateTransactions, error } = await supabase
         .from('station_transactions')
         .select(`
           *,
@@ -63,14 +70,45 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
         .lt('created_at', boundaries.end.toISOString())
         .order('created_at', { ascending: true });
 
-      if (!gateTransactions) {
+      console.log('🚪 GateAccessReport: Query result:', {
+        count: gateTransactions?.length || 0,
+        error: error?.message || null,
+        boundaries: {
+          start: boundaries.start.toISOString(),
+          end: boundaries.end.toISOString()
+        }
+      });
+
+      if (error) {
+        console.error('🚪 GateAccessReport: Database error:', error);
         setIsLoading(false);
         return;
       }
 
+      if (!gateTransactions) {
+        console.log('🚪 GateAccessReport: No transactions found');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('🚪 GateAccessReport: Gate transactions found:', 
+        gateTransactions.map(t => ({
+          type: t.transaction_type,
+          time: t.created_at,
+          attendee: (t as any).attendees ? `${(t as any).attendees.first_name} ${(t as any).attendees.last_name}` : 'Unknown',
+          rfid: t.rfid_uid
+        }))
+      );
+
       // Count entries and exits
       const entries = gateTransactions.filter(t => t.transaction_type === 'gate_entry');
       const exits = gateTransactions.filter(t => t.transaction_type === 'gate_exit');
+
+      console.log('🚪 GateAccessReport: Entry/Exit counts:', {
+        entries: entries.length,
+        exits: exits.length,
+        total: gateTransactions.length
+      });
 
       // Calculate hourly activity
       const hourlyActivity = Array.from({ length: 24 }, (_, i) => ({
@@ -146,7 +184,7 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
 
       const averageVisitMinutes = completedVisitCount > 0 ? Math.round(totalVisitMinutes / completedVisitCount) : 0;
 
-      setGateData({
+      const finalGateData = {
         currentOccupancy: onSiteAttendees.length,
         dailyEntries: entries.length,
         dailyExits: exits.length,
@@ -154,7 +192,19 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
         peakHour,
         onSiteAttendees,
         averageVisitMinutes
+      };
+
+      console.log('🚪 GateAccessReport: Final processed data:', {
+        currentOccupancy: finalGateData.currentOccupancy,
+        dailyEntries: finalGateData.dailyEntries,
+        dailyExits: finalGateData.dailyExits,
+        onSiteAttendeesCount: finalGateData.onSiteAttendees.length,
+        averageVisitMinutes: finalGateData.averageVisitMinutes,
+        peakHour: finalGateData.peakHour,
+        hourlyActivityWithData: hourlyActivity.filter(h => h.entries > 0 || h.exits > 0)
       });
+
+      setGateData(finalGateData);
 
     } catch (error) {
       console.error('Error fetching gate access data:', error);
