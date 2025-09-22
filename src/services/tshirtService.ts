@@ -81,7 +81,7 @@ export class TShirtService {
         const { size, type } = this.parseTShirtProduct(key);
         if (size) {
           const quantity = this.extractQuantityFromValue(value);
-          console.log(`T-Shirt Debug - Processing field "${key}": size=${size}, type=${type}, quantity=${quantity}`); // Debug logging
+          console.log(`T-Shirt Debug - Processing field "${key}": size=${size}, type=${type}, value=${JSON.stringify(value)}, quantity=${quantity}`); // Enhanced debug logging
           // Add multiple entries for quantities > 1
           for (let i = 0; i < quantity; i++) {
             purchaseDetails.push({ product: key, size, type });
@@ -235,11 +235,22 @@ export class TShirtService {
    * Extract quantity from field values
    */
   private static extractQuantityFromValue(value: any): number {
-    if (typeof value === 'number') return Math.max(1, Math.floor(value));
+    console.log(`T-Shirt Debug - extractQuantityFromValue called with:`, { value, type: typeof value });
+    
+    if (typeof value === 'number') {
+      const result = Math.max(1, Math.floor(value));
+      console.log(`T-Shirt Debug - Extracted quantity from number:`, result);
+      return result;
+    }
+    
     if (typeof value === 'string') {
       const num = parseInt(value);
-      return Number.isFinite(num) && num > 0 ? num : 1;
+      const result = Number.isFinite(num) && num > 0 ? num : 1;
+      console.log(`T-Shirt Debug - Extracted quantity from string "${value}":`, result);
+      return result;
     }
+    
+    console.log(`T-Shirt Debug - Default quantity for unknown type:`, 1);
     return 1;
   }
 
