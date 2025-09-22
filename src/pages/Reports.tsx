@@ -171,16 +171,24 @@ const Reports = () => {
               <h2 className="text-xl font-semibold">Attendee Services</h2>
             </div>
             
-            {/* Analytics Cards - Meal Service, Drinks, Peak Hours, etc. */}
+            {/* Analytics Cards - Top Section: Meal Service, Drinks */}
             <AnalyticsCards 
               selectedPeriod={selectedPeriod}
               refreshTrigger={refreshTrigger}
+              section="top"
             />
             
             {/* Equipment Services - positioned above Average Party Time and Peak Usage */}
             <HeadphonesTracker 
               selectedPeriod={selectedPeriod}
               refreshTrigger={refreshTrigger}
+            />
+            
+            {/* Analytics Cards - Bottom Section: Average Party Time, Peak Usage Hours */}
+            <AnalyticsCards 
+              selectedPeriod={selectedPeriod}
+              refreshTrigger={refreshTrigger}
+              section="bottom"
             />
           </div>
 

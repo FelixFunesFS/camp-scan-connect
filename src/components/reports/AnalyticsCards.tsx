@@ -46,9 +46,10 @@ interface AnalyticsData {
 interface AnalyticsCardsProps {
   selectedPeriod: TimePeriod;
   refreshTrigger?: number;
+  section?: 'top' | 'bottom' | 'all';
 }
 
-export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCardsProps) => {
+export const AnalyticsCards = ({ selectedPeriod, refreshTrigger, section = 'all' }: AnalyticsCardsProps) => {
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     drinkCount: 0,
     drinkHourlyData: [],
@@ -324,9 +325,10 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
   };
 
   if (isLoading) {
+    const skeletonCount = section === 'top' || section === 'bottom' ? 2 : 4;
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {[1,2,3,4,5].map(i => (
+        {[...Array(skeletonCount)].map((_, i) => (
           <Card key={i}>
             <CardContent className="p-6">
               <div className="animate-pulse space-y-4">
@@ -340,9 +342,8 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
     );
   }
 
-  return (
-    <UITooltipProvider>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  const renderTopCards = () => (
+    <>
       {/* Meal Service Stats */}
       <Card>
         <CardHeader>
@@ -469,7 +470,11 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
           </div>
         </CardContent>
       </Card>
+    </>
+  );
 
+  const renderBottomCards = () => (
+    <>
       {/* Average Party Time */}
       <Card>
         <CardHeader>
@@ -553,8 +558,21 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
           </div>
         </CardContent>
       </Card>
+    </>
+  );
 
-    </div>
+  return (
+    <UITooltipProvider>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {section === 'top' && renderTopCards()}
+        {section === 'bottom' && renderBottomCards()}
+        {section === 'all' && (
+          <>
+            {renderTopCards()}
+            {renderBottomCards()}
+          </>
+        )}
+      </div>
     </UITooltipProvider>
   );
 };
