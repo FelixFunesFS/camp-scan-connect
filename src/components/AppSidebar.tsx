@@ -78,11 +78,18 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarContent>
+    <Sidebar 
+      collapsible="icon"
+      className="transition-all duration-300 ease-in-out"
+    >
+      <SidebarContent className="gap-0">
         {navigationItems.map((section) => (
           <SidebarGroup key={section.label}>
-            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            {!isCollapsed && (
+              <SidebarGroupLabel className="text-xs font-medium text-muted-foreground/70 px-3 py-2">
+                {section.label}
+              </SidebarGroupLabel>
+            )}
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => (
@@ -91,10 +98,11 @@ export function AppSidebar() {
                       asChild 
                       isActive={isActive(item.url)}
                       tooltip={isCollapsed ? item.title : undefined}
+                      className="h-9 transition-colors duration-200"
                     >
                       <NavLink to={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        {!isCollapsed && <span className="truncate">{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
