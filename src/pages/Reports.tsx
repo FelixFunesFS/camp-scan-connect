@@ -30,8 +30,8 @@ const Reports = () => {
     return saved ? JSON.parse(saved) : {
       overview: true,     // Event Check-in Overview (default: expanded)
       arrivals: true,     // Arrivals by Ticket Type (default: expanded)
-      gate: false,        // Main Gate Access (default: collapsed)
-      services: false,    // Attendee Services (default: collapsed)
+      gate: true,         // Main Gate Access (default: expanded)
+      services: true,     // Attendee Services (default: expanded)
       status: false       // Check-in Status & On-Site (default: collapsed)
     };
   });
