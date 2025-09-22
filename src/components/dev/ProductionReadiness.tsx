@@ -24,6 +24,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { StaffGuideHub } from './StaffGuideHub';
 
 interface SystemHealthMetrics {
   totalAttendees: number;
@@ -242,9 +243,10 @@ export function ProductionReadiness() {
       </div>
 
       <Tabs defaultValue="health" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="tests">Edge Case Tests</TabsTrigger>
+          <TabsTrigger value="guides">Staff Operations Guide</TabsTrigger>
           <TabsTrigger value="bulk">Bulk Operations</TabsTrigger>
           <TabsTrigger value="fallbacks">Fallback Procedures</TabsTrigger>
           <TabsTrigger value="contacts">Emergency Contacts</TabsTrigger>
@@ -361,6 +363,10 @@ export function ProductionReadiness() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="guides" className="space-y-4">
+          <StaffGuideHub />
         </TabsContent>
 
         <TabsContent value="bulk" className="space-y-4">
