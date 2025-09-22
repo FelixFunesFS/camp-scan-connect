@@ -26,6 +26,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -85,6 +86,9 @@ export function AppSidebar() {
       className="transition-all duration-300 ease-in-out"
     >
       <SidebarContent className="gap-0">
+        <div className="flex items-center justify-between p-3 border-b border-border/50">
+          <SidebarTrigger className="h-8 w-8" />
+        </div>
         {navigationItems.map((section) => (
           <SidebarGroup key={section.label}>
             {!isCollapsed && (

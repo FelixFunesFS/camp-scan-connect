@@ -36,14 +36,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     >
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <main className="flex-1 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <SidebarTrigger className="h-8 w-8" />
-            </div>
-            {children}
-          </main>
-        </div>
+        <main className="flex-1 p-6">
+          {children}
+        </main>
       </div>
     </SidebarProvider>
   );
