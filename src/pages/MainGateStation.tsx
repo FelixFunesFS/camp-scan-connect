@@ -99,10 +99,10 @@ const MainGateContent = ({
     };
 
     // Listen for auto-trigger event
-    document.addEventListener('autoTrigger', handleAutoTrigger);
+    window.addEventListener('autoTrigger', handleAutoTrigger);
     
     return () => {
-      document.removeEventListener('autoTrigger', handleAutoTrigger);
+      window.removeEventListener('autoTrigger', handleAutoTrigger);
     };
   }, [attendeeReadiness?.isReady, selectedRfid, isProcessing, handleGateToggle]);
 
