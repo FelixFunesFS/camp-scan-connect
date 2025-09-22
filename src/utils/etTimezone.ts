@@ -43,17 +43,17 @@ export const get3AMET = (date: Date): Date => {
 export const getCurrentETDate = (): Date => {
   const now = new Date();
   
-  // Get the current time in ET timezone
-  const etTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  // Use JavaScript's built-in timezone conversion - much more reliable
+  const etDateString = now.toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit'
+  });
   
-  // Extract just the date components in ET timezone
-  const year = etTime.getFullYear();
-  const month = etTime.getMonth();
-  const day = etTime.getDate();
-  
-  // Return a date object representing the current ET date at midnight local time
-  // This ensures consistent date comparison logic
-  return new Date(year, month, day);
+  // Parse the ET date string to get year, month, day
+  const [month, day, year] = etDateString.split('/');
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
 };
 
 // Get time boundaries for drinks/headphones operational data based on 3 AM ET cutoff
