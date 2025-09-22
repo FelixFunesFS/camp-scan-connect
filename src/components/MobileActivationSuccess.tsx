@@ -254,10 +254,11 @@ export function MobileActivationSuccess({
                 {[...newlyActivated, ...alreadyActive].map((attendee: any, index: number) => (
                   <MobileAttendeeCard
                     key={`active-${index}`}
-                    attendee={{
+                     attendee={{
                       name: attendee.name,
                       phone: phoneNumber,
                       order_id: attendee.order_id,
+                      ticket_type: attendee.ticket_type,
                       rfid_uid: attendee.rfid_uid,
                       activated_at: attendee.activated_at,
                       meal_plan: attendee.meal_plan,
@@ -281,10 +282,11 @@ export function MobileActivationSuccess({
                 {pendingRfidAttendees.map((attendee: any, index: number) => (
                   <MobileAttendeeCard
                     key={`pending-${index}`}
-                    attendee={{
+                     attendee={{
                       name: attendee.name,
                       phone: phoneNumber,
                       order_id: attendee.order_id,
+                      ticket_type: attendee.ticket_type,
                       rfid_uid: attendee.rfid_uid,
                       activated_at: null,
                       meal_plan: attendee.meal_plan,
@@ -306,10 +308,11 @@ export function MobileActivationSuccess({
                 {noRfidAttendees.map((attendee: any, index: number) => (
                   <MobileAttendeeCard
                     key={`no-rfid-${index}`}
-                    attendee={{
+                     attendee={{
                       name: attendee.name,
                       phone: phoneNumber,
                       order_id: attendee.order_id,
+                      ticket_type: attendee.ticket_type,
                       rfid_uid: null,
                       activated_at: null,
                       meal_plan: attendee.meal_plan,
