@@ -15,6 +15,7 @@ const stationRoutes = [
   '/golf-carts-station',
   '/walkie-talkies-station',
   '/fanny-packs-station',
+  '/tshirts-station',
   '/main-gate-station'
 ];
 
@@ -36,10 +37,10 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-12 flex items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
-            <SidebarTrigger className="h-8 w-8" />
-          </header>
           <main className="flex-1 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <SidebarTrigger className="h-8 w-8" />
+            </div>
             {children}
           </main>
         </div>

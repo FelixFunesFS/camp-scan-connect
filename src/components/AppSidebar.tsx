@@ -13,7 +13,8 @@ import {
   Radio,
   Package2,
   DoorOpen,
-  User
+  User,
+  Shirt
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -60,6 +61,7 @@ const navigationItems = [
       { title: "Golf Carts Station", url: "/golf-carts-station", icon: Car },
       { title: "Walkie Talkies Station", url: "/walkie-talkies-station", icon: Radio },
       { title: "Fanny Packs Station", url: "/fanny-packs-station", icon: Package2 },
+      { title: "T-Shirts Station", url: "/tshirts-station", icon: Shirt },
       { title: "Main Gate Station", url: "/main-gate-station", icon: DoorOpen },
     ]
   }

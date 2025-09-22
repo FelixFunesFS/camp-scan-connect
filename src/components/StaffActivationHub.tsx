@@ -38,6 +38,7 @@ import { StationTransactionService } from '@/services/stationTransactionService'
 import { phoneActivationService } from '@/services/phoneActivationService';
 import { HeadphonesStatusService } from '@/services/headphonesStatusService';
 import { EquipmentStatusService } from '@/services/equipmentStatusService';
+import { TShirtService } from '@/services/tshirtService';
 import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -87,6 +88,10 @@ export interface EnhancedAttendee {
   city?: string;
   state?: string;
   special_accommodations?: string;
+  tshirt_size?: string;
+  tshirt_type?: string;
+  tshirt_status?: 'picked_up' | 'pending' | 'none';
+  tshirt_pickup_time?: string;
 }
 
 export interface TableColumn {
@@ -143,7 +148,7 @@ export function StaffActivationHub() {
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [visibleColumns] = useState<string[]>([
-    'first_name', 'email', 'phone', 'order_id', 'ticket_type', 'registration_status', 'rfid_status', 'headphones', 'golf_carts', 'walkie_talkies', 'fanny_packs', 'actions'
+    'first_name', 'email', 'phone', 'order_id', 'ticket_type', 'registration_status', 'rfid_status', 'headphones', 'golf_carts', 'walkie_talkies', 'fanny_packs', 'tshirts', 'actions'
   ]);
   
   // Unified activation section state
@@ -182,6 +187,7 @@ export function StaffActivationHub() {
     { key: 'golf_carts', label: 'Golf Carts', desktop: true, width: 'min-w-28', sortable: true },
     { key: 'walkie_talkies', label: 'Walkie Talkies', desktop: true, width: 'min-w-32', sortable: true },
     { key: 'fanny_packs', label: 'Fanny Packs', desktop: true, width: 'min-w-28', sortable: true },
+    { key: 'tshirts', label: 'T-Shirts', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'actions', label: 'Actions', mobile: true, desktop: true, width: 'min-w-32', sortable: false }
   ];
 
@@ -327,6 +333,16 @@ export function StaffActivationHub() {
           t.station_type === 'drinks' && t.transaction_type === 'drink'
         ).length;
 
+        // Get t-shirt information
+        const tshirtInfo = TShirtService.extractTShirtInfo(attendee.custom_fields);
+        const tshirtPickupTransaction = transactions.find(t => 
+          t.station_type === 'tshirts' && t.transaction_type === 'tshirt_pickup'
+        );
+        
+        const tshirt_status: 'picked_up' | 'pending' | 'none' = 
+          tshirtPickupTransaction ? 'picked_up' :
+          (tshirtInfo.hasAnyTShirt ? 'pending' : 'none');
+
         const rfid_status = rfidTag?.status || 'unissued';
         const arrival_day = attendee.arrival_window === 'early' ? 'Thursday' : 'Friday';
 
@@ -377,7 +393,11 @@ export function StaffActivationHub() {
           is_veteran: attendee.is_veteran ?? false,
           city: attendee.city || undefined,
           state: attendee.state || undefined,
-          special_accommodations: attendee.special_accommodations || undefined
+          special_accommodations: attendee.special_accommodations || undefined,
+          tshirt_size: tshirtInfo.size || attendee.t_shirt_size || undefined,
+          tshirt_type: tshirtInfo.type || undefined,
+          tshirt_status,
+          tshirt_pickup_time: tshirtPickupTransaction?.created_at || undefined
         } as EnhancedAttendee;
       });
 
@@ -1253,12 +1273,30 @@ export function StaffActivationHub() {
                                         if (attendee.fanny_pack_status === 'checked_in') {
                                           return <Badge variant="outline" className="text-xs">Fanny Pack Available</Badge>;
                                         }
-                                        return null;
-                                      })()}
-                                    </div>
-                                    {attendee.rfid_uid && (
-                                      <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
-                                    )}
+                                         return null;
+                                       })()}
+                                       {/* T-Shirt Status */}
+                                       {(() => {
+                                         if (attendee.tshirt_status === 'picked_up') {
+                                           return (
+                                             <Badge variant="default" className="text-xs">
+                                               T-Shirt Picked Up
+                                             </Badge>
+                                           );
+                                         }
+                                         if (attendee.tshirt_status === 'pending') {
+                                           return (
+                                             <Badge variant="secondary" className="text-xs">
+                                               T-Shirt Pending ({attendee.tshirt_size})
+                                             </Badge>
+                                           );
+                                         }
+                                         return null;
+                                       })()}
+                                     </div>
+                                     {attendee.rfid_uid && (
+                                       <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
+                                     )}
                                     {attendee.order_id && (
                                       <p className="font-mono text-xs">Order: {attendee.order_id}</p>
                                     )}
@@ -1451,10 +1489,29 @@ export function StaffActivationHub() {
                                    if (attendee.fanny_pack_status === 'checked_in') {
                                      return <Badge variant="outline" className="text-xs">Available</Badge>;
                                    }
-                                   return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
-                                 })()}
-                               </td>
-                              <td className="p-3 text-sm">
+                                    return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
+                                  })()}
+                                </td>
+                                <td className="p-3 text-sm">
+                                  {(() => {
+                                    if (attendee.tshirt_status === 'picked_up') {
+                                      return (
+                                        <Badge variant="default" className="text-xs">
+                                          Picked Up
+                                        </Badge>
+                                      );
+                                    }
+                                    if (attendee.tshirt_status === 'pending') {
+                                      return (
+                                        <Badge variant="secondary" className="text-xs">
+                                          {attendee.tshirt_size} {attendee.tshirt_type}
+                                        </Badge>
+                                      );
+                                    }
+                                    return <Badge variant="outline" className="text-xs text-muted-foreground">None</Badge>;
+                                  })()}
+                                </td>
+                               <td className="p-3 text-sm">
                                 <div className="flex gap-2">
                                   {attendee.rfid_uid && !attendee.activated_at && (
                                     <Button

@@ -13,6 +13,10 @@ export interface EnhancedAttendee {
   activated_at?: string | null;
   rfid_uid?: string | null;
   rfid_status?: string | null;
+  tshirt_size?: string;
+  tshirt_type?: string;
+  tshirt_status?: 'picked_up' | 'pending' | 'none';
+  tshirt_pickup_time?: string;
 }
 
 export interface GroupedAttendee {
