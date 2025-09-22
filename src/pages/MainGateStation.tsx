@@ -33,7 +33,7 @@ const MainGateContent = ({
 
   // Load current gate status when RFID is scanned
   useEffect(() => {
-    if (selectedRfid?.uid && attendeeReadiness.isReady) {
+    if (selectedRfid?.uid && attendeeReadiness?.isReady) {
       const loadStatus = async () => {
         try {
           const status = await getLatestStatus('current_status');
@@ -46,7 +46,7 @@ const MainGateContent = ({
       
       loadStatus();
     }
-  }, [selectedRfid?.uid, attendeeReadiness.isReady, getLatestStatus]);
+  }, [selectedRfid?.uid, attendeeReadiness?.isReady, getLatestStatus]);
 
   const handleGateToggle = useCallback(async () => {
     if (!selectedRfid?.attendee_id || isProcessing) return;
@@ -93,7 +93,7 @@ const MainGateContent = ({
   // Auto-trigger gate toggle when conditions are met
   useEffect(() => {
     const handleAutoTrigger = () => {
-      if (attendeeReadiness.isReady && selectedRfid && !isProcessing) {
+      if (attendeeReadiness?.isReady && selectedRfid && !isProcessing) {
         handleGateToggle();
       }
     };
@@ -104,14 +104,14 @@ const MainGateContent = ({
     return () => {
       document.removeEventListener('autoTrigger', handleAutoTrigger);
     };
-  }, [attendeeReadiness.isReady, selectedRfid, isProcessing, handleGateToggle]);
+  }, [attendeeReadiness?.isReady, selectedRfid, isProcessing, handleGateToggle]);
 
-  if (!attendeeReadiness.isReady) {
+  if (!attendeeReadiness?.isReady) {
     return (
       <Card>
         <CardContent className="pt-6">
           <div className="text-center text-muted-foreground">
-            {attendeeReadiness.message}
+            {attendeeReadiness ? attendeeReadiness.message : "Ready to scan RFID tag..."}
           </div>
         </CardContent>
       </Card>
