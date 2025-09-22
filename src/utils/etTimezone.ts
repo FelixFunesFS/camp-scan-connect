@@ -9,15 +9,31 @@ export interface TimeBoundary {
   label: string;
 }
 
+// Helper function to determine if a date is during Daylight Saving Time in ET
+const isDST = (date: Date): boolean => {
+  // DST in ET timezone runs from second Sunday in March to first Sunday in November
+  const year = date.getFullYear();
+  
+  // Calculate second Sunday in March
+  const marchFirst = new Date(year, 2, 1); // March 1
+  const marchSecondSunday = new Date(year, 2, (7 - marchFirst.getDay() + 7) + 1);
+  
+  // Calculate first Sunday in November  
+  const novemberFirst = new Date(year, 10, 1); // November 1
+  const novemberFirstSunday = new Date(year, 10, (7 - novemberFirst.getDay()) + 1);
+  
+  return date >= marchSecondSunday && date < novemberFirstSunday;
+};
+
 // Get 3 AM ET for a given date (automatically handles DST)
 export const get3AMET = (date: Date): Date => {
-  // Create a new date at 3 AM ET on the given date
   const year = date.getFullYear();
   const month = date.getMonth();
   const day = date.getDate();
   
-  // Create the date string for 3 AM ET
-  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T03:00:00-05:00`;
+  // Create the date string for 3 AM ET, using correct offset for DST
+  const offset = isDST(date) ? '-04:00' : '-05:00';
+  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T03:00:00${offset}`;
   
   // Return the date object in UTC for database queries
   return new Date(dateStr);
@@ -91,8 +107,9 @@ export const getMidnightET = (date: Date): Date => {
   const month = date.getMonth();
   const day = date.getDate();
   
-  // Create the date string for midnight ET
-  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00-05:00`;
+  // Create the date string for midnight ET, using correct offset for DST
+  const offset = isDST(date) ? '-04:00' : '-05:00';
+  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00${offset}`;
   
   // Return the date object in UTC for database queries
   return new Date(dateStr);
