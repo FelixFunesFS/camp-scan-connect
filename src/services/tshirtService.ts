@@ -232,25 +232,58 @@ export class TShirtService {
   }
 
   /**
-   * Extract quantity from field values
+   * Extract quantity from field values - handles numbers, strings, and various formats
    */
   private static extractQuantityFromValue(value: any): number {
-    console.log(`T-Shirt Debug - extractQuantityFromValue called with:`, { value, type: typeof value });
+    console.log(`T-Shirt Debug - extractQuantityFromValue called with:`, { 
+      value, 
+      type: typeof value, 
+      stringified: JSON.stringify(value) 
+    });
     
+    // Handle numbers directly
     if (typeof value === 'number') {
       const result = Math.max(1, Math.floor(value));
-      console.log(`T-Shirt Debug - Extracted quantity from number:`, result);
+      console.log(`T-Shirt Debug - Extracted quantity ${result} from number ${value}`);
       return result;
     }
     
+    // Handle strings that might contain numbers
     if (typeof value === 'string') {
-      const num = parseInt(value);
-      const result = Number.isFinite(num) && num > 0 ? num : 1;
-      console.log(`T-Shirt Debug - Extracted quantity from string "${value}":`, result);
-      return result;
+      // Try to extract number from string
+      const cleanValue = value.trim();
+      const num = parseFloat(cleanValue);
+      if (Number.isFinite(num) && num > 0) {
+        const result = Math.max(1, Math.floor(num));
+        console.log(`T-Shirt Debug - Extracted quantity ${result} from string "${value}"`);
+        return result;
+      }
     }
     
-    console.log(`T-Shirt Debug - Default quantity for unknown type:`, 1);
+    // Handle boolean - if true, assume quantity 1
+    if (typeof value === 'boolean' && value) {
+      console.log(`T-Shirt Debug - Extracted quantity 1 from boolean true`);
+      return 1;
+    }
+    
+    // Handle objects that might have quantity properties
+    if (typeof value === 'object' && value !== null) {
+      if ('quantity' in value && typeof value.quantity === 'number') {
+        const result = Math.max(1, Math.floor(value.quantity));
+        console.log(`T-Shirt Debug - Extracted quantity ${result} from object.quantity`);
+        return result;
+      }
+      
+      // If object has numeric properties, try to use them
+      const numKeys = Object.keys(value).filter(k => !isNaN(parseFloat(value[k])));
+      if (numKeys.length > 0) {
+        const result = Math.max(1, Math.floor(parseFloat(value[numKeys[0]])));
+        console.log(`T-Shirt Debug - Extracted quantity ${result} from object property`);
+        return result;
+      }
+    }
+    
+    console.log(`T-Shirt Debug - Defaulting to quantity 1 for value:`, value);
     return 1;
   }
 
