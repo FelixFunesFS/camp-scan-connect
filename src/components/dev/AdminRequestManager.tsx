@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { Plus, Calendar, Circle, PlayCircle, CheckCircle2, Pencil, Bug, Wrench, Settings, AlertTriangle, Clock } from 'lucide-react';
+import { Plus, Calendar, Circle, PlayCircle, CheckCircle2, Pencil, Bug, Wrench, Settings, AlertTriangle, Clock, Pause, RotateCcw } from 'lucide-react';
 import { AdminRequestService, AdminRequest } from '@/services/adminRequestService';
 
 const AdminRequestManager = () => {
@@ -17,7 +17,7 @@ const AdminRequestManager = () => {
   const [isAddingRequest, setIsAddingRequest] = useState(false);
   const [isEditingRequest, setIsEditingRequest] = useState(false);
   const [editingRequestId, setEditingRequestId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'open' | 'in_progress' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'open' | 'in_progress' | 'paused' | 'completed'>('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'urgent' | 'high' | 'normal' | 'low'>('all');
 
   // New request form state
@@ -122,6 +122,8 @@ const AdminRequestManager = () => {
         return <Circle className="h-4 w-4 text-muted-foreground" />;
       case 'in_progress': 
         return <PlayCircle className="h-4 w-4 text-primary animate-pulse" />;
+      case 'paused':
+        return <Pause className="h-4 w-4 text-orange-600" />;
       case 'completed': 
         return <CheckCircle2 className="h-4 w-4 text-green-600" />;
       default: 
@@ -145,6 +147,8 @@ const AdminRequestManager = () => {
         return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-300">Not Started</Badge>;
       case 'in_progress':
         return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">In Progress</Badge>;
+      case 'paused':
+        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">Paused</Badge>;
       case 'completed':
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">Completed</Badge>;
       default:
@@ -343,6 +347,7 @@ const AdminRequestManager = () => {
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="open">Not Started</SelectItem>
               <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="paused">Paused</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
             </SelectContent>
           </Select>
@@ -369,11 +374,12 @@ const AdminRequestManager = () => {
           ) : (
             <div className="space-y-4">
               {filteredRequests.map((request) => (
-                <Card key={request.id} className={`p-4 transition-all hover:shadow-md ${
-                  request.status === 'completed' ? 'bg-green-50/50 border-green-200' :
-                  request.status === 'in_progress' ? 'bg-blue-50/50 border-blue-200' :
-                  'bg-gray-50/50 border-gray-200'
-                }`}>
+                 <Card key={request.id} className={`p-4 transition-all hover:shadow-md ${
+                   request.status === 'completed' ? 'bg-green-50/50 border-green-200' :
+                   request.status === 'in_progress' ? 'bg-blue-50/50 border-blue-200' :
+                   request.status === 'paused' ? 'bg-orange-50/50 border-orange-200' :
+                   'bg-gray-50/50 border-gray-200'
+                 }`}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center space-x-2">
@@ -430,15 +436,37 @@ const AdminRequestManager = () => {
                           Start Work
                         </Button>
                       )}
-                      {request.status === 'in_progress' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdateRequestStatus(request.id!, 'completed')}
-                          className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-                        >
-                          Mark Complete
-                        </Button>
-                      )}
+                       {request.status === 'in_progress' && (
+                         <>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => handleUpdateRequestStatus(request.id!, 'paused')}
+                             className="bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100"
+                           >
+                             <Pause className="h-3 w-3 mr-1" />
+                             Pause
+                           </Button>
+                           <Button
+                             size="sm"
+                             onClick={() => handleUpdateRequestStatus(request.id!, 'completed')}
+                             className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                           >
+                             Mark Complete
+                           </Button>
+                         </>
+                       )}
+                       {request.status === 'paused' && (
+                         <Button
+                           size="sm"
+                           variant="outline"
+                           onClick={() => handleUpdateRequestStatus(request.id!, 'in_progress')}
+                           className="bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
+                         >
+                           <RotateCcw className="h-3 w-3 mr-1" />
+                           Resume
+                         </Button>
+                       )}
                       {request.status === 'completed' && (
                         <Button
                           size="sm"

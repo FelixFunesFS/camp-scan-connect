@@ -6,7 +6,7 @@ export interface AdminRequest {
   description?: string;
   task_type: 'feature_request' | 'bug_fix' | 'improvement' | 'maintenance';
   priority?: 'low' | 'normal' | 'high' | 'urgent';
-  status?: 'open' | 'in_progress' | 'testing' | 'completed' | 'cancelled';
+  status?: 'open' | 'in_progress' | 'paused' | 'testing' | 'completed' | 'cancelled';
   category?: string;
   assigned_to?: string;
   created_by?: string;
@@ -131,6 +131,7 @@ export class AdminRequestService {
     total: number;
     open: number;
     inProgress: number;
+    paused: number;
     completed: number;
     urgent: number;
   }> {
@@ -148,6 +149,7 @@ export class AdminRequestService {
         total: tasks?.length || 0,
         open: tasks?.filter(t => t.status === 'open').length || 0,
         inProgress: tasks?.filter(t => t.status === 'in_progress').length || 0,
+        paused: tasks?.filter(t => t.status === 'paused').length || 0,
         completed: tasks?.filter(t => t.status === 'completed').length || 0,
         urgent: tasks?.filter(t => t.priority === 'urgent').length || 0,
       };
@@ -155,7 +157,7 @@ export class AdminRequestService {
       return stats;
     } catch (error) {
       console.error('Failed to fetch task stats:', error);
-      return { total: 0, open: 0, inProgress: 0, completed: 0, urgent: 0 };
+      return { total: 0, open: 0, inProgress: 0, paused: 0, completed: 0, urgent: 0 };
     }
   }
 }
