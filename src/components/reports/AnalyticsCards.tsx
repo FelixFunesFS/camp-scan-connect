@@ -155,32 +155,11 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
           .gte('created_at', standardBoundaries.start.toISOString())
           .lt('created_at', standardBoundaries.end.toISOString());
 
-        // Debug: Log meal data to understand transaction types
-        console.log('Meal data fetched:', meals?.map(m => m.transaction_type));
-        
         const mealCounts = {
-          breakfast: meals?.filter(m => {
-            const hasBreakfast = m.transaction_type.includes('breakfast');
-            if (hasBreakfast) console.log('Found breakfast:', m.transaction_type);
-            return hasBreakfast;
-          }).length || 0,
-          lunch: meals?.filter(m => {
-            const hasLunch = m.transaction_type.includes('lunch');
-            if (hasLunch) console.log('Found lunch:', m.transaction_type);
-            return hasLunch;
-          }).length || 0,
-          dinner: meals?.filter(m => {
-            const hasDinner = m.transaction_type.includes('dinner');
-            if (hasDinner) console.log('Found dinner:', m.transaction_type);
-            return hasDinner;
-          }).length || 0
+          breakfast: meals?.filter(m => m.transaction_type.includes('breakfast')).length || 0,
+          lunch: meals?.filter(m => m.transaction_type.includes('lunch')).length || 0,
+          dinner: meals?.filter(m => m.transaction_type.includes('dinner')).length || 0
         };
-        
-        console.log('Final meal counts:', mealCounts);
-        console.log('Standard boundaries used:', {
-          start: standardBoundaries.start.toISOString(),
-          end: standardBoundaries.end.toISOString()
-        });
 
         // Get comparison data if available (drinks/headphones use 3 AM boundaries)
         let comparison = undefined;

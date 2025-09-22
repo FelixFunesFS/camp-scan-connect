@@ -39,10 +39,19 @@ export const get3AMET = (date: Date): Date => {
   return new Date(dateStr);
 };
 
+// Helper function to get current ET date (not UTC date)
+const getCurrentETDate = (): Date => {
+  const now = new Date();
+  // Convert to ET timezone
+  const etOffset = isDST(now) ? -4 : -5; // EDT is UTC-4, EST is UTC-5
+  const etTime = new Date(now.getTime() + (etOffset * 60 * 60 * 1000));
+  return new Date(etTime.getFullYear(), etTime.getMonth(), etTime.getDate());
+};
+
 // Get time boundaries for drinks/headphones operational data based on 3 AM ET cutoff
 export const getDrinksHeadphonesTimeBoundaries = (period: TimePeriod): TimeBoundary => {
   const now = new Date();
-  const today = new Date();
+  const today = getCurrentETDate(); // Use ET-based today
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
   
@@ -118,7 +127,7 @@ export const getMidnightET = (date: Date): Date => {
 // Get time boundaries for standard data based on midnight ET cutoff
 export const getStandardTimeBoundaries = (period: TimePeriod): TimeBoundary => {
   const now = new Date();
-  const today = new Date();
+  const today = getCurrentETDate(); // Use ET-based today
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
   
@@ -172,9 +181,10 @@ export const getDrinksHeadphonesComparisonBoundaries = (period: TimePeriod): Tim
     case 'today':
       return getDrinksHeadphonesTimeBoundaries('yesterday');
     case 'yesterday': {
-      const threeDaysAgo = new Date();
+      const today = getCurrentETDate();
+      const threeDaysAgo = new Date(today);
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-      const fourDaysAgo = new Date();
+      const fourDaysAgo = new Date(today);  
       fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
       return {
         start: get3AMET(fourDaysAgo),
@@ -193,9 +203,10 @@ export const getStandardComparisonBoundaries = (period: TimePeriod): TimeBoundar
     case 'today':
       return getStandardTimeBoundaries('yesterday');
     case 'yesterday': {
-      const threeDaysAgo = new Date();
+      const today = getCurrentETDate();
+      const threeDaysAgo = new Date(today);
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-      const fourDaysAgo = new Date();
+      const fourDaysAgo = new Date(today);
       fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
       return {
         start: getMidnightET(fourDaysAgo),
