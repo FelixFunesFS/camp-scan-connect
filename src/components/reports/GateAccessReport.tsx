@@ -375,35 +375,6 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
           </CardContent>
         </Card>
 
-        {/* Current Occupancy Table */}
-        {gateData.onSiteAttendees.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Currently On-Site Attendees
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {gateData.onSiteAttendees.map((attendee, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div>
-                      <div className="font-medium">{attendee.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        RFID: {attendee.rfid_uid} • Entered: {formatEntryTime(attendee.entry_time)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium">{formatTime(attendee.duration_minutes)}</div>
-                      <div className="text-xs text-muted-foreground">on-site</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </UITooltipProvider>
   );

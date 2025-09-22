@@ -6,10 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
-import { CheckInStatusTables } from "@/components/reports/CheckInStatusTables";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
 import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
 import { GateAccessReport } from "@/components/reports/GateAccessReport";
+import { CheckInStatusAndOnSite } from "@/components/reports/CheckInStatusAndOnSite";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";
@@ -147,11 +147,8 @@ const Reports = () => {
         </div>
 
         <div className="space-y-6">
-          {/* Daily Check-in Overview */}
+          {/* Event Check-in Overview */}
           <CheckInOverview refreshTrigger={refreshTrigger} />
-
-          {/* Check-in Status Tables */}
-          <CheckInStatusTables refreshTrigger={refreshTrigger} />
 
           {/* Attendee Services */}
           <div className="space-y-4">
@@ -165,19 +162,22 @@ const Reports = () => {
               selectedPeriod={selectedPeriod}
               refreshTrigger={refreshTrigger}
             />
-            
-            {/* Gate Access Report */}
-            <GateAccessReport 
-              selectedPeriod={selectedPeriod}
-              refreshTrigger={refreshTrigger}
-            />
-            
-            {/* Equipment Services */}
-            <HeadphonesTracker 
-              selectedPeriod={selectedPeriod}
-              refreshTrigger={refreshTrigger}
-            />
           </div>
+
+          {/* Check-in Status and Currently On-Site - Side by Side */}
+          <CheckInStatusAndOnSite refreshTrigger={refreshTrigger} selectedPeriod={selectedPeriod} />
+
+          {/* Gate Access Report */}
+          <GateAccessReport 
+            selectedPeriod={selectedPeriod}
+            refreshTrigger={refreshTrigger}
+          />
+          
+          {/* Equipment Services */}
+          <HeadphonesTracker 
+            selectedPeriod={selectedPeriod}
+            refreshTrigger={refreshTrigger}
+          />
         </div>
 
         {/* Auto-refresh indicator */}

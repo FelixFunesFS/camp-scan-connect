@@ -117,7 +117,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Check-in Status
+          Check-in Status (in work)
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-success">
               <UserCheck className="h-3 w-3 mr-1" />
