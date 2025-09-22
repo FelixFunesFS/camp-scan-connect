@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plane, Users, Info } from "lucide-react";
+import { Caravan, Users, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 
@@ -125,7 +125,7 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plane className="h-5 w-5" />
+            <Caravan className="h-5 w-5" />
             Arrivals by Ticket Type
           </CardTitle>
         </CardHeader>
@@ -145,7 +145,7 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plane className="h-5 w-5" />
+            <Caravan className="h-5 w-5" />
             Arrivals by Ticket Type
           </CardTitle>
         </CardHeader>
