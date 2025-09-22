@@ -88,10 +88,19 @@ export interface EnhancedAttendee {
   city?: string;
   state?: string;
   special_accommodations?: string;
-  tshirt_size?: string;
-  tshirt_type?: string;
-  tshirt_status?: 'picked_up' | 'pending' | 'none';
-  tshirt_pickup_time?: string;
+  tshirt_orders?: Array<{
+    id: string;
+    style: string;
+    size: string;
+    quantity: number;
+    isPickedUp: boolean;
+    pickupTime?: string;
+  }>;
+  tshirt_summary?: {
+    totalOrders: number;
+    totalPickedUp: number;
+    hasAnyTShirt: boolean;
+  };
 }
 
 export interface TableColumn {
@@ -241,7 +250,7 @@ export function StaffActivationHub() {
         }
       });
 
-      const processedAttendees: EnhancedAttendee[] = (attendeesData || []).map(attendee => {
+      const processedAttendees = await Promise.all((attendeesData || []).map(async (attendee) => {
         const rfidTag = rfidData?.find(tag => tag.attendee_id === attendee.id);
         const transactions = transactionData?.filter(t => t.attendee_id === attendee.id) || [];
         
@@ -333,15 +342,14 @@ export function StaffActivationHub() {
           t.station_type === 'drinks' && t.transaction_type === 'drink'
         ).length;
 
-        // Get t-shirt information
-        const tshirtInfo = TShirtService.extractTShirtInfo(attendee.custom_fields);
-        const tshirtPickupTransaction = transactions.find(t => 
-          t.station_type === 'tshirts' && t.transaction_type === 'tshirt_pickup'
-        );
-        
-        const tshirt_status: 'picked_up' | 'pending' | 'none' = 
-          tshirtPickupTransaction ? 'picked_up' :
-          (tshirtInfo.hasAnyTShirt ? 'pending' : 'none');
+        // Get enhanced t-shirt information with all orders
+        const tshirtData = await TShirtService.checkAttendeeHasTShirt(attendee.id);
+        const tshirtOrders = tshirtData.orders || [];
+        const tshirtSummary = {
+          totalOrders: tshirtOrders.length,
+          totalPickedUp: tshirtOrders.filter(order => order.isPickedUp).length,
+          hasAnyTShirt: tshirtOrders.length > 0
+        };
 
         const rfid_status = rfidTag?.status || 'unissued';
         const arrival_day = attendee.arrival_window === 'early' ? 'Thursday' : 'Friday';
@@ -394,12 +402,10 @@ export function StaffActivationHub() {
           city: attendee.city || undefined,
           state: attendee.state || undefined,
           special_accommodations: attendee.special_accommodations || undefined,
-          tshirt_size: tshirtInfo.size || attendee.t_shirt_size || undefined,
-          tshirt_type: tshirtInfo.type || undefined,
-          tshirt_status,
-          tshirt_pickup_time: tshirtPickupTransaction?.created_at || undefined
+          tshirt_orders: tshirtOrders,
+          tshirt_summary: tshirtSummary
         } as EnhancedAttendee;
-      });
+      }));
 
       setAttendees(processedAttendees);
 
@@ -1275,24 +1281,33 @@ export function StaffActivationHub() {
                                         }
                                          return null;
                                        })()}
-                                       {/* T-Shirt Status */}
-                                       {(() => {
-                                         if (attendee.tshirt_status === 'picked_up') {
-                                           return (
-                                             <Badge variant="default" className="text-xs">
-                                               T-Shirt Picked Up
-                                             </Badge>
-                                           );
-                                         }
-                                         if (attendee.tshirt_status === 'pending') {
-                                           return (
-                                             <Badge variant="secondary" className="text-xs">
-                                               T-Shirt Pending ({attendee.tshirt_size})
-                                             </Badge>
-                                           );
-                                         }
-                                         return null;
-                                       })()}
+                                        {/* T-Shirt Status */}
+                                        {(() => {
+                                          const summary = attendee.tshirt_summary;
+                                          if (!summary?.hasAnyTShirt) return null;
+                                          
+                                          if (summary.totalPickedUp === summary.totalOrders) {
+                                            return (
+                                              <Badge variant="default" className="text-xs">
+                                                All T-Shirts Picked Up ({summary.totalOrders})
+                                              </Badge>
+                                            );
+                                          }
+                                          
+                                          if (summary.totalPickedUp > 0) {
+                                            return (
+                                              <Badge variant="secondary" className="text-xs">
+                                                Partial Pickup ({summary.totalPickedUp}/{summary.totalOrders})
+                                              </Badge>
+                                            );
+                                          }
+                                          
+                                          return (
+                                            <Badge variant="outline" className="text-xs">
+                                              T-Shirts Pending ({summary.totalOrders})
+                                            </Badge>
+                                          );
+                                        })()}
                                      </div>
                                      {attendee.rfid_uid && (
                                        <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
@@ -1492,25 +1507,55 @@ export function StaffActivationHub() {
                                     return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
                                   })()}
                                 </td>
-                                <td className="p-3 text-sm">
-                                  {(() => {
-                                    if (attendee.tshirt_status === 'picked_up') {
-                                      return (
-                                        <Badge variant="default" className="text-xs">
-                                          Picked Up
-                                        </Badge>
-                                      );
-                                    }
-                                    if (attendee.tshirt_status === 'pending') {
-                                      return (
-                                        <Badge variant="secondary" className="text-xs">
-                                          {attendee.tshirt_size} {attendee.tshirt_type}
-                                        </Badge>
-                                      );
-                                    }
-                                    return <Badge variant="outline" className="text-xs text-muted-foreground">None</Badge>;
-                                  })()}
-                                </td>
+                                 <td className="p-3 text-sm">
+                                   {(() => {
+                                     const summary = attendee.tshirt_summary;
+                                     const orders = attendee.tshirt_orders || [];
+                                     
+                                     if (!summary?.hasAnyTShirt) {
+                                       return <Badge variant="outline" className="text-xs text-muted-foreground">None</Badge>;
+                                     }
+                                     
+                                     if (summary.totalPickedUp === summary.totalOrders) {
+                                       return (
+                                         <div className="flex flex-col gap-1">
+                                           <Badge variant="default" className="text-xs">All Picked Up</Badge>
+                                           <span className="text-xs text-muted-foreground">
+                                             {orders.map(o => `${o.style} ${o.size}`).join(', ')}
+                                           </span>
+                                         </div>
+                                       );
+                                     }
+                                     
+                                     if (summary.totalPickedUp > 0) {
+                                       return (
+                                         <div className="flex flex-col gap-1">
+                                           <Badge variant="secondary" className="text-xs">
+                                             Partial ({summary.totalPickedUp}/{summary.totalOrders})
+                                           </Badge>
+                                           <div className="space-y-1">
+                                             {orders.map(order => (
+                                               <div key={order.id} className="text-xs">
+                                                 <span className={order.isPickedUp ? "text-green-600" : "text-muted-foreground"}>
+                                                   {order.isPickedUp ? "✓" : "○"} {order.style} {order.size}
+                                                 </span>
+                                               </div>
+                                             ))}
+                                           </div>
+                                         </div>
+                                       );
+                                     }
+                                     
+                                     return (
+                                       <div className="flex flex-col gap-1">
+                                         <Badge variant="outline" className="text-xs">Pending</Badge>
+                                         <span className="text-xs text-muted-foreground">
+                                           {orders.map(o => `${o.style} ${o.size}`).join(', ')}
+                                         </span>
+                                       </div>
+                                     );
+                                   })()}
+                                 </td>
                                <td className="p-3 text-sm">
                                 <div className="flex gap-2">
                                   {attendee.rfid_uid && !attendee.activated_at && (

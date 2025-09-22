@@ -214,7 +214,19 @@ export class TShirtService {
     };
   }
 
-  static async checkAttendeeHasTShirt(attendeeId: string): Promise<{ hasTShirt: boolean; size: string | null; type: string | null }> {
+  static async checkAttendeeHasTShirt(attendeeId: string): Promise<{ 
+    hasTShirt: boolean; 
+    size: string | null; 
+    type: string | null;
+    orders: Array<{
+      id: string;
+      style: string;
+      size: string;
+      quantity: number;
+      isPickedUp: boolean;
+      pickupTime?: string;
+    }>;
+  }> {
     try {
       const { data: attendee } = await supabase
         .from('attendees')
@@ -223,18 +235,47 @@ export class TShirtService {
         .single();
 
       if (!attendee) {
-        return { hasTShirt: false, size: null, type: null };
+        return { hasTShirt: false, size: null, type: null, orders: [] };
       }
 
       const tshirtInfo = this.extractTShirtInfo(attendee.custom_fields);
+      
+      // Get pickup transactions for this attendee
+      const { data: transactions } = await supabase
+        .from('station_transactions')
+        .select('extra_data, created_at')
+        .eq('attendee_id', attendeeId)
+        .eq('station_type', 'tshirts')
+        .eq('transaction_type', 'tshirt_pickup');
+
+      // Create orders array with pickup status
+      const orders = tshirtInfo.purchaseDetails.map((detail, index) => {
+        const orderId = `${attendeeId}-${index}`;
+        const pickup = transactions?.find(t => {
+          const extraData = t.extra_data as any;
+          return extraData?.tshirt_style === detail.type && 
+                 extraData?.tshirt_size === detail.size;
+        });
+        
+        return {
+          id: orderId,
+          style: detail.type || 'T-Shirt',
+          size: detail.size || 'Unknown',
+          quantity: 1, // For now, assuming 1 per order
+          isPickedUp: !!pickup,
+          pickupTime: pickup?.created_at
+        };
+      });
+
       return {
         hasTShirt: tshirtInfo.hasAnyTShirt,
         size: attendee.t_shirt_size || tshirtInfo.size,
-        type: tshirtInfo.type
+        type: tshirtInfo.type,
+        orders
       };
     } catch (error) {
       console.error('Error checking t-shirt info:', error);
-      return { hasTShirt: false, size: null, type: null };
+      return { hasTShirt: false, size: null, type: null, orders: [] };
     }
   }
 }
