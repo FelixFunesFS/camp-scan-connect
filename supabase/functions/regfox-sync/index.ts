@@ -360,6 +360,79 @@ serve(async (req) => {
         return parsed;
       };
 
+      // Helper function to extract t-shirt size from product purchases
+      const extractTShirtSize = (fields: Record<string, string>) => {
+        let tShirtSize = null;
+        const tShirtProducts: Array<{field: string, value: string, size?: string}> = [];
+        
+        // Look for t-shirt related fields
+        for (const [fieldName, fieldValue] of Object.entries(fields)) {
+          if (!fieldValue || fieldValue === '0' || fieldValue.toLowerCase() === 'false') continue;
+          
+          const fieldLower = fieldName.toLowerCase();
+          const valueLower = fieldValue.toLowerCase();
+          
+          // Check if this is a t-shirt product field
+          if (fieldLower.includes('t-shirt') || fieldLower.includes('tshirt') || 
+              fieldLower.includes('shirt') || valueLower.includes('unisex') ||
+              (fieldLower.includes('souvenir') && fieldLower.includes('2025'))) {
+            
+            // Extract size from field name or value
+            let extractedSize = null;
+            const sizeText = `${fieldName} ${fieldValue}`;
+            
+            // Try to match size patterns (prioritize from most specific to least)
+            const sizePatterns = [
+              /\bunisex\s+(small|med|medium|large|xl|xxl|2x|3x|4x|5x)\b/i,
+              /\b(women's|men's|ladies)\s+.*?(small|med|medium|large|xl|xxl|2x|3x|4x|5x)\b/i,
+              /\b(small|med|medium|large|xl|xxl|2x|3x|4x|5x)\b/i,
+              /\b(s|m|l|xl|xxl)\b/i
+            ];
+            
+            for (const pattern of sizePatterns) {
+              const match = sizeText.match(pattern);
+              if (match) {
+                extractedSize = match[match.length - 1].toLowerCase(); // Get the size part
+                break;
+              }
+            }
+            
+            // Normalize size names
+            if (extractedSize) {
+              switch (extractedSize) {
+                case 'small': extractedSize = 'S'; break;
+                case 'med': case 'medium': extractedSize = 'M'; break;
+                case 'large': extractedSize = 'L'; break;
+                case 'xl': extractedSize = 'XL'; break;
+                case 'xxl': case '2x': extractedSize = '2X'; break;
+                case '3x': extractedSize = '3X'; break;
+                case '4x': extractedSize = '4X'; break;
+                case '5x': extractedSize = '5X'; break;
+                case 's': extractedSize = 'S'; break;
+                case 'm': extractedSize = 'M'; break;
+                case 'l': extractedSize = 'L'; break;
+              }
+            }
+            
+            tShirtProducts.push({
+              field: fieldName,
+              value: fieldValue,
+              size: extractedSize
+            });
+            
+            // Use the first valid size found as the primary t-shirt size
+            if (extractedSize && !tShirtSize) {
+              tShirtSize = extractedSize;
+            }
+          }
+        }
+        
+        return {
+          size: tShirtSize,
+          products: tShirtProducts
+        };
+      };
+
       // Helper function to detect "Additional Night" purchase (Thursday early access)
       const detectAdditionalNight = (fields: Record<string, string>) => {
         // Check for the simple "Additional Night (Thursday)" field
@@ -524,9 +597,16 @@ serve(async (req) => {
           const gender = fields['gender'] || fields['Gender'] || null;
           const maritalStatus = fields['status'] || fields['Status?'] || fields['Marital Status'] || null;
           
-          // Event preferences and custom fields
-          const tShirtSize = fields['tShirtSize'] || fields['T-Shirt Size'] || 
-                           fields['shirt size'] || fields['Shirt Size'] || null;
+          // Extract t-shirt information from product purchases
+          const tShirtData = extractTShirtSize(fields);
+          const tShirtSize = tShirtData.size;
+          
+          // Event preferences and custom fields (keeping existing logic as fallback)
+          const legacyTShirtSize = fields['tShirtSize'] || fields['T-Shirt Size'] || 
+                                 fields['shirt size'] || fields['Shirt Size'] || null;
+          
+          // Use extracted t-shirt size from products, fallback to legacy field
+          const finalTShirtSize = tShirtSize || legacyTShirtSize;
           const dietaryRestrictions = fields['dietaryRestrictions'] || fields['Dietary Restrictions'] || 
                                     fields['dietary'] || fields['Food Allergies'] || 
                                     fields['allergies'] || fields['Allergies'] || null;
@@ -625,6 +705,20 @@ serve(async (req) => {
             }
           }
           
+          // Add t-shirt product information to custom fields for inventory tracking
+          if (tShirtData.products.length > 0) {
+            customFields['t_shirt_products'] = tShirtData.products;
+            customFields['t_shirt_inventory'] = {
+              primary_size: tShirtData.size,
+              total_products: tShirtData.products.length,
+              product_details: tShirtData.products.map(p => ({
+                field: p.field,
+                value: p.value,
+                extracted_size: p.size
+              }))
+            };
+          }
+          
           // Enhanced veteran detection - Check multiple field patterns
           let isVeteran = false;
           const veteranFields = ['areYouVeteran', 'Are you a veteran?', 'military', 'Military Service', 'veteran'];
@@ -692,6 +786,11 @@ serve(async (req) => {
           const arrivalWindow = earlyAccess ? 'early' : 'standard';
           
           console.log(`Sync - RegFox ID ${regfoxAttendee.id}: ticketType=${ticketType}, earlyAccess=${earlyAccess}, arrivalWindow=${arrivalWindow}`);
+          
+          // Log t-shirt detection for debugging
+          if (finalTShirtSize) {
+            console.log(`Sync - RegFox ID ${regfoxAttendee.id}: T-shirt size detected: ${finalTShirtSize} (from ${tShirtData.products.length > 0 ? 'product purchases' : 'legacy field'})`);
+          }
 
           // Check if attendee already exists by regfox_id
           const { data: existingAttendee } = await supabase
@@ -728,7 +827,7 @@ serve(async (req) => {
             marital_status: maritalStatus,
             
             // Event preferences
-            t_shirt_size: tShirtSize,
+            t_shirt_size: finalTShirtSize,
             dietary_restrictions: dietaryRestrictions,
             special_accommodations: specialAccommodations,
             how_did_you_hear: howDidYouHear,
