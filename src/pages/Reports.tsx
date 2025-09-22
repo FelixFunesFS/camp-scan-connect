@@ -152,6 +152,12 @@ const Reports = () => {
           {/* Check-in Status Tables */}
           <CheckInStatusTables refreshTrigger={refreshTrigger} />
 
+          {/* Analytics Cards */}
+          <AnalyticsCards 
+            selectedPeriod={selectedPeriod}
+            refreshTrigger={refreshTrigger}
+          />
+
           {/* Attendee Services */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -163,12 +169,6 @@ const Reports = () => {
               refreshTrigger={refreshTrigger}
             />
           </div>
-
-          {/* Analytics Cards */}
-          <AnalyticsCards 
-            selectedPeriod={selectedPeriod}
-            refreshTrigger={refreshTrigger}
-          />
         </div>
 
         {/* Auto-refresh indicator */}
