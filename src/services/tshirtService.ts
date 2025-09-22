@@ -70,14 +70,14 @@ export class TShirtService {
 
     // Priority 2: Parse individual style/size field names with enhanced filtering
     const tshirtFields = this.filterTShirtFields(customFields);
-    // console.log('T-Shirt Debug - Fields after filtering:', tshirtFields); // Enable for debugging
+    console.log('T-Shirt Debug - Fields after filtering:', Object.keys(tshirtFields)); // Debug logging
     
     Object.entries(tshirtFields).forEach(([key, value]) => {
       if (typeof key === 'string' && value) {
         const { size, type } = this.parseTShirtProduct(key);
         if (size) {
           const quantity = this.extractQuantityFromValue(value);
-          // console.log(`T-Shirt Debug - Processing field "${key}": size=${size}, type=${type}, quantity=${quantity}`); // Enable for debugging
+          console.log(`T-Shirt Debug - Processing field "${key}": size=${size}, type=${type}, quantity=${quantity}`); // Debug logging
           // Add multiple entries for quantities > 1
           for (let i = 0; i < quantity; i++) {
             purchaseDetails.push({ product: key, size, type });
@@ -260,58 +260,65 @@ export class TShirtService {
     const tshirtFields: Record<string, any> = {};
     const allKeys = Object.keys(customFields).filter(key => this.isTShirtProduct(key));
     
-    // Group keys by descriptiveness (more descriptive = higher priority)
-    const descriptiveFields: string[] = [];
-    const codeFields: string[] = [];
-    const genericFields: string[] = [];
+    // Pre-filter: Remove obvious generic quantity fields that don't represent actual products
+    const filteredKeys = allKeys.filter(key => {
+      const normalized = key.toLowerCase();
+      // Skip pure quantity indicators
+      if (normalized === 'souvenir 2025 t-shirt' || normalized === 't-shirt' || normalized === 'merchandise.tshirt') {
+        return false;
+      }
+      return true;
+    });
     
-    allKeys.forEach(key => {
+    // Group fields by detected size and style relationship
+    const sizeToFields = new Map<string, { descriptive: string[], coded: string[], generic: string[] }>();
+    
+    filteredKeys.forEach(key => {
+      const { size } = this.parseTShirtProduct(key);
+      const normalizedSize = size.toLowerCase() || 'unknown';
+      
+      if (!sizeToFields.has(normalizedSize)) {
+        sizeToFields.set(normalizedSize, { descriptive: [], coded: [], generic: [] });
+      }
+      
+      const group = sizeToFields.get(normalizedSize)!;
       const normalized = key.toLowerCase();
       
-      // Descriptive fields have human-readable style names
+      // Categorize field type
       if (this.isDescriptiveTShirtField(key)) {
-        descriptiveFields.push(key);
-      }
-      // Code fields like "merchandise.tshirt.med"
-      else if (normalized.includes('merchandise') || normalized.match(/\.(xs|sm|med|lg|xl|small|medium|large)/)) {
-        codeFields.push(key);
-      }
-      // Generic fields like "t-shirt", "souvenir"
-      else {
-        genericFields.push(key);
-      }
-    });
-    
-    // Smart deduplication: group by detected size and prioritize descriptive fields
-    const sizeGroups = new Map<string, string[]>();
-    
-    [...descriptiveFields, ...codeFields].forEach(key => {
-      const { size } = this.parseTShirtProduct(key);
-      const normalizedSize = size.toLowerCase();
-      
-      if (!sizeGroups.has(normalizedSize)) {
-        sizeGroups.set(normalizedSize, []);
-      }
-      sizeGroups.get(normalizedSize)!.push(key);
-    });
-    
-    // For each size group, pick the most descriptive field
-    sizeGroups.forEach(fieldsForSize => {
-      if (fieldsForSize.length === 1) {
-        // Only one field for this size, use it
-        const key = fieldsForSize[0];
-        tshirtFields[key] = customFields[key];
+        group.descriptive.push(key);
+      } else if (normalized.includes('merchandise.') || normalized.match(/\w+\.\w+\.(xs|sm|med|lg|xl)/)) {
+        group.coded.push(key);
       } else {
-        // Multiple fields for same size, prioritize descriptive ones
-        const descriptive = fieldsForSize.filter(key => this.isDescriptiveTShirtField(key));
-        const bestField = descriptive.length > 0 ? descriptive[0] : fieldsForSize[0];
-        tshirtFields[bestField] = customFields[bestField];
+        group.generic.push(key);
       }
     });
     
-    // If no size-specific fields found, fall back to generic ones
+    // For each size, select the best representative field
+    sizeToFields.forEach((fieldGroups, size) => {
+      let selectedField: string | null = null;
+      
+      // Priority 1: Use descriptive field if available
+      if (fieldGroups.descriptive.length > 0) {
+        selectedField = fieldGroups.descriptive[0];
+      }
+      // Priority 2: Use coded field only if no descriptive field exists
+      else if (fieldGroups.coded.length > 0) {
+        selectedField = fieldGroups.coded[0];
+      }
+      // Priority 3: Use generic field as last resort
+      else if (fieldGroups.generic.length > 0) {
+        selectedField = fieldGroups.generic[0];
+      }
+      
+      if (selectedField) {
+        tshirtFields[selectedField] = customFields[selectedField];
+      }
+    });
+    
+    // Fallback: if no size-specific fields found, include remaining generic fields
     if (Object.keys(tshirtFields).length === 0) {
-      genericFields.forEach(key => {
+      allKeys.filter(key => !this.isSpecificTShirtField(key)).forEach(key => {
         tshirtFields[key] = customFields[key];
       });
     }
