@@ -29,6 +29,15 @@ export interface TShirtStats {
   sizeBreakdown: Record<string, { ordered: number; pickedUp: number; remaining: number }>;
 }
 
+export interface TShirtOrder {
+  id: string;
+  style: string;
+  size: string;
+  quantity: number;
+  isPickedUp: boolean;
+  pickupTime?: string;
+}
+
 export class TShirtService {
   static extractTShirtInfo(customFields: any): TShirtInfo {
     if (!customFields || typeof customFields !== 'object') {
@@ -276,6 +285,32 @@ export class TShirtService {
     } catch (error) {
       console.error('Error checking t-shirt info:', error);
       return { hasTShirt: false, size: null, type: null, orders: [] };
+    }
+  }
+
+  static async recordTShirtPickups(attendeeId: string, selectedOrders: TShirtOrder[]): Promise<void> {
+    if (!selectedOrders.length) return;
+
+    const transactions = selectedOrders.map(order => ({
+      attendee_id: attendeeId,
+      station_type: 'tshirts' as any,
+      transaction_type: 'tshirt_pickup' as any,
+      current_status: 'picked_up',
+      extra_data: {
+        tshirt_style: order.style,
+        tshirt_size: order.size,
+        quantity: order.quantity,
+        order_id: order.id
+      }
+    }));
+
+    // Record all transactions
+    const { error } = await supabase
+      .from('station_transactions')
+      .insert(transactions);
+
+    if (error) {
+      throw new Error(`Failed to record t-shirt pickups: ${error.message}`);
     }
   }
 }

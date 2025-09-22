@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shirt } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Shirt, Package, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { UnifiedStationScanner, StationActionProps } from "@/components/UnifiedStationScanner";
-import { TShirtService } from "@/services/tshirtService";
+import { TShirtService, TShirtOrder } from "@/services/tshirtService";
 
 export default function TShirtsStation() {
   return (
     <UnifiedStationScanner
       stationType="tshirts"
       stationTitle="T-Shirts Station"
-      mode="quick"
-      autoTrigger={true}
+      mode="confirm"
+      autoTrigger={false}
     >
       {(props) => <TShirtsContent {...props} />}
     </UnifiedStationScanner>
@@ -23,96 +25,95 @@ function TShirtsContent({
   attendeeReadiness, 
   isProcessing, 
   setIsProcessing, 
-  executeAction, 
-  getLatestStatus, 
   onReset 
 }: StationActionProps) {
-  const [tshirtInfo, setTShirtInfo] = useState<{
-    hasTShirt: boolean;
-    size: string | null;
-    type: string | null;
-    alreadyPickedUp: boolean;
-  } | null>(null);
+  const [tshirtOrders, setTShirtOrders] = useState<TShirtOrder[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleTShirtPickup = useCallback(async () => {
-    if (!attendeeReadiness?.isReady || isProcessing || !selectedRfid?.attendee_id || !tshirtInfo?.hasTShirt) return;
+  // Load t-shirt orders when attendee changes
+  useEffect(() => {
+    if (selectedRfid?.attendee_id) {
+      const loadTShirtOrders = async () => {
+        setIsLoading(true);
+        try {
+          const data = await TShirtService.checkAttendeeHasTShirt(selectedRfid.attendee_id);
+          setTShirtOrders(data.orders);
+          setSelectedOrderIds([]);
+        } catch (error) {
+          console.error("Error loading t-shirt orders:", error);
+          setTShirtOrders([]);
+          setSelectedOrderIds([]);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-    if (tshirtInfo.alreadyPickedUp) {
-      toast.info(`T-shirt already picked up by ${selectedRfid?.attendee?.first_name}`);
-      setTimeout(() => onReset(), 1500);
+      loadTShirtOrders();
+    } else {
+      setTShirtOrders([]);
+      setSelectedOrderIds([]);
+    }
+  }, [selectedRfid?.attendee_id]);
+
+  const handleOrderSelection = (orderId: string, checked: boolean) => {
+    setSelectedOrderIds(prev => 
+      checked 
+        ? [...prev, orderId]
+        : prev.filter(id => id !== orderId)
+    );
+  };
+
+  const handleSelectAll = () => {
+    const availableOrders = tshirtOrders.filter(order => !order.isPickedUp);
+    setSelectedOrderIds(availableOrders.map(order => order.id));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedOrderIds([]);
+  };
+
+  const handleProcessPickups = useCallback(async () => {
+    if (!selectedRfid?.attendee_id || !selectedOrderIds.length || isProcessing) return;
+
+    const selectedOrders = tshirtOrders.filter(order => 
+      selectedOrderIds.includes(order.id) && !order.isPickedUp
+    );
+
+    if (!selectedOrders.length) {
+      toast.error("No valid orders selected for pickup");
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      await executeAction('tshirt_pickup', {
-        current_status: 'picked_up',
-        tshirt_size: tshirtInfo.size,
-        tshirt_type: tshirtInfo.type
-      });
+      await TShirtService.recordTShirtPickups(selectedRfid.attendee_id, selectedOrders);
 
-      setTShirtInfo(prev => prev ? { ...prev, alreadyPickedUp: true } : null);
-
-      const sizeInfo = tshirtInfo.size ? ` (${tshirtInfo.type} ${tshirtInfo.size})` : '';
-      toast.success(
-        `T-shirt picked up by ${selectedRfid?.attendee?.first_name}${sizeInfo}`
+      // Update local state to reflect pickups
+      setTShirtOrders(prev => 
+        prev.map(order => 
+          selectedOrderIds.includes(order.id) 
+            ? { ...order, isPickedUp: true, pickupTime: new Date().toISOString() }
+            : order
+        )
       );
 
-      setTimeout(() => onReset(), 1500);
+      setSelectedOrderIds([]);
+
+      const orderDetails = selectedOrders.map(o => `${o.style} ${o.size}`).join(", ");
+      toast.success(
+        `T-shirts picked up by ${selectedRfid?.attendee?.first_name}: ${orderDetails}`
+      );
+
+      setTimeout(() => onReset(), 2000);
     } catch (error) {
-      console.error("Error recording t-shirt pickup:", error);
-      toast.error("Failed to record t-shirt pickup");
+      console.error("Error processing t-shirt pickups:", error);
+      toast.error("Failed to process t-shirt pickups");
     } finally {
       setIsProcessing(false);
     }
-  }, [attendeeReadiness, isProcessing, executeAction, selectedRfid, tshirtInfo, onReset]);
-
-  // Load t-shirt info when attendee changes
-  useEffect(() => {
-    if (selectedRfid?.attendee_id) {
-      const loadTShirtInfo = async () => {
-        try {
-          const info = await TShirtService.checkAttendeeHasTShirt(selectedRfid.attendee_id);
-          
-          // Check if already picked up
-          const latestStatus = await getLatestStatus('current_status');
-          const alreadyPickedUp = latestStatus === 'picked_up';
-
-          setTShirtInfo({
-            ...info,
-            alreadyPickedUp
-          });
-        } catch (error) {
-          console.error("Error loading t-shirt info:", error);
-          setTShirtInfo({
-            hasTShirt: false,
-            size: null,
-            type: null,
-            alreadyPickedUp: false
-          });
-        }
-      };
-
-      loadTShirtInfo();
-    } else {
-      setTShirtInfo(null);
-    }
-  }, [selectedRfid?.attendee_id, getLatestStatus]);
-
-  // Auto-trigger t-shirt pickup when ready
-  useEffect(() => {
-    const handleAutoTrigger = () => {
-      if (selectedRfid && attendeeReadiness?.isReady && !isProcessing && tshirtInfo?.hasTShirt) {
-        handleTShirtPickup();
-      }
-    };
-
-    if (selectedRfid && attendeeReadiness?.isReady && !isProcessing && tshirtInfo?.hasTShirt) {
-      window.addEventListener('autoTrigger', handleAutoTrigger);
-      return () => window.removeEventListener('autoTrigger', handleAutoTrigger);
-    }
-  }, [selectedRfid, attendeeReadiness, isProcessing, tshirtInfo, handleTShirtPickup]);
+  }, [selectedRfid, selectedOrderIds, tshirtOrders, isProcessing, onReset]);
 
   // Don't render if attendee is not ready
   if (!attendeeReadiness?.isReady) {
@@ -127,18 +128,32 @@ function TShirtsContent({
     );
   }
 
-  // Handle case where attendee doesn't have a t-shirt
-  if (tshirtInfo && !tshirtInfo.hasTShirt) {
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center p-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+            <div className="text-muted-foreground">Loading t-shirt orders...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Handle case where attendee doesn't have any t-shirts
+  if (!tshirtOrders.length) {
     return (
       <Card>
         <CardContent className="pt-6">
           <div className="text-center p-6">
             <Shirt className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <div className="text-lg font-medium text-muted-foreground mb-2">
-              No T-Shirt Ordered
+              No T-Shirts Ordered
             </div>
             <div className="text-sm text-muted-foreground">
-              {selectedRfid?.attendee?.first_name} {selectedRfid?.attendee?.last_name} did not purchase a t-shirt
+              {selectedRfid?.attendee?.first_name} {selectedRfid?.attendee?.last_name} did not purchase any t-shirts
             </div>
           </div>
         </CardContent>
@@ -146,46 +161,129 @@ function TShirtsContent({
     );
   }
 
+  const availableOrders = tshirtOrders.filter(order => !order.isPickedUp);
+  const pickedUpOrders = tshirtOrders.filter(order => order.isPickedUp);
+  const hasSelectedOrders = selectedOrderIds.length > 0;
+  const allPickedUp = availableOrders.length === 0;
+
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="text-center space-y-4">
-          {/* T-Shirt Status */}
-          <div className="p-6 bg-muted rounded-lg">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Shirt className={`h-8 w-8 ${
-                tshirtInfo?.alreadyPickedUp ? 'text-green-500' : 'text-primary'
-              }`} />
+              <Package className="h-6 w-6 text-primary" />
             </div>
             <div className="text-lg font-medium">
-              Status: <span className={
-                tshirtInfo?.alreadyPickedUp ? 'text-green-600' : 'text-primary'
-              }>
-                {tshirtInfo?.alreadyPickedUp ? 'PICKED UP' : 'READY FOR PICKUP'}
-              </span>
+              T-Shirt Orders ({tshirtOrders.length} total)
             </div>
-            {tshirtInfo && (
-              <div className="text-sm text-muted-foreground mt-2">
-                {tshirtInfo.type} {tshirtInfo.size}
-              </div>
-            )}
+            <div className="text-sm text-muted-foreground">
+              {pickedUpOrders.length} picked up • {availableOrders.length} remaining
+            </div>
           </div>
 
-          {/* Processing Status */}
-          {isProcessing && (
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center justify-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
-                <span className="text-blue-600 font-medium">
-                  Recording t-shirt pickup...
-                </span>
+          {/* Order Selection List */}
+          <div className="space-y-3">
+            {tshirtOrders.map((order) => (
+              <div 
+                key={order.id} 
+                className={`flex items-center justify-between p-4 rounded-lg border ${
+                  order.isPickedUp 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {!order.isPickedUp ? (
+                    <Checkbox
+                      checked={selectedOrderIds.includes(order.id)}
+                      onCheckedChange={(checked) => 
+                        handleOrderSelection(order.id, checked as boolean)
+                      }
+                      disabled={order.isPickedUp}
+                    />
+                  ) : (
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  )}
+                  
+                  <div>
+                    <div className="font-medium flex items-center gap-2">
+                      <Shirt className="h-4 w-4" />
+                      {order.style} - {order.size}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Quantity: {order.quantity}
+                      {order.isPickedUp && order.pickupTime && (
+                        <span className="ml-2 text-green-600">
+                          • Picked up {new Date(order.pickupTime).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {order.isPickedUp && (
+                  <div className="text-green-600 font-medium text-sm">
+                    PICKED UP
+                  </div>
+                )}
               </div>
+            ))}
+          </div>
+
+          {/* Action Buttons */}
+          {!allPickedUp && (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSelectAll}
+                  disabled={availableOrders.length === 0}
+                  className="flex-1"
+                >
+                  Select All Available
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleClearSelection}
+                  disabled={selectedOrderIds.length === 0}
+                  className="flex-1"
+                >
+                  Clear Selection
+                </Button>
+              </div>
+
+              <Button
+                onClick={handleProcessPickups}
+                disabled={!hasSelectedOrders || isProcessing}
+                className="w-full"
+                size="lg"
+              >
+                {isProcessing ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                    Processing Pickups...
+                  </div>
+                ) : (
+                  `Process ${selectedOrderIds.length} Selected Pickup${selectedOrderIds.length !== 1 ? 's' : ''}`
+                )}
+              </Button>
             </div>
           )}
 
-          <div className="text-center text-sm text-muted-foreground">
-            <p>Souvenir 2025 T-Shirt Distribution</p>
-          </div>
+          {/* All Picked Up Status */}
+          {allPickedUp && (
+            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-600" />
+              <div className="text-green-800 font-medium">
+                All T-Shirts Picked Up
+              </div>
+              <div className="text-sm text-green-600 mt-1">
+                {selectedRfid?.attendee?.first_name} has collected all their t-shirt orders
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
