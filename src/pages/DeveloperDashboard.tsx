@@ -8,9 +8,10 @@ import { WebhookRegistrantTimeline } from "@/components/dev/WebhookRegistrantTim
 import { SyncHistoryTable } from "@/components/dev/SyncHistoryTable";
 import { AnalyticsDashboard } from "@/components/dev/AnalyticsDashboard";
 import { DebugTools } from "@/components/dev/DebugTools";
+import { ProductionReadiness } from "@/components/dev/ProductionReadiness";
 import AdminRequestManager from "@/components/dev/AdminRequestManager";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare } from "lucide-react";
+import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare, Shield } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const DeveloperDashboard = () => {
@@ -57,7 +58,7 @@ const DeveloperDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="timeline" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="timeline" className="gap-2">
@@ -104,6 +105,17 @@ const DeveloperDashboard = () => {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
+                <TabsTrigger value="production" className="gap-2">
+                  <Shield className="h-4 w-4" />
+                  Production Readiness
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edge case testing, system health monitoring, and production deployment tools</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
                 <TabsTrigger value="debug" className="gap-2">
                   <Wrench className="h-4 w-4" />
                   Debug Tools
@@ -129,6 +141,10 @@ const DeveloperDashboard = () => {
 
           <TabsContent value="requests" className="space-y-6">
             <AdminRequestManager />
+          </TabsContent>
+
+          <TabsContent value="production" className="space-y-6">
+            <ProductionReadiness />
           </TabsContent>
 
           <TabsContent value="debug" className="space-y-6">
