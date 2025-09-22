@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { GlassWater, Clock, TrendingUp, Users, ArrowUp, ArrowDown } from "lucide-react";
+import { GlassWater, Clock, TrendingUp, Users, ArrowUp, ArrowDown, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   TimePeriod, 
@@ -31,6 +31,12 @@ interface AnalyticsData {
     lunch: number;
     dinner: number;
   };
+  gateAccess: {
+    currentOccupancy: number;
+    dailyEntries: number;
+    dailyExits: number;
+    peakHour: string | null;
+  };
   comparison?: {
     drinkChange: number;
     partyTimeChange: number;
@@ -49,7 +55,8 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
     drinkPeakHour: null,
     averagePartyTimeMinutes: 0,
     peakHours: [],
-    mealCounts: { breakfast: 0, lunch: 0, dinner: 0 }
+    mealCounts: { breakfast: 0, lunch: 0, dinner: 0 },
+    gateAccess: { currentOccupancy: 0, dailyEntries: 0, dailyExits: 0, peakHour: null }
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -188,6 +195,45 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
         })));
         console.log('Final meal counts:', mealCounts);
 
+        // Get gate access data (midnight ET cutoff)
+        const { data: gateTransactions } = await supabase
+          .from('station_transactions')
+          .select('*')
+          .eq('station_type', 'main_gate')
+          .in('transaction_type', ['gate_entry', 'gate_exit'])
+          .gte('created_at', standardBoundaries.start.toISOString())
+          .lt('created_at', standardBoundaries.end.toISOString())
+          .order('created_at', { ascending: true });
+
+        // Calculate gate access metrics
+        const entries = gateTransactions?.filter(t => t.transaction_type === 'gate_entry') || [];
+        const exits = gateTransactions?.filter(t => t.transaction_type === 'gate_exit') || [];
+        
+        // Calculate current occupancy
+        const attendeeStatus = new Map<string, boolean>();
+        gateTransactions?.forEach(transaction => {
+          attendeeStatus.set(transaction.attendee_id, transaction.transaction_type === 'gate_entry');
+        });
+        const currentOccupancy = Array.from(attendeeStatus.values()).filter(Boolean).length;
+
+        // Find peak gate hour
+        const gateHourlyData = Array.from({ length: 24 }, (_, i) => ({ hour: i, activity: 0 }));
+        gateTransactions?.forEach(transaction => {
+          const hour = new Date(transaction.created_at).getHours();
+          gateHourlyData[hour].activity++;
+        });
+        
+        const gatePeakHour = gateHourlyData
+          .filter(h => h.activity > 0)
+          .sort((a, b) => b.activity - a.activity)[0];
+
+        const gateAccess = {
+          currentOccupancy,
+          dailyEntries: entries.length,
+          dailyExits: exits.length,
+          peakHour: gatePeakHour ? `${gatePeakHour.hour}:00` : null
+        };
+
         // Get comparison data if available (drinks/headphones use 3 AM boundaries)
         let comparison = undefined;
         if (drinksComparisonBoundaries) {
@@ -246,6 +292,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
           averagePartyTimeMinutes: avgPartyTime,
           peakHours,
           mealCounts,
+          gateAccess,
           comparison
         });
 
@@ -279,7 +326,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {[1,2,3,4].map(i => (
+        {[1,2,3,4,5].map(i => (
           <Card key={i}>
             <CardContent className="p-6">
               <div className="animate-pulse space-y-4">
@@ -418,6 +465,66 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
               <Badge variant="outline" className="bg-info/10 text-info">
                 Live Counter
               </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Gate Access Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UITooltip>
+              <UITooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Main Gate Access
+                </div>
+              </UITooltipTrigger>
+              <UITooltipContent>
+                <p>Current occupancy and daily gate activity</p>
+                <p className="text-xs text-muted-foreground mt-1">Real-time tracking of site entry/exit</p>
+              </UITooltipContent>
+            </UITooltip>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-3 bg-primary/10 rounded-lg">
+                <div className="text-2xl font-bold text-primary">
+                  {analytics.gateAccess.currentOccupancy}
+                </div>
+                <div className="text-sm text-muted-foreground">On-Site</div>
+              </div>
+              <div className="text-center p-3 bg-success/10 rounded-lg">
+                <div className="text-2xl font-bold text-success">
+                  {analytics.gateAccess.dailyEntries}
+                </div>
+                <div className="text-sm text-muted-foreground">Entries</div>
+              </div>
+              <div className="text-center p-3 bg-warning/10 rounded-lg">
+                <div className="text-2xl font-bold text-warning">
+                  {analytics.gateAccess.dailyExits}
+                </div>
+                <div className="text-sm text-muted-foreground">Exits</div>
+              </div>
+            </div>
+            <div className="text-center">
+              <UITooltip>
+                <UITooltipTrigger asChild>
+                  <Badge variant="outline" className="text-primary">
+                    {analytics.gateAccess.peakHour ? 
+                      `Peak: ${formatHour(analytics.gateAccess.peakHour)}` : 
+                      'No peak activity yet'
+                    }
+                  </Badge>
+                </UITooltipTrigger>
+                <UITooltipContent>
+                  <p>Hour with highest gate activity</p>
+                  <p className="text-xs text-muted-foreground mt-1">Helps with security staffing</p>
+                </UITooltipContent>
+              </UITooltip>
             </div>
           </div>
         </CardContent>

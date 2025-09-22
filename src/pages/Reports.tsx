@@ -9,6 +9,7 @@ import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { CheckInStatusTables } from "@/components/reports/CheckInStatusTables";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
 import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
+import { GateAccessReport } from "@/components/reports/GateAccessReport";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";
@@ -161,6 +162,12 @@ const Reports = () => {
             
             {/* Analytics Cards - Meal Service, Drinks, Peak Hours, etc. */}
             <AnalyticsCards 
+              selectedPeriod={selectedPeriod}
+              refreshTrigger={refreshTrigger}
+            />
+            
+            {/* Gate Access Report */}
+            <GateAccessReport 
               selectedPeriod={selectedPeriod}
               refreshTrigger={refreshTrigger}
             />
