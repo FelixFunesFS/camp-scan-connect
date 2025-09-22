@@ -7,7 +7,7 @@ import { Headphones, Clock, User, Phone, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTime, formatDuration, isProlongedCheckout, getTimeBasedVariant } from "@/utils/dateTimeUtils";
-import { TimePeriod, getTimeBoundaries, formatTimePeriod } from "@/utils/etTimezone";
+import { TimePeriod, getDrinksHeadphonesTimeBoundaries, formatTimePeriod } from "@/utils/etTimezone";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 
 interface HeadphoneCheckout {
@@ -47,7 +47,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
         if (!isBackground) {
           setIsInitialLoading(true);
         }
-        const boundaries = getTimeBoundaries(selectedPeriod);
+        const boundaries = getDrinksHeadphonesTimeBoundaries(selectedPeriod);
         
         // Get currently checked out headphones (checkout without matching checkin)
         const { data: currentCheckouts } = await supabase

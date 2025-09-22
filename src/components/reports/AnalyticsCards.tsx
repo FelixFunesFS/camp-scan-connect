@@ -4,7 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { GlassWater, Clock, TrendingUp, Users, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { TimePeriod, getTimeBoundaries, getComparisonBoundaries, formatTimePeriod } from "@/utils/etTimezone";
+import { 
+  TimePeriod, 
+  getDrinksHeadphonesTimeBoundaries, 
+  getStandardTimeBoundaries,
+  getDrinksHeadphonesComparisonBoundaries,
+  getStandardComparisonBoundaries,
+  formatTimePeriod 
+} from "@/utils/etTimezone";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 import { 
   Tooltip as UITooltip, 
@@ -48,17 +55,21 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
 
   const fetchAnalytics = useCallback(async () => {
       try {
-        const boundaries = getTimeBoundaries(selectedPeriod);
-        const comparisonBoundaries = getComparisonBoundaries(selectedPeriod);
+        // Use 3 AM boundaries for drinks and headphones operational data
+        const drinksBoundaries = getDrinksHeadphonesTimeBoundaries(selectedPeriod);
+        const drinksComparisonBoundaries = getDrinksHeadphonesComparisonBoundaries(selectedPeriod);
         
-        // Get drink counts for selected period
+        // Use midnight boundaries for meals and peak hours (general transactions)
+        const standardBoundaries = getStandardTimeBoundaries(selectedPeriod);
+        
+        // Get drink counts for selected period (3 AM ET cutoff)
         const { data: drinks } = await supabase
           .from('station_transactions')
           .select('*')
           .eq('station_type', 'drinks')
           .eq('transaction_type', 'drink')
-          .gte('created_at', boundaries.start.toISOString())
-          .lt('created_at', boundaries.end.toISOString());
+          .gte('created_at', drinksBoundaries.start.toISOString())
+          .lt('created_at', drinksBoundaries.end.toISOString());
 
         const drinkCount = drinks?.length || 0;
 
@@ -78,14 +89,14 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
           .filter(h => h.drinks > 0)
           .sort((a, b) => b.drinks - a.drinks)[0] || null;
 
-        // Get headphone data to calculate average party time
+        // Get headphone data to calculate average party time (3 AM ET cutoff)
         const { data: headphoneTransactions } = await supabase
           .from('station_transactions')
           .select('attendee_id, created_at, transaction_type')
           .eq('station_type', 'headphones')
           .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
-          .gte('created_at', boundaries.start.toISOString())
-          .lt('created_at', boundaries.end.toISOString())
+          .gte('created_at', drinksBoundaries.start.toISOString())
+          .lt('created_at', drinksBoundaries.end.toISOString())
           .order('created_at', { ascending: true });
 
         // Calculate average party time from headphone sessions
@@ -112,12 +123,12 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
 
         const avgPartyTime = completedSessions > 0 ? Math.round(totalPartyMinutes / completedSessions) : 0;
 
-        // Get hourly breakdown for peak usage
+        // Get hourly breakdown for peak usage (midnight ET cutoff)
         const { data: allTransactions } = await supabase
           .from('station_transactions')
           .select('created_at, transaction_type')
-          .gte('created_at', boundaries.start.toISOString())
-          .lt('created_at', boundaries.end.toISOString());
+          .gte('created_at', standardBoundaries.start.toISOString())
+          .lt('created_at', standardBoundaries.end.toISOString());
 
         const hourlyData = Array.from({ length: 24 }, (_, i) => ({
           hour: `${i}:00`,
@@ -135,14 +146,14 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
           .sort((a, b) => b.checkouts - a.checkouts)
           .slice(0, 6);
 
-        // Get meal counts by type
+        // Get meal counts by type (midnight ET cutoff)
         const { data: meals } = await supabase
           .from('station_transactions')
           .select('transaction_type')
           .eq('station_type', 'meal')
           .like('transaction_type', 'meal_%')
-          .gte('created_at', boundaries.start.toISOString())
-          .lt('created_at', boundaries.end.toISOString());
+          .gte('created_at', standardBoundaries.start.toISOString())
+          .lt('created_at', standardBoundaries.end.toISOString());
 
         const mealCounts = {
           breakfast: meals?.filter(m => m.transaction_type.includes('breakfast')).length || 0,
@@ -150,24 +161,24 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
           dinner: meals?.filter(m => m.transaction_type.includes('dinner')).length || 0
         };
 
-        // Get comparison data if available
+        // Get comparison data if available (drinks/headphones use 3 AM boundaries)
         let comparison = undefined;
-        if (comparisonBoundaries) {
+        if (drinksComparisonBoundaries) {
           const { data: compDrinks } = await supabase
             .from('station_transactions')
             .select('*')
             .eq('station_type', 'drinks')
             .eq('transaction_type', 'drink')
-            .gte('created_at', comparisonBoundaries.start.toISOString())
-            .lt('created_at', comparisonBoundaries.end.toISOString());
+            .gte('created_at', drinksComparisonBoundaries.start.toISOString())
+            .lt('created_at', drinksComparisonBoundaries.end.toISOString());
 
           const { data: compHeadphones } = await supabase
             .from('station_transactions')
             .select('attendee_id, created_at, transaction_type')
             .eq('station_type', 'headphones')
             .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
-            .gte('created_at', comparisonBoundaries.start.toISOString())
-            .lt('created_at', comparisonBoundaries.end.toISOString())
+            .gte('created_at', drinksComparisonBoundaries.start.toISOString())
+            .lt('created_at', drinksComparisonBoundaries.end.toISOString())
             .order('created_at', { ascending: true });
 
           // Calculate comparison party time
