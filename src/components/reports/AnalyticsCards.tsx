@@ -146,34 +146,47 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
           .sort((a, b) => b.checkouts - a.checkouts)
           .slice(0, 6);
 
-        // Get meal counts by type (midnight ET cutoff)        
-        // Debug: Log what boundaries we're using  
-        console.log('Standard boundaries for meals:', {
-          start: standardBoundaries.start.toISOString(),
-          end: standardBoundaries.end.toISOString(),
-          label: standardBoundaries.label,
-          selectedPeriod
-        });
-        
-        const { data: meals } = await supabase
+        // Get meal counts by type (midnight ET cutoff)
+        const { data: meals, error: mealsError } = await supabase
           .from('station_transactions')
           .select('transaction_type, created_at')
           .eq('station_type', 'meal')
-          .like('transaction_type', 'meal_%')
           .gte('created_at', standardBoundaries.start.toISOString())
           .lt('created_at', standardBoundaries.end.toISOString());
 
-        // Debug: Log meal data to understand what we're getting
-        console.log('Meal data fetched:', meals?.length, 'records');
-        console.log('Sample meal data:', meals?.slice(0, 5));
-        
+        console.log('Meal query result:', { 
+          count: meals?.length, 
+          error: mealsError,
+          boundaries: {
+            start: standardBoundaries.start.toISOString(),
+            end: standardBoundaries.end.toISOString()
+          }
+        });
+
+        // Count meals by type - handle all meal transaction patterns
         const mealCounts = {
-          breakfast: meals?.filter(m => m.transaction_type.includes('breakfast')).length || 0,
-          lunch: meals?.filter(m => m.transaction_type.includes('lunch')).length || 0,
-          dinner: meals?.filter(m => m.transaction_type.includes('dinner')).length || 0
+          breakfast: meals?.filter(m => 
+            m.transaction_type === 'meal_breakfast' || 
+            m.transaction_type === 'meal_sat_breakfast' || 
+            m.transaction_type === 'meal_sun_breakfast'
+          ).length || 0,
+          lunch: meals?.filter(m => 
+            m.transaction_type === 'meal_lunch' || 
+            m.transaction_type === 'meal_fri_lunch' || 
+            m.transaction_type === 'meal_sat_lunch'
+          ).length || 0,
+          dinner: meals?.filter(m => 
+            m.transaction_type === 'meal_dinner' || 
+            m.transaction_type === 'meal_fri_dinner' || 
+            m.transaction_type === 'meal_sat_dinner'
+          ).length || 0
         };
-        
-        console.log('Meal counts calculated:', mealCounts);
+
+        console.log('Meal transactions found:', meals?.map(m => ({
+          type: m.transaction_type,
+          time: m.created_at
+        })));
+        console.log('Final meal counts:', mealCounts);
 
         // Get comparison data if available (drinks/headphones use 3 AM boundaries)
         let comparison = undefined;
