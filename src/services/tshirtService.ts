@@ -68,23 +68,19 @@ export class TShirtService {
       }
     }
 
-    // Priority 2: Parse individual style/size field names (current approach)
-    Object.entries(customFields).forEach(([key, value]) => {
-      if (typeof key === 'string' && this.isTShirtProduct(key) && value) {
-        // Skip if we already found this in order strings
-        const isDuplicate = purchaseDetails.some(detail => 
-          key.toLowerCase().includes(detail.size.toLowerCase()) && 
-          key.toLowerCase().includes(detail.type.toLowerCase().replace(/['']/g, ''))
-        );
-        
-        if (!isDuplicate) {
-          const { size, type } = this.parseTShirtProduct(key);
-          if (size) {
-            const quantity = this.extractQuantityFromValue(value);
-            // Add multiple entries for quantities > 1
-            for (let i = 0; i < quantity; i++) {
-              purchaseDetails.push({ product: key, size, type });
-            }
+    // Priority 2: Parse individual style/size field names with enhanced filtering
+    const tshirtFields = this.filterTShirtFields(customFields);
+    // console.log('T-Shirt Debug - Fields after filtering:', tshirtFields); // Enable for debugging
+    
+    Object.entries(tshirtFields).forEach(([key, value]) => {
+      if (typeof key === 'string' && value) {
+        const { size, type } = this.parseTShirtProduct(key);
+        if (size) {
+          const quantity = this.extractQuantityFromValue(value);
+          // console.log(`T-Shirt Debug - Processing field "${key}": size=${size}, type=${type}, quantity=${quantity}`); // Enable for debugging
+          // Add multiple entries for quantities > 1
+          for (let i = 0; i < quantity; i++) {
+            purchaseDetails.push({ product: key, size, type });
           }
         }
       }
@@ -257,6 +253,62 @@ export class TShirtService {
     return result;
   }
 
+  /**
+   * Filter and prioritize t-shirt fields to avoid duplicates
+   */
+  private static filterTShirtFields(customFields: any): Record<string, any> {
+    const tshirtFields: Record<string, any> = {};
+    const allKeys = Object.keys(customFields).filter(key => this.isTShirtProduct(key));
+    
+    // Group keys by specificity (more specific = higher priority)
+    const specificFields: string[] = [];
+    const genericFields: string[] = [];
+    
+    allKeys.forEach(key => {
+      const normalized = key.toLowerCase();
+      // Specific fields contain style/size information
+      if (this.isSpecificTShirtField(key)) {
+        specificFields.push(key);
+      } else {
+        // Generic fields like "merchandise.tshirt"
+        genericFields.push(key);
+      }
+    });
+    
+    // If we have specific fields, prioritize them over generic ones
+    if (specificFields.length > 0) {
+      specificFields.forEach(key => {
+        tshirtFields[key] = customFields[key];
+      });
+    } else {
+      // Only use generic fields if no specific ones exist
+      genericFields.forEach(key => {
+        tshirtFields[key] = customFields[key];
+      });
+    }
+    
+    return tshirtFields;
+  }
+
+  /**
+   * Check if a field name contains specific style/size information
+   */
+  private static isSpecificTShirtField(fieldName: string): boolean {
+    const normalized = fieldName.toLowerCase();
+    
+    // Contains style indicators
+    const hasStyleInfo = ["women's", "men's", "fitted", "v-neck", "vneck", "crew", "unisex"].some(style => 
+      normalized.includes(style)
+    );
+    
+    // Contains size indicators
+    const hasSizeInfo = ["small", "medium", "large", "extra", "xs", "sm", "med", "lg", "xl", "2x", "3x"].some(size => 
+      normalized.includes(size)
+    );
+    
+    return hasStyleInfo || hasSizeInfo;
+  }
+
   private static isTShirtProduct(productName: string): boolean {
     const normalized = productName.toLowerCase();
     
@@ -264,7 +316,8 @@ export class TShirtService {
     const tshirtKeywords = [
       't-shirt', 't shirt', 'tshirt',
       'souvenir', 'fitted', 'crew neck', 'v-neck',
-      'vneck', 'crewneck', 'unisex', "women's", "men's"
+      'vneck', 'crewneck', 'unisex', "women's", "men's",
+      'merchandise.tshirt' // Include merchandise fields
     ];
     
     return tshirtKeywords.some(keyword => normalized.includes(keyword));
