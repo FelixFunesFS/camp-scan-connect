@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones, Shield, ChevronDown, ChevronRight, Plane, Users, Expand, Minimize } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones, Shield, ChevronDown, ChevronRight, Caravan, Users, Expand, Minimize } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
@@ -249,7 +249,7 @@ const Reports = () => {
                 className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-lg border border-border/50"
               >
                 <div className="flex items-center gap-2">
-                  <Plane className="h-5 w-5 text-primary" />
+                  <Caravan className="h-5 w-5 text-primary" />
                   <h2 className="text-xl font-semibold">Arrivals by Ticket Type</h2>
                 </div>
                 {sections.arrivals ? 
