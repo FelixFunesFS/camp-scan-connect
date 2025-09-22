@@ -8,6 +8,7 @@ import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones, Shield, ChevronD
 import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
+import { TShirtTracker } from "@/components/reports/TShirtTracker";
 import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
 import { GateAccessReport } from "@/components/reports/GateAccessReport";
 import { CheckInStatusAndOnSite } from "@/components/reports/CheckInStatusAndOnSite";
@@ -322,6 +323,11 @@ const Reports = () => {
               {/* Equipment Services - positioned above Average Party Time and Peak Usage */}
               <HeadphonesTracker 
                 selectedPeriod={selectedPeriod}
+                refreshTrigger={refreshTrigger}
+              />
+              
+              {/* T-Shirt Distribution Tracking */}
+              <TShirtTracker 
                 refreshTrigger={refreshTrigger}
               />
               

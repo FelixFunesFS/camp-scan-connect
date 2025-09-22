@@ -134,8 +134,8 @@ export class TShirtService {
       const { data: transactions } = await supabase
         .from('station_transactions')
         .select('attendee_id, created_at, rfid_uid')
-        .eq('station_type', 'tshirts')
-        .eq('transaction_type', 'tshirt_pickup');
+        .eq('station_type', 'tshirts' as any)
+        .eq('transaction_type', 'tshirt_pickup' as any);
 
       const pickupMap = new Map<string, string>();
       transactions?.forEach(t => {
