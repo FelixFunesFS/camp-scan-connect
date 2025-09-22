@@ -61,26 +61,43 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
 
   const fetchStats = async () => {
     try {
-      // Get total attendees and activated count with arrival day info
+      // Get total attendees with RFID status - consider checked in if activated_at is set OR has active RFID
       const { data: attendees } = await supabase
         .from('attendees')
-        .select('id, activated_at, created_at, arrival_window, early_access')
+        .select(`
+          id, activated_at, created_at, arrival_window, early_access,
+          rfid_tags!inner(uid, status, activated_at)
+        `)
+        .eq('registration_status', 'registered')
+        .eq('rfid_tags.status', 'active');
+
+      const { data: allAttendees } = await supabase
+        .from('attendees')
+        .select('id, activated_at, arrival_window, early_access')
         .eq('registration_status', 'registered');
 
-      if (!attendees) return;
+      if (!allAttendees) return;
 
-        const totalExpected = attendees.length;
-        const checkedIn = attendees.filter(a => a.activated_at).length;
-        const pending = totalExpected - checkedIn;
-        const percentage = totalExpected > 0 ? Math.round((checkedIn / totalExpected) * 100) : 0;
+      // Count attendees who are checked in (have activated_at OR active RFID)
+      const attendeesWithActiveRfid = attendees?.map(a => a.id) || [];
+      const checkedInAttendees = allAttendees.filter(a => 
+        a.activated_at || attendeesWithActiveRfid.includes(a.id)
+      );
+
+      const totalExpected = allAttendees.length;
+      const checkedIn = checkedInAttendees.length;
+      const pending = totalExpected - checkedIn;
+      const percentage = totalExpected > 0 ? Math.round((checkedIn / totalExpected) * 100) : 0;
 
         // Get attendees checked in today (ET timezone) for peak hour calculation
         const todayBoundaries = getStandardTimeBoundaries('today');
-        const checkedInToday = attendees.filter(a => 
-          a.activated_at && 
-          new Date(a.activated_at) >= todayBoundaries.start && 
-          new Date(a.activated_at) < todayBoundaries.end
-        );
+        const checkedInToday = checkedInAttendees.filter(a => {
+          const activationDate = a.activated_at || 
+            attendees?.find(att => att.id === a.id)?.rfid_tags?.[0]?.activated_at;
+          return activationDate && 
+            new Date(activationDate) >= todayBoundaries.start && 
+            new Date(activationDate) < todayBoundaries.end;
+        });
 
         // Get pending staff assistance requests
         const { data: assistanceRequests } = await supabase
@@ -100,24 +117,48 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
         const selfActivated = activationData?.filter(a => a.activation_method === 'self').length || 0;
         const staffAssisted = activationData?.filter(a => a.activation_method === 'staff').length || 0;
 
-        // Calculate arrival day breakdown
-        const thursdayAttendees = attendees.filter(a => a.early_access === true || a.arrival_window === 'early');
-        const fridayAttendees = attendees.filter(a => a.early_access === false || a.arrival_window === 'standard');
+        // Calculate arrival day breakdown - Sept 25-26, 2025
+        const thursdayAttendees = allAttendees.filter(a => a.early_access === true || a.arrival_window === 'early');
+        const fridayAttendees = allAttendees.filter(a => a.early_access === false || a.arrival_window === 'standard');
+        
+        // Sept 25, 2025 boundaries (Thursday)
+        const sept25Start = new Date('2025-09-25T00:00:00-04:00'); // Sept 25 midnight ET
+        const sept25End = new Date('2025-09-26T00:00:00-04:00');   // Sept 26 midnight ET
+        
+        // Sept 26, 2025 boundaries (Friday) 
+        const sept26Start = new Date('2025-09-26T00:00:00-04:00'); // Sept 26 midnight ET
+        const sept26End = new Date('2025-09-27T00:00:00-04:00');   // Sept 27 midnight ET
         
         const thursdayExpected = thursdayAttendees.length;
-        const thursdayCheckedIn = thursdayAttendees.filter(a => a.activated_at).length;
+        const thursdayCheckedIn = thursdayAttendees.filter(a => {
+          const activationDate = a.activated_at || 
+            attendees?.find(att => att.id === a.id)?.rfid_tags?.[0]?.activated_at;
+          return activationDate && 
+            new Date(activationDate) >= sept25Start && 
+            new Date(activationDate) < sept25End;
+        }).length;
         const thursdayPercentage = thursdayExpected > 0 ? Math.round((thursdayCheckedIn / thursdayExpected) * 100) : 0;
         
         const fridayExpected = fridayAttendees.length;
-        const fridayCheckedIn = fridayAttendees.filter(a => a.activated_at).length; 
+        const fridayCheckedIn = fridayAttendees.filter(a => {
+          const activationDate = a.activated_at || 
+            attendees?.find(att => att.id === a.id)?.rfid_tags?.[0]?.activated_at;
+          return activationDate && 
+            new Date(activationDate) >= sept26Start && 
+            new Date(activationDate) < sept26End;
+        }).length;
         const fridayPercentage = fridayExpected > 0 ? Math.round((fridayCheckedIn / fridayExpected) * 100) : 0;
 
         // Find peak hour using ET timezone conversion
         const hourCounts = checkedInToday.reduce((acc, a) => {
-          // Convert UTC time to ET hour for accurate hour calculation
-          const utcDate = new Date(a.activated_at!);
-          const etHour = new Date(utcDate.toLocaleString("en-US", { timeZone: "America/New_York" })).getHours();
-          acc[etHour] = (acc[etHour] || 0) + 1;
+          const activationDate = a.activated_at || 
+            attendees?.find(att => att.id === a.id)?.rfid_tags?.[0]?.activated_at;
+          if (activationDate) {
+            // Convert UTC time to ET hour for accurate hour calculation
+            const utcDate = new Date(activationDate);
+            const etHour = new Date(utcDate.toLocaleString("en-US", { timeZone: "America/New_York" })).getHours();
+            acc[etHour] = (acc[etHour] || 0) + 1;
+          }
           return acc;
         }, {} as Record<number, number>);
 
@@ -175,7 +216,7 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Daily Check-in Overview
+          Event Check-in Overview
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -198,7 +239,7 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Daily Check-in Overview
+          Event Check-in Overview
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
