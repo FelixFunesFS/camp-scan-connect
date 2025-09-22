@@ -80,7 +80,9 @@ export class TShirtService {
       if (typeof key === 'string' && value) {
         const { size, type } = this.parseTShirtProduct(key);
         if (size) {
+          console.log(`T-Shirt Debug - BEFORE extractQuantityFromValue for field "${key}": value=${JSON.stringify(value)}, type=${typeof value}`);
           const quantity = this.extractQuantityFromValue(value);
+          console.log(`T-Shirt Debug - AFTER extractQuantityFromValue for field "${key}": returned quantity=${quantity}`);
           console.log(`T-Shirt Debug - Processing field "${key}": size=${size}, type=${type}, value=${JSON.stringify(value)}, quantity=${quantity}`); // Enhanced debug logging
           // Add multiple entries for quantities > 1
           for (let i = 0; i < quantity; i++) {
