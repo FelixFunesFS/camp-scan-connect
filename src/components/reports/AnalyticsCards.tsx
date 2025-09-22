@@ -366,51 +366,6 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
         </CardContent>
       </Card>
 
-      {/* Average Party Time */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <UITooltip>
-              <UITooltipTrigger asChild>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Average Party Time
-                </div>
-              </UITooltipTrigger>
-              <UITooltipContent>
-                <p>Average duration of headphone rentals</p>
-                <p className="text-xs text-muted-foreground mt-1">Calculated from checkout to check-in times</p>
-              </UITooltipContent>
-            </UITooltip>
-            {analytics.comparison && (
-              <div className="flex items-center gap-1 text-sm">
-                {analytics.comparison.partyTimeChange > 0 ? (
-                  <ArrowUp className="h-3 w-3 text-success" />
-                ) : analytics.comparison.partyTimeChange < 0 ? (
-                  <ArrowDown className="h-3 w-3 text-destructive" />
-                ) : null}
-                <span className={analytics.comparison.partyTimeChange > 0 ? 'text-success' : analytics.comparison.partyTimeChange < 0 ? 'text-destructive' : 'text-muted-foreground'}>
-                  {analytics.comparison.partyTimeChange > 0 ? '+' : ''}{Math.round(analytics.comparison.partyTimeChange)}%
-                </span>
-              </div>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center space-y-4">
-            <div className="text-4xl font-bold text-success">
-              {formatTime(analytics.averagePartyTimeMinutes)}
-            </div>
-            <div className="text-muted-foreground">
-              Based on headphone usage patterns
-            </div>
-            <Badge variant="outline" className="bg-success/10 text-success">
-              {analytics.averagePartyTimeMinutes > 120 ? 'Great Engagement!' : 'Building Up'}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Peak Usage Hours */}
       <Card>
         <CardHeader>
@@ -503,6 +458,51 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger }: AnalyticsCard
                 </UITooltipContent>
               </UITooltip>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Average Party Time */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <UITooltip>
+              <UITooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Average Party Time
+                </div>
+              </UITooltipTrigger>
+              <UITooltipContent>
+                <p>Average duration of headphone rentals</p>
+                <p className="text-xs text-muted-foreground mt-1">Calculated from checkout to check-in times</p>
+              </UITooltipContent>
+            </UITooltip>
+            {analytics.comparison && (
+              <div className="flex items-center gap-1 text-sm">
+                {analytics.comparison.partyTimeChange > 0 ? (
+                  <ArrowUp className="h-3 w-3 text-success" />
+                ) : analytics.comparison.partyTimeChange < 0 ? (
+                  <ArrowDown className="h-3 w-3 text-destructive" />
+                ) : null}
+                <span className={analytics.comparison.partyTimeChange > 0 ? 'text-success' : analytics.comparison.partyTimeChange < 0 ? 'text-destructive' : 'text-muted-foreground'}>
+                  {analytics.comparison.partyTimeChange > 0 ? '+' : ''}{Math.round(analytics.comparison.partyTimeChange)}%
+                </span>
+              </div>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center space-y-4">
+            <div className="text-4xl font-bold text-success">
+              {formatTime(analytics.averagePartyTimeMinutes)}
+            </div>
+            <div className="text-muted-foreground">
+              Based on headphone usage patterns
+            </div>
+            <Badge variant="outline" className="bg-success/10 text-success">
+              {analytics.averagePartyTimeMinutes > 120 ? 'Great Engagement!' : 'Building Up'}
+            </Badge>
           </div>
         </CardContent>
       </Card>
