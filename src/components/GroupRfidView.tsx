@@ -189,6 +189,7 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                     </div>
                   </Button>
                 </TableHead>
+                <TableHead>Parking</TableHead>
                 <TableHead>
                   <Button
                     variant="ghost"
@@ -225,7 +226,6 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                     </div>
                   </Button>
                 </TableHead>
-                
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -235,6 +235,11 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                 const isExpanded = expandedGroups.has(orderId);
                 const isComplete = progress.assigned === progress.total;
                 
+                // Extract parking assignment from the first attendee with parking data
+                const orderParkingAssignment = group.attendees.find(att => 
+                  att.parking_assignment && att.parking_assignment !== 'Not Assigned'
+                )?.parking_assignment || 'Not Assigned';
+
                 return (
                   <React.Fragment key={orderId}>
                     <TableRow 
@@ -253,6 +258,12 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                             {group.orderId || 'Individual Attendees'}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <ParkingBadge 
+                          parkingAssignment={orderParkingAssignment} 
+                          maxLength={20} 
+                        />
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
@@ -284,14 +295,13 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                     
                     {isExpanded && (
                       <TableRow>
-                        <TableCell colSpan={4} className="p-0">
+                        <TableCell colSpan={5} className="p-0">
                           <div className="p-4 bg-muted/20">
                             <Table>
                               <TableHeader>
                                  <TableRow>
                                    <TableHead>Name</TableHead>
                                    <TableHead>Phone</TableHead>
-                                   <TableHead>Parking</TableHead>
                                    <TableHead>Meal Plan</TableHead>
                                    <TableHead>Arrival</TableHead>
                                    <TableHead>RFID Assignment</TableHead>
@@ -314,12 +324,6 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                                     </TableCell>
                                      <TableCell className="text-sm">
                                        {attendee.phone ? formatPhoneNumber(attendee.phone) : 'N/A'}
-                                     </TableCell>
-                                     <TableCell>
-                                       <ParkingBadge 
-                                         parkingAssignment={attendee.parking_assignment} 
-                                         maxLength={15} 
-                                       />
                                      </TableCell>
                                      <TableCell>
                                        <Badge variant="outline" className="text-xs">

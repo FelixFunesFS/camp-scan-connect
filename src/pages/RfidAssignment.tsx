@@ -160,7 +160,9 @@ export const RfidAssignment = () => {
       if (error) throw error;
 
       const processedAttendees: AttendeeData[] = data.map(attendee => {
-        const rfidTag = (attendee.rfid_tags as any)?.[0];
+        // Fix RFID data extraction - handle both array and single object
+        const rfidTags = (attendee as any).rfid_tags;
+        const rfidTag = Array.isArray(rfidTags) ? rfidTags[0] : rfidTags;
         
         // Map arrival window to readable day
         const arrivalDay = (attendee as any).arrival_window === 'early' ? 'Thursday' : 'Friday';
