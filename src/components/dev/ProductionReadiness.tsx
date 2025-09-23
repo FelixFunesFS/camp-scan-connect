@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StaffGuideHub } from './StaffGuideHub';
-import { DuplicateCleanupManager } from './DuplicateCleanupManager';
+import { AbandonedRecordsCleanup } from './AbandonedRecordsManager';
 import { RegFoxComparisonPanel } from './RegFoxComparisonPanel';
 
 interface SystemHealthMetrics {
@@ -372,7 +372,7 @@ export function ProductionReadiness() {
         </TabsContent>
 
         <TabsContent value="cleanup" className="space-y-4">
-          <DuplicateCleanupManager />
+          <AbandonedRecordsCleanup />
         </TabsContent>
 
         <TabsContent value="regfox" className="space-y-4">

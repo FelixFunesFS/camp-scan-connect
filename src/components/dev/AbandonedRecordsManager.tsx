@@ -35,8 +35,8 @@ interface DuplicateGroup {
 }
 
 interface CleanupStats {
-  totalDuplicates: number;
-  duplicateGroups: number;
+  totalAbandonedRecords: number;
+  affectedPeople: number;
   excessRecords: number;
   rfidsAtRisk: number;
 }
@@ -52,7 +52,7 @@ interface CleanupResult {
   cleanupDetails?: any;
 }
 
-export function DuplicateCleanupManager() {
+export function AbandonedRecordsCleanup() {
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroup[]>([]);
   const [cleanupStats, setCleanupStats] = useState<CleanupStats | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -61,13 +61,13 @@ export function DuplicateCleanupManager() {
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
-    scanForDuplicates();
+    scanForAbandonedRecords();
   }, []);
 
-  const scanForDuplicates = async () => {
+  const scanForAbandonedRecords = async () => {
     setIsScanning(true);
     try {
-      // Find records and group by composite key (order_id + email + first_name + last_name)
+      // Find abandoned records (multiple submissions from same person)
       const { data: duplicateCheck } = await supabase
         .from('attendees')
         .select(`
@@ -106,13 +106,15 @@ export function DuplicateCleanupManager() {
           compositeGroups.get(compositeKey)!.push(record);
         });
 
-        // Filter to only groups with multiple records
-        const duplicates: DuplicateGroup[] = [];
+        // Filter to only groups with multiple records (abandoned submissions)
+        const abandonedRecords: DuplicateGroup[] = [];
         let totalExcess = 0;
         let totalRfidsAtRisk = 0;
 
         for (const [compositeKey, records] of compositeGroups) {
           if (records.length > 1) {
+            // Sort by created_at to identify most recent submission
+            records.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             // Check RFID assignments for this group
             const { data: rfidData } = await supabase
               .from('rfid_tags')
@@ -133,7 +135,7 @@ export function DuplicateCleanupManager() {
 
             const uniqueRegfoxIds = [...new Set(records.map(r => r.regfox_id).filter(Boolean))];
 
-            duplicates.push({
+            abandonedRecords.push({
               composite_key: compositeKey,
               order_id: records[0].order_id || 'N/A',
               count: records.length,
@@ -147,10 +149,10 @@ export function DuplicateCleanupManager() {
           }
         }
 
-        setDuplicateGroups(duplicates);
+        setDuplicateGroups(abandonedRecords);
         setCleanupStats({
-          totalDuplicates: duplicateCheck.length,
-          duplicateGroups: duplicates.length,
+          totalAbandonedRecords: duplicateCheck.length,
+          affectedPeople: abandonedRecords.length,
           excessRecords: totalExcess,
           rfidsAtRisk: totalRfidsAtRisk
         });
@@ -203,7 +205,7 @@ export function DuplicateCleanupManager() {
           { id: toastId, duration: 6000 }
         );
         // Rescan for duplicates after successful cleanup
-        await scanForDuplicates();
+        await scanForAbandonedRecords();
       } else {
         const errorMessages = result.errors_encountered?.join(', ') || 'Unknown errors occurred';
         toast.error(`Cleanup failed: ${errorMessages}`, { id: toastId });
@@ -229,7 +231,7 @@ export function DuplicateCleanupManager() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Scanning for duplicate records...</p>
+          <p>Scanning for abandoned form submissions...</p>
         </div>
       </div>
     );
@@ -239,11 +241,11 @@ export function DuplicateCleanupManager() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-semibold">Database Cleanup Manager</h3>
-          <p className="text-sm text-muted-foreground">Identify and safely remove duplicate attendee records</p>
+          <h3 className="text-xl font-semibold">Abandoned Records Cleanup</h3>
+          <p className="text-sm text-muted-foreground">Identify and safely remove abandoned form submissions</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={scanForDuplicates} variant="outline">
+          <Button onClick={scanForAbandonedRecords} variant="outline">
             <Eye className="h-4 w-4 mr-2" />
             Rescan
           </Button>
@@ -263,29 +265,29 @@ export function DuplicateCleanupManager() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Records</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Records</CardTitle>
               <Database className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{cleanupStats.totalDuplicates}</div>
+              <div className="text-2xl font-bold">{cleanupStats.totalAbandonedRecords}</div>
               <p className="text-xs text-muted-foreground">In database</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Duplicate Groups</CardTitle>
+              <CardTitle className="text-sm font-medium">People with Abandoned Records</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{cleanupStats.duplicateGroups}</div>
-              <p className="text-xs text-muted-foreground">People with duplicates</p>
+              <div className="text-2xl font-bold text-orange-600">{cleanupStats.affectedPeople}</div>
+              <p className="text-xs text-muted-foreground">People with abandoned records</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Excess Records</CardTitle>
+              <CardTitle className="text-sm font-medium">Abandoned Submissions</CardTitle>
               <Trash2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -316,7 +318,7 @@ export function DuplicateCleanupManager() {
               Cleanup Required
             </CardTitle>
             <CardDescription>
-              {cleanupStats.duplicateGroups} attendees have duplicate records that need cleanup
+              {cleanupStats.affectedPeople} attendees have duplicate records that need cleanup
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -349,12 +351,12 @@ export function DuplicateCleanupManager() {
                 ) : (
                   <>
                     <Trash2 className="h-4 w-4" />
-                    Clean Up {cleanupStats.excessRecords} Duplicates
+                    Clean Up {cleanupStats.excessRecords} Abandoned Records
                   </>
                 )}
               </Button>
               {cleanupResult && !cleanupResult.success && (
-                <Button variant="outline" onClick={scanForDuplicates}>
+                <Button variant="outline" onClick={scanForAbandonedRecords}>
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Retry Scan
                 </Button>
@@ -421,9 +423,9 @@ export function DuplicateCleanupManager() {
       {showPreview && duplicateGroups.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Duplicate Groups Preview</CardTitle>
+            <CardTitle>Abandoned Form Submissions Preview</CardTitle>
             <CardDescription>
-              Showing {duplicateGroups.length} groups with duplicate records
+              Showing {duplicateGroups.length} people with multiple submissions
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -440,7 +442,7 @@ export function DuplicateCleanupManager() {
                         RegFox IDs: {group.regfox_ids.join(', ')}
                       </p>
                     </div>
-                    <Badge variant="destructive">{group.count} copies</Badge>
+                    <Badge variant="destructive">{group.count} submissions</Badge>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
                     {group.records.map((record, idx) => (
@@ -485,9 +487,9 @@ export function DuplicateCleanupManager() {
           <CardContent className="pt-6">
             <div className="text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Database is Clean</h3>
+              <h3 className="text-lg font-semibold mb-2">No Abandoned Records Found</h3>
               <p className="text-muted-foreground">
-                No duplicate records found. Your database is optimized and ready for operations.
+                All attendee records appear to be unique form submissions. Your database is optimized.
               </p>
             </div>
           </CardContent>
