@@ -136,6 +136,7 @@ export type Database = {
           notes: string | null
           order_id: string | null
           override_early_checkin: boolean | null
+          parking_assignment: string | null
           phone: string | null
           postal_code: string | null
           regfox_id: string | null
@@ -175,6 +176,7 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           override_early_checkin?: boolean | null
+          parking_assignment?: string | null
           phone?: string | null
           postal_code?: string | null
           regfox_id?: string | null
@@ -214,6 +216,7 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           override_early_checkin?: boolean | null
+          parking_assignment?: string | null
           phone?: string | null
           postal_code?: string | null
           regfox_id?: string | null
