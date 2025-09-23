@@ -1,18 +1,18 @@
 /**
- * Utility functions for parking assignment handling
+ * Utility functions for site location assignment handling
  */
 
-export interface ParkingAssignment {
+export interface SiteLocationAssignment {
   type: string;
   assignment: string;
   display: string;
 }
 
 /**
- * Parse parking assignment string into structured data
+ * Parse site location assignment string into structured data
  */
-export function parseParkingAssignment(parkingString: string | null): ParkingAssignment {
-  if (!parkingString || parkingString === 'Not Assigned' || parkingString.trim() === '') {
+export function parseSiteLocationAssignment(siteLocationString: string | null): SiteLocationAssignment {
+  if (!siteLocationString || siteLocationString === 'Not Assigned' || siteLocationString.trim() === '') {
     return {
       type: 'none',
       assignment: 'Not Assigned',
@@ -20,25 +20,40 @@ export function parseParkingAssignment(parkingString: string | null): ParkingAss
     };
   }
 
+  // Handle Day Pass Only attendees
+  if (siteLocationString === 'Day Pass Only') {
+    return {
+      type: 'day-pass-only',
+      assignment: 'Day Pass Only',
+      display: 'Day Pass Only'
+    };
+  }
+
   // Extract type and assignment from strings like "Premium Tent: greenSpaceForTent42"
-  const parts = parkingString.split(': ');
+  const parts = siteLocationString.split(': ');
   if (parts.length < 2) {
     return {
       type: 'unknown',
-      assignment: parkingString,
-      display: parkingString
+      assignment: siteLocationString,
+      display: siteLocationString
     };
   }
 
   const type = parts[0].toLowerCase();
   const assignment = parts.slice(1).join(': ');
 
-  // Determine parking type category with enhanced types
+  // Determine site location type category with enhanced types
   let category = 'unknown';
-  if (type.includes('premium tent')) {
+  if (type.includes('day pass only')) {
+    category = 'day-pass-only';
+  } else if (type.includes('premium tent')) {
     category = 'premium-tent';
   } else if (type.includes('premium rv')) {
     category = 'premium-rv';
+  } else if (type.includes('premium van/rooftop')) {
+    category = 'premium-van-rooftop';
+  } else if (type.includes('tailgate van/rooftop')) {
+    category = 'tailgate-van-rooftop';
   } else if (type.includes('tailgate rv')) {
     category = 'tailgate-rv';
   } else if (type.includes('tailgate tent site')) {
@@ -67,14 +82,20 @@ export function parseParkingAssignment(parkingString: string | null): ParkingAss
 }
 
 /**
- * Get badge variant for parking assignment type
+ * Get badge variant for site location assignment type
  */
-export function getParkingBadgeVariant(parkingType: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-  switch (parkingType) {
+export function getSiteLocationBadgeVariant(siteLocationType: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+  switch (siteLocationType) {
+    case 'day-pass-only':
+      return 'secondary'; // Neutral gray for day pass
     case 'premium-tent':
       return 'default'; // Teal
     case 'premium-rv':
       return 'secondary'; // Blue
+    case 'premium-van-rooftop':
+      return 'default'; // Teal variant
+    case 'tailgate-van-rooftop':
+      return 'destructive'; // Orange variant
     case 'tailgate-rv':
       return 'outline'; // Green
     case 'tailgate-tent':
@@ -101,14 +122,20 @@ export function getParkingBadgeVariant(parkingType: string): 'default' | 'second
 }
 
 /**
- * Get display color class for parking assignment type
+ * Get display color class for site location assignment type
  */
-export function getParkingColorClass(parkingType: string): string {
-  switch (parkingType) {
+export function getSiteLocationColorClass(siteLocationType: string): string {
+  switch (siteLocationType) {
+    case 'day-pass-only':
+      return 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200';
     case 'premium-tent':
       return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200';
     case 'premium-rv':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+    case 'premium-van-rooftop':
+      return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200';
+    case 'tailgate-van-rooftop':
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
     case 'tailgate-rv':
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
     case 'tailgate-tent':
@@ -136,13 +163,17 @@ export function getParkingColorClass(parkingType: string): string {
 }
 
 /**
- * Format parking assignment for display with proper truncation
+ * Format site location assignment for display with proper truncation
  */
-export function formatParkingForDisplay(parkingString: string | null, maxLength: number = 20): string {
-  const parsed = parseParkingAssignment(parkingString);
+export function formatSiteLocationForDisplay(siteLocationString: string | null, maxLength: number = 20): string {
+  const parsed = parseSiteLocationAssignment(siteLocationString);
   
   if (parsed.type === 'none') {
     return 'Not Assigned';
+  }
+
+  if (parsed.type === 'day-pass-only') {
+    return 'Day Pass Only';
   }
 
   // For display, show just the assignment part if it's long

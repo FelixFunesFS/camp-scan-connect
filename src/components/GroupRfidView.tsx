@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
-import { ParkingBadge } from "@/components/shared/ParkingBadge";
+import { SiteLocationBadge } from "@/components/shared/SiteLocationBadge";
 import { AttendeeData } from "@/pages/RfidAssignment";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { getOrderGroupBackgroundColor, groupAttendeesByOrder } from "@/utils/orderGroupUtils";
@@ -189,7 +189,7 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                     </div>
                   </Button>
                 </TableHead>
-                <TableHead>Parking</TableHead>
+                <TableHead>Site Location</TableHead>
                 <TableHead>
                   <Button
                     variant="ghost"
@@ -235,8 +235,8 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                 const isExpanded = expandedGroups.has(orderId);
                 const isComplete = progress.assigned === progress.total;
                 
-                // Extract parking assignment from the first attendee with parking data
-                const orderParkingAssignment = group.attendees.find(att => 
+                // Extract site location assignment from the first attendee with site location data
+                const orderSiteLocationAssignment = group.attendees.find(att => 
                   att.parking_assignment && att.parking_assignment !== 'Not Assigned'
                 )?.parking_assignment || 'Not Assigned';
 
@@ -260,9 +260,9 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <ParkingBadge 
-                          parkingAssignment={orderParkingAssignment} 
-                          maxLength={20} 
+                        <SiteLocationBadge 
+                          siteLocationAssignment={orderSiteLocationAssignment} 
+                          maxLength={20}
                         />
                       </TableCell>
                       <TableCell>

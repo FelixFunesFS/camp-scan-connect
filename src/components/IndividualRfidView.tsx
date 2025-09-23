@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
-import { ParkingBadge } from "@/components/shared/ParkingBadge";
+import { SiteLocationBadge } from "@/components/shared/SiteLocationBadge";
 
 interface AttendeeWithRfid {
   id: string;
@@ -202,7 +202,7 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                      </div>
                    </Button>
                  </TableHead>
-                 <TableHead>Parking</TableHead>
+                 <TableHead>Site Location</TableHead>
                  <TableHead>
                    <Button
                      variant="ghost"
@@ -259,9 +259,9 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                      {attendee.phone || 'N/A'}
                    </TableCell>
                    <TableCell>
-                     <ParkingBadge 
-                       parkingAssignment={attendee.parking_assignment} 
-                       maxLength={18} 
+                      <SiteLocationBadge 
+                        siteLocationAssignment={attendee.parking_assignment} 
+                        maxLength={18}
                      />
                    </TableCell>
                    <TableCell>

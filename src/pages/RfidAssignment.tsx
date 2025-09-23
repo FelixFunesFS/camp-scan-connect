@@ -175,30 +175,8 @@ export const RfidAssignment = () => {
         const overallStatus = (attendee as any).activated_at && rfidTag?.activated_at ? 'activated' :
                              rfidTag?.uid ? 'assigned' : 'unassigned';
         
-        // Extract parking assignment from custom_fields
-        const customFields = (attendee as any).custom_fields || {};
-        let parkingAssignment = 'Not Assigned';
-        
-        // Check parking fields in priority order
-        const parkingFields = [
-          { field: 'Which Premium Tent space do you prefer? ** Note your assigned space may change. Check Final confirmation sent week of campout for confirmation.', type: 'Premium Tent' },
-          { field: 'Which Premium RV space do you prefer?  ** Note your assigned space may change. Check Final confirmation sent week of campout for confirmation.', type: 'Premium RV' },
-          { field: 'Winnebago Lot- Which Premium RV Space do you prefer?  **Note your assigned space may change. Check Final confirmation sent week of campout for confirmation.', type: 'Premium RV (Winnebago)' },
-          { field: 'Which Tailgate RV space do you prefer?  ** Note your assigned space may change. Check Final confirmation sent week of campout for confirmation.', type: 'Tailgate RV' },
-          { field: 'Which Tailgate Tent space do you prefer? ** Note your assigned space may change. Check Final confirmation sent week of campout for confirmation.', type: 'Tailgate Tent' },
-          { field: 'Which Paved Tailgate Camping Spot do you prefer? **Note your assigned space may change. Check Final confirmation sent week of campout for confirmation.*', type: 'Paved Tailgate' },
-          { field: 'Which Glamping Tent- Double Queen space do you prefer?  ** Note your assigned space may change. Check Final confirmation sent week of campout for confirmation.', type: 'Glamping (Double Queen)' },
-          { field: 'Which Glamping Tent- King & Bunks space do you prefer?   ** Note your assigned space may change. Check Final confirmation sent week of campout for confirmation.', type: 'Glamping (King & Bunks)' },
-          { field: 'Preferred Cabin #. Actual assigned cabin may change.', type: 'Cabin' }
-        ];
-        
-        for (const { field, type } of parkingFields) {
-          const value = customFields[field];
-          if (value && typeof value === 'string' && value.trim() !== '') {
-            parkingAssignment = type.includes('Cabin') ? `${type}: #${value}` : `${type}: ${value}`;
-            break;
-          }
-        }
+        // Extract site location assignment from database
+        const siteLocationAssignment = (attendee as any).parking_assignment || 'Not Assigned';
         
         return {
           id: attendee.id,
@@ -212,7 +190,7 @@ export const RfidAssignment = () => {
           arrival_window: (attendee as any).arrival_window,
           arrival_day: arrivalDay,
           formatted_meal_plan: formattedMealPlan,
-          parking_assignment: parkingAssignment,
+          parking_assignment: siteLocationAssignment,
           waiver_signed: (attendee as any).waiver_signed,
           activated_at: (attendee as any).activated_at,
           is_veteran: (attendee as any).is_veteran,
