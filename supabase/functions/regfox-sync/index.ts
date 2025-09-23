@@ -764,17 +764,39 @@ serve(async (req) => {
             }
           }
           
-          // Map RegFox status to our enum
+          // Enhanced RegFox status mapping with filtering
           const mapRegistrationStatus = (status: string) => {
             const statusLower = status.toLowerCase();
+            
+            // Explicit handling for statuses that should NOT be synced
+            if (statusLower.includes('abandon')) return 'abandoned';
+            if (statusLower.includes('transfer')) return 'transferred';
+            if (statusLower.includes('incomplete')) return 'incomplete';
+            if (statusLower.includes('draft')) return 'draft';
+            
+            // Statuses for staff hub visibility but not RFID assignment
             if (statusLower.includes('cancel')) return 'cancelled';
             if (statusLower.includes('refund')) return 'refunded';
             if (statusLower.includes('pending')) return 'pending';
             if (statusLower.includes('waitlist')) return 'waitlisted';
-            return 'registered';
+            
+            // Only registered attendees get RFID assignment
+            if (statusLower.includes('complete') || statusLower.includes('paid') || statusLower === 'registered') {
+              return 'registered';
+            }
+            
+            // Unknown status - log and skip
+            console.log(`Unknown RegFox status: "${status}" for attendee ${regfoxAttendee.id} - SKIPPING`);
+            return 'unknown';
           };
           
           const registrationStatus = mapRegistrationStatus(regfoxAttendee.status);
+          
+          // CRITICAL: Only sync registered attendees for RFID assignment
+          if (registrationStatus !== 'registered') {
+            console.log(`Skipping attendee ${regfoxAttendee.id} with status: ${regfoxAttendee.status} -> ${registrationStatus} (not registered)`);
+            continue; // Skip non-registered attendees entirely
+          }
           
           // Determine ticket type based on accommodation and features
           const ticketType = determineTicketType(fields);
@@ -792,12 +814,39 @@ serve(async (req) => {
             console.log(`Sync - RegFox ID ${regfoxAttendee.id}: T-shirt size detected: ${finalTShirtSize} (from ${tShirtData.products.length > 0 ? 'product purchases' : 'legacy field'})`);
           }
 
-          // Check if attendee already exists by regfox_id
-          const { data: existingAttendee } = await supabase
+          // Enhanced duplicate detection using multiple criteria
+          let existingAttendee = null;
+          
+          // Primary check: Look for existing attendee by regfox_id
+          const { data: primaryMatch } = await supabase
             .from('attendees')
-            .select('id, updated_at')
+            .select('id, updated_at, regfox_id')
             .eq('regfox_id', regfoxAttendee.id)
+            .eq('registration_status', 'registered')
             .single();
+          
+          if (primaryMatch) {
+            existingAttendee = primaryMatch;
+          } else {
+            // Secondary check: Look for same person by order_id + name + email
+            const orderId = regfoxAttendee.orderId || regfoxAttendee.displayId;
+            if (orderId && firstName && lastName && email) {
+              const { data: secondaryMatch } = await supabase
+                .from('attendees')
+                .select('id, updated_at, regfox_id')
+                .eq('order_id', orderId)
+                .eq('first_name', firstName)
+                .eq('last_name', lastName)
+                .eq('email', email)
+                .eq('registration_status', 'registered')
+                .single();
+              
+              if (secondaryMatch) {
+                existingAttendee = secondaryMatch;
+                console.log(`Duplicate detected: RegFox ID change from ${secondaryMatch.regfox_id} to ${regfoxAttendee.id} for ${firstName} ${lastName}`);
+              }
+            }
+          }
 
           const attendeeData = {
             regfox_id: regfoxAttendee.id,
@@ -853,12 +902,8 @@ serve(async (req) => {
             attendeeData.ticket_type = 'dry_site';
           }
           
-          // Validate registration_status against enum values
-          const validRegistrationStatuses = ['registered', 'cancelled', 'refunded', 'pending', 'waitlisted'];
-          if (!validRegistrationStatuses.includes(attendeeData.registration_status)) {
-            console.error(`Sync - Invalid registration_status detected: "${attendeeData.registration_status}". Available statuses: ${validRegistrationStatuses.join(', ')}`);
-            attendeeData.registration_status = 'registered';
-          }
+          // At this point, we only process 'registered' attendees
+          // So no need to validate or default registration_status
 
           if (existingAttendee) {
             // Update existing attendee
