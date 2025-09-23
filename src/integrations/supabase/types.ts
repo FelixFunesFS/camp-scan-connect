@@ -649,6 +649,10 @@ export type Database = {
           total_records_before: number
         }[]
       }
+      upsert_attendee_safe: {
+        Args: { p_data: Json; p_regfox_id: string }
+        Returns: string
+      }
     }
     Enums: {
       registration_status:
