@@ -906,7 +906,6 @@ serve(async (req) => {
             .from('attendees')
             .select('id, updated_at, regfox_id')
             .eq('regfox_id', regfoxAttendee.id)
-            .eq('registration_status', 'registered')
             .single();
           
           if (primaryMatch) {
@@ -922,7 +921,6 @@ serve(async (req) => {
                 .eq('first_name', firstName)
                 .eq('last_name', lastName)
                 .eq('email', email)
-                .eq('registration_status', 'registered')
                 .single();
               
               if (secondaryMatch) {
