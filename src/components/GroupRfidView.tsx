@@ -237,8 +237,8 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                 
                 // Extract site location assignment from the first attendee with site location data
                 const orderSiteLocationAssignment = group.attendees.find(att => 
-                  att.parking_assignment && att.parking_assignment !== 'Not Assigned'
-                )?.parking_assignment || 'Not Assigned';
+                  att.site_location_assignment && att.site_location_assignment !== 'Not Assigned'
+                )?.site_location_assignment || 'Not Assigned';
 
                 return (
                   <React.Fragment key={orderId}>

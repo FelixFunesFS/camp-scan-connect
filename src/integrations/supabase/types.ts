@@ -136,11 +136,11 @@ export type Database = {
           notes: string | null
           order_id: string | null
           override_early_checkin: boolean | null
-          parking_assignment: string | null
           phone: string | null
           postal_code: string | null
           regfox_id: string | null
           registration_status: Database["public"]["Enums"]["registration_status"]
+          site_location_assignment: string | null
           special_accommodations: string | null
           state: string | null
           street_address: string | null
@@ -176,11 +176,11 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           override_early_checkin?: boolean | null
-          parking_assignment?: string | null
           phone?: string | null
           postal_code?: string | null
           regfox_id?: string | null
           registration_status?: Database["public"]["Enums"]["registration_status"]
+          site_location_assignment?: string | null
           special_accommodations?: string | null
           state?: string | null
           street_address?: string | null
@@ -216,11 +216,11 @@ export type Database = {
           notes?: string | null
           order_id?: string | null
           override_early_checkin?: boolean | null
-          parking_assignment?: string | null
           phone?: string | null
           postal_code?: string | null
           regfox_id?: string | null
           registration_status?: Database["public"]["Enums"]["registration_status"]
+          site_location_assignment?: string | null
           special_accommodations?: string | null
           state?: string | null
           street_address?: string | null

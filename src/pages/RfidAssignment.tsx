@@ -57,7 +57,7 @@ export interface AttendeeData {
   arrival_window?: string;
   arrival_day?: string; // Computed from arrival_window
   formatted_meal_plan?: string; // Computed display value
-  parking_assignment?: string; // Extracted from custom_fields
+  site_location_assignment?: string; // Extracted from custom_fields
   rfid_uid?: string;
   rfid_status?: string;
   registration_status?: string;
@@ -176,7 +176,7 @@ export const RfidAssignment = () => {
                              rfidTag?.uid ? 'assigned' : 'unassigned';
         
         // Extract site location assignment from database
-        const siteLocationAssignment = (attendee as any).parking_assignment || 'Not Assigned';
+        const siteLocationAssignment = (attendee as any).site_location_assignment || 'Not Assigned';
         
         return {
           id: attendee.id,
@@ -190,7 +190,7 @@ export const RfidAssignment = () => {
           arrival_window: (attendee as any).arrival_window,
           arrival_day: arrivalDay,
           formatted_meal_plan: formattedMealPlan,
-          parking_assignment: siteLocationAssignment,
+          site_location_assignment: siteLocationAssignment,
           waiver_signed: (attendee as any).waiver_signed,
           activated_at: (attendee as any).activated_at,
           is_veteran: (attendee as any).is_veteran,

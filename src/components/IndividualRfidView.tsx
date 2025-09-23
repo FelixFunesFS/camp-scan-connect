@@ -28,7 +28,7 @@ interface AttendeeWithRfid {
   waiver_signed?: boolean;
   rfid_uid?: string;
   rfid_status: string;
-  parking_assignment?: string;
+  site_location_assignment?: string;
   has_headphones?: boolean;
   headphones_status?: 'checked_out' | 'checked_in' | 'never_used';
   headphones_duration?: number;
@@ -259,10 +259,10 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                      {attendee.phone || 'N/A'}
                    </TableCell>
                    <TableCell>
-                      <SiteLocationBadge 
-                        siteLocationAssignment={attendee.parking_assignment} 
-                        maxLength={18}
-                     />
+                       <SiteLocationBadge 
+                         siteLocationAssignment={attendee.site_location_assignment} 
+                         maxLength={18}
+                      />
                    </TableCell>
                    <TableCell>
                      <Badge 

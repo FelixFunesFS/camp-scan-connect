@@ -163,7 +163,7 @@ export function getSiteLocationColorClass(siteLocationType: string): string {
 }
 
 /**
- * Format site location assignment for display with proper truncation
+ * Format site location assignment for display with proper truncation and formatting
  */
 export function formatSiteLocationForDisplay(siteLocationString: string | null, maxLength: number = 20): string {
   const parsed = parseSiteLocationAssignment(siteLocationString);
@@ -176,10 +176,69 @@ export function formatSiteLocationForDisplay(siteLocationString: string | null, 
     return 'Day Pass Only';
   }
 
-  // For display, show just the assignment part if it's long
-  if (parsed.assignment.length > maxLength) {
-    return parsed.assignment.substring(0, maxLength) + '...';
+  // Format the assignment text with proper capitalization and spacing
+  let formatted = formatAssignmentText(parsed.assignment);
+  
+  // For display, truncate if it's too long
+  if (formatted.length > maxLength) {
+    return formatted.substring(0, maxLength) + '...';
   }
 
-  return parsed.assignment;
+  return formatted;
+}
+
+/**
+ * Helper function to format assignment text with proper capitalization and spacing
+ */
+function formatAssignmentText(assignment: string): string {
+  // Handle cabin assignments like "#cabin5" -> "Cabin 5"
+  if (assignment.match(/^#?cabin\d+$/i)) {
+    const cabinNum = assignment.replace(/^#?cabin/i, '');
+    return `Cabin ${cabinNum}`;
+  }
+  
+  // Handle pad assignments like "pad02lakefront30Amp" -> "Pad 02 Lakefront 30 Amp"
+  if (assignment.match(/^pad\d+/i)) {
+    return assignment
+      .replace(/^pad(\d+)/i, 'Pad $1 ')
+      .replace(/lakefront/i, 'Lakefront ')
+      .replace(/(\d+)amp/i, '$1 Amp')
+      .replace(/50amp/i, '50 Amp')
+      .replace(/30amp/i, '30 Amp')
+      .trim();
+  }
+  
+  // Handle space numbers like "27" -> "Space 27"
+  if (assignment.match(/^\d+$/)) {
+    return `Space ${assignment}`;
+  }
+  
+  // Handle green space tent assignments like "greenSpaceForTent42" -> "Green Space Tent 42"
+  if (assignment.match(/^greenSpaceForTent\d+$/i)) {
+    const tentNum = assignment.replace(/^greenSpaceForTent/i, '');
+    return `Green Space Tent ${tentNum}`;
+  }
+  
+  // Handle camelCase and technical field names
+  if (assignment.match(/[a-z][A-Z]/)) {
+    return assignment
+      // Insert spaces before capital letters
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      // Capitalize first letter of each word
+      .replace(/\b\w/g, l => l.toUpperCase())
+      // Fix common abbreviations
+      .replace(/\bRv\b/g, 'RV')
+      .replace(/\bAmp\b/g, 'Amp')
+      .replace(/(\d+)\s*Amp/g, '$1 Amp');
+  }
+  
+  // Handle waitlist entries
+  if (assignment.toLowerCase().includes('waitlist')) {
+    return 'Waitlist';
+  }
+  
+  // Default: just capitalize first letter and clean up
+  return assignment.charAt(0).toUpperCase() + assignment.slice(1)
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b\w/g, l => l.toUpperCase());
 }
