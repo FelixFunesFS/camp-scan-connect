@@ -638,6 +638,17 @@ export type Database = {
         Args: { p_sync_id: string }
         Returns: boolean
       }
+      safe_cleanup_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cleanup_details: Json
+          cleanup_successful: boolean
+          duplicates_removed: number
+          errors_encountered: string[]
+          total_records_after: number
+          total_records_before: number
+        }[]
+      }
     }
     Enums: {
       registration_status:

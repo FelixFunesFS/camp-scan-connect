@@ -44,6 +44,9 @@ interface CleanupResult {
   preservedCount: number;
   rfidsConsolidated: number;
   errors: string[];
+  beforeCount?: number;
+  afterCount?: number;
+  cleanupDetails?: any;
 }
 
 export function DuplicateCleanupManager() {
@@ -142,103 +145,61 @@ export function DuplicateCleanupManager() {
     }
   };
 
+  // Enhanced safe cleanup using database function
   const performCleanup = async () => {
     if (!cleanupStats || cleanupStats.excessRecords === 0) return;
 
     setIsCleaningUp(true);
-    let removedCount = 0;
-    let preservedCount = 0;
-    let rfidsConsolidated = 0;
-    const errors: string[] = [];
+    const toastId = toast.loading("Safely cleaning up duplicate records...");
 
     try {
-      // Process each duplicate group
-      for (const group of duplicateGroups) {
-        try {
-          // Determine canonical record (oldest created_at, newest updated_at preference)
-          const sortedRecords = [...group.records].sort((a, b) => {
-            const dateA = new Date(a.created_at).getTime();
-            const dateB = new Date(b.created_at).getTime();
-            if (dateA !== dateB) return dateA - dateB; // Oldest first
-            
-            // If same created_at, prefer newest updated_at
-            const updatedA = new Date(a.updated_at).getTime();
-            const updatedB = new Date(b.updated_at).getTime();
-            return updatedB - updatedA;
-          });
+      // Use the safe cleanup database function
+      const { data, error } = await supabase
+        .rpc('safe_cleanup_duplicates');
 
-          const canonicalRecord = sortedRecords[0];
-          const duplicateRecords = sortedRecords.slice(1);
-
-          // Handle RFID consolidation
-          for (const duplicate of duplicateRecords) {
-            if (duplicate.has_rfid) {
-              // Reassign RFID to canonical record
-              const { error: rfidError } = await supabase
-                .from('rfid_tags')
-                .update({ attendee_id: canonicalRecord.id })
-                .eq('attendee_id', duplicate.id);
-
-              if (rfidError) {
-                errors.push(`Failed to reassign RFID ${duplicate.rfid_uid} for ${group.attendee_name}`);
-              } else {
-                rfidsConsolidated++;
-              }
-            }
-          }
-
-          // Update station_transactions to point to canonical record
-          for (const duplicate of duplicateRecords) {
-            await supabase
-              .from('station_transactions')
-              .update({ attendee_id: canonicalRecord.id })
-              .eq('attendee_id', duplicate.id);
-          }
-
-          // Remove duplicate attendee records
-          const duplicateIds = duplicateRecords.map(d => d.id);
-          const { error: deleteError } = await supabase
-            .from('attendees')
-            .delete()
-            .in('id', duplicateIds);
-
-          if (deleteError) {
-            errors.push(`Failed to remove duplicates for ${group.attendee_name}: ${deleteError.message}`);
-          } else {
-            removedCount += duplicateIds.length;
-            preservedCount += 1;
-          }
-        } catch (error) {
-          errors.push(`Error processing ${group.attendee_name}: ${(error as Error).message}`);
-        }
+      if (error) {
+        throw new Error(`Cleanup function failed: ${error.message}`);
       }
 
-      const result: CleanupResult = {
-        success: errors.length === 0,
-        removedCount,
-        preservedCount,
-        rfidsConsolidated,
-        errors
-      };
+      if (!data || data.length === 0) {
+        throw new Error("No response from cleanup function");
+      }
 
-      setCleanupResult(result);
+      const result = data[0];
 
-      if (result.success) {
-        toast.success(`Cleanup completed: Removed ${removedCount} duplicate records, consolidated ${rfidsConsolidated} RFIDs`);
-        // Rescan after cleanup
+      setCleanupResult({
+        success: result.cleanup_successful,
+        removedCount: result.duplicates_removed,
+        preservedCount: result.total_records_after,
+        rfidsConsolidated: 0, // Will be enhanced in future versions
+        errors: result.errors_encountered || [],
+        beforeCount: result.total_records_before,
+        afterCount: result.total_records_after,
+        cleanupDetails: result.cleanup_details
+      });
+
+      if (result.cleanup_successful) {
+        toast.success(
+          `Successfully cleaned up ${result.duplicates_removed} duplicate records. 
+           Database reduced from ${result.total_records_before} to ${result.total_records_after} attendees.`, 
+          { id: toastId, duration: 6000 }
+        );
+        // Rescan for duplicates after successful cleanup
         await scanForDuplicates();
       } else {
-        toast.error(`Cleanup completed with ${errors.length} errors`);
+        const errorMessages = result.errors_encountered?.join(', ') || 'Unknown errors occurred';
+        toast.error(`Cleanup failed: ${errorMessages}`, { id: toastId });
       }
+
     } catch (error) {
-      console.error('Cleanup failed:', error);
-      toast.error('Cleanup operation failed');
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(`Cleanup failed: ${errorMessage}`, { id: toastId });
       setCleanupResult({
         success: false,
-        removedCount,
-        preservedCount,
-        rfidsConsolidated,
-        errors: [...errors, (error as Error).message]
+        removedCount: 0,
+        preservedCount: 0,
+        rfidsConsolidated: 0,
+        errors: [errorMessage]
       });
     } finally {
       setIsCleaningUp(false);
@@ -400,6 +361,16 @@ export function DuplicateCleanupManager() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-4 text-center">
+              {cleanupResult.beforeCount && cleanupResult.afterCount && (
+                <div className="col-span-3 mb-4">
+                  <div className="flex justify-between items-center text-sm text-muted-foreground mb-2">
+                    <span>Database Size:</span>
+                    <span className="font-semibold text-blue-600">
+                      {cleanupResult.beforeCount} → {cleanupResult.afterCount}
+                    </span>
+                  </div>
+                </div>
+              )}
               <div>
                 <div className="text-2xl font-bold text-red-600">{cleanupResult.removedCount}</div>
                 <p className="text-sm text-muted-foreground">Records Removed</p>
