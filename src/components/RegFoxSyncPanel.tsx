@@ -102,16 +102,16 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
     setIsInitialSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke('regfox-sync', {
-        body: {}
+        body: { sync_type: 'initial_sync' }
       });
 
       if (error) throw error;
 
-      toast.success('Initial sync completed successfully!');
+      toast.success('Full sync completed successfully!');
       fetchSyncLogs();
     } catch (error) {
       console.error('Error during initial sync:', error);
-      toast.error(`Initial sync failed: ${error.message}`);
+      toast.error(`Full sync failed: ${error.message}`);
     } finally {
       setIsInitialSyncing(false);
     }
@@ -120,8 +120,8 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
   const handleManualSync = async () => {
     setIsManualSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('regfox-manual-sync', {
-        body: {}
+      const { data, error } = await supabase.functions.invoke('regfox-sync', {
+        body: { sync_type: 'manual_sync' }
       });
 
       if (error) throw error;

@@ -53,6 +53,7 @@ serve(async (req) => {
     }
 
     const isWebhookTriggered = requestBody.webhook_triggered === true;
+    const manualSyncType = requestBody.sync_type; // 'manual_sync' or 'initial_sync'
     const eventType = requestBody.event_type;
     const registrantId = requestBody.registrant_id;
 
@@ -73,7 +74,7 @@ serve(async (req) => {
       throw new Error('RegFox Form ID not configured');
     }
 
-    console.log(`Starting RegFox ${isWebhookTriggered ? 'webhook-triggered' : 'manual'} sync...`);
+    console.log(`Starting RegFox ${isWebhookTriggered ? 'webhook-triggered' : (manualSyncType || 'manual')} sync...`);
     if (isWebhookTriggered) {
       console.log(`Webhook details - Event: ${eventType}, Registrant ID: ${registrantId}`);
     }
@@ -104,7 +105,7 @@ serve(async (req) => {
     const { data: syncLog, error: syncLogError } = await supabase
       .from('regfox_sync_log')
       .insert({
-        sync_type: isWebhookTriggered ? 'webhook_triggered_sync' : 'initial_sync',
+        sync_type: isWebhookTriggered ? 'webhook_triggered_sync' : (manualSyncType || 'initial_sync'),
         status: 'in_progress',
         sync_started_at: new Date().toISOString(),
         heartbeat_at: new Date().toISOString(),
