@@ -793,10 +793,13 @@ serve(async (req) => {
           
           const registrationStatus = mapRegistrationStatus(regfoxAttendee.status);
           
-          // CRITICAL: Only sync registered attendees for RFID assignment
-          if (registrationStatus !== 'registered') {
-            console.log(`Skipping attendee ${regfoxAttendee.id} with status: ${regfoxAttendee.status} -> ${registrationStatus} (not registered)`);
-            continue; // Skip non-registered attendees entirely
+          // Log all status mappings for transparency
+          console.log(`Sync - RegFox ID ${regfoxAttendee.id}: status=${regfoxAttendee.status} -> ${registrationStatus}`);
+          
+          // Skip abandoned/incomplete records - they should not be in the system
+          if (registrationStatus === 'abandoned' || registrationStatus === 'incomplete' || registrationStatus === 'draft') {
+            console.log(`Skipping attendee ${regfoxAttendee.id} with status: ${regfoxAttendee.status} -> ${registrationStatus} (invalid for sync)`);
+            continue;
           }
           
           // Determine ticket type based on accommodation and features

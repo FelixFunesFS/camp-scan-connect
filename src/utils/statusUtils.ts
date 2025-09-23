@@ -32,8 +32,16 @@ export function getRegistrationStatusVariant(status: string): 'default' | 'secon
       return 'secondary'; // Yellow/Orange  
     case 'waitlisted':
       return 'outline'; // Gray
+    case 'transferred':
+      return 'outline'; // Gray
     case 'cancelled':
       return 'destructive'; // Red
+    case 'abandoned':
+      return 'destructive'; // Red
+    case 'incomplete':
+      return 'destructive'; // Red
+    case 'draft':
+      return 'outline'; // Gray
     default:
       return 'outline';
   }
@@ -50,8 +58,16 @@ export function getRegistrationStatusDisplayText(status: string): string {
       return 'Pending Payment';
     case 'waitlisted':
       return 'Waitlisted';
+    case 'transferred':
+      return 'Transferred';
     case 'cancelled':
       return 'Cancelled';
+    case 'abandoned':
+      return 'Abandoned';
+    case 'incomplete':
+      return 'Incomplete';
+    case 'draft':
+      return 'Draft';
     default:
       return status || 'Unknown';
   }

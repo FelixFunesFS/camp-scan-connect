@@ -571,6 +571,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      cleanup_abandoned_records: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cleanup_details: Json
+          cleanup_successful: boolean
+          records_removed: number
+          rfids_cleared: number
+          transactions_updated: number
+        }[]
+      }
       cleanup_expired_locks: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -661,6 +671,10 @@ export type Database = {
         | "pending"
         | "refunded"
         | "waitlisted"
+        | "abandoned"
+        | "transferred"
+        | "incomplete"
+        | "draft"
       scan_action: "entry" | "exit" | "verify"
       scan_result: "allow" | "deny"
       staff_role: "admin" | "checkin" | "ranger" | "vendor"
@@ -847,6 +861,10 @@ export const Constants = {
         "pending",
         "refunded",
         "waitlisted",
+        "abandoned",
+        "transferred",
+        "incomplete",
+        "draft",
       ],
       scan_action: ["entry", "exit", "verify"],
       scan_result: ["allow", "deny"],

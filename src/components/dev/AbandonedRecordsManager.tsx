@@ -67,8 +67,8 @@ export function AbandonedRecordsCleanup() {
   const scanForAbandonedRecords = async () => {
     setIsScanning(true);
     try {
-      // Find abandoned records (multiple submissions from same person)
-      const { data: duplicateCheck } = await supabase
+      // Find abandoned records based on RegFox status
+      const { data: abandonedRecords } = await supabase
         .from('attendees')
         .select(`
           id, 
@@ -81,79 +81,46 @@ export function AbandonedRecordsCleanup() {
           updated_at,
           registration_status
         `)
-        .not('regfox_id', 'is', null)
-        .eq('registration_status', 'registered')
+        .eq('registration_status', 'abandoned')
         .order('created_at');
 
-      if (duplicateCheck) {
-        // Group by composite key (order_id + email + first_name + last_name)
-        const compositeGroups = new Map<string, any[]>();
-        
-        duplicateCheck.forEach(record => {
-          // Create composite key for real duplicates (same person, multiple regfox_ids)
-          const orderKey = (record.order_id || '').trim();
-          const emailKey = (record.email || '').trim().toLowerCase();
-          const nameKey = `${(record.first_name || '').trim()}_${(record.last_name || '').trim()}`.toLowerCase();
-          
-          // Use order_id as primary key if available, fallback to email + name
-          const compositeKey = orderKey && orderKey !== '' 
-            ? `order:${orderKey}` 
-            : `email:${emailKey}:${nameKey}`;
-          
-          if (!compositeGroups.has(compositeKey)) {
-            compositeGroups.set(compositeKey, []);
-          }
-          compositeGroups.get(compositeKey)!.push(record);
-        });
+      if (abandonedRecords) {
+        // Check RFID assignments for abandoned records
+        const { data: rfidData } = await supabase
+          .from('rfid_tags')
+          .select('uid, attendee_id, status')
+          .in('attendee_id', abandonedRecords.map(r => r.id));
 
-        // Filter to only groups with multiple records (abandoned submissions)
-        const abandonedRecords: DuplicateGroup[] = [];
-        let totalExcess = 0;
-        let totalRfidsAtRisk = 0;
+        // Transform abandoned records into the expected format for display
+        const abandonedGroups: DuplicateGroup[] = abandonedRecords.map(record => {
+          const hasRfid = rfidData?.some(r => r.attendee_id === record.id) || false;
+          const rfidUid = rfidData?.find(r => r.attendee_id === record.id)?.uid;
 
-        for (const [compositeKey, records] of compositeGroups) {
-          if (records.length > 1) {
-            // Sort by created_at to identify most recent submission
-            records.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            // Check RFID assignments for this group
-            const { data: rfidData } = await supabase
-              .from('rfid_tags')
-              .select('uid, attendee_id, status')
-              .in('attendee_id', records.map(r => r.id));
-
-            const recordsWithRfid = records.map(record => ({
+          return {
+            composite_key: `abandoned:${record.regfox_id}`,
+            order_id: record.order_id || 'N/A',
+            count: 1, // Each abandoned record is individual
+            attendee_name: `${record.first_name} ${record.last_name}`,
+            email: record.email || 'N/A',
+            regfox_ids: [record.regfox_id],
+            records: [{
               id: record.id,
               regfox_id: record.regfox_id,
               created_at: record.created_at,
               updated_at: record.updated_at,
-              has_rfid: rfidData?.some(r => r.attendee_id === record.id) || false,
-              rfid_uid: rfidData?.find(r => r.attendee_id === record.id)?.uid
-            }));
+              has_rfid: hasRfid,
+              rfid_uid: rfidUid
+            }]
+          };
+        });
 
-            const rfidsCount = rfidData?.length || 0;
-            totalRfidsAtRisk += rfidsCount;
+        const totalRfidsAtRisk = rfidData?.length || 0;
 
-            const uniqueRegfoxIds = [...new Set(records.map(r => r.regfox_id).filter(Boolean))];
-
-            abandonedRecords.push({
-              composite_key: compositeKey,
-              order_id: records[0].order_id || 'N/A',
-              count: records.length,
-              attendee_name: `${records[0].first_name} ${records[0].last_name}`,
-              email: records[0].email || 'N/A',
-              regfox_ids: uniqueRegfoxIds,
-              records: recordsWithRfid
-            });
-
-            totalExcess += records.length - 1; // All but one are excess
-          }
-        }
-
-        setDuplicateGroups(abandonedRecords);
+        setDuplicateGroups(abandonedGroups);
         setCleanupStats({
-          totalAbandonedRecords: duplicateCheck.length,
+          totalAbandonedRecords: abandonedRecords.length,
           affectedPeople: abandonedRecords.length,
-          excessRecords: totalExcess,
+          excessRecords: abandonedRecords.length, // All abandoned records should be removed
           rfidsAtRisk: totalRfidsAtRisk
         });
       }
@@ -173,9 +140,9 @@ export function AbandonedRecordsCleanup() {
     const toastId = toast.loading("Safely cleaning up duplicate records...");
 
     try {
-      // Use the safe cleanup database function
+      // Use the cleanup abandoned records function
       const { data, error } = await supabase
-        .rpc('safe_cleanup_duplicates');
+        .rpc('cleanup_abandoned_records');
 
       if (error) {
         throw new Error(`Cleanup function failed: ${error.message}`);
@@ -189,26 +156,22 @@ export function AbandonedRecordsCleanup() {
 
       setCleanupResult({
         success: result.cleanup_successful,
-        removedCount: result.duplicates_removed,
-        preservedCount: result.total_records_after,
-        rfidsConsolidated: 0, // Will be enhanced in future versions
-        errors: result.errors_encountered || [],
-        beforeCount: result.total_records_before,
-        afterCount: result.total_records_after,
+        removedCount: result.records_removed,
+        preservedCount: 0, // No records preserved - all abandoned are removed
+        rfidsConsolidated: result.rfids_cleared,
+        errors: [], // No errors_encountered field in cleanup_abandoned_records
         cleanupDetails: result.cleanup_details
       });
 
       if (result.cleanup_successful) {
         toast.success(
-          `Successfully cleaned up ${result.duplicates_removed} duplicate records. 
-           Database reduced from ${result.total_records_before} to ${result.total_records_after} attendees.`, 
+          `Successfully removed ${result.records_removed} abandoned records and cleared ${result.rfids_cleared} RFID assignments.`, 
           { id: toastId, duration: 6000 }
         );
         // Rescan for duplicates after successful cleanup
         await scanForAbandonedRecords();
       } else {
-        const errorMessages = result.errors_encountered?.join(', ') || 'Unknown errors occurred';
-        toast.error(`Cleanup failed: ${errorMessages}`, { id: toastId });
+        toast.error("Cleanup failed: Unknown error occurred", { id: toastId });
       }
 
     } catch (error) {
@@ -275,13 +238,13 @@ export function AbandonedRecordsCleanup() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">People with Abandoned Records</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Abandoned Records</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">{cleanupStats.affectedPeople}</div>
-              <p className="text-xs text-muted-foreground">People with abandoned records</p>
+              <p className="text-xs text-muted-foreground">Records with abandoned status</p>
             </CardContent>
           </Card>
 
@@ -318,20 +281,20 @@ export function AbandonedRecordsCleanup() {
               Cleanup Required
             </CardTitle>
             <CardDescription>
-              {cleanupStats.affectedPeople} attendees have duplicate records that need cleanup
+              {cleanupStats.affectedPeople} attendees with abandoned RegFox status need to be removed
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert>
               <Shield className="h-4 w-4" />
               <AlertDescription>
-                <strong>Safe Cleanup Process:</strong>
+                <strong>Abandoned Records Cleanup:</strong>
                 <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Preserve oldest record (canonical)</li>
-                  <li>Consolidate RFID assignments</li>
-                  <li>Migrate transaction history</li>
-                  <li>Remove excess duplicates</li>
-                  <li>Maintain data integrity</li>
+                  <li>Remove all records with 'abandoned' RegFox status</li>
+                  <li>Clear any RFID assignments from abandoned records</li>
+                  <li>Remove related station transactions</li>
+                  <li>Maintain audit trail of cleanup actions</li>
+                  <li>These records should not be in the system</li>
                 </ul>
               </AlertDescription>
             </Alert>
@@ -351,7 +314,7 @@ export function AbandonedRecordsCleanup() {
                 ) : (
                   <>
                     <Trash2 className="h-4 w-4" />
-                    Clean Up {cleanupStats.excessRecords} Abandoned Records
+                    Remove {cleanupStats.excessRecords} Abandoned Records
                   </>
                 )}
               </Button>
@@ -423,9 +386,9 @@ export function AbandonedRecordsCleanup() {
       {showPreview && duplicateGroups.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Abandoned Form Submissions Preview</CardTitle>
+            <CardTitle>Abandoned Records Preview</CardTitle>
             <CardDescription>
-              Showing {duplicateGroups.length} people with multiple submissions
+              Showing {duplicateGroups.length} attendees with abandoned RegFox status
             </CardDescription>
           </CardHeader>
           <CardContent>
