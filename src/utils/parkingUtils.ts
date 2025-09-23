@@ -33,20 +33,24 @@ export function parseParkingAssignment(parkingString: string | null): ParkingAss
   const type = parts[0].toLowerCase();
   const assignment = parts.slice(1).join(': ');
 
-  // Determine parking type category with enhanced detection
+  // Determine parking type category with enhanced types
   let category = 'unknown';
   if (type.includes('premium tent')) {
     category = 'premium-tent';
   } else if (type.includes('premium rv')) {
     category = 'premium-rv';
-  } else if (type.includes('dry camping rv')) {
-    category = 'dry-camping-rv';
   } else if (type.includes('tailgate rv')) {
     category = 'tailgate-rv';
+  } else if (type.includes('tailgate tent site')) {
+    category = 'tailgate-tent-site';
   } else if (type.includes('tailgate tent')) {
     category = 'tailgate-tent';
+  } else if (type.includes('dry camping rv')) {
+    category = 'dry-camping-rv';
   } else if (type.includes('green space tent')) {
     category = 'green-space-tent';
+  } else if (type.includes('tent site')) {
+    category = 'tent-site';
   } else if (type.includes('cabin')) {
     category = 'cabin';
   } else if (type.includes('paved tailgate')) {
@@ -71,14 +75,17 @@ export function getParkingBadgeVariant(parkingType: string): 'default' | 'second
       return 'default'; // Teal
     case 'premium-rv':
       return 'secondary'; // Blue
-    case 'dry-camping-rv':
-      return 'outline'; // Green
     case 'tailgate-rv':
       return 'outline'; // Green
     case 'tailgate-tent':
+    case 'tailgate-tent-site':
       return 'destructive'; // Orange
+    case 'dry-camping-rv':
+      return 'outline'; // Green variant
     case 'green-space-tent':
-      return 'secondary'; // Blue
+      return 'default'; // Teal variant
+    case 'tent-site':
+      return 'secondary'; // Blue variant
     case 'cabin':
       return 'secondary'; // Brown
     case 'paved-tailgate':
@@ -102,14 +109,17 @@ export function getParkingColorClass(parkingType: string): string {
       return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200';
     case 'premium-rv':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-    case 'dry-camping-rv':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
     case 'tailgate-rv':
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
     case 'tailgate-tent':
+    case 'tailgate-tent-site':
       return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+    case 'dry-camping-rv':
+      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
     case 'green-space-tent':
       return 'bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-200';
+    case 'tent-site':
+      return 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200';
     case 'cabin':
       return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
     case 'paved-tailgate':
