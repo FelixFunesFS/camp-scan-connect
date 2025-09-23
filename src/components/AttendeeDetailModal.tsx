@@ -82,9 +82,6 @@ export function AttendeeDetailModal({
               {attendee.first_name} {attendee.last_name}
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={getStatusVariant(calculateAttendeeStatus(!!attendee.is_activated, !!attendee.has_rfid))}>
-                {getStatusDisplayText(calculateAttendeeStatus(!!attendee.is_activated, !!attendee.has_rfid))}
-              </Badge>
               {attendee.is_veteran && (
                 <Badge variant="veteran">Veteran</Badge>
               )}
