@@ -18,12 +18,15 @@ import {
 import { toast } from 'sonner';
 
 interface DuplicateGroup {
-  regfox_id: string;
+  composite_key: string;
   order_id: string;
   count: number;
   attendee_name: string;
+  email: string;
+  regfox_ids: string[];
   records: Array<{
     id: string;
+    regfox_id: string;
     created_at: string;
     updated_at: string;
     has_rfid: boolean;
@@ -64,7 +67,7 @@ export function DuplicateCleanupManager() {
   const scanForDuplicates = async () => {
     setIsScanning(true);
     try {
-      // Find records with same regfox_id appearing multiple times
+      // Find records and group by composite key (order_id + email + first_name + last_name)
       const { data: duplicateCheck } = await supabase
         .from('attendees')
         .select(`
@@ -73,6 +76,7 @@ export function DuplicateCleanupManager() {
           order_id, 
           first_name, 
           last_name, 
+          email,
           created_at, 
           updated_at,
           registration_status
@@ -82,15 +86,24 @@ export function DuplicateCleanupManager() {
         .order('created_at');
 
       if (duplicateCheck) {
-        // Group by regfox_id to find duplicates
-        const regfoxGroups = new Map<string, any[]>();
+        // Group by composite key (order_id + email + first_name + last_name)
+        const compositeGroups = new Map<string, any[]>();
         
         duplicateCheck.forEach(record => {
-          const key = record.regfox_id!;
-          if (!regfoxGroups.has(key)) {
-            regfoxGroups.set(key, []);
+          // Create composite key for real duplicates (same person, multiple regfox_ids)
+          const orderKey = (record.order_id || '').trim();
+          const emailKey = (record.email || '').trim().toLowerCase();
+          const nameKey = `${(record.first_name || '').trim()}_${(record.last_name || '').trim()}`.toLowerCase();
+          
+          // Use order_id as primary key if available, fallback to email + name
+          const compositeKey = orderKey && orderKey !== '' 
+            ? `order:${orderKey}` 
+            : `email:${emailKey}:${nameKey}`;
+          
+          if (!compositeGroups.has(compositeKey)) {
+            compositeGroups.set(compositeKey, []);
           }
-          regfoxGroups.get(key)!.push(record);
+          compositeGroups.get(compositeKey)!.push(record);
         });
 
         // Filter to only groups with multiple records
@@ -98,7 +111,7 @@ export function DuplicateCleanupManager() {
         let totalExcess = 0;
         let totalRfidsAtRisk = 0;
 
-        for (const [regfoxId, records] of regfoxGroups) {
+        for (const [compositeKey, records] of compositeGroups) {
           if (records.length > 1) {
             // Check RFID assignments for this group
             const { data: rfidData } = await supabase
@@ -108,6 +121,7 @@ export function DuplicateCleanupManager() {
 
             const recordsWithRfid = records.map(record => ({
               id: record.id,
+              regfox_id: record.regfox_id,
               created_at: record.created_at,
               updated_at: record.updated_at,
               has_rfid: rfidData?.some(r => r.attendee_id === record.id) || false,
@@ -117,11 +131,15 @@ export function DuplicateCleanupManager() {
             const rfidsCount = rfidData?.length || 0;
             totalRfidsAtRisk += rfidsCount;
 
+            const uniqueRegfoxIds = [...new Set(records.map(r => r.regfox_id).filter(Boolean))];
+
             duplicates.push({
-              regfox_id: regfoxId,
-              order_id: records[0].order_id,
+              composite_key: compositeKey,
+              order_id: records[0].order_id || 'N/A',
               count: records.length,
               attendee_name: `${records[0].first_name} ${records[0].last_name}`,
+              email: records[0].email || 'N/A',
+              regfox_ids: uniqueRegfoxIds,
               records: recordsWithRfid
             });
 
@@ -416,7 +434,10 @@ export function DuplicateCleanupManager() {
                     <div>
                       <h5 className="font-medium">{group.attendee_name}</h5>
                       <p className="text-sm text-muted-foreground">
-                        RegFox ID: {group.regfox_id} | Order: {group.order_id}
+                        Order: {group.order_id} | Email: {group.email}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        RegFox IDs: {group.regfox_ids.join(', ')}
                       </p>
                     </div>
                     <Badge variant="destructive">{group.count} copies</Badge>
@@ -431,6 +452,9 @@ export function DuplicateCleanupManager() {
                           {record.has_rfid && (
                             <Badge variant="outline" className="text-xs">RFID</Badge>
                           )}
+                        </div>
+                        <div className="text-muted-foreground">
+                          RegFox: {record.regfox_id}
                         </div>
                         <div className="text-muted-foreground">
                           Created: {new Date(record.created_at).toLocaleDateString()}
