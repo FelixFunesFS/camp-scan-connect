@@ -971,7 +971,7 @@ serve(async (req) => {
             custom_fields: customFields,
             
             // Extract site location assignment using enhanced function
-            site_location_assignment: customFields ? await supabase.rpc('extract_parking_assignment', { custom_fields_data: customFields }).then(result => result.data) : 'Not Assigned',
+            site_location_assignment: customFields ? await supabase.rpc('extract_site_location_assignment', { custom_fields_data: customFields }).then(result => result.data) : 'Not Assigned',
             
             waiver_signed: waiverSigned,
             activated_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,

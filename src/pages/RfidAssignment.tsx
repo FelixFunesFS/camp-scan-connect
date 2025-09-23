@@ -138,6 +138,7 @@ export const RfidAssignment = () => {
           city,
           state,
           custom_fields,
+          site_location_assignment,
           rfid_tags(uid, status, activated_at)
         `)
         .order('arrival_window', { ascending: true }) // Default: Thursday before Friday
