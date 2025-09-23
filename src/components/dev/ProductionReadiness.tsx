@@ -21,10 +21,14 @@ import {
   Phone,
   CreditCard,
   Monitor,
-  TrendingUp
+  TrendingUp,
+  Trash2,
+  BarChart3
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StaffGuideHub } from './StaffGuideHub';
+import { DuplicateCleanupManager } from './DuplicateCleanupManager';
+import { RegFoxComparisonPanel } from './RegFoxComparisonPanel';
 
 interface SystemHealthMetrics {
   totalAttendees: number;
@@ -243,9 +247,11 @@ export function ProductionReadiness() {
       </div>
 
       <Tabs defaultValue="health" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="tests">Edge Case Tests</TabsTrigger>
+          <TabsTrigger value="cleanup">Database Cleanup</TabsTrigger>
+          <TabsTrigger value="regfox">RegFox Comparison</TabsTrigger>
           <TabsTrigger value="guides">Staff Operations Guide</TabsTrigger>
           <TabsTrigger value="bulk">Bulk Operations</TabsTrigger>
           <TabsTrigger value="fallbacks">Fallback Procedures</TabsTrigger>
@@ -365,6 +371,14 @@ export function ProductionReadiness() {
           )}
         </TabsContent>
 
+        <TabsContent value="cleanup" className="space-y-4">
+          <DuplicateCleanupManager />
+        </TabsContent>
+
+        <TabsContent value="regfox" className="space-y-4">
+          <RegFoxComparisonPanel />
+        </TabsContent>
+
         <TabsContent value="guides" className="space-y-4">
           <StaffGuideHub />
         </TabsContent>
@@ -381,6 +395,14 @@ export function ProductionReadiness() {
                 <CardDescription>Bulk operations for attendee and RFID data</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
+                <Button variant="outline" className="w-full justify-start">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clean Duplicate Records
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Compare RegFox Data
+                </Button>
                 <Button variant="outline" className="w-full justify-start">
                   Bulk RFID Assignment
                 </Button>
