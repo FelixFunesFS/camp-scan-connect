@@ -25,7 +25,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   // Station pages get clean, full-width layout without sidebar
   if (isStationPage) {
-    return <div className="min-h-screen w-full">{children}</div>;
+    return <div className="min-h-screen w-full mobile-container">{children}</div>;
   }
 
   // All other pages get sidebar navigation
@@ -36,7 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     >
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6 mobile-container">
           {children}
         </main>
       </div>

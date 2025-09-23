@@ -142,20 +142,20 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   };
 
   return (
-    <Card className={`transition-all duration-200 ${className}`} style={backgroundColor ? { backgroundColor } : undefined}>
-      <CardContent className="p-4">
+    <Card className={`mobile-card transition-all duration-200 hover:shadow-md ${className}`} style={backgroundColor ? { backgroundColor } : undefined}>
+      <CardContent className="mobile-card">
         <div className="space-y-3">
           {/* Notification Banner */}
           {showNotification && notificationMessage && (
-            <div className="p-2 bg-primary/10 border border-primary/20 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-primary">{notificationMessage}</span>
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <div className="mobile-stack items-start">
+                <span className="text-sm text-primary flex-1">{notificationMessage}</span>
                 {onDismissNotification && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={onDismissNotification}
-                    className="h-6 w-6 p-0"
+                    className="touch-target flex-shrink-0"
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -165,11 +165,11 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
           )}
 
           {/* Header */}
-          <div className="flex items-start justify-between">
+          <div className="mobile-stack items-start">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <h3 className="font-medium text-base truncate">{displayName || 'Unknown'}</h3>
+                <h3 className="mobile-title truncate">{displayName || 'Unknown'}</h3>
               </div>
               
               {/* Status and Info Badges */}
@@ -193,21 +193,21 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
           <div className="space-y-2 text-sm">
             {attendee.phone && (
               <div className="flex items-center gap-2">
-                <Phone className="h-3 w-3 text-muted-foreground" />
-                <span className="font-mono">{formatPhoneNumber(attendee.phone)}</span>
+                <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <span className="font-mono truncate">{formatPhoneNumber(attendee.phone)}</span>
               </div>
             )}
             
             {attendee.email && (
               <div className="flex items-center gap-2">
-                <Mail className="h-3 w-3 text-muted-foreground" />
+                <Mail className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 <span className="truncate">{attendee.email}</span>
               </div>
             )}
 
             {attendee.order_id && (
               <div className="flex items-center gap-2">
-                <CreditCard className="h-3 w-3 text-muted-foreground" />
+                <CreditCard className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 <span className="font-mono text-xs">#{attendee.order_id}</span>
               </div>
             )}
@@ -219,7 +219,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
               variant="outline"
               size="sm"
               onClick={onViewDetails}
-              className="w-full text-xs"
+              className="w-full touch-target text-xs sm:text-sm"
             >
               View Full Details
             </Button>

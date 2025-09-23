@@ -95,7 +95,7 @@ export const UnifiedSearchFilter: React.FC<UnifiedSearchFilterProps> = ({
                 variant={activeQuickFilters.includes(filter.key) ? "default" : "outline"}
                 size="sm"
                 onClick={() => onQuickFilterChange?.(filter.key, !activeQuickFilters.includes(filter.key))}
-                className="text-xs"
+                className="text-xs touch-target"
               >
                 {filter.label}
                 {filter.count !== undefined && (
@@ -121,7 +121,7 @@ export const UnifiedSearchFilter: React.FC<UnifiedSearchFilterProps> = ({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filterOptions.map((option) => (
                   <div key={option.key} className="space-y-1">
                     <label className="text-sm font-medium">{option.label}</label>
