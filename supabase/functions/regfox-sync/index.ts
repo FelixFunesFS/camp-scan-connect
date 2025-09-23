@@ -519,8 +519,88 @@ serve(async (req) => {
         return 'dry_site';
       };
 
+      // ============= PHASE 1: UPDATE EXISTING RECORD STATUSES =============
+      // Before processing new records, update existing records that may have changed status in RegFox
+      const updateExistingRecordStatuses = async () => {
+        console.log('Phase 1: Updating status of existing records...');
+        let statusUpdateCount = 0;
+        
+        // Process in smaller batches for status updates
+        const STATUS_BATCH_SIZE = 20;
+        for (let i = 0; i < regfoxAttendees.length; i += STATUS_BATCH_SIZE) {
+          const statusBatch = regfoxAttendees.slice(i, i + STATUS_BATCH_SIZE);
+          
+          for (const regfoxAttendee of statusBatch) {
+            try {
+              // Map the RegFox status using the same logic as main sync
+              const mapRegistrationStatus = (status: string) => {
+                const statusLower = status.toLowerCase();
+                
+                // Explicit handling for statuses that should NOT be synced
+                if (statusLower.includes('abandon')) return 'abandoned';
+                if (statusLower.includes('transfer')) return 'transferred';
+                if (statusLower.includes('incomplete')) return 'incomplete';
+                if (statusLower.includes('draft')) return 'draft';
+                
+                // Statuses for staff hub visibility but not RFID assignment
+                if (statusLower.includes('cancel')) return 'cancelled';
+                if (statusLower.includes('refund')) return 'refunded';
+                if (statusLower.includes('pending')) return 'pending';
+                if (statusLower.includes('waitlist')) return 'waitlisted';
+                
+                // Only registered attendees get RFID assignment
+                if (statusLower.includes('complete') || statusLower.includes('paid') || statusLower === 'registered') {
+                  return 'registered';
+                }
+                
+                return 'unknown';
+              };
+              
+              const currentRegFoxStatus = mapRegistrationStatus(regfoxAttendee.status);
+              
+              // Only update existing records that have changed to abandoned/cancelled/etc
+              if (['abandoned', 'cancelled', 'transferred', 'incomplete', 'draft', 'pending', 'waitlisted'].includes(currentRegFoxStatus)) {
+                const { data: existingRecord, error: fetchError } = await supabase
+                  .from('attendees')
+                  .select('id, registration_status')
+                  .eq('regfox_id', regfoxAttendee.id)
+                  .eq('registration_status', 'registered') // Only update records that are currently registered
+                  .single();
+                
+                if (!fetchError && existingRecord) {
+                  // Update the existing record's status
+                  const { error: updateError } = await supabase
+                    .from('attendees')
+                    .update({
+                      registration_status: currentRegFoxStatus,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', existingRecord.id);
+                  
+                  if (!updateError) {
+                    statusUpdateCount++;
+                    console.log(`Status Update - RegFox ID ${regfoxAttendee.id}: registered -> ${currentRegFoxStatus}`);
+                  } else {
+                    console.error(`Error updating status for RegFox ID ${regfoxAttendee.id}:`, updateError.message);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error(`Error in status update for RegFox ID ${regfoxAttendee.id}:`, error.message);
+            }
+          }
+        }
+        
+        console.log(`Phase 1 Complete: Updated ${statusUpdateCount} existing record statuses`);
+        return statusUpdateCount;
+      };
+      
+      // Execute Phase 1: Status Updates
+      const statusUpdates = await updateExistingRecordStatuses();
+      
+      // ============= PHASE 2: PROCESS NEW/UPDATED RECORDS =============
       syncResult.totalRecords = regfoxAttendees.length;
-      console.log(`Processing ${syncResult.totalRecords} attendees from RegFox`);
+      console.log(`Phase 2: Processing ${syncResult.totalRecords} attendees from RegFox (${statusUpdates} statuses updated in Phase 1)`);
 
       // Process attendees in batches to prevent CPU timeouts
       const BATCH_SIZE = 50; // Process 50 attendees at a time
