@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { ParkingBadge } from "@/components/shared/ParkingBadge";
 
 interface AttendeeWithRfid {
   id: string;
@@ -27,6 +28,7 @@ interface AttendeeWithRfid {
   waiver_signed?: boolean;
   rfid_uid?: string;
   rfid_status: string;
+  parking_assignment?: string;
   has_headphones?: boolean;
   headphones_status?: 'checked_out' | 'checked_in' | 'never_used';
   headphones_duration?: number;
@@ -188,30 +190,31 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                     </div>
                   </Button>
                 </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    className="h-auto p-0 font-semibold hover:bg-transparent"
-                    onClick={() => handleSort('phone')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Phone
-                      {getSortIcon('phone')}
-                    </div>
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    className="h-auto p-0 font-semibold hover:bg-transparent"
-                    onClick={() => handleSort('registration_status')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Status
-                      {getSortIcon('registration_status')}
-                    </div>
-                  </Button>
-                </TableHead>
+                 <TableHead>
+                   <Button
+                     variant="ghost"
+                     className="h-auto p-0 font-semibold hover:bg-transparent"
+                     onClick={() => handleSort('phone')}
+                   >
+                     <div className="flex items-center gap-2">
+                       Phone
+                       {getSortIcon('phone')}
+                     </div>
+                   </Button>
+                 </TableHead>
+                 <TableHead>Parking</TableHead>
+                 <TableHead>
+                   <Button
+                     variant="ghost"
+                     className="h-auto p-0 font-semibold hover:bg-transparent"
+                     onClick={() => handleSort('registration_status')}
+                   >
+                     <div className="flex items-center gap-2">
+                       Status
+                       {getSortIcon('registration_status')}
+                     </div>
+                   </Button>
+                 </TableHead>
                 <TableHead>Veteran</TableHead>
                 <TableHead>RFID Assignment</TableHead>
                 <TableHead>Headphones</TableHead>
@@ -252,23 +255,29 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                       {attendee.order_id || 'No Order'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {attendee.phone || 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="outline"
-                      className={
-                        attendee.registration_status === 'registered' 
-                          ? 'border-success text-success' 
-                          : attendee.registration_status === 'cancelled'
-                          ? 'border-destructive text-destructive'
-                          : 'border-warning text-warning'
-                      }
-                    >
-                      {attendee.registration_status}
-                    </Badge>
-                  </TableCell>
+                   <TableCell className="text-sm">
+                     {attendee.phone || 'N/A'}
+                   </TableCell>
+                   <TableCell>
+                     <ParkingBadge 
+                       parkingAssignment={attendee.parking_assignment} 
+                       maxLength={18} 
+                     />
+                   </TableCell>
+                   <TableCell>
+                     <Badge 
+                       variant="outline"
+                       className={
+                         attendee.registration_status === 'registered' 
+                           ? 'border-success text-success' 
+                           : attendee.registration_status === 'cancelled'
+                           ? 'border-destructive text-destructive'
+                           : 'border-warning text-warning'
+                       }
+                     >
+                       {attendee.registration_status}
+                     </Badge>
+                   </TableCell>
                   <TableCell>
                     {attendee.is_veteran ? (
                       <Badge variant="veteran" className="text-xs">

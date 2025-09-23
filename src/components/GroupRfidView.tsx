@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { ParkingBadge } from "@/components/shared/ParkingBadge";
 import { AttendeeData } from "@/pages/RfidAssignment";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { getOrderGroupBackgroundColor, groupAttendeesByOrder } from "@/utils/orderGroupUtils";
@@ -287,14 +288,15 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                           <div className="p-4 bg-muted/20">
                             <Table>
                               <TableHeader>
-                                <TableRow>
-                                  <TableHead>Name</TableHead>
-                                  <TableHead>Phone</TableHead>
-                                  <TableHead>Meal Plan</TableHead>
-                                  <TableHead>Arrival</TableHead>
-                                  <TableHead>RFID Assignment</TableHead>
-                                  <TableHead>Status</TableHead>
-                                </TableRow>
+                                 <TableRow>
+                                   <TableHead>Name</TableHead>
+                                   <TableHead>Phone</TableHead>
+                                   <TableHead>Parking</TableHead>
+                                   <TableHead>Meal Plan</TableHead>
+                                   <TableHead>Arrival</TableHead>
+                                   <TableHead>RFID Assignment</TableHead>
+                                   <TableHead>Status</TableHead>
+                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {group.attendees.map((attendee: AttendeeData) => (
@@ -310,14 +312,20 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                                         }
                                       />
                                     </TableCell>
-                                    <TableCell className="text-sm">
-                                      {attendee.phone ? formatPhoneNumber(attendee.phone) : 'N/A'}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge variant="outline" className="text-xs">
-                                        {attendee.formatted_meal_plan}
-                                      </Badge>
-                                    </TableCell>
+                                     <TableCell className="text-sm">
+                                       {attendee.phone ? formatPhoneNumber(attendee.phone) : 'N/A'}
+                                     </TableCell>
+                                     <TableCell>
+                                       <ParkingBadge 
+                                         parkingAssignment={attendee.parking_assignment} 
+                                         maxLength={15} 
+                                       />
+                                     </TableCell>
+                                     <TableCell>
+                                       <Badge variant="outline" className="text-xs">
+                                         {attendee.formatted_meal_plan}
+                                       </Badge>
+                                     </TableCell>
                                     <TableCell>
                                       <Badge 
                                         variant={attendee.arrival_window === 'early' ? 'default' : 'secondary'}

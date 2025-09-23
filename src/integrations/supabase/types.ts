@@ -618,6 +618,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      extract_parking_assignment: {
+        Args: { custom_fields_data: Json }
+        Returns: string
+      }
       generate_mock_rfid_uid: {
         Args: Record<PropertyKey, never>
         Returns: string
