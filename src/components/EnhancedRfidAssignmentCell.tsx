@@ -537,9 +537,6 @@ export const EnhancedRfidAssignmentCell = ({
       <div className="flex items-center gap-2 min-w-[280px]">
         <div className="flex flex-col flex-1">
           <span className="font-mono text-sm font-medium">{currentRfidUid}</span>
-          <Badge variant={getRfidStatusColor(currentRfidStatus)} className="text-xs w-fit mt-1">
-            {currentRfidStatus}
-          </Badge>
         </div>
         <div className="flex gap-1">
           <Button

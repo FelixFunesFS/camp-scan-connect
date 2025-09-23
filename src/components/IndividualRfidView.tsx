@@ -216,7 +216,7 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                    </Button>
                  </TableHead>
                 <TableHead>Veteran</TableHead>
-                <TableHead>RFID Assignment</TableHead>
+                <TableHead>RFID</TableHead>
                 <TableHead>Headphones</TableHead>
                 <TableHead>
                   <Button

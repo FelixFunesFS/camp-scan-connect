@@ -304,7 +304,7 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                                    <TableHead>Phone</TableHead>
                                    <TableHead>Meal Plan</TableHead>
                                    <TableHead>Arrival</TableHead>
-                                   <TableHead>RFID Assignment</TableHead>
+                                   <TableHead>RFID</TableHead>
                                    <TableHead>Status</TableHead>
                                  </TableRow>
                               </TableHeader>
