@@ -621,7 +621,7 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
-      extract_parking_assignment: {
+      extract_site_location_assignment: {
         Args: { custom_fields_data: Json }
         Returns: string
       }
