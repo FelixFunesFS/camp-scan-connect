@@ -581,6 +581,17 @@ export type Database = {
           transactions_updated: number
         }[]
       }
+      cleanup_all_status_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cleanup_details: Json
+          cleanup_successful: boolean
+          duplicates_removed: number
+          errors_encountered: string[]
+          total_records_after: number
+          total_records_before: number
+        }[]
+      }
       cleanup_expired_locks: {
         Args: Record<PropertyKey, never>
         Returns: undefined
