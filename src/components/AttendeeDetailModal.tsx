@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { calculateAttendeeStatus, getStatusVariant, getStatusDisplayText } from "@/utils/statusUtils";
+import { getRfidStatusVariant } from "@/utils/statusUtils";
 import {
   User,
   Mail,
@@ -46,13 +46,6 @@ export function AttendeeDetailModal({
     a.order_id === attendee.order_id && a.id !== attendee.id && attendee.order_id
   );
 
-  const getRfidStatusVariant = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'assigned': return 'secondary';
-      default: return 'destructive';
-    }
-  };
 
   const handleActivate = () => {
     if (onActivate) {
@@ -183,8 +176,8 @@ export function AttendeeDetailModal({
                   <div className="space-y-2">
                     <div>
                       <span className="text-sm font-medium">RFID Status:</span>
-                      <Badge variant={getRfidStatusVariant(attendee.rfid_status)} className="ml-2">
-                        {attendee.rfid_status}
+                      <Badge variant={getRfidStatusVariant(attendee.rfid_status, attendee.rfid_uid)} className="ml-2">
+                        {attendee.rfid_status || 'No RFID'}
                       </Badge>
                     </div>
                     {attendee.rfid_uid && (
@@ -280,8 +273,8 @@ export function AttendeeDetailModal({
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 items-end">
-                          <Badge variant={getStatusVariant(calculateAttendeeStatus(!!companion.is_activated, !!companion.has_rfid))}>
-                            {getStatusDisplayText(calculateAttendeeStatus(!!companion.is_activated, !!companion.has_rfid))}
+                          <Badge variant={getRfidStatusVariant(companion.rfid_status, companion.rfid_uid)}>
+                            {companion.rfid_status || 'No RFID'}
                           </Badge>
                           {companion.rfid_uid && (
                             <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
@@ -307,8 +300,8 @@ export function AttendeeDetailModal({
                         {selectedCompanion.first_name} {selectedCompanion.last_name}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={getStatusVariant(calculateAttendeeStatus(!!selectedCompanion.is_activated, !!selectedCompanion.has_rfid))}>
-                          {getStatusDisplayText(calculateAttendeeStatus(!!selectedCompanion.is_activated, !!selectedCompanion.has_rfid))}
+                        <Badge variant={getRfidStatusVariant(selectedCompanion.rfid_status, selectedCompanion.rfid_uid)}>
+                          {selectedCompanion.rfid_status || 'No RFID'}
                         </Badge>
                         {selectedCompanion.is_veteran && (
                           <Badge variant="veteran">Veteran</Badge>
@@ -411,8 +404,8 @@ export function AttendeeDetailModal({
                             <div className="space-y-2">
                               <div>
                                 <span className="text-sm font-medium">RFID Status:</span>
-                                <Badge variant={getRfidStatusVariant(selectedCompanion.rfid_status)} className="ml-2">
-                                  {selectedCompanion.rfid_status}
+                                <Badge variant={getRfidStatusVariant(selectedCompanion.rfid_status, selectedCompanion.rfid_uid)} className="ml-2">
+                                  {selectedCompanion.rfid_status || 'No RFID'}
                                 </Badge>
                               </div>
                               {selectedCompanion.rfid_uid && (

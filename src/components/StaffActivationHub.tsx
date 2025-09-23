@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { calculateAttendeeStatus, getStatusVariant, getStatusDisplayText, getRegistrationStatusVariant, getRegistrationStatusDisplayText } from "@/utils/statusUtils";
+import { getRfidStatusVariant, getRegistrationStatusVariant, getRegistrationStatusDisplayText } from "@/utils/statusUtils";
 import { 
   ArrowLeft, 
   Shield, 
@@ -1321,12 +1321,12 @@ export function StaffActivationHub() {
                               <div className="flex flex-col items-end gap-2">
                                 {/* Status Badge */}
                                 <Badge 
-                                  variant={getStatusVariant(calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid))}
+                                  variant={getRfidStatusVariant(attendee.rfid_status, attendee.rfid_uid)}
                                   className="text-xs"
                                 >
-                                  {calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid) === 'activated' ? (
+                                  {attendee.activated_at ? (
                                     <><CheckCircle2 className="h-3 w-3 mr-1" />Active</>
-                                  ) : calculateAttendeeStatus(!!attendee.activated_at, !!attendee.rfid_uid) === 'assigned' ? (
+                                  ) : attendee.rfid_uid ? (
                                     <><Clock className="h-3 w-3 mr-1" />Pending</>
                                   ) : (
                                     <><AlertTriangle className="h-3 w-3 mr-1" />No RFID</>

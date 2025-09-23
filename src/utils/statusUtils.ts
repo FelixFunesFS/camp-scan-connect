@@ -1,24 +1,10 @@
 /**
- * Calculate attendee status dynamically based on activation and RFID assignment
+ * Get badge variant for RFID status
  */
-export function calculateAttendeeStatus(isActivated: boolean, hasRfid: boolean): string {
-  if (isActivated) return 'activated';
-  if (hasRfid) return 'assigned';
-  return 'unassigned';
-}
-
-/**
- * Get badge variant for attendee status
- */
-export function getStatusVariant(status: string): 'default' | 'secondary' | 'destructive' {
-  switch (status) {
-    case 'activated':
-      return 'default';
-    case 'assigned':
-      return 'secondary';
-    default:
-      return 'destructive';
-  }
+export function getRfidStatusVariant(rfidStatus: string | null, rfidUid: string | null): 'default' | 'secondary' | 'destructive' {
+  if (rfidUid && rfidStatus === 'active') return 'default';
+  if (rfidUid && rfidStatus === 'assigned') return 'secondary';
+  return 'destructive';
 }
 
 /**
@@ -70,19 +56,5 @@ export function getRegistrationStatusDisplayText(status: string): string {
       return 'Draft';
     default:
       return status || 'Unknown';
-  }
-}
-
-/**
- * Get status display text
- */
-export function getStatusDisplayText(status: string): string {
-  switch (status) {
-    case 'activated':
-      return 'Active';
-    case 'assigned':
-      return 'Pending';
-    default:
-      return 'No RFID';
   }
 }
