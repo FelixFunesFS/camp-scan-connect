@@ -46,14 +46,6 @@ export function AttendeeDetailModal({
     a.order_id === attendee.order_id && a.id !== attendee.id && attendee.order_id
   );
 
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case 'activated': return 'default';
-      case 'assigned': return 'secondary';
-      default: return 'destructive';
-    }
-  };
-
   const getRfidStatusVariant = (status: string) => {
     switch (status) {
       case 'active': return 'default';
