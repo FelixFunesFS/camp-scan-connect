@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertCircle, CheckCircle2, RefreshCw, Clock, Download, Activity, X, Timer, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -233,34 +234,47 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Sync Controls */}
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={handleInitialSync}
-                disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId}
-                className="flex items-center gap-2"
-              >
-                {isInitialSyncing ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                {isInitialSyncing ? 'Syncing...' : 'Full Sync'}
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={handleManualSync}
-                disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId}
-                className="flex items-center gap-2"
-              >
-                {isManualSyncing ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                {isManualSyncing ? 'Syncing...' : 'Manual Sync'}
-              </Button>
+          <TooltipProvider>
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={handleInitialSync}
+                  disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId}
+                  className="flex items-center gap-2"
+                >
+                  {isInitialSyncing ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {isInitialSyncing ? 'Syncing...' : 'Full Sync'}
+                </Button>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      onClick={handleManualSync}
+                      disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId}
+                      className="flex items-center gap-2"
+                    >
+                      {isManualSyncing ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                      {isManualSyncing ? 'Syncing...' : 'Manual Sync'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="max-w-xs">
+                      <p className="font-medium">RegFox Manual Sync</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Syncs incremental changes from RegFox. Excludes abandoned registrations from import while preserving existing cancelled, waitlisted, and pending records for reference.
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               
               {/* Cancel button shows when there's an active sync */}
               {activeSyncId && (
@@ -324,6 +338,7 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
               </div>
             )}
           </div>
+          </TooltipProvider>
 
           {/* Last Sync Status */}
           {lastSyncStatus && (
