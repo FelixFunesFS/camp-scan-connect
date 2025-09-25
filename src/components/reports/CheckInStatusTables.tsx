@@ -48,58 +48,68 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
         // Use ET timezone boundaries for "today" calculation
         const todayBoundaries = getStandardTimeBoundaries('today');
         
-        // Get recent check-ins (last 100, today only in ET) - join with rfid_tags for activation timestamps
+        // Get recent check-ins using a cleaner approach
         const { data: recentData } = await supabase
-          .from('attendees')
+          .from('rfid_tags')
           .select(`
-            id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, site_location_assignment, created_at,
-            rfid_tags!inner(activated_at, activation_method)
+            activated_at, activation_method, uid,
+            attendees!inner(id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, site_location_assignment, created_at)
           `)
-          .eq('registration_status', 'registered')
-          .not('rfid_tags.activated_at', 'is', null)
-          .gte('rfid_tags.activated_at', todayBoundaries.start.toISOString())
-          .lt('rfid_tags.activated_at', todayBoundaries.end.toISOString())
-          .order('rfid_tags.activated_at', { ascending: false })
+          .eq('attendees.registration_status', 'registered')
+          .not('activated_at', 'is', null)
+          .gte('activated_at', todayBoundaries.start.toISOString())
+          .lt('activated_at', todayBoundaries.end.toISOString())
+          .order('activated_at', { ascending: false })
           .limit(100);
 
-        console.log('Recent check-ins data:', recentData);
-
-        // Get pending check-ins (attendees without RFID activation) - using LEFT JOIN
+        // Get pending check-ins (attendees without active RFID tags)
         const { data: pendingData } = await supabase
           .from('attendees')
           .select(`
-            id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, created_at, site_location_assignment,
-            rfid_tags(activated_at)
+            id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, created_at, site_location_assignment
           `)
           .eq('registration_status', 'registered')
-          .is('rfid_tags.activated_at', null)
+          .not('id', 'in', `(
+            SELECT DISTINCT attendee_id 
+            FROM rfid_tags 
+            WHERE status = 'active' 
+            AND activated_at IS NOT NULL
+          )`)
           .order('created_at', { ascending: true })
           .limit(500);
 
-        console.log('Pending check-ins data:', pendingData);
-
         const formatAttendeeData = (data: any[], isRecent: boolean = false): AttendeeStatus[] => {
-          console.log('Formatting data:', { data, isRecent });
-          return data.map(attendee => {
-            // For INNER JOIN, the rfid_tags data is in an array
-            const rfidData = Array.isArray(attendee.rfid_tags) ? attendee.rfid_tags[0] : attendee.rfid_tags;
+          return data.map(item => {
+            let attendee, rfidData;
             
-            const formatted = {
+            if (isRecent) {
+              // For recent check-ins, data comes from rfid_tags with nested attendees
+              attendee = item.attendees;
+              rfidData = { activated_at: item.activated_at, activation_method: item.activation_method };
+            } else {
+              // For pending check-ins, data comes directly from attendees
+              attendee = item;
+              rfidData = null;
+            }
+            
+            // Map arrival_window to scheduled day like in RfidAssignment.tsx
+            const getScheduledArrivalDay = (arrivalWindow: string | null): string => {
+              return arrivalWindow === 'early' ? 'Thursday' : 'Friday';
+            };
+            
+            return {
               id: attendee.id,
               name: `${attendee.first_name} ${attendee.last_name}`,
               phone: attendee.phone,
               email: attendee.email,
-              activatedAt: isRecent ? rfidData?.activated_at : null,
-              activationMethod: isRecent ? rfidData?.activation_method : null,
+              activatedAt: rfidData?.activated_at || null,
+              activationMethod: rfidData?.activation_method || null,
               ticketType: attendee.ticket_type || 'Standard',
               orderInfo: attendee.order_id || 'No Order',
               arrivalWindow: attendee.arrival_window,
               siteLocation: attendee.site_location_assignment,
-              arrivalScheduled: attendee.created_at
+              arrivalScheduled: getScheduledArrivalDay(attendee.arrival_window)
             };
-            
-            console.log('Formatted attendee:', formatted);
-            return formatted;
           });
         };
 
@@ -390,8 +400,8 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                             />
                           </TableCell>
                           <TableCell>
-                            <div className="text-sm text-muted-foreground">
-                              {attendee.arrivalScheduled && formatStandardDateTimeET(attendee.arrivalScheduled)}
+                            <div className="text-sm">
+                              {attendee.arrivalScheduled}
                             </div>
                           </TableCell>
                           <TableCell>
