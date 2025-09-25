@@ -62,7 +62,9 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
           .order('rfid_tags.activated_at', { ascending: false })
           .limit(100);
 
-        // Get pending check-ins (attendees without RFID activation)
+        console.log('Recent check-ins data:', recentData);
+
+        // Get pending check-ins (attendees without RFID activation) - using LEFT JOIN
         const { data: pendingData } = await supabase
           .from('attendees')
           .select(`
@@ -70,24 +72,35 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
             rfid_tags(activated_at)
           `)
           .eq('registration_status', 'registered')
-          .or('rfid_tags.activated_at.is.null,rfid_tags.id.is.null')
+          .is('rfid_tags.activated_at', null)
           .order('created_at', { ascending: true })
           .limit(500);
 
+        console.log('Pending check-ins data:', pendingData);
+
         const formatAttendeeData = (data: any[], isRecent: boolean = false): AttendeeStatus[] => {
-          return data.map(attendee => ({
-            id: attendee.id,
-            name: `${attendee.first_name} ${attendee.last_name}`,
-            phone: attendee.phone,
-            email: attendee.email,
-            activatedAt: isRecent ? (attendee.rfid_tags?.activated_at || attendee.activated_at) : null,
-            activationMethod: isRecent ? (attendee.rfid_tags?.activation_method || attendee.activation_method) : null,
-            ticketType: attendee.ticket_type || 'Standard',
-            orderInfo: attendee.order_id || 'No Order',
-            arrivalWindow: attendee.arrival_window,
-            siteLocation: attendee.site_location_assignment,
-            arrivalScheduled: attendee.created_at
-          }));
+          console.log('Formatting data:', { data, isRecent });
+          return data.map(attendee => {
+            // For INNER JOIN, the rfid_tags data is in an array
+            const rfidData = Array.isArray(attendee.rfid_tags) ? attendee.rfid_tags[0] : attendee.rfid_tags;
+            
+            const formatted = {
+              id: attendee.id,
+              name: `${attendee.first_name} ${attendee.last_name}`,
+              phone: attendee.phone,
+              email: attendee.email,
+              activatedAt: isRecent ? rfidData?.activated_at : null,
+              activationMethod: isRecent ? rfidData?.activation_method : null,
+              ticketType: attendee.ticket_type || 'Standard',
+              orderInfo: attendee.order_id || 'No Order',
+              arrivalWindow: attendee.arrival_window,
+              siteLocation: attendee.site_location_assignment,
+              arrivalScheduled: attendee.created_at
+            };
+            
+            console.log('Formatted attendee:', formatted);
+            return formatted;
+          });
         };
 
         setRecentCheckIns(formatAttendeeData(recentData || [], true));
