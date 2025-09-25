@@ -1,10 +1,21 @@
 import { AttendeeData } from "@/pages/RfidAssignment";
-import { extractSiteLocationKey, formatSiteDisplayName } from "@/utils/siteLocationUtils";
+import { extractSiteLocationKey, formatSiteDisplayName, formatSiteLocationForDisplay } from "@/utils/siteLocationUtils";
+
+export interface SiteLocationDetailGroup {
+  siteLocationKey: string;
+  siteLocationDisplay: string;
+  siteLocationFull: string;
+  orders: Map<string, AttendeeData[]>;
+  allAttendees: AttendeeData[];
+  totalAttendees: number;
+  assignedAttendees: number;
+  percentage: number;
+}
 
 export interface SiteLocationGroup {
   siteKey: string;
   siteDisplayName: string;
-  orders: Map<string, AttendeeData[]>;
+  locations: Map<string, SiteLocationDetailGroup>;
   allAttendees: AttendeeData[];
   totalAttendees: number;
   assignedAttendees: number;
@@ -21,17 +32,23 @@ export interface SiteLocationOrderGroup {
 }
 
 /**
- * Group attendees by site location, then by order ID
+ * Group attendees by site number, then by site location details, then by order ID
  */
 export function groupAttendeesBySiteLocation(attendees: AttendeeData[]): SiteLocationGroup[] {
-  const groups = new Map<string, {
+  const siteGroups = new Map<string, {
     siteKey: string;
     siteDisplayName: string;
-    orders: Map<string, AttendeeData[]>;
+    locations: Map<string, {
+      siteLocationKey: string;
+      siteLocationDisplay: string;
+      siteLocationFull: string;
+      orders: Map<string, AttendeeData[]>;
+      allAttendees: AttendeeData[];
+    }>;
     allAttendees: AttendeeData[];
   }>();
 
-  // First pass: group by site location key
+  // First pass: group by site location key, then by actual site location assignment
   attendees.forEach(attendee => {
     const siteKey = extractSiteLocationKey(attendee.site_location_assignment);
     
@@ -40,39 +57,79 @@ export function groupAttendeesBySiteLocation(attendees: AttendeeData[]): SiteLoc
       return;
     }
 
-    if (!groups.has(siteKey)) {
-      groups.set(siteKey, {
+    // Create unique key for the specific site location assignment
+    const siteLocationKey = attendee.site_location_assignment || 'no-assignment';
+    const siteLocationDisplay = formatSiteLocationForDisplay(attendee.site_location_assignment);
+    const siteLocationFull = attendee.site_location_assignment || 'No Assignment';
+
+    if (!siteGroups.has(siteKey)) {
+      siteGroups.set(siteKey, {
         siteKey,
         siteDisplayName: formatSiteDisplayName(attendee.site_location_assignment),
+        locations: new Map(),
+        allAttendees: []
+      });
+    }
+
+    const siteGroup = siteGroups.get(siteKey)!;
+
+    if (!siteGroup.locations.has(siteLocationKey)) {
+      siteGroup.locations.set(siteLocationKey, {
+        siteLocationKey,
+        siteLocationDisplay,
+        siteLocationFull,
         orders: new Map(),
         allAttendees: []
       });
     }
 
-    const group = groups.get(siteKey)!;
+    const locationGroup = siteGroup.locations.get(siteLocationKey)!;
     const orderKey = attendee.order_id || `individual-${attendee.id}`;
 
-    if (!group.orders.has(orderKey)) {
-      group.orders.set(orderKey, []);
+    if (!locationGroup.orders.has(orderKey)) {
+      locationGroup.orders.set(orderKey, []);
     }
 
-    group.orders.get(orderKey)!.push(attendee);
-    group.allAttendees.push(attendee);
+    locationGroup.orders.get(orderKey)!.push(attendee);
+    locationGroup.allAttendees.push(attendee);
+    siteGroup.allAttendees.push(attendee);
   });
 
   // Convert to array and calculate stats
-  return Array.from(groups.values()).map(group => {
-    const totalAttendees = group.allAttendees.length;
-    const assignedAttendees = group.allAttendees.filter(a => 
+  return Array.from(siteGroups.values()).map(siteGroup => {
+    // Calculate stats for the site group
+    const totalAttendees = siteGroup.allAttendees.length;
+    const assignedAttendees = siteGroup.allAttendees.filter(a => 
       a.rfid_uid && a.rfid_status === 'assigned'
     ).length;
     const percentage = totalAttendees > 0 ? (assignedAttendees / totalAttendees) * 100 : 0;
 
+    // Calculate stats for each location group
+    const locations = new Map<string, SiteLocationDetailGroup>();
+    siteGroup.locations.forEach((locationData, locationKey) => {
+      const locationTotalAttendees = locationData.allAttendees.length;
+      const locationAssignedAttendees = locationData.allAttendees.filter(a => 
+        a.rfid_uid && a.rfid_status === 'assigned'
+      ).length;
+      const locationPercentage = locationTotalAttendees > 0 ? (locationAssignedAttendees / locationTotalAttendees) * 100 : 0;
+
+      locations.set(locationKey, {
+        siteLocationKey: locationData.siteLocationKey,
+        siteLocationDisplay: locationData.siteLocationDisplay,
+        siteLocationFull: locationData.siteLocationFull,
+        orders: locationData.orders,
+        allAttendees: locationData.allAttendees,
+        totalAttendees: locationTotalAttendees,
+        assignedAttendees: locationAssignedAttendees,
+        percentage: locationPercentage
+      });
+    });
+
     return {
-      siteKey: group.siteKey,
-      siteDisplayName: group.siteDisplayName,
-      orders: group.orders,
-      allAttendees: group.allAttendees,
+      siteKey: siteGroup.siteKey,
+      siteDisplayName: siteGroup.siteDisplayName,
+      locations,
+      allAttendees: siteGroup.allAttendees,
       totalAttendees,
       assignedAttendees,
       percentage
@@ -91,10 +148,19 @@ export function groupAttendeesBySiteLocation(attendees: AttendeeData[]): SiteLoc
 }
 
 /**
- * Get order groups within a site location group
+ * Get site location detail groups within a site group
  */
-export function getSiteLocationOrderGroups(siteGroup: SiteLocationGroup): SiteLocationOrderGroup[] {
-  return Array.from(siteGroup.orders.entries()).map(([orderId, attendees]) => {
+export function getSiteLocationDetailGroups(siteGroup: SiteLocationGroup): SiteLocationDetailGroup[] {
+  return Array.from(siteGroup.locations.values()).sort((a, b) => {
+    return a.siteLocationDisplay.localeCompare(b.siteLocationDisplay);
+  });
+}
+
+/**
+ * Get order groups within a site location detail group
+ */
+export function getSiteLocationOrderGroups(locationGroup: SiteLocationDetailGroup): SiteLocationOrderGroup[] {
+  return Array.from(locationGroup.orders.entries()).map(([orderId, attendees]) => {
     const assignedCount = attendees.filter(a => a.rfid_uid && a.rfid_status === 'assigned').length;
     const totalCount = attendees.length;
     const percentage = totalCount > 0 ? (assignedCount / totalCount) * 100 : 0;
