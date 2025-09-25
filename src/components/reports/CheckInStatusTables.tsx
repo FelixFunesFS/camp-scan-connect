@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { UserCheck, UserX, Search, Phone, ChevronDown, Clock, Zap } from "lucide-react";
+import { UserCheck, Phone, ChevronDown, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
@@ -59,19 +57,11 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
           .limit(100);
 
 
-        const formatAttendeeData = (data: any[], isRecent: boolean = false): AttendeeStatus[] => {
+        const formatAttendeeData = (data: any[]): AttendeeStatus[] => {
           return data.map(item => {
-            let attendee, rfidData;
-            
-            if (isRecent) {
-              // For recent check-ins, data comes from rfid_tags with nested attendees
-              attendee = item.attendees;
-              rfidData = { activated_at: item.activated_at, activation_method: item.activation_method };
-            } else {
-              // For pending check-ins, data comes directly from attendees
-              attendee = item;
-              rfidData = null;
-            }
+            // For recent check-ins, data comes from rfid_tags with nested attendees
+            const attendee = item.attendees;
+            const rfidData = { activated_at: item.activated_at, activation_method: item.activation_method };
             
             // Map arrival_window to scheduled day like in RfidAssignment.tsx
             const getScheduledArrivalDay = (arrivalWindow: string | null): string => {
@@ -83,8 +73,8 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
               name: `${attendee.first_name} ${attendee.last_name}`,
               phone: attendee.phone,
               email: attendee.email,
-              activatedAt: rfidData?.activated_at || null,
-              activationMethod: rfidData?.activation_method || null,
+              activatedAt: rfidData.activated_at,
+              activationMethod: rfidData.activation_method,
               ticketType: attendee.ticket_type || 'Standard',
               orderInfo: attendee.order_id || 'No Order',
               arrivalWindow: attendee.arrival_window,
@@ -94,7 +84,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
           });
         };
 
-        setRecentCheckIns(formatAttendeeData(recentData || [], true));
+        setRecentCheckIns(formatAttendeeData(recentData || []));
       } catch (error) {
         console.error('Error fetching status data:', error);
       } finally {
