@@ -102,19 +102,15 @@ export const CheckInStatusAndOnSite = ({ refreshTrigger, selectedPeriod }: Check
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="space-y-6">
       {/* Check-in Status Tables */}
-      <div>
-        <CheckInStatusTables refreshTrigger={refreshTrigger} />
-      </div>
+      <CheckInStatusTables refreshTrigger={refreshTrigger} />
       
       {/* Currently On-Site Attendees */}
-      <div>
-        <CurrentlyOnSiteAttendees 
-          attendees={onSiteAttendees} 
-          isLoading={isLoading}
-        />
-      </div>
+      <CurrentlyOnSiteAttendees 
+        attendees={onSiteAttendees} 
+        isLoading={isLoading}
+      />
     </div>
   );
 };

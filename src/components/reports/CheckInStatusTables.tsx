@@ -34,13 +34,9 @@ interface CheckInStatusTablesProps {
 
 export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps) => {
   const [recentCheckIns, setRecentCheckIns] = useState<AttendeeStatus[]>([]);
-  const [pendingCheckIns, setPendingCheckIns] = useState<AttendeeStatus[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [timeFilter, setTimeFilter] = useState("all");
-  const [pendingSortBy, setPendingSortBy] = useState("name");
   const [isLoading, setIsLoading] = useState(true);
   const [isRecentOpen, setIsRecentOpen] = useState(true);
-  const [isPendingOpen, setIsPendingOpen] = useState(true);
 
   useEffect(() => {
     const fetchStatusData = async () => {
@@ -62,21 +58,6 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
           .order('activated_at', { ascending: false })
           .limit(100);
 
-        // Get pending check-ins (attendees without active RFID tags)
-        const { data: pendingData } = await supabase
-          .from('attendees')
-          .select(`
-            id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, created_at, site_location_assignment
-          `)
-          .eq('registration_status', 'registered')
-          .not('id', 'in', `(
-            SELECT DISTINCT attendee_id 
-            FROM rfid_tags 
-            WHERE status = 'active' 
-            AND activated_at IS NOT NULL
-          )`)
-          .order('created_at', { ascending: true })
-          .limit(500);
 
         const formatAttendeeData = (data: any[], isRecent: boolean = false): AttendeeStatus[] => {
           return data.map(item => {
@@ -114,7 +95,6 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
         };
 
         setRecentCheckIns(formatAttendeeData(recentData || [], true));
-        setPendingCheckIns(formatAttendeeData(pendingData || [], false));
       } catch (error) {
         console.error('Error fetching status data:', error);
       } finally {
@@ -141,22 +121,6 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
     }
   });
 
-  // Filter and sort pending check-ins
-  const filteredAndSortedPending = pendingCheckIns
-    .filter(attendee =>
-      attendee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      attendee.phone?.includes(searchTerm) ||
-      attendee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      attendee.orderInfo.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      switch (pendingSortBy) {
-        case "name": return a.name.localeCompare(b.name);
-        case "ticketType": return a.ticketType.localeCompare(b.ticketType);
-        case "arrivalWindow": return (a.arrivalWindow || "").localeCompare(b.arrivalWindow || "");
-        default: return 0;
-      }
-    });
 
   if (isLoading) {
     return (
@@ -292,122 +256,6 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                                 {formatStandardDateTimeET(attendee.activatedAt)}
                               </div>
                             )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
-
-      {/* Pending Check-ins Section */}
-      <Card>
-        <Collapsible open={isPendingOpen} onOpenChange={setIsPendingOpen}>
-          <CardHeader>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between p-0 h-auto hover:bg-transparent">
-                <CardTitle className="flex items-center gap-2">
-                  <UserX className="h-5 w-5 text-warning" />
-                  Pending Check-ins
-                  <Badge variant="outline" className="text-warning">
-                    {filteredAndSortedPending.length}
-                  </Badge>
-                </CardTitle>
-                <ChevronDown className={`h-4 w-4 transition-transform ${isPendingOpen ? 'rotate-180' : ''}`} />
-              </Button>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by name, phone, email, or order..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  <Select value={pendingSortBy} onValueChange={setPendingSortBy}>
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="name">Sort by Name</SelectItem>
-                      <SelectItem value="ticketType">Sort by Type</SelectItem>
-                      <SelectItem value="arrivalWindow">Sort by Arrival</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Badge variant="outline">
-                    {filteredAndSortedPending.length} of {pendingCheckIns.length}
-                  </Badge>
-                </div>
-
-                <div className="border rounded-lg max-h-[400px] overflow-y-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-background">
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Contact</TableHead>
-                        <TableHead>Ticket Type</TableHead>
-                        <TableHead>Site Location</TableHead>
-                        <TableHead>Arrival Scheduled</TableHead>
-                        <TableHead>Order ID</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAndSortedPending.map((attendee) => (
-                        <TableRow key={attendee.id}>
-                          <TableCell className="font-medium">{attendee.name}</TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              {attendee.phone && (
-                                <div className="flex items-center gap-1 text-sm">
-                                  <Phone className="h-3 w-3" />
-                                  {formatPhoneNumber(attendee.phone)}
-                                </div>
-                              )}
-                              {attendee.email && (
-                                <div className="text-xs text-muted-foreground truncate max-w-[150px]">
-                                  {attendee.email}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <Badge variant="outline" className="text-xs">
-                                {attendee.ticketType}
-                              </Badge>
-                              {attendee.arrivalWindow && (
-                                <div className="text-xs text-muted-foreground">
-                                  {attendee.arrivalWindow}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <SiteLocationBadge 
-                              siteLocationAssignment={attendee.siteLocation}
-                              maxLength={15}
-                              className="text-xs"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {attendee.arrivalScheduled}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm text-muted-foreground">
-                              {attendee.orderInfo}
-                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
