@@ -218,13 +218,28 @@ All colors MUST be HSL.
     @apply shadow-sm border border-border/50 transition-shadow duration-200 hover:shadow-md;
   }
 
-  /* Enhanced mobile touch interactions */
-  .touch-target:active {
-    @apply scale-95 transition-transform duration-100;
-  }
+/* Mobile-specific Reports page utilities */
+.reports-mobile-grid {
+  @apply grid gap-4;
+}
 
-  /* Ensure mobile cards have proper spacing */
-  .mobile-container > .space-y-4 > * + * {
-    @apply mt-4;
-  }
+.reports-mobile-header {
+  @apply sticky top-0 bg-background/95 backdrop-blur-sm z-40 border-b p-4;
+}
+
+/* Mobile table card animations */
+.mobile-table-card {
+  @apply transition-all duration-200 hover:shadow-md active:scale-95;
+}
+
+/* Pull to refresh styles */
+.pull-refresh-container {
+  @apply relative overflow-hidden;
+}
+
+.pull-refresh-indicator {
+  @apply absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full 
+         bg-card border rounded-full p-3 shadow-lg z-50 
+         transition-all duration-200 ease-out;
+}
 }

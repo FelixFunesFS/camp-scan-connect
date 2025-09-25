@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ResponsiveTable, ResponsiveTableMobile } from "@/components/ui/responsive-table";
 import { UserCheck, Phone, ChevronDown, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
 import { getStandardTimeBoundaries } from "@/utils/etTimezone";
 import { SiteLocationBadge } from "@/components/shared/SiteLocationBadge";
+import { MobileAttendeeCard } from "./MobileTableCard";
 
 interface AttendeeStatus {
   id: string;
@@ -169,7 +171,9 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                     {filteredRecent.length} of {recentCheckIns.length} check-ins (ET timezone)
                   </div>
                 </div>
-                <div className="border rounded-lg max-h-[400px] overflow-y-auto">
+                
+                {/* Desktop Table */}
+                <ResponsiveTable>
                   <Table>
                     <TableHeader className="sticky top-0 bg-background">
                       <TableRow>
@@ -251,7 +255,16 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                       ))}
                     </TableBody>
                   </Table>
-                </div>
+                </ResponsiveTable>
+
+                {/* Mobile Cards */}
+                <ResponsiveTableMobile>
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {filteredRecent.slice(0, 20).map((attendee) => (
+                      <MobileAttendeeCard key={attendee.id} attendee={attendee} />
+                    ))}
+                  </div>
+                </ResponsiveTableMobile>
               </div>
             </CardContent>
           </CollapsibleContent>

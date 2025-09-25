@@ -4,7 +4,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones, Shield, ChevronDown, ChevronRight, Caravan, Users, Expand, Minimize } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { 
+  RefreshCw, 
+  Download, 
+  ChevronDown, 
+  ChevronRight, 
+  BarChart3, 
+  Users, 
+  Activity, 
+  Headphones, 
+  Shirt, 
+  MapPin, 
+  TrendingUp, 
+  Eye, 
+  EyeOff, 
+  RotateCcw,
+  ArrowLeft,
+  Shield,
+  Caravan,
+  Expand,
+  Minimize
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { RecentlyCheckedIn } from "@/components/reports/RecentlyCheckedIn";
@@ -17,10 +38,10 @@ import { ArrivalsBreakdown } from "@/components/reports/ArrivalsBreakdown";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileReportsControls } from "@/components/MobileReportsControls";
 import { MobileReportCard } from "@/components/MobileReportCard";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -102,11 +123,44 @@ const Reports = () => {
     }
   };
 
+  // Pull to refresh functionality for mobile
+  const { containerRef, isRefreshing: isPullRefreshing, pullDistance, shouldShowIndicator } = usePullToRefresh({
+    onRefresh: async () => {
+      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for better UX
+      handleRefresh();
+    },
+    isEnabled: isMobile
+  });
+
   // Mobile layout
   if (isMobile) {
     return (
       <TooltipProvider>
-        <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5">
+        <div 
+          ref={containerRef}
+          className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 relative"
+          style={{
+            transform: `translateY(${Math.min(pullDistance * 0.5, 40)}px)`,
+            transition: pullDistance === 0 ? 'transform 0.2s ease-out' : 'none'
+          }}
+        >
+          {/* Pull to refresh indicator */}
+          {shouldShowIndicator && (
+            <div 
+              className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full bg-background border rounded-full p-2 shadow-lg z-10"
+              style={{
+                opacity: Math.min(pullDistance / 60, 1)
+              }}
+            >
+              <RotateCcw 
+                className={`h-4 w-4 text-primary ${isPullRefreshing ? 'animate-spin' : ''}`}
+                style={{
+                  transform: `rotate(${Math.min(pullDistance * 2, 180)}deg)`
+                }}
+              />
+            </div>
+          )}
+
           <div className="responsive-container">
             <div className="space-y-4">
               {/* Mobile Header */}
@@ -129,7 +183,7 @@ const Reports = () => {
                 onExport={handleExportReport}
                 onExpandAll={expandAll}
                 onCollapseAll={collapseAll}
-                isRefreshing={isRefreshing}
+                isRefreshing={isRefreshing || isPullRefreshing}
               />
 
               {/* Mobile Report Cards */}

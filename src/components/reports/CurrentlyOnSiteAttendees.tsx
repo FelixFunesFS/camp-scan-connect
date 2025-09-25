@@ -1,5 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ResponsiveTable, ResponsiveTableMobile } from "@/components/ui/responsive-table";
+import { MapPin, Users, Clock } from "lucide-react";
+import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
+import { MobileOnSiteCard } from "./MobileTableCard";
 
 interface OnSiteAttendee {
   name: string;
@@ -14,20 +19,11 @@ interface CurrentlyOnSiteAttendeesProps {
 }
 
 export const CurrentlyOnSiteAttendees = ({ attendees, isLoading }: CurrentlyOnSiteAttendeesProps) => {
-  const formatTime = (minutes: number): string => {
+const formatDuration = (minutes: number): string => {
     if (minutes === 0) return '0m';
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
-
-  const formatEntryTime = (timeString: string): string => {
-    const date = new Date(timeString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
-    });
   };
 
   if (isLoading) {
@@ -82,22 +78,46 @@ export const CurrentlyOnSiteAttendees = ({ attendees, isLoading }: CurrentlyOnSi
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {attendees.map((attendee, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-              <div>
-                <div className="font-medium">{attendee.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  RFID: {attendee.rfid_uid} • Entered: {formatEntryTime(attendee.entry_time)}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-medium">{formatTime(attendee.duration_minutes)}</div>
-                <div className="text-xs text-muted-foreground">on-site</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Desktop Table */}
+        <ResponsiveTable>
+          <div className="border rounded-lg max-h-[300px] overflow-y-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background">
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>RFID UID</TableHead>
+                  <TableHead>Entry Time</TableHead>
+                  <TableHead>Duration</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {attendees.map((attendee, index) => (
+                  <TableRow key={`${attendee.name}-${index}`}>
+                    <TableCell className="font-medium">{attendee.name}</TableCell>
+                    <TableCell className="font-mono text-sm">{attendee.rfid_uid}</TableCell>
+                    <TableCell>
+                      {formatStandardDateTimeET(attendee.entry_time)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                        {formatDuration(attendee.duration_minutes)}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </ResponsiveTable>
+
+        {/* Mobile Cards */}
+        <ResponsiveTableMobile>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto">
+            {attendees.map((attendee, index) => (
+              <MobileOnSiteCard key={`${attendee.name}-${index}`} attendee={attendee} />
+            ))}
+          </div>
+        </ResponsiveTableMobile>
       </CardContent>
     </Card>
   );
