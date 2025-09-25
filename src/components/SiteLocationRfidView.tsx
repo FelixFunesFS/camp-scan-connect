@@ -66,7 +66,7 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Site Location</TableHead>
+                <TableHead className="w-64 min-w-[250px]">Site Location</TableHead>
                 <TableHead>Order ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Phone</TableHead>
@@ -89,10 +89,9 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
                       </TableRow>
                     )}
                     <TableRow className="hover:bg-muted/50">
-                      <TableCell>
+                      <TableCell className="w-64 min-w-[250px]">
                         <SiteLocationBadge 
                           siteLocationAssignment={attendee.site_location_assignment}
-                          maxLength={20}
                         />
                       </TableCell>
                       <TableCell className="text-sm font-medium">
