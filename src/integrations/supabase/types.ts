@@ -685,6 +685,14 @@ export type Database = {
           updated_orders: string[]
         }[]
       }
+      update_group_meal_plans: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          attendees_updated: number
+          orders_updated: number
+          updated_orders: string[]
+        }[]
+      }
       upsert_attendee_safe: {
         Args: { p_data: Json; p_regfox_id: string }
         Returns: string

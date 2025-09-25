@@ -1071,6 +1071,25 @@ serve(async (req) => {
       console.error('Error in group early access update:', groupError);
     }
 
+    // Update group meal plan settings after sync completion
+    try {
+      console.log('Updating group meal plan settings...');
+      const { data: mealPlanUpdateResult, error: mealPlanUpdateError } = await supabase
+        .rpc('update_group_meal_plans');
+      
+      if (mealPlanUpdateError) {
+        console.error('Error updating group meal plans:', mealPlanUpdateError);
+      } else if (mealPlanUpdateResult && mealPlanUpdateResult.length > 0) {
+        const result = mealPlanUpdateResult[0];
+        console.log(`Group meal plan update completed: ${result.orders_updated} orders updated, ${result.attendees_updated} attendees updated`);
+        if (result.updated_orders.length > 0) {
+          console.log('Updated meal plan order IDs:', result.updated_orders);
+        }
+      }
+    } catch (mealPlanError) {
+      console.error('Error in group meal plan update:', mealPlanError);
+    }
+
     // Clear heartbeat interval and release sync lock
     clearInterval(heartbeatInterval);
     await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
