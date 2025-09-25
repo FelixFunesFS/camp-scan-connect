@@ -208,4 +208,23 @@ All colors MUST be HSL.
   .mobile-nav {
     @apply fixed bottom-0 left-0 right-0 z-50 bg-background border-t sm:relative sm:bottom-auto sm:border-t-0;
   }
+  
+  /* Additional mobile-specific utilities for Reports page */
+  .mobile-header {
+    @apply flex items-center justify-between mb-4;
+  }
+
+  .mobile-card-shadow {
+    @apply shadow-sm border border-border/50 transition-shadow duration-200 hover:shadow-md;
+  }
+
+  /* Enhanced mobile touch interactions */
+  .touch-target:active {
+    @apply scale-95 transition-transform duration-100;
+  }
+
+  /* Ensure mobile cards have proper spacing */
+  .mobile-container > .space-y-4 > * + * {
+    @apply mt-4;
+  }
 }

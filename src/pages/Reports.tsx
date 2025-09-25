@@ -18,6 +18,9 @@ import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileReportsControls } from "@/components/MobileReportsControls";
+import { MobileReportCard } from "@/components/MobileReportCard";
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -25,6 +28,7 @@ const Reports = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
+  const isMobile = useIsMobile();
   
   // Collapsible section states with localStorage persistence
   const [sections, setSections] = useState(() => {
@@ -98,6 +102,117 @@ const Reports = () => {
     }
   };
 
+  // Mobile layout
+  if (isMobile) {
+    return (
+      <TooltipProvider>
+        <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5">
+          <div className="responsive-container">
+            <div className="space-y-4">
+              {/* Mobile Header */}
+              <div className="mobile-header">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/")}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Dashboard
+                </Button>
+              </div>
+
+              {/* Mobile Controls */}
+              <MobileReportsControls
+                selectedPeriod={selectedPeriod}
+                onPeriodChange={(period) => setSelectedPeriod(period)}
+                onRefresh={handleRefresh}
+                onExport={handleExportReport}
+                onExpandAll={expandAll}
+                onCollapseAll={collapseAll}
+                isRefreshing={isRefreshing}
+              />
+
+              {/* Mobile Report Cards */}
+              <div className="space-y-4">
+                <MobileReportCard
+                  title="Event Check-in Overview"
+                  icon={<Users className="h-5 w-5 text-primary" />}
+                  isOpen={sections.overview}
+                  onToggle={() => updateSectionState('overview', !sections.overview)}
+                >
+                  <CheckInOverview refreshTrigger={refreshTrigger} />
+                </MobileReportCard>
+
+                <RecentlyCheckedIn refreshTrigger={refreshTrigger} />
+
+                <MobileReportCard
+                  title="Arrivals by Ticket Type"
+                  icon={<Caravan className="h-5 w-5 text-primary" />}
+                  isOpen={sections.arrivals}
+                  onToggle={() => updateSectionState('arrivals', !sections.arrivals)}
+                >
+                  <ArrivalsBreakdown refreshTrigger={refreshTrigger} />
+                </MobileReportCard>
+
+                <MobileReportCard
+                  title="Main Gate Access"
+                  icon={<Shield className="h-5 w-5 text-primary" />}
+                  isOpen={sections.gate}
+                  onToggle={() => updateSectionState('gate', !sections.gate)}
+                >
+                  <GateAccessReport 
+                    selectedPeriod={selectedPeriod}
+                    refreshTrigger={refreshTrigger}
+                  />
+                </MobileReportCard>
+
+                <MobileReportCard
+                  title="Attendee Services"
+                  icon={<Headphones className="h-5 w-5 text-primary" />}
+                  isOpen={sections.services}
+                  onToggle={() => updateSectionState('services', !sections.services)}
+                >
+                  <div className="space-y-4">
+                    <AnalyticsCards 
+                      selectedPeriod={selectedPeriod}
+                      refreshTrigger={refreshTrigger}
+                      section="top"
+                    />
+                    
+                    <HeadphonesTracker 
+                      selectedPeriod={selectedPeriod}
+                      refreshTrigger={refreshTrigger}
+                    />
+                    
+                    <TShirtTracker 
+                      refreshTrigger={refreshTrigger}
+                    />
+                    
+                    <AnalyticsCards 
+                      selectedPeriod={selectedPeriod}
+                      refreshTrigger={refreshTrigger}
+                      section="bottom"
+                    />
+                  </div>
+                </MobileReportCard>
+
+                <MobileReportCard
+                  title="Currently On-Site"
+                  icon={<BarChart3 className="h-5 w-5 text-primary" />}
+                  isOpen={sections.status}
+                  onToggle={() => updateSectionState('status', !sections.status)}
+                >
+                  <CheckInStatusAndOnSite refreshTrigger={refreshTrigger} selectedPeriod={selectedPeriod} />
+                </MobileReportCard>
+              </div>
+            </div>
+          </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
+  // Desktop layout
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
