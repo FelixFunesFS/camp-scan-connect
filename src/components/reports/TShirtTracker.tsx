@@ -22,7 +22,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
     sizeBreakdown: {}
   });
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [isPendingPickupsOpen, setIsPendingPickupsOpen] = useState(true);
+  const [isPendingPickupsOpen, setIsPendingPickupsOpen] = useState(false);
 
   const fetchTShirtData = useCallback(async (isBackground = false) => {
     try {
