@@ -34,6 +34,7 @@ import { GroupRfidView } from "@/components/GroupRfidView";
 import { SiteLocationRfidView } from "@/components/SiteLocationRfidView";
 import { RfidAssignmentFAQ } from "@/components/RfidAssignmentFAQ";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
+import { flattenAndSortAttendees } from "@/utils/siteLocationGroupUtils";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { 
   ArrowUpDown, 
@@ -548,10 +549,82 @@ export const RfidAssignment = () => {
       ? filteredAttendees.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned')
       : filteredAttendees;
     
-    const filename = `rfid-assignment-${mode}-${showOnlyUnassigned ? 'unassigned-only' : 'all'}`;
-    exportToCsv(exportData, filename);
-    
-    toast.success(`Export Complete - Exported ${exportData.length} attendee records to CSV`);
+    if (viewMode === 'site-location') {
+      // For site location view, use flattened data that matches the displayed table
+      const flatData = flattenAndSortAttendees(exportData);
+      const siteLocationCsvData = flatData.map(attendee => ({
+        site_location: attendee.siteLocationFull,
+        order_id: attendee.orderDisplayName,
+        name: `${attendee.first_name} ${attendee.last_name}`,
+        phone: attendee.phone ? formatPhoneNumber(attendee.phone) : 'N/A',
+        arrival: attendee.arrival_window || 'Standard',
+        waiver: attendee.waiver_signed ? 'Signed' : 'Unsigned',
+        rfid_status: attendee.rfid_status || 'unissued',
+        rfid_uid: attendee.rfid_uid || 'Unassigned',
+        email: attendee.email || 'N/A',
+        ticket_type: attendee.ticket_type,
+        meal_plan: attendee.meal_plan || 'No Plan',
+        created_at: new Date(attendee.created_at).toLocaleString(),
+        activated_at: attendee.activated_at ? new Date(attendee.activated_at).toLocaleString() : 'Not Activated'
+      }));
+      
+      // Create CSV content for site location view
+      const headers = [
+        'Site Location',
+        'Order ID', 
+        'Name',
+        'Phone',
+        'Arrival',
+        'Waiver',
+        'RFID Status',
+        'RFID UID',
+        'Email',
+        'Ticket Type',
+        'Meal Plan',
+        'Created At',
+        'Activated At'
+      ];
+      
+      const csvContent = [
+        headers.join(','),
+        ...siteLocationCsvData.map(row => [
+          `"${row.site_location}"`,
+          `"${row.order_id}"`,
+          `"${row.name}"`,
+          `"${row.phone}"`,
+          `"${row.arrival}"`,
+          `"${row.waiver}"`,
+          `"${row.rfid_status}"`,
+          `"${row.rfid_uid}"`,
+          `"${row.email}"`,
+          `"${row.ticket_type}"`,
+          `"${row.meal_plan}"`,
+          `"${row.created_at}"`,
+          `"${row.activated_at}"`
+        ].join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      const filename = `rfid-assignment-site-location-${mode}-${showOnlyUnassigned ? 'unassigned-only' : 'all'}-${new Date().toISOString().split('T')[0]}`;
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${filename}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`Export Complete - Exported ${siteLocationCsvData.length} attendee records to CSV (Site Location View)`);
+    } else {
+      // Use existing export for individual and group views
+      const filename = `rfid-assignment-${viewMode}-${mode}-${showOnlyUnassigned ? 'unassigned-only' : 'all'}`;
+      exportToCsv(exportData, filename);
+      
+      toast.success(`Export Complete - Exported ${exportData.length} attendee records to CSV`);
+    }
   };
 
   // Auto-focus first unassigned row
