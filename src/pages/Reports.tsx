@@ -33,7 +33,7 @@ const Reports = () => {
       arrivals: true,     // Arrivals by Ticket Type (default: expanded)
       gate: true,         // Main Gate Access (default: expanded)
       services: true,     // Attendee Services (default: expanded)
-      status: false       // Check-in Status & On-Site (default: collapsed)
+      status: true        // Check-in Status & On-Site (default: expanded)
     };
   });
 

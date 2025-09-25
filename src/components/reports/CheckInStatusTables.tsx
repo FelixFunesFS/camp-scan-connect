@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
 import { getStandardTimeBoundaries } from "@/utils/etTimezone";
+import { SiteLocationBadge } from "@/components/shared/SiteLocationBadge";
 
 interface AttendeeStatus {
   id: string;
@@ -23,6 +24,8 @@ interface AttendeeStatus {
   ticketType: string;
   orderInfo: string;
   arrivalWindow: string | null;
+  siteLocation: string | null;
+  arrivalScheduled: string | null;
 }
 
 interface CheckInStatusTablesProps {
@@ -49,7 +52,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
         const { data: recentData } = await supabase
           .from('attendees')
           .select(`
-            id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window,
+            id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, site_location_assignment, created_at,
             rfid_tags!inner(activated_at, activation_method)
           `)
           .eq('registration_status', 'registered')
@@ -63,7 +66,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
         const { data: pendingData } = await supabase
           .from('attendees')
           .select(`
-            id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, created_at,
+            id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, created_at, site_location_assignment,
             rfid_tags(activated_at)
           `)
           .eq('registration_status', 'registered')
@@ -77,11 +80,13 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
             name: `${attendee.first_name} ${attendee.last_name}`,
             phone: attendee.phone,
             email: attendee.email,
-            activatedAt: isRecent ? attendee.rfid_tags?.activated_at : null,
-            activationMethod: isRecent ? attendee.rfid_tags?.activation_method : null,
+            activatedAt: isRecent ? (attendee.rfid_tags?.activated_at || attendee.activated_at) : null,
+            activationMethod: isRecent ? (attendee.rfid_tags?.activation_method || attendee.activation_method) : null,
             ticketType: attendee.ticket_type || 'Standard',
             orderInfo: attendee.order_id || 'No Order',
-            arrivalWindow: attendee.arrival_window
+            arrivalWindow: attendee.arrival_window,
+            siteLocation: attendee.site_location_assignment,
+            arrivalScheduled: attendee.created_at
           }));
         };
 
@@ -194,6 +199,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                         <TableHead>Name</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Ticket Type</TableHead>
+                        <TableHead>Site Location</TableHead>
                         <TableHead>Method</TableHead>
                         <TableHead>Check-in Time</TableHead>
                       </TableRow>
@@ -228,6 +234,13 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                                 </div>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <SiteLocationBadge 
+                              siteLocationAssignment={attendee.siteLocation}
+                              maxLength={15}
+                              className="text-xs"
+                            />
                           </TableCell>
                           <TableCell>
                             {attendee.activationMethod && (
@@ -320,6 +333,8 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                         <TableHead>Name</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Ticket Type</TableHead>
+                        <TableHead>Site Location</TableHead>
+                        <TableHead>Arrival Scheduled</TableHead>
                         <TableHead>Order ID</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -352,6 +367,18 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                                   {attendee.arrivalWindow}
                                 </div>
                               )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <SiteLocationBadge 
+                              siteLocationAssignment={attendee.siteLocation}
+                              maxLength={15}
+                              className="text-xs"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm text-muted-foreground">
+                              {attendee.arrivalScheduled && formatStandardDateTimeET(attendee.arrivalScheduled)}
                             </div>
                           </TableCell>
                           <TableCell>
