@@ -750,9 +750,19 @@ serve(async (req) => {
           }
           
           // Standardize all meal plans to "1" (displays as "Plan 1")
-          if (mealPlan && mealPlan !== '' && mealPlan !== '0' && mealPlan.toLowerCase() !== 'none') {
+          // Any non-empty meal plan value gets normalized to "1" for consistency
+          if (mealPlan && 
+              mealPlan.toString().trim() !== '' && 
+              mealPlan.toString() !== '0' && 
+              mealPlan.toString().toLowerCase() !== 'none' &&
+              mealPlan.toString().toLowerCase() !== 'null') {
+            const originalValue = mealPlan;
             mealPlan = '1';
-            console.log(`Sync - Normalized meal plan to "1" for standardization`);
+            console.log(`Sync - Normalized meal plan "${originalValue}" -> "1" for standardization`);
+          } else if (mealPlan) {
+            // Clear invalid meal plan values
+            mealPlan = null;
+            console.log(`Sync - Cleared invalid meal plan value: "${mealPlan}"`);
           }
           
           // Collect all unhandled custom fields
