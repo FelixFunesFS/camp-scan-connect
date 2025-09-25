@@ -10,7 +10,6 @@ interface MobileActivationPreviewProps {
   phoneNumber: string;
   lookupResult: PhoneLookupResult;
   isProcessing: boolean;
-  onActivatePhoneGroup: () => void;
   onActivateEntireOrder: () => void;
   onBack: () => void;
 }
@@ -19,7 +18,6 @@ export function MobileActivationPreview({
   phoneNumber,
   lookupResult,
   isProcessing,
-  onActivatePhoneGroup,
   onActivateEntireOrder,
   onBack
 }: MobileActivationPreviewProps) {
@@ -105,9 +103,9 @@ export function MobileActivationPreview({
       {/* Action Buttons */}
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/50 p-4 -m-4 mt-6">
         <div className="space-y-3">
-          {/* Primary Action: Activate Phone Group */}
+          {/* Primary Action: Check-In Entire Order */}
           <Button
-            onClick={onActivatePhoneGroup}
+            onClick={onActivateEntireOrder}
             disabled={isProcessing}
             size="lg"
             className="w-full h-12 text-base font-medium"
@@ -120,23 +118,10 @@ export function MobileActivationPreview({
             ) : (
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
-                Check-In My Registration ({directCount})
+                Check-In Entire Order ({totalInOrder})
               </div>
             )}
           </Button>
-
-          {/* Secondary Action: Activate Entire Order (if applicable) */}
-          {hasCompanions && (
-            <Button
-              onClick={onActivateEntireOrder}
-              disabled={isProcessing}
-              variant="outline"
-              size="lg"
-              className="w-full h-12 text-base font-medium border-accent text-accent hover:bg-accent hover:text-accent-foreground"
-            >
-              {isProcessing ? "Checking in..." : `Check-In Entire Order (${totalInOrder})`}
-            </Button>
-          )}
 
           {/* Back Button */}
           <Button

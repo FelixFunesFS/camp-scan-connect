@@ -64,12 +64,12 @@ export default function ActivationStation() {
     }
   };
 
-  const handleActivatePhoneGroup = async () => {
+  const handleActivateEntireOrder = async () => {
     if (!lookupResult) return;
 
     setIsProcessing(true);
     try {
-      const result = await PhoneActivationService.activateGroupByPhone(
+      const result = await PhoneActivationService.activateEntireOrderByPhone(
         phoneNumber,
         'self_activated'
       );
@@ -84,38 +84,11 @@ export default function ActivationStation() {
       }
     } catch (error) {
       console.error('Activation error:', error);
-      toast.error("Check-In Failed - There was an error activating your group. Please try again.");
+      toast.error("Check-In Failed - There was an error activating your order. Please try again.");
     } finally {
       setIsProcessing(false);
     }
   };
-
-  const handleActivateEntireOrder = async () => {
-    if (!lookupResult) return;
-
-    setIsProcessing(true);
-    try {
-      const result = await PhoneActivationService.activateEntireOrderByPhone(
-        phoneNumber,
-        'self_activated'
-      );
-
-      if (result) {
-        setActivationResult(result);
-        toast.success(`Order Check-In Complete! Activated ${result.activated_count - result.already_active_count} new attendee(s) from the entire order`);
-        setShowPreview(false);
-        setLookupResult(null);
-      } else {
-        toast.error("Order Check-In Failed - Unable to activate entire order");
-      }
-    } catch (error) {
-      console.error('Order activation error:', error);
-      toast.error("Order Check-In Failed - There was an error activating the entire order. Please try again.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
 
   const resetForm = () => {
     setPhoneNumber("");
@@ -211,14 +184,13 @@ export default function ActivationStation() {
                         </Button>
                       </div>
                     ) : lookupResult && (
-                      <MobileActivationPreview
-                        phoneNumber={phoneNumber}
-                        lookupResult={lookupResult}
-                        isProcessing={isProcessing}
-                        onActivatePhoneGroup={handleActivatePhoneGroup}
-                        onActivateEntireOrder={handleActivateEntireOrder}
-                        onBack={() => setShowPreview(false)}
-                      />
+                        <MobileActivationPreview
+                          phoneNumber={phoneNumber}
+                          lookupResult={lookupResult}
+                          isProcessing={isProcessing}
+                          onActivateEntireOrder={handleActivateEntireOrder}
+                          onBack={() => setShowPreview(false)}
+                        />
                     )}
                   </>
                 ) : (
