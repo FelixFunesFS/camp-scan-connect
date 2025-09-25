@@ -91,7 +91,7 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
                     <TableRow className="hover:bg-muted/50">
                       <TableCell>
                         <SiteLocationBadge 
-                          siteLocationAssignment={attendee.orderSiteLocationAssignment}
+                          siteLocationAssignment={attendee.site_location_assignment}
                           maxLength={20}
                         />
                       </TableCell>

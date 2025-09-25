@@ -193,7 +193,6 @@ export interface FlatAttendeeWithSorting extends AttendeeData {
   siteLocationFull: string;
   orderId: string;
   orderDisplayName: string;
-  orderSiteLocationAssignment: string | null;
 }
 
 /**
@@ -215,10 +214,48 @@ function getPrimarySiteLocationForOrder(attendees: AttendeeData[]): string | nul
 }
 
 /**
+ * Pre-process attendees to unify site locations within orders
+ * All companions in the same order will get the same site_location_assignment
+ */
+function unifyOrderSiteLocations(attendees: AttendeeData[]): AttendeeData[] {
+  // Group attendees by order_id
+  const orderGroups = new Map<string, AttendeeData[]>();
+  
+  attendees.forEach(attendee => {
+    const orderKey = attendee.order_id || `individual-${attendee.id}`;
+    if (!orderGroups.has(orderKey)) {
+      orderGroups.set(orderKey, []);
+    }
+    orderGroups.get(orderKey)!.push(attendee);
+  });
+  
+  // Process each order to unify site locations
+  const unifiedAttendees: AttendeeData[] = [];
+  
+  orderGroups.forEach((orderAttendees) => {
+    const primarySiteLocation = getPrimarySiteLocationForOrder(orderAttendees);
+    
+    // Update all attendees in this order to have the same site location
+    orderAttendees.forEach(attendee => {
+      unifiedAttendees.push({
+        ...attendee,
+        site_location_assignment: primarySiteLocation
+      });
+    });
+  });
+  
+  return unifiedAttendees;
+}
+
+/**
  * Flatten and sort all attendees by site location, then site location details, then order ID
  */
 export function flattenAndSortAttendees(attendees: AttendeeData[]): FlatAttendeeWithSorting[] {
-  const siteGroups = groupAttendeesBySiteLocation(attendees);
+  // First, unify site locations within orders so companions stay together
+  const unifiedAttendees = unifyOrderSiteLocations(attendees);
+  
+  // Then group them using the unified data
+  const siteGroups = groupAttendeesBySiteLocation(unifiedAttendees);
   const flatAttendees: FlatAttendeeWithSorting[] = [];
   
   siteGroups.forEach(siteGroup => {
@@ -228,9 +265,6 @@ export function flattenAndSortAttendees(attendees: AttendeeData[]): FlatAttendee
       const orderGroups = getSiteLocationOrderGroups(locationGroup);
       
       orderGroups.forEach(orderGroup => {
-        // Get the primary site location for this order
-        const orderSiteLocationAssignment = getPrimarySiteLocationForOrder(orderGroup.attendees);
-        
         orderGroup.attendees.forEach(attendee => {
           flatAttendees.push({
             ...attendee,
@@ -239,8 +273,7 @@ export function flattenAndSortAttendees(attendees: AttendeeData[]): FlatAttendee
             siteLocationDisplay: locationGroup.siteLocationDisplay,
             siteLocationFull: locationGroup.siteLocationFull,
             orderId: orderGroup.orderId,
-            orderDisplayName: orderGroup.orderDisplayName,
-            orderSiteLocationAssignment
+            orderDisplayName: orderGroup.orderDisplayName
           });
         });
       });
