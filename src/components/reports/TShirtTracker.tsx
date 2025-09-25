@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shirt, Package, CheckCircle, Clock, Phone } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Shirt, Package, CheckCircle, Clock, Phone, ChevronDown } from "lucide-react";
 import { TShirtService, TShirtPickupData, TShirtStats } from "@/services/tshirtService";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTime } from "@/utils/dateTimeUtils";
@@ -21,6 +22,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
     sizeBreakdown: {}
   });
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isPendingPickupsOpen, setIsPendingPickupsOpen] = useState(true);
 
   const fetchTShirtData = useCallback(async (isBackground = false) => {
     try {
@@ -146,69 +148,82 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
         </div>
 
         {/* Pending Pickups */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-semibold">Pending Pickups</h4>
-            {pendingPickups.length > 0 && (
-              <Badge variant="outline" className="text-warning">
-                <Clock className="h-3 w-3 mr-1" />
-                {pendingPickups.length} Waiting
-              </Badge>
-            )}
-          </div>
+        <Collapsible 
+          open={isPendingPickupsOpen} 
+          onOpenChange={setIsPendingPickupsOpen}
+          className="space-y-2"
+        >
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50">
+            <div className="flex items-center gap-2">
+              <h4 className="font-semibold">Pending Pickups</h4>
+              {pendingPickups.length > 0 && (
+                <Badge variant="outline" className="text-warning">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {pendingPickups.length} Waiting
+                </Badge>
+              )}
+            </div>
+            <ChevronDown 
+              className={`h-4 w-4 transition-transform duration-200 ${
+                isPendingPickupsOpen ? "rotate-180" : "rotate-0"
+              }`} 
+            />
+          </CollapsibleTrigger>
           
-          {pendingPickups.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Shirt className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>All t-shirt items have been picked up!</p>
-              <p className="text-sm">Distribution complete ✓</p>
-            </div>
-          ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Attendee</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>RFID</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingPickups.map((pickup) => (
-                    <TableRow key={pickup.id}>
-                      <TableCell className="font-medium">{pickup.attendeeName}</TableCell>
-                      <TableCell>
-                        {pickup.phone && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <Phone className="h-3 w-3" />
-                            {formatPhoneNumber(pickup.phone)}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-medium">
-                          {pickup.tshirtSize || 'Unknown'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {pickup.tshirtType || 'Unisex'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {pickup.rfidUid}
-                        </Badge>
-                      </TableCell>
+          <CollapsibleContent className="space-y-2">
+            {pendingPickups.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Shirt className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>All t-shirt items have been picked up!</p>
+                <p className="text-sm">Distribution complete ✓</p>
+              </div>
+            ) : (
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Attendee</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Size</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>RFID</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingPickups.map((pickup) => (
+                      <TableRow key={pickup.id}>
+                        <TableCell className="font-medium">{pickup.attendeeName}</TableCell>
+                        <TableCell>
+                          {pickup.phone && (
+                            <div className="flex items-center gap-1 text-sm">
+                              <Phone className="h-3 w-3" />
+                              {formatPhoneNumber(pickup.phone)}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-medium">
+                            {pickup.tshirtSize || 'Unknown'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {pickup.tshirtType || 'Unisex'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs font-mono">
+                            {pickup.rfidUid}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );
