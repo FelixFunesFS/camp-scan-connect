@@ -749,6 +749,12 @@ serve(async (req) => {
             }
           }
           
+          // Standardize all meal plans to "1" (displays as "Plan 1")
+          if (mealPlan && mealPlan !== '' && mealPlan !== '0' && mealPlan.toLowerCase() !== 'none') {
+            mealPlan = '1';
+            console.log(`Sync - Normalized meal plan to "1" for standardization`);
+          }
+          
           // Collect all unhandled custom fields
           const customFields: Record<string, any> = {};
           const handledFields = [

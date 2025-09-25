@@ -677,6 +677,13 @@ export type Database = {
           total_records_before: number
         }[]
       }
+      standardize_all_meal_plans: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          details: Json
+          total_updated: number
+        }[]
+      }
       update_group_early_access: {
         Args: Record<PropertyKey, never>
         Returns: {
