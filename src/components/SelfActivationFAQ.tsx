@@ -78,35 +78,33 @@ export function SelfActivationFAQ() {
             </AccordionContent>
           </AccordionItem>
 
-          <AccordionItem value="group-vs-individual">
+          <AccordionItem value="automatic-checkin">
             <AccordionTrigger className="text-left">
               <span className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Should I check-in just myself or my whole group?
+                Who gets checked in when I use this system?
               </span>
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
-              <div className="space-y-3">
-                <div>
-                  <p className="font-medium text-sm mb-1">Check-In Just Yourself:</p>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                    <li>• Your companions aren't here yet</li>
-                    <li>• You want to start using services immediately</li>
-                    <li>• Others prefer to check-in themselves</li>
-                  </ul>
+              <p className="text-sm text-muted-foreground">
+                The system automatically checks in <strong>everyone</strong> associated with your phone number, including:
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />
+                  <span>Anyone who registered directly with this phone number</span>
                 </div>
-                <div>
-                  <p className="font-medium text-sm mb-1">Check-In Entire Group:</p>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                    <li>• Everyone in your party is present</li>
-                    <li>• You're the group organizer</li>
-                    <li>• You want to handle everything at once</li>
-                  </ul>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />
+                  <span>All companions in the same order</span>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Don't worry - you can always check-in remaining people later!
-              </p>
+              <Alert>
+                <HelpCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  This ensures everyone in your party gets activated together automatically - no need to check in each person separately!
+                </AlertDescription>
+              </Alert>
             </AccordionContent>
           </AccordionItem>
 

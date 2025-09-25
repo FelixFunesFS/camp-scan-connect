@@ -41,8 +41,8 @@ export function SelfActivationInstructions() {
                 3
               </div>
               <div>
-                <p className="font-medium text-sm">Complete Your Check-In</p>
-                <p className="text-xs text-muted-foreground">Choose individual or group check-in</p>
+                <p className="font-medium text-sm">Check-In Your Entire Order</p>
+                <p className="text-xs text-muted-foreground">The system will automatically check in all attendees associated with your phone number</p>
               </div>
             </div>
           </div>
@@ -113,7 +113,7 @@ export function SelfActivationInstructions() {
       <Alert>
         <Clock className="h-4 w-4" />
         <AlertDescription className="text-sm">
-          <strong>Group orders:</strong> You can activate just yourself or your entire group at once. Choose what works best for your party.
+          <strong>Automatic check-in:</strong> The system will check in all attendees linked to your phone number, including order companions.
         </AlertDescription>
       </Alert>
     </div>
