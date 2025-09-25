@@ -193,6 +193,17 @@ export interface FlatAttendeeWithSorting extends AttendeeData {
   siteLocationFull: string;
   orderId: string;
   orderDisplayName: string;
+  orderSiteLocationAssignment: string | null;
+}
+
+/**
+ * Determine the primary site location for an order by using the first attendee's assignment
+ */
+function getPrimarySiteLocationForOrder(attendees: AttendeeData[]): string | null {
+  if (attendees.length === 0) return null;
+  
+  // Use the first attendee's site location as the primary one for the entire order
+  return attendees[0].site_location_assignment || null;
 }
 
 /**
@@ -209,6 +220,9 @@ export function flattenAndSortAttendees(attendees: AttendeeData[]): FlatAttendee
       const orderGroups = getSiteLocationOrderGroups(locationGroup);
       
       orderGroups.forEach(orderGroup => {
+        // Get the primary site location for this order
+        const orderSiteLocationAssignment = getPrimarySiteLocationForOrder(orderGroup.attendees);
+        
         orderGroup.attendees.forEach(attendee => {
           flatAttendees.push({
             ...attendee,
@@ -217,7 +231,8 @@ export function flattenAndSortAttendees(attendees: AttendeeData[]): FlatAttendee
             siteLocationDisplay: locationGroup.siteLocationDisplay,
             siteLocationFull: locationGroup.siteLocationFull,
             orderId: orderGroup.orderId,
-            orderDisplayName: orderGroup.orderDisplayName
+            orderDisplayName: orderGroup.orderDisplayName,
+            orderSiteLocationAssignment
           });
         });
       });
