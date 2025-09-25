@@ -96,7 +96,7 @@ export const RfidAssignment = () => {
   const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
   const [realtimeDisabled, setRealtimeDisabled] = useState(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'status'>('arrival_day');
+  const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'waiver' | 'status'>('arrival_day');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
   const [arrivalDayFilter, setArrivalDayFilter] = useState<string>('all');
@@ -431,6 +431,10 @@ export const RfidAssignment = () => {
         case 'ticket_type':
           aValue = a.ticket_type.toLowerCase();
           bValue = b.ticket_type.toLowerCase();
+          break;
+        case 'waiver':
+          aValue = a.waiver_signed ? 'signed' : 'unsigned';
+          bValue = b.waiver_signed ? 'signed' : 'unsigned';
           break;
         case 'status':
           aValue = a.rfid_uid && a.rfid_status === 'assigned' ? 'assigned' : 'unassigned';
@@ -1046,6 +1050,18 @@ export const RfidAssignment = () => {
                                 </div>
                               </Button>
                             </TableHead>
+                            <TableHead className="min-w-[100px]">
+                              <Button
+                                variant="ghost"
+                                className="h-auto p-0 font-semibold hover:bg-transparent"
+                                onClick={() => handleSort('waiver')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  Waiver
+                                  {getSortIcon('waiver')}
+                                </div>
+                              </Button>
+                            </TableHead>
                             <TableHead className="w-80 min-w-80">RFID Assignment</TableHead>
                             <TableHead className="min-w-[100px]">Status</TableHead>
                           </TableRow>
@@ -1053,7 +1069,7 @@ export const RfidAssignment = () => {
                         <TableBody>
                           {sortedAndPaginatedAttendees.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={6} className="text-center py-12">
+                              <TableCell colSpan={7} className="text-center py-12">
                                 <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                                 <div className="text-lg font-semibold mb-2">
                                   {searchTerm ? 'No matches found' : 'No attendees to display'}
@@ -1121,6 +1137,18 @@ export const RfidAssignment = () => {
                                   <TableCell>
                                     <Badge variant="outline">
                                       {attendee.ticket_type}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge 
+                                      variant={attendee.waiver_signed ? "default" : "destructive"}
+                                      className={
+                                        attendee.waiver_signed 
+                                          ? 'bg-success text-success-foreground' 
+                                          : 'bg-destructive text-destructive-foreground'
+                                      }
+                                    >
+                                      {attendee.waiver_signed ? 'Signed' : 'Unsigned'}
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
