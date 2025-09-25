@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ArrowLeft, Download, RefreshCw, BarChart3, Headphones, Shield, ChevronDown, ChevronRight, Caravan, Users, Expand, Minimize } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CheckInOverview } from "@/components/reports/CheckInOverview";
+import { RecentlyCheckedIn } from "@/components/reports/RecentlyCheckedIn";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
 import { TShirtTracker } from "@/components/reports/TShirtTracker";
 import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
@@ -239,6 +240,9 @@ const Reports = () => {
             </CollapsibleContent>
           </Collapsible>
 
+          {/* Recently Checked In - Standalone Section */}
+          <RecentlyCheckedIn refreshTrigger={refreshTrigger} />
+
           {/* Arrivals by Ticket Type */}
           <Collapsible 
             open={sections.arrivals} 
@@ -340,7 +344,7 @@ const Reports = () => {
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Check-in Status and Currently On-Site */}
+          {/* Currently On-Site */}
           <Collapsible 
             open={sections.status} 
             onOpenChange={(isOpen) => updateSectionState('status', isOpen)}
@@ -352,7 +356,7 @@ const Reports = () => {
               >
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-semibold">Check-in Status & Currently On-Site</h2>
+                  <h2 className="text-xl font-semibold">Currently On-Site</h2>
                 </div>
                 {sections.status ? 
                   <ChevronDown className="h-4 w-4 transition-transform duration-200" /> : 

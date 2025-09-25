@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { CheckInStatusTables } from './CheckInStatusTables';
 import { CurrentlyOnSiteAttendees } from './CurrentlyOnSiteAttendees';
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, getStandardTimeBoundaries } from "@/utils/etTimezone";
@@ -102,15 +101,9 @@ export const CheckInStatusAndOnSite = ({ refreshTrigger, selectedPeriod }: Check
   });
 
   return (
-    <div className="space-y-6">
-      {/* Check-in Status Tables */}
-      <CheckInStatusTables refreshTrigger={refreshTrigger} />
-      
-      {/* Currently On-Site Attendees */}
-      <CurrentlyOnSiteAttendees 
-        attendees={onSiteAttendees} 
-        isLoading={isLoading}
-      />
-    </div>
+    <CurrentlyOnSiteAttendees 
+      attendees={onSiteAttendees} 
+      isLoading={isLoading}
+    />
   );
 };
