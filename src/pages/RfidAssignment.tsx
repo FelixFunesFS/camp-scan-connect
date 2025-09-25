@@ -31,6 +31,7 @@ import {
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { GroupRfidView } from "@/components/GroupRfidView";
+import { SiteLocationRfidView } from "@/components/SiteLocationRfidView";
 import { RfidAssignmentFAQ } from "@/components/RfidAssignmentFAQ";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { useCsvExport } from "@/hooks/useCsvExport";
@@ -85,7 +86,7 @@ export const RfidAssignment = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [mode, setMode] = useState<'pre-event' | 'day-of'>('pre-event');
-  const [viewMode, setViewMode] = useState<'individual' | 'group'>('individual');
+  const [viewMode, setViewMode] = useState<'individual' | 'group' | 'site-location'>('individual');
   const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(false);
   const [showCancelledRegistrants, setShowCancelledRegistrants] = useState(false);
   const [currentFocusRow, setCurrentFocusRow] = useState(0);
@@ -733,8 +734,15 @@ export const RfidAssignment = () => {
                   onAssignmentComplete={handleAssignmentComplete}
                   onOptimisticUpdate={handleOptimisticUpdate}
                 />
-              ) : (
+              ) : viewMode === 'group' ? (
                 <GroupRfidView 
+                  attendees={filteredAttendees}
+                  onRefresh={debouncedLoadAttendees}
+                  onOptimisticUpdate={handleOptimisticUpdate}
+                  searchTerm={searchTerm}
+                />
+              ) : (
+                <SiteLocationRfidView 
                   attendees={filteredAttendees}
                   onRefresh={debouncedLoadAttendees}
                   onOptimisticUpdate={handleOptimisticUpdate}
@@ -872,13 +880,14 @@ export const RfidAssignment = () => {
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <Select value={viewMode} onValueChange={(value) => setViewMode(value as 'individual' | 'group')}>
-                    <SelectTrigger className="w-32">
+                  <Select value={viewMode} onValueChange={(value) => setViewMode(value as 'individual' | 'group' | 'site-location')}>
+                    <SelectTrigger className="w-40">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="individual">Individual</SelectItem>
-                      <SelectItem value="group">Group</SelectItem>
+                      <SelectItem value="group">By Order</SelectItem>
+                      <SelectItem value="site-location">By Site</SelectItem>
                     </SelectContent>
                   </Select>
                   
@@ -1218,8 +1227,15 @@ export const RfidAssignment = () => {
                   </CardContent>
                 </Card>
               </div>
-            ) : (
+            ) : viewMode === 'group' ? (
               <GroupRfidView 
+                attendees={filteredAttendees}
+                onRefresh={debouncedLoadAttendees}
+                onOptimisticUpdate={handleOptimisticUpdate}
+                searchTerm={searchTerm}
+              />
+            ) : (
+              <SiteLocationRfidView 
                 attendees={filteredAttendees}
                 onRefresh={debouncedLoadAttendees}
                 onOptimisticUpdate={handleOptimisticUpdate}

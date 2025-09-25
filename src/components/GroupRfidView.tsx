@@ -29,7 +29,7 @@ interface GroupRfidViewProps {
   searchTerm: string;
 }
 
-type SortField = 'order_size' | 'order_id' | 'progress' | 'status';
+type SortField = 'order_size' | 'order_id' | 'progress' | 'status' | 'waiver';
 type SortDirection = 'asc' | 'desc';
 
 export const GroupRfidView: React.FC<GroupRfidViewProps> = ({ 
@@ -298,12 +298,13 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                         <TableCell colSpan={5} className="p-0">
                           <div className="p-4 bg-muted/20">
                             <Table>
-                              <TableHeader>
+                               <TableHeader>
                                  <TableRow>
                                    <TableHead>Name</TableHead>
                                    <TableHead>Phone</TableHead>
                                    <TableHead>Meal Plan</TableHead>
                                    <TableHead>Arrival</TableHead>
+                                   <TableHead>Waiver</TableHead>
                                    <TableHead>RFID</TableHead>
                                    <TableHead>Status</TableHead>
                                  </TableRow>
@@ -330,15 +331,27 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
                                          {attendee.formatted_meal_plan}
                                        </Badge>
                                      </TableCell>
-                                    <TableCell>
-                                      <Badge 
-                                        variant={attendee.arrival_window === 'early' ? 'default' : 'secondary'}
-                                        className="text-xs"
-                                      >
-                                        {attendee.arrival_day}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>
+                                     <TableCell>
+                                       <Badge 
+                                         variant={attendee.arrival_window === 'early' ? 'default' : 'secondary'}
+                                         className="text-xs"
+                                       >
+                                         {attendee.arrival_day}
+                                       </Badge>
+                                     </TableCell>
+                                     <TableCell>
+                                       <Badge 
+                                         variant={attendee.waiver_signed ? 'default' : 'destructive'}
+                                         className={
+                                           attendee.waiver_signed
+                                             ? 'bg-success text-success-foreground text-xs'
+                                             : 'bg-destructive text-destructive-foreground text-xs'
+                                         }
+                                       >
+                                         {attendee.waiver_signed ? 'Signed' : 'Unsigned'}
+                                       </Badge>
+                                     </TableCell>
+                                     <TableCell>
                                       <EnhancedRfidAssignmentCell
                                         attendeeId={attendee.id}
                                         currentRfidUid={attendee.rfid_uid}

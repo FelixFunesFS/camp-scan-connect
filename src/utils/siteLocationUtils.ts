@@ -242,3 +242,50 @@ function formatAssignmentText(assignment: string): string {
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/\b\w/g, l => l.toUpperCase());
 }
+
+/**
+ * Extract site location key for grouping - cabins are separate, others grouped by number
+ */
+export function extractSiteLocationKey(siteLocationString: string | null): string | null {
+  const parsed = parseSiteLocationAssignment(siteLocationString);
+  
+  if (parsed.type === 'none' || parsed.type === 'day-pass-only') {
+    return null;
+  }
+  
+  // Cabins are always separate regardless of number
+  if (parsed.type === 'cabin') {
+    return `cabin-${parsed.assignment.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+  }
+  
+  // Extract numbers from other site types
+  const numberMatch = parsed.assignment.match(/\d+/);
+  if (numberMatch) {
+    return `site-${numberMatch[0]}`;
+  }
+  
+  return null; // For locations without numbers
+}
+
+/**
+ * Format site location display name for grouping
+ */
+export function formatSiteDisplayName(siteLocationString: string | null): string {
+  const parsed = parseSiteLocationAssignment(siteLocationString);
+  const siteKey = extractSiteLocationKey(siteLocationString);
+  
+  if (!siteKey) {
+    return 'No Site Assignment';
+  }
+  
+  if (parsed.type === 'cabin') {
+    return `Cabin ${formatAssignmentText(parsed.assignment)}`;
+  }
+  
+  const numberMatch = parsed.assignment.match(/\d+/);
+  if (numberMatch) {
+    return `Site ${numberMatch[0]}`;
+  }
+  
+  return parsed.display;
+}

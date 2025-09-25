@@ -28,8 +28,8 @@ interface MobileRfidControlsProps {
   onMealPlanFilterChange: (value: string) => void;
   arrivalDayFilter: string;
   onArrivalDayFilterChange: (value: string) => void;
-  viewMode: 'individual' | 'group';
-  onViewModeChange: (mode: 'individual' | 'group') => void;
+  viewMode: 'individual' | 'group' | 'site-location';
+  onViewModeChange: (mode: 'individual' | 'group' | 'site-location') => void;
   onSync: () => void;
   syncing: boolean;
   totalCount: number;
@@ -142,7 +142,7 @@ export const MobileRfidControls: React.FC<MobileRfidControlsProps> = ({
           variant={viewMode === 'individual' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => onViewModeChange('individual')}
-          className="flex-1 touch-target"
+          className="flex-1 touch-target text-xs"
         >
           Individual
         </Button>
@@ -150,9 +150,17 @@ export const MobileRfidControls: React.FC<MobileRfidControlsProps> = ({
           variant={viewMode === 'group' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => onViewModeChange('group')}
-          className="flex-1 touch-target"
+          className="flex-1 touch-target text-xs"
         >
-          Groups
+          By Order
+        </Button>
+        <Button
+          variant={viewMode === 'site-location' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => onViewModeChange('site-location')}
+          className="flex-1 touch-target text-xs"
+        >
+          By Site
         </Button>
       </div>
 
