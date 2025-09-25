@@ -55,7 +55,7 @@ interface IndividualViewProps {
   searchTerm: string;
 }
 
-type SortField = 'name' | 'order' | 'phone' | 'registration_status' | 'status';
+type SortField = 'name' | 'order' | 'phone' | 'registration_status' | 'waiver' | 'status';
 type SortDirection = 'asc' | 'desc';
 
 export const IndividualView: React.FC<IndividualViewProps> = ({ 
@@ -88,6 +88,10 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
         case 'registration_status':
           aValue = a.registration_status.toLowerCase();
           bValue = b.registration_status.toLowerCase();
+          break;
+        case 'waiver':
+          aValue = a.waiver_signed ? 'signed' : 'unsigned';
+          bValue = b.waiver_signed ? 'signed' : 'unsigned';
           break;
         case 'status':
           aValue = a.rfid_uid && a.rfid_status === 'assigned' ? 'assigned' : 'unassigned';
@@ -214,8 +218,20 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                        {getSortIcon('registration_status')}
                      </div>
                    </Button>
-                 </TableHead>
-                <TableHead>Veteran</TableHead>
+                  </TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      className="h-auto p-0 font-semibold hover:bg-transparent"
+                      onClick={() => handleSort('waiver')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Waiver
+                        {getSortIcon('waiver')}
+                      </div>
+                    </Button>
+                  </TableHead>
+                 <TableHead>Veteran</TableHead>
                 <TableHead>RFID</TableHead>
                 <TableHead>Headphones</TableHead>
                 <TableHead>
@@ -263,8 +279,8 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                          siteLocationAssignment={attendee.site_location_assignment} 
                          maxLength={18}
                       />
-                   </TableCell>
-                   <TableCell>
+                    </TableCell>
+                    <TableCell>
                      <Badge 
                        variant="outline"
                        className={
@@ -278,7 +294,19 @@ export const IndividualView: React.FC<IndividualViewProps> = ({
                        {attendee.registration_status}
                      </Badge>
                    </TableCell>
-                  <TableCell>
+                   <TableCell>
+                     <Badge 
+                       variant={attendee.waiver_signed ? "default" : "destructive"}
+                       className={
+                         attendee.waiver_signed 
+                           ? 'bg-success text-success-foreground' 
+                           : 'bg-destructive text-destructive-foreground'
+                       }
+                     >
+                       {attendee.waiver_signed ? 'Signed' : 'Unsigned'}
+                     </Badge>
+                   </TableCell>
+                   <TableCell>
                     {attendee.is_veteran ? (
                       <Badge variant="veteran" className="text-xs">
                         Veteran
