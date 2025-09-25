@@ -226,7 +226,7 @@ export default function ActivationStation() {
                     phoneNumber={phoneNumber}
                     activationResult={activationResult}
                     onReset={resetForm}
-                    onGoHome={() => navigate("/")}
+                    onGoHome={resetForm}
                     onUpdate={(result) => setActivationResult(result)}
                   />
                 )}

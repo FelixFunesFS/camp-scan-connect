@@ -330,25 +330,14 @@ export function MobileActivationSuccess({
 
       {/* Action Buttons */}
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/50 p-4 -m-4 mt-6">
-        <div className="space-y-3">
-          <Button
-            onClick={onReset}
-            size="lg"
-            className="w-full h-12 text-base font-medium"
-          >
-            <RotateCcw className="h-5 w-5 mr-2" />
-            {status.type === 'complete' ? 'Check-In Another Group' : 'Check-In More Attendees'}
-          </Button>
-          <Button
-            onClick={onGoHome}
-            variant="outline"
-            size="lg"
-            className="w-full h-12 text-base"
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Back to Main Hub
-          </Button>
-        </div>
+        <Button
+          onClick={onReset}
+          size="lg"
+          className="w-full h-12 text-base font-medium"
+        >
+          <RotateCcw className="h-5 w-5 mr-2" />
+          {status.type === 'complete' ? 'Check-In Another Group' : 'Check-In More Attendees'}
+        </Button>
       </div>
     </div>
   );
