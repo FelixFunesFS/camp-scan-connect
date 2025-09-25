@@ -677,6 +677,14 @@ export type Database = {
           total_records_before: number
         }[]
       }
+      update_group_early_access: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          attendees_updated: number
+          orders_updated: number
+          updated_orders: string[]
+        }[]
+      }
       upsert_attendee_safe: {
         Args: { p_data: Json; p_regfox_id: string }
         Returns: string

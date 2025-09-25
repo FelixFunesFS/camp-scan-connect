@@ -40,6 +40,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Initialize variables at function scope for proper error handling
+  let supabase: any = null;
+  let syncLog: any = null;
+  let heartbeatInterval: number | null = null;
+
   try {
     // Parse request body to check if webhook triggered
     let requestBody: any = {};
@@ -60,7 +65,7 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get RegFox API key and Form ID
     const regfoxApiKey = Deno.env.get('REGFOX_API_KEY');
@@ -102,7 +107,7 @@ serve(async (req) => {
     }
 
     // Create sync log entry
-    const { data: syncLog, error: syncLogError } = await supabase
+    const { data: syncLogData, error: syncLogError } = await supabase
       .from('regfox_sync_log')
       .insert({
         sync_type: isWebhookTriggered ? 'webhook_triggered_sync' : (manualSyncType || 'initial_sync'),
@@ -118,6 +123,8 @@ serve(async (req) => {
       console.error('Error creating sync log:', syncLogError);
       throw syncLogError;
     }
+
+    syncLog = syncLogData;
 
     // Skip lock acquisition for webhook-triggered syncs (they should be fast and incremental)
     let lockId = null;
@@ -198,7 +205,9 @@ serve(async (req) => {
     }
 
     // Heartbeat monitoring - update every 30 seconds
-    const heartbeatInterval = setInterval(async () => {
+    // let heartbeatInterval: number;
+
+    heartbeatInterval = setInterval(async () => {
       try {
         await updateHeartbeat();
         console.log('Heartbeat updated for sync:', syncLog.id);
@@ -230,8 +239,8 @@ serve(async (req) => {
 
         console.log('API key validation successful');
       } catch (pingError) {
-        console.error('API key ping test failed:', pingError.message);
-        syncResult.errors.push(`API key validation error: ${pingError.message}`);
+        console.error('API key ping test failed:', (pingError as Error).message);
+        syncResult.errors.push(`API key validation error: ${(pingError as Error).message}`);
         throw pingError;
       }
 
@@ -335,8 +344,8 @@ serve(async (req) => {
       console.log(`Successfully retrieved ${regfoxAttendees.length} total attendees`);
         
       } catch (apiError) {
-        console.error('RegFox API call failed:', apiError.message);
-        syncResult.errors.push(`RegFox API error: ${apiError.message}`);
+        console.error('RegFox API call failed:', (apiError as Error).message);
+        syncResult.errors.push(`RegFox API error: ${(apiError as Error).message}`);
         regfoxAttendees = []; // Empty array means no new data to sync
       }
 
@@ -418,7 +427,7 @@ serve(async (req) => {
             tShirtProducts.push({
               field: fieldName,
               value: fieldValue,
-              size: extractedSize
+              size: extractedSize || undefined
             });
             
             // Use the first valid size found as the primary t-shirt size
@@ -586,7 +595,7 @@ serve(async (req) => {
                 }
               }
             } catch (error) {
-              console.error(`Error in status update for RegFox ID ${regfoxAttendee.id}:`, error.message);
+              console.error(`Error in status update for RegFox ID ${regfoxAttendee.id}:`, (error as Error).message);
             }
           }
         }
@@ -971,7 +980,7 @@ serve(async (req) => {
             custom_fields: customFields,
             
             // Extract site location assignment using enhanced function
-            site_location_assignment: customFields ? await supabase.rpc('extract_site_location_assignment', { custom_fields_data: customFields }).then(result => result.data) : 'Not Assigned',
+            site_location_assignment: customFields ? await supabase.rpc('extract_site_location_assignment', { custom_fields_data: customFields }).then((result: any) => result.data) : 'Not Assigned',
             
             waiver_signed: waiverSigned,
             activated_at: regfoxAttendee.checkedIn ? new Date().toISOString() : null,
@@ -1018,7 +1027,7 @@ serve(async (req) => {
             }
           }
         } catch (error) {
-          syncResult.errors.push(`Error processing attendee ${regfoxAttendee.id}: ${error.message}`);
+          syncResult.errors.push(`Error processing attendee ${regfoxAttendee.id}: ${(error as Error).message}`);
         }
       } // End of attendee processing loop
       
@@ -1041,6 +1050,25 @@ serve(async (req) => {
 
     if (updateSyncLogError) {
       console.error('Error updating sync log:', updateSyncLogError);
+    }
+
+    // Update group early access settings after sync completion
+    try {
+      console.log('Updating group early access settings...');
+      const { data: groupUpdateResult, error: groupUpdateError } = await supabase
+        .rpc('update_group_early_access');
+      
+      if (groupUpdateError) {
+        console.error('Error updating group early access:', groupUpdateError);
+      } else if (groupUpdateResult && groupUpdateResult.length > 0) {
+        const result = groupUpdateResult[0];
+        console.log(`Group early access update completed: ${result.orders_updated} orders updated, ${result.attendees_updated} attendees updated`);
+        if (result.updated_orders.length > 0) {
+          console.log('Updated order IDs:', result.updated_orders);
+        }
+      }
+    } catch (groupError) {
+      console.error('Error in group early access update:', groupError);
     }
 
     // Clear heartbeat interval and release sync lock
@@ -1066,31 +1094,37 @@ serve(async (req) => {
     console.error('Error in regfox-sync function:', error);
     
     // Cleanup in error case
-    clearInterval(heartbeatInterval);
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+    }
     
     // Update sync log with error
-    try {
-      await supabase
-        .from('regfox_sync_log')
-        .update({
-          status: 'error',
-          error_message: error.message,
-          sync_completed_at: new Date().toISOString()
-        })
-        .eq('id', syncLog.id);
-    } catch (logError) {
-      console.error('Error updating sync log with error:', logError);
+    if (supabase && syncLog) {
+      try {
+        await supabase
+          .from('regfox_sync_log')
+          .update({
+            status: 'error',
+            error_message: (error as Error).message,
+            sync_completed_at: new Date().toISOString()
+          })
+          .eq('id', syncLog.id);
+      } catch (logError) {
+        console.error('Error updating sync log with error:', logError);
+      }
     }
     
     // Release sync lock
-    try {
-      await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
-    } catch (lockError) {
-      console.error('Error releasing sync lock:', lockError);
+    if (supabase && syncLog) {
+      try {
+        await supabase.rpc('release_sync_lock', { p_sync_id: syncLog.id });
+      } catch (lockError) {
+        console.error('Error releasing sync lock:', lockError);
+      }
     }
     
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as Error).message,
       success: false
     }), {
       status: 500,

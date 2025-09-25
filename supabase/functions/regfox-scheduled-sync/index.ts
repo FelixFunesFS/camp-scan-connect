@@ -70,7 +70,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({
       success: false,
-      error: `Scheduled sync failed: ${error.message}`
+      error: `Scheduled sync failed: ${(error as Error).message}`
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
