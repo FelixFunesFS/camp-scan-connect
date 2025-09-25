@@ -133,7 +133,7 @@ export default function ActivationStation() {
             variant="ghost" 
             size="sm"
             onClick={() => navigate("/")}
-            className="p-2"
+            className="p-2 hidden"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
