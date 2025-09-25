@@ -238,13 +238,13 @@ export function flattenAndSortAttendees(attendees: AttendeeData[]): FlatAttendee
       if (siteComparison !== 0) return siteComparison;
     }
     
-    // Then by site location display
-    const locationComparison = a.siteLocationDisplay.localeCompare(b.siteLocationDisplay);
-    if (locationComparison !== 0) return locationComparison;
-    
-    // Then by order ID
+    // Second by order ID (to keep order companions together)
     const orderComparison = a.orderId.localeCompare(b.orderId);
     if (orderComparison !== 0) return orderComparison;
+    
+    // Third by site location display
+    const locationComparison = a.siteLocationDisplay.localeCompare(b.siteLocationDisplay);
+    if (locationComparison !== 0) return locationComparison;
     
     // Finally by attendee name
     const aName = `${a.first_name} ${a.last_name}`;

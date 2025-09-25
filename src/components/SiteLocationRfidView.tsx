@@ -31,7 +31,6 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
     if (!previousAttendee) return false;
     return (
       currentAttendee.siteKey !== previousAttendee.siteKey || 
-      currentAttendee.siteLocationFull !== previousAttendee.siteLocationFull ||
       currentAttendee.orderId !== previousAttendee.orderId
     );
   };
@@ -67,10 +66,11 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Site Location</TableHead>
+                <TableHead>Order ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Arrival</TableHead>
-                <TableHead>Site Location</TableHead>
                 <TableHead>Waiver</TableHead>
                 <TableHead>RFID Status</TableHead>
               </TableRow>
@@ -84,32 +84,30 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
                   <React.Fragment key={attendee.id}>
                     {showSeparator && (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-2 bg-muted/20 border-y border-border/50 p-0">
+                        <TableCell colSpan={7} className="h-2 bg-muted/20 border-y border-border/50 p-0">
                         </TableCell>
                       </TableRow>
                     )}
                     <TableRow className="hover:bg-muted/50">
                       <TableCell>
-                        <div>
-                          <span className="font-medium">
-                            {attendee.first_name} {attendee.last_name}
-                          </span>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {attendee.orderDisplayName}
-                          </div>
-                        </div>
+                        <SiteLocationBadge 
+                          siteLocationAssignment={attendee.site_location_assignment}
+                          maxLength={20}
+                        />
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">
+                        {attendee.orderDisplayName}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">
+                          {attendee.first_name} {attendee.last_name}
+                        </span>
                       </TableCell>
                       <TableCell className="text-sm">
                         {attendee.phone ? formatPhoneNumber(attendee.phone) : '-'}
                       </TableCell>
                       <TableCell className="text-sm">
                         {attendee.arrival_window || 'Standard'}
-                      </TableCell>
-                      <TableCell>
-                        <SiteLocationBadge 
-                          siteLocationAssignment={attendee.site_location_assignment}
-                          maxLength={20}
-                        />
                       </TableCell>
                       <TableCell>
                         {attendee.waiver_signed ? (
@@ -137,7 +135,7 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
         </div>
         
         <div className="text-sm text-muted-foreground text-center mt-4">
-          Showing {flatAttendees.length} total attendee{flatAttendees.length !== 1 ? 's' : ''} sorted by site location
+          Showing {flatAttendees.length} total attendee{flatAttendees.length !== 1 ? 's' : ''} sorted by site location and order ID
         </div>
       </CardContent>
     </Card>
