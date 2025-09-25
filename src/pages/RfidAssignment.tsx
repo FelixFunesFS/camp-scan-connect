@@ -87,7 +87,7 @@ export const RfidAssignment = () => {
   const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [mode, setMode] = useState<'pre-event' | 'day-of'>('pre-event');
+  const [mode, setMode] = useState<'pre-event' | 'day-of'>('day-of');
   const [viewMode, setViewMode] = useState<'individual' | 'group' | 'site-location'>('individual');
   const [showOnlyUnassigned, setShowOnlyUnassigned] = useState(false);
   const [showCancelledRegistrants, setShowCancelledRegistrants] = useState(false);
