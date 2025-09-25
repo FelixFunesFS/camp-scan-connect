@@ -185,3 +185,70 @@ export function getSiteLocationOrderGroups(locationGroup: SiteLocationDetailGrou
     return a.orderId.localeCompare(b.orderId);
   });
 }
+
+export interface FlatAttendeeWithSorting extends AttendeeData {
+  siteKey: string;
+  siteDisplayName: string;
+  siteLocationDisplay: string;
+  siteLocationFull: string;
+  orderId: string;
+  orderDisplayName: string;
+}
+
+/**
+ * Flatten and sort all attendees by site location, then site location details, then order ID
+ */
+export function flattenAndSortAttendees(attendees: AttendeeData[]): FlatAttendeeWithSorting[] {
+  const siteGroups = groupAttendeesBySiteLocation(attendees);
+  const flatAttendees: FlatAttendeeWithSorting[] = [];
+  
+  siteGroups.forEach(siteGroup => {
+    const locationGroups = getSiteLocationDetailGroups(siteGroup);
+    
+    locationGroups.forEach(locationGroup => {
+      const orderGroups = getSiteLocationOrderGroups(locationGroup);
+      
+      orderGroups.forEach(orderGroup => {
+        orderGroup.attendees.forEach(attendee => {
+          flatAttendees.push({
+            ...attendee,
+            siteKey: siteGroup.siteKey,
+            siteDisplayName: siteGroup.siteDisplayName,
+            siteLocationDisplay: locationGroup.siteLocationDisplay,
+            siteLocationFull: locationGroup.siteLocationFull,
+            orderId: orderGroup.orderId,
+            orderDisplayName: orderGroup.orderDisplayName
+          });
+        });
+      });
+    });
+  });
+  
+  // Additional sorting by attendee name within orders for consistency
+  return flatAttendees.sort((a, b) => {
+    // First by site key (numeric if possible)
+    const aNum = a.siteKey.match(/\d+/);
+    const bNum = b.siteKey.match(/\d+/);
+    
+    if (aNum && bNum) {
+      const siteComparison = parseInt(aNum[0]) - parseInt(bNum[0]);
+      if (siteComparison !== 0) return siteComparison;
+    } else {
+      const siteComparison = a.siteDisplayName.localeCompare(b.siteDisplayName);
+      if (siteComparison !== 0) return siteComparison;
+    }
+    
+    // Then by site location display
+    const locationComparison = a.siteLocationDisplay.localeCompare(b.siteLocationDisplay);
+    if (locationComparison !== 0) return locationComparison;
+    
+    // Then by order ID
+    const orderComparison = a.orderId.localeCompare(b.orderId);
+    if (orderComparison !== 0) return orderComparison;
+    
+    // Finally by attendee name
+    const aName = `${a.first_name} ${a.last_name}`;
+    const bName = `${b.first_name} ${b.last_name}`;
+    return aName.localeCompare(bName);
+  });
+}
