@@ -197,12 +197,20 @@ export interface FlatAttendeeWithSorting extends AttendeeData {
 }
 
 /**
- * Determine the primary site location for an order by using the first attendee's assignment
+ * Determine the primary site location for an order by finding the first meaningful assignment
  */
 function getPrimarySiteLocationForOrder(attendees: AttendeeData[]): string | null {
   if (attendees.length === 0) return null;
   
-  // Use the first attendee's site location as the primary one for the entire order
+  // Find the first attendee with a site location that is not null and not "Not Assigned"
+  for (const attendee of attendees) {
+    const assignment = attendee.site_location_assignment;
+    if (assignment && assignment !== "Not Assigned") {
+      return assignment;
+    }
+  }
+  
+  // If all attendees have "Not Assigned" or null, use the first attendee's assignment
   return attendees[0].site_location_assignment || null;
 }
 
