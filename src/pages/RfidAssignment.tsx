@@ -36,6 +36,7 @@ import { RfidAssignmentFAQ } from "@/components/RfidAssignmentFAQ";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { flattenAndSortAttendees } from "@/utils/siteLocationGroupUtils";
 import { useCsvExport } from "@/hooks/useCsvExport";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   ArrowUpDown, 
   ArrowUp, 
@@ -110,9 +111,11 @@ export const RfidAssignment = () => {
 
   // Progress calculations
   const totalCount = attendees.length;
+  const checkedInCount = attendees.filter(a => a.rfid_uid && a.rfid_status === 'active').length;
   const assignedCount = attendees.filter(a => a.rfid_uid && a.rfid_status === 'assigned').length;
-  const unassignedCount = totalCount - assignedCount;
-  const progressPercent = totalCount > 0 ? (assignedCount / totalCount) * 100 : 0;
+  const totalAssignedCount = assignedCount + checkedInCount;
+  const unassignedCount = totalCount - totalAssignedCount;
+  const progressPercent = totalCount > 0 ? (totalAssignedCount / totalCount) * 100 : 0;
 
   // Load attendees data optimized for assignment workflow
   const loadAttendees = useCallback(async () => {
@@ -888,39 +891,83 @@ export const RfidAssignment = () => {
               </div>
 
               {/* Progress Overview */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-foreground">{totalCount}</div>
-                    <p className="text-xs text-muted-foreground">Total Attendees</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-warning">{unassignedCount}</div>
-                    <p className="text-xs text-muted-foreground">Unassigned</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-success">{assignedCount}</div>
-                    <p className="text-xs text-muted-foreground">Assigned</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-primary">{Math.round(progressPercent)}%</div>
-                    <p className="text-xs text-muted-foreground">Progress</p>
-                    <Progress value={progressPercent} className="mt-2 h-2" />
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-muted-foreground">{filteredAttendees.length}</div>
-                    <p className="text-xs text-muted-foreground">Filtered Results</p>
-                  </CardContent>
-                </Card>
-              </div>
+              <TooltipProvider>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-foreground">{totalCount}</div>
+                          <p className="text-xs text-muted-foreground">Total Attendees</p>
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Total number of registered attendees in the system</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-warning">{unassignedCount}</div>
+                          <p className="text-xs text-muted-foreground">Unassigned</p>
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Attendees who have not been assigned an RFID bracelet yet</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-secondary">{assignedCount}</div>
+                          <p className="text-xs text-muted-foreground">Assigned</p>
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Attendees with RFID bracelets assigned but not yet activated</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-primary">{checkedInCount}</div>
+                          <p className="text-xs text-muted-foreground">Checked In</p>
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Attendees who have activated their RFID bracelets and checked in</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                
+                {/* Progress Card - Separate row for better mobile display */}
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-6">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-success">{Math.round(progressPercent)}%</div>
+                          <p className="text-xs text-muted-foreground">Progress</p>
+                          <Progress value={progressPercent} className="mt-2 h-2" />
+                        </CardContent>
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Percentage of attendees who have RFID bracelets (assigned or checked in)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             </div>
 
             {/* Controls */}
