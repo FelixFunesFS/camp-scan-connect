@@ -120,6 +120,9 @@ export const RfidAssignment = () => {
     progressPercent: 0
   });
 
+  // State for enhanced status calculation for visible attendees
+  const [enhancedStatuses, setEnhancedStatuses] = useState<Record<string, any>>({});
+
   // Update progress data using enhanced status calculation
   useEffect(() => {
     const updateProgress = async () => {
@@ -556,6 +559,35 @@ export const RfidAssignment = () => {
     const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
     return sorted.slice(startIndex, startIndex + ROWS_PER_PAGE);
   }, [filteredAttendees, currentPage, sortField, sortDirection]);
+
+  // Calculate enhanced status for visible attendees
+  useEffect(() => {
+    const calculateVisibleStatuses = async () => {
+      if (!sortedAndPaginatedAttendees.length) return;
+
+      try {
+        const { getEnhancedCheckInStatus } = await import('@/utils/statusUtils');
+        
+        const statusPromises = sortedAndPaginatedAttendees.map(async (attendee) => {
+          const status = await getEnhancedCheckInStatus(attendee.id, attendee.rfid_uid);
+          return { attendeeId: attendee.id, status };
+        });
+        
+        const statusResults = await Promise.all(statusPromises);
+        
+        const statusMap: Record<string, any> = {};
+        statusResults.forEach(({ attendeeId, status }) => {
+          statusMap[attendeeId] = status;
+        });
+        
+        setEnhancedStatuses(statusMap);
+      } catch (error) {
+        console.error('Error calculating enhanced statuses:', error);
+      }
+    };
+
+    calculateVisibleStatuses();
+  }, [sortedAndPaginatedAttendees]);
 
   const totalPages = Math.ceil(filteredAttendees.length / ROWS_PER_PAGE);
 
@@ -1406,7 +1438,9 @@ export const RfidAssignment = () => {
                                   </TableCell>
                                   <TableCell>
                                     {(() => {
-                                      const checkInStatus = getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+                                      // Use enhanced status if available, fallback to basic status
+                                      const enhancedStatus = enhancedStatuses[attendee.id];
+                                      const checkInStatus = enhancedStatus || getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
                                       return (
                                         <div className="flex items-center gap-2">
                                           <span className="text-sm">{checkInStatus.icon}</span>

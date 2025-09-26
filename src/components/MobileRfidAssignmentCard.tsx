@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { User, Phone, Mail, CreditCard, Radio, Ticket, Utensils, Calendar, Camera, Usb } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
-import { getCheckInStatus } from "@/utils/statusUtils";
+import { getCheckInStatus, getEnhancedCheckInStatus } from "@/utils/statusUtils";
 import type { AttendeeData } from "@/pages/RfidAssignment";
 
 interface MobileRfidAssignmentCardProps {
@@ -20,13 +20,31 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
   onOptimisticUpdate
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [enhancedStatus, setEnhancedStatus] = useState<any>(null);
   
   const displayName = `${attendee.first_name} ${attendee.last_name}`.trim();
   const isActivated = !!attendee.activated_at;
   const hasRfid = !!attendee.rfid_uid;
 
+  // Calculate enhanced status for this attendee
+  useEffect(() => {
+    const calculateStatus = async () => {
+      try {
+        const status = await getEnhancedCheckInStatus(attendee.id, attendee.rfid_uid);
+        setEnhancedStatus(status);
+      } catch (error) {
+        console.error('Error calculating enhanced status for attendee:', error);
+        // Fallback to basic status
+        setEnhancedStatus(getCheckInStatus(attendee.rfid_uid, attendee.activated_at));
+      }
+    };
+
+    calculateStatus();
+  }, [attendee.id, attendee.rfid_uid, attendee.activated_at]);
+
   const getRfidStatusBadge = () => {
-    const checkInStatus = getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+    // Use enhanced status if available, otherwise fallback to basic status
+    const checkInStatus = enhancedStatus || getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
     const colorClass = checkInStatus.status === 'checked_in' 
       ? 'bg-success text-success-foreground' 
       : checkInStatus.status === 'assigned'
