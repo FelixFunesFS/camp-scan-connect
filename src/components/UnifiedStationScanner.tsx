@@ -15,6 +15,7 @@ import { StationRfidIssueAlert } from "@/components/StationRfidIssueAlert";
 import { StaffOverridePanel } from "@/components/StaffOverridePanel";
 import { QuickStaffActivation } from "@/components/QuickStaffActivation";
 import { GroupActivationResult } from "@/services/phoneActivationService";
+import { EnhancedActivationService } from "@/services/enhancedActivationService";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -51,6 +52,7 @@ export function UnifiedStationScanner({
   const [autoTriggered, setAutoTriggered] = useState(false);
   const [showStaffOverride, setShowStaffOverride] = useState(false);
   const [showStaffActivation, setShowStaffActivation] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -191,6 +193,31 @@ export function UnifiedStationScanner({
     } catch (error) {
       console.error("Failed to record staff override:", error);
       toast.error("Failed to record staff override");
+    }
+  };
+
+  const handleDirectActivation = async () => {
+    if (!selectedRfid?.attendee_id) return;
+    
+    setIsActivating(true);
+    try {
+      const result = await EnhancedActivationService.activateIndividual(
+        selectedRfid.attendee_id,
+        'staff'
+      );
+      
+      if (result.success) {
+        toast.success(`${selectedRfid.attendee?.first_name} ${selectedRfid.attendee?.last_name} activated successfully!`);
+        // Refresh the attendee data to show activated state
+        await handleRfidFound(selectedRfid.uid);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Direct activation error:', error);
+      toast.error('Failed to activate attendee');
+    } finally {
+      setIsActivating(false);
     }
   };
 
@@ -404,7 +431,7 @@ export function UnifiedStationScanner({
             attendeeName={`${selectedRfid!.attendee.first_name} ${selectedRfid!.attendee.last_name}`}
             attendeeReadiness={attendeeReadiness!}
             onStaffOverride={() => setShowStaffOverride(true)}
-            onStaffActivation={() => setShowStaffActivation(true)}
+            onStaffActivation={isActivating ? undefined : handleDirectActivation}
           />
         )}
 

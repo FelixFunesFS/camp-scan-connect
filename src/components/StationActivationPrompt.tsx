@@ -39,33 +39,7 @@ export function StationActivationPrompt({
               RFID Assigned - Not Activated
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground">{attendeeReadiness.message}</p>
-        </div>
-
-        {/* Quick Instructions */}
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm">To activate your wristband:</h4>
-          <div className="grid gap-2 text-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium mt-0.5">
-                1
-              </div>
-              <div>
-                <p>Visit any <strong>Self-Activation Station</strong></p>
-                <p className="text-xs text-muted-foreground">Located at Main Activity Tent and other key areas</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium mt-0.5">
-                2
-              </div>
-              <div>
-                <p>Enter your phone number from registration</p>
-                <p className="text-xs text-muted-foreground">The system will activate all attendees in your order</p>
-              </div>
-            </div>
-          </div>
+          <p className="text-sm text-muted-foreground">Staff can activate this attendee directly.</p>
         </div>
 
         {/* Staff Assistance Options */}
@@ -74,15 +48,12 @@ export function StationActivationPrompt({
             {/* Quick Staff Activation */}
             {onStaffActivation && attendeeReadiness.hasAssignment && !attendeeReadiness.hasActivation && (
               <div>
-                <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  Staff: Activate Now
-                </p>
                 <Button 
                   onClick={onStaffActivation}
                   size="touch"
                   className="w-full"
                 >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
                   Quick Activate
                 </Button>
               </div>
@@ -110,13 +81,6 @@ export function StationActivationPrompt({
           </div>
         )}
 
-        {/* Additional Info */}
-        <Alert>
-          <Smartphone className="h-4 w-4" />
-          <AlertDescription className="text-xs">
-            <strong>Tip:</strong> Once activated, you can use all station services including meals, drinks, and equipment checkout.
-          </AlertDescription>
-        </Alert>
       </CardContent>
     </Card>
   );
