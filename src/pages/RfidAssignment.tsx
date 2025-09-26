@@ -33,6 +33,7 @@ import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { GroupRfidView } from "@/components/GroupRfidView";
 import { SiteLocationRfidView } from "@/components/SiteLocationRfidView";
 import { RfidAssignmentFAQ } from "@/components/RfidAssignmentFAQ";
+import { RfidManagementPanel } from "@/components/RfidManagementPanel";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { flattenAndSortAttendees } from "@/utils/siteLocationGroupUtils";
 import { useCsvExport } from "@/hooks/useCsvExport";
@@ -395,7 +396,7 @@ export const RfidAssignment = () => {
 
     // Filter by assignment status
     if (showOnlyUnassigned) {
-      filtered = filtered.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned');
+      filtered = filtered.filter(a => !a.rfid_uid || a.rfid_status === 'unissued');
     }
 
     // Filter by meal plan
@@ -1074,6 +1075,11 @@ export const RfidAssignment = () => {
                   </Tooltip>
                 </div>
               </TooltipProvider>
+              
+              {/* RFID Management Panel */}
+              <div className="mb-6">
+                <RfidManagementPanel />
+              </div>
             </div>
 
             {/* Controls */}
