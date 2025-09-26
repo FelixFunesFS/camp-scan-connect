@@ -120,7 +120,7 @@ export const RfidAssignment = () => {
     progressPercent: 0
   });
 
-  // State for enhanced status calculation for visible attendees
+  // State for enhanced status calculation for ALL attendees (needed for filtering)
   const [enhancedStatuses, setEnhancedStatuses] = useState<Record<string, any>>({});
 
   // Update progress data using enhanced status calculation
@@ -407,7 +407,8 @@ export const RfidAssignment = () => {
     // Filter by check-in status
     if (checkInStatusFilter !== 'all') {
       filtered = filtered.filter(a => {
-        const checkInStatus = getCheckInStatus(a.rfid_uid, a.activated_at);
+        const enhancedStatus = enhancedStatuses[a.id];
+        const checkInStatus = enhancedStatus || getCheckInStatus(a.rfid_uid, a.activated_at);
         return checkInStatus.status === checkInStatusFilter;
       });
     }
@@ -460,7 +461,8 @@ export const RfidAssignment = () => {
       }
       if (checkInStatusFilter !== 'all') {
         filtered = filtered.filter(a => {
-          const checkInStatus = getCheckInStatus(a.rfid_uid, a.activated_at);
+          const enhancedStatus = enhancedStatuses[a.id];
+          const checkInStatus = enhancedStatus || getCheckInStatus(a.rfid_uid, a.activated_at);
           return checkInStatus.status === checkInStatusFilter;
         });
       }
@@ -560,15 +562,15 @@ export const RfidAssignment = () => {
     return sorted.slice(startIndex, startIndex + ROWS_PER_PAGE);
   }, [filteredAttendees, currentPage, sortField, sortDirection]);
 
-  // Calculate enhanced status for visible attendees
+  // Calculate enhanced status for ALL attendees (needed for filtering)
   useEffect(() => {
-    const calculateVisibleStatuses = async () => {
-      if (!sortedAndPaginatedAttendees.length) return;
+    const calculateAllStatuses = async () => {
+      if (!attendees.length) return;
 
       try {
         const { getEnhancedCheckInStatus } = await import('@/utils/statusUtils');
         
-        const statusPromises = sortedAndPaginatedAttendees.map(async (attendee) => {
+        const statusPromises = attendees.map(async (attendee) => {
           const status = await getEnhancedCheckInStatus(attendee.id, attendee.rfid_uid);
           return { attendeeId: attendee.id, status };
         });
@@ -586,8 +588,8 @@ export const RfidAssignment = () => {
       }
     };
 
-    calculateVisibleStatuses();
-  }, [sortedAndPaginatedAttendees]);
+    calculateAllStatuses();
+  }, [attendees]);
 
   const totalPages = Math.ceil(filteredAttendees.length / ROWS_PER_PAGE);
 
