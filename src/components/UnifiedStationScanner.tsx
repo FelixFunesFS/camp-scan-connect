@@ -5,10 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Scan, User, CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { rfidService } from "@/services/rfidService";
 import { StationTransactionService } from "@/services/stationTransactionService";
 import { RfidTag, AttendeeReadiness, StationType, TransactionType } from "@/types/station";
+import { StationActivationPrompt } from "@/components/StationActivationPrompt";
+import { StationRfidIssueAlert } from "@/components/StationRfidIssueAlert";
+import { StaffOverridePanel } from "@/components/StaffOverridePanel";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -43,6 +47,7 @@ export function UnifiedStationScanner({
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [error, setError] = useState<string>("");
   const [autoTriggered, setAutoTriggered] = useState(false);
+  const [showStaffOverride, setShowStaffOverride] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -151,6 +156,65 @@ export function UnifiedStationScanner({
     setManualUid("");
     setError("");
     setAutoTriggered(false);
+    setShowStaffOverride(false);
+  };
+
+  const handleStaffOverride = async (notes: string) => {
+    if (!selectedRfid?.attendee) return;
+    
+    try {
+      // Record staff override transaction using activate with special extra_data
+      await executeAction('activate', {
+        is_staff_override: true,
+        override_reason: getOverrideIssueType(),
+        staff_notes: notes,
+        attendee_name: `${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`,
+        original_error: error || attendeeReadiness?.message,
+        activation_method: 'staff_override'
+      });
+      
+      toast.success("Staff override recorded successfully");
+      setShowStaffOverride(false);
+      
+      // Allow station to proceed despite RFID issues
+      setAttendeeReadiness({
+        isReady: true,
+        message: "Staff override applied - service authorized",
+        hasAssignment: true,
+        hasActivation: true
+      });
+      
+    } catch (error) {
+      console.error("Failed to record staff override:", error);
+      toast.error("Failed to record staff override");
+    }
+  };
+
+  const getOverrideIssueType = (): 'unactivated' | 'unassigned' | 'other' => {
+    if (selectedRfid && !attendeeReadiness?.hasActivation) {
+      return 'unactivated';
+    } else if (!selectedRfid || error.includes("not found") || error.includes("not assigned")) {
+      return 'unassigned';
+    }
+    return 'other';
+  };
+
+  const shouldShowActivationPrompt = () => {
+    return selectedRfid?.attendee && 
+           attendeeReadiness && 
+           !attendeeReadiness.isReady && 
+           attendeeReadiness.hasAssignment && 
+           !attendeeReadiness.hasActivation &&
+           !showStaffOverride;
+  };
+
+  const shouldShowRfidIssueAlert = () => {
+    return (error && (error.includes("not found") || error.includes("not assigned"))) ||
+           (selectedRfid?.attendee && 
+            attendeeReadiness && 
+            !attendeeReadiness.isReady && 
+            !attendeeReadiness.hasAssignment &&
+            !showStaffOverride);
   };
 
   // Auto-trigger logic for quick mode stations
@@ -290,8 +354,35 @@ export function UnifiedStationScanner({
           </CardContent>
         </Card>
 
+        {/* Staff Override Panel */}
+        {showStaffOverride && selectedRfid?.attendee && (
+          <StaffOverridePanel
+            attendeeName={`${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`}
+            issueType={getOverrideIssueType()}
+            onOverride={handleStaffOverride}
+            onCancel={() => setShowStaffOverride(false)}
+          />
+        )}
+
+        {/* Activation Prompt for Assigned but Unactivated RFIDs */}
+        {shouldShowActivationPrompt() && (
+          <StationActivationPrompt
+            attendeeName={`${selectedRfid!.attendee.first_name} ${selectedRfid!.attendee.last_name}`}
+            attendeeReadiness={attendeeReadiness!}
+            onStaffOverride={() => setShowStaffOverride(true)}
+          />
+        )}
+
+        {/* RFID Issue Alert for Unassigned/Unreadable RFIDs */}
+        {shouldShowRfidIssueAlert() && (
+          <StationRfidIssueAlert
+            errorMessage={error || attendeeReadiness?.message || "RFID assignment issue detected"}
+            onStaffOverride={() => setShowStaffOverride(true)}
+          />
+        )}
+
         {/* Station-specific Action Area */}
-        {selectedRfid?.attendee && children({
+        {selectedRfid?.attendee && (attendeeReadiness?.isReady || showStaffOverride) && children({
           selectedRfid,
           attendeeReadiness,
           isProcessing,

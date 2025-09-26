@@ -12,6 +12,8 @@ export interface RfidTag {
 export interface AttendeeReadiness {
   isReady: boolean;
   message: string;
+  hasAssignment: boolean;
+  hasActivation: boolean;
 }
 
 export type StationType = 'meal' | 'drinks' | 'headphones' | 'activation' | 'golf_carts' | 'walkie_talkies' | 'fanny_packs' | 'main_gate' | 'tshirts';
