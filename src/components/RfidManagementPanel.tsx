@@ -32,6 +32,7 @@ export const RfidManagementPanel: React.FC = () => {
   const [isClearingMock, setIsClearingMock] = useState(false);
   const [isClearingRfid, setIsClearingRfid] = useState(false);
   const [isClearingTest, setIsClearingTest] = useState(false);
+  const [isBulkActivating, setIsBulkActivating] = useState(false);
   const [stats, setStats] = useState<RfidStats | null>(null);
   const [lastGenerated, setLastGenerated] = useState<GeneratedRfid[]>([]);
   
@@ -97,6 +98,44 @@ export const RfidManagementPanel: React.FC = () => {
   const handleClearRfidRfids = () => handleClearRfids('RFID', setIsClearingRfid);
   const handleClearTestRfids = () => handleClearRfids('TEST', setIsClearingTest);
   const handleClearAllRfids = () => handleClearRfids('ALL', setIsClearing);
+
+  const handleBulkActivation = async () => {
+    setIsBulkActivating(true);
+    try {
+      console.log('Starting bulk activation of assigned RFIDs...');
+
+      const { data, error } = await supabase.rpc('bulk_activate_assigned_rfids');
+
+      if (error) throw error;
+
+      const result = data[0];
+      
+      if (result.activation_successful) {
+        toast.success(
+          `Bulk Activation Complete - Activated ${result.total_activated} attendees${
+            result.veterans_thanked > 0 ? ` (${result.veterans_thanked} veterans thanked)` : ''
+          }`
+        );
+
+        // Refresh stats after activation
+        await loadCurrentStats();
+
+        console.log('Bulk activation results:', {
+          total_activated: result.total_activated,
+          veterans_thanked: result.veterans_thanked,
+          activated_attendees: result.activated_attendees
+        });
+      } else {
+        throw new Error('Bulk activation failed');
+      }
+
+    } catch (error) {
+      console.error('Error during bulk activation:', error);
+      toast.error(`Error - ${error.message || "Failed to bulk activate RFIDs"}`);
+    } finally {
+      setIsBulkActivating(false);
+    }
+  };
 
   const loadCurrentStats = async () => {
     try {
@@ -238,6 +277,33 @@ export const RfidManagementPanel: React.FC = () => {
               </Button>
             </div>
 
+            {/* Bulk Activation Section */}
+            {stats && stats.assigned_attendees > 0 && (
+              <div className="flex flex-col gap-2 p-4 border border-amber-200 bg-amber-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-amber-600" />
+                  <span className="font-semibold text-amber-900">
+                    {stats.assigned_attendees} attendees have assigned RFIDs but need activation
+                  </span>
+                </div>
+                <Button
+                  onClick={handleBulkActivation}
+                  disabled={isBulkActivating || isGenerating || isClearing}
+                  className="w-fit"
+                >
+                  {isBulkActivating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4" />
+                  )}
+                  Bulk Activate All Assigned ({stats.assigned_attendees})
+                </Button>
+                <p className="text-sm text-amber-700">
+                  This will activate all attendees with assigned RFIDs and properly thank any veterans.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -300,7 +366,7 @@ export const RfidManagementPanel: React.FC = () => {
               <div className="flex justify-center">
                 <Button
                   onClick={loadCurrentStats}
-                  disabled={isGenerating || isClearing || isClearingMock || isClearingRfid || isClearingTest}
+                  disabled={isGenerating || isClearing || isClearingMock || isClearingRfid || isClearingTest || isBulkActivating}
                   variant="ghost"
                   size="sm"
                 >
