@@ -272,6 +272,14 @@ export const RfidAssignment = () => {
         };
       });
 
+      // Bulk load enhanced check-in statuses
+      const { getBulkEnhancedCheckInStatuses } = await import('@/utils/statusUtils');
+      const attendeeIds = processedAttendees.map(a => a.id);
+      const bulkStatuses = await getBulkEnhancedCheckInStatuses(attendeeIds);
+      
+      // Update enhanced statuses state
+      setEnhancedStatuses(bulkStatuses);
+
       setAttendees(processedAttendees);
     } catch (error) {
       console.error('Error loading attendees:', error);
@@ -562,34 +570,7 @@ export const RfidAssignment = () => {
     return sorted.slice(startIndex, startIndex + ROWS_PER_PAGE);
   }, [filteredAttendees, currentPage, sortField, sortDirection]);
 
-  // Calculate enhanced status for ALL attendees (needed for filtering)
-  useEffect(() => {
-    const calculateAllStatuses = async () => {
-      if (!attendees.length) return;
-
-      try {
-        const { getEnhancedCheckInStatus } = await import('@/utils/statusUtils');
-        
-        const statusPromises = attendees.map(async (attendee) => {
-          const status = await getEnhancedCheckInStatus(attendee.id, attendee.rfid_uid);
-          return { attendeeId: attendee.id, status };
-        });
-        
-        const statusResults = await Promise.all(statusPromises);
-        
-        const statusMap: Record<string, any> = {};
-        statusResults.forEach(({ attendeeId, status }) => {
-          statusMap[attendeeId] = status;
-        });
-        
-        setEnhancedStatuses(statusMap);
-      } catch (error) {
-        console.error('Error calculating enhanced statuses:', error);
-      }
-    };
-
-    calculateAllStatuses();
-  }, [attendees]);
+  // Enhanced status calculation is now handled in loadAttendees function for better performance
 
   const totalPages = Math.ceil(filteredAttendees.length / ROWS_PER_PAGE);
 

@@ -211,3 +211,103 @@ export async function getActivationStatusFromTransactions(attendeeId: string): P
     };
   }
 }
+
+// Bulk function to get enhanced check-in statuses for multiple attendees
+export async function getBulkEnhancedCheckInStatuses(attendeeIds: string[]): Promise<Record<string, CheckInStatus>> {
+  if (attendeeIds.length === 0) {
+    return {};
+  }
+
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    
+    // Get all activation transactions for these attendees
+    const { data: activationTransactions } = await supabase
+      .from('station_transactions')
+      .select('attendee_id, transaction_type, created_at')
+      .eq('station_type', 'activation')
+      .in('attendee_id', attendeeIds)
+      .in('transaction_type', ['activate', 'deactivate'])
+      .order('created_at', { ascending: false });
+
+    // Get all RFID tags for these attendees
+    const { data: rfidTags } = await supabase
+      .from('rfid_tags')
+      .select('attendee_id, uid, status')
+      .in('attendee_id', attendeeIds)
+      .in('status', ['assigned', 'active']);
+
+    // Create maps for quick lookup
+    const activationMap = new Map<string, { transaction_type: string; created_at: string }>();
+    const rfidMap = new Map<string, { uid: string; status: string }>();
+
+    // Process activation transactions (get most recent per attendee)
+    activationTransactions?.forEach(transaction => {
+      if (!activationMap.has(transaction.attendee_id)) {
+        activationMap.set(transaction.attendee_id, {
+          transaction_type: transaction.transaction_type,
+          created_at: transaction.created_at
+        });
+      }
+    });
+
+    // Process RFID tags
+    rfidTags?.forEach(tag => {
+      rfidMap.set(tag.attendee_id, {
+        uid: tag.uid, 
+        status: tag.status
+      });
+    });
+
+    // Generate status for each attendee
+    const statusMap: Record<string, CheckInStatus> = {};
+    
+    attendeeIds.forEach(attendeeId => {
+      const activation = activationMap.get(attendeeId);
+      const rfid = rfidMap.get(attendeeId);
+      
+      const hasRfid = !!rfid;
+      const isActivated = activation?.transaction_type === 'activate';
+
+      if (hasRfid && isActivated) {
+        statusMap[attendeeId] = {
+          status: 'checked_in',
+          label: 'Checked In',
+          variant: 'default' as const,
+          icon: '✅'
+        };
+      } else if (hasRfid && !isActivated) {
+        statusMap[attendeeId] = {
+          status: 'assigned',
+          label: 'Assigned',
+          variant: 'secondary' as const,
+          icon: '📋'
+        };
+      } else {
+        statusMap[attendeeId] = {
+          status: 'unassigned',
+          label: 'Unassigned',
+          variant: 'destructive' as const,
+          icon: '❌'
+        };
+      }
+    });
+
+    return statusMap;
+  } catch (error) {
+    console.error('Error in getBulkEnhancedCheckInStatuses:', error);
+    
+    // Return fallback statuses for all attendees
+    const fallbackMap: Record<string, CheckInStatus> = {};
+    attendeeIds.forEach(id => {
+      fallbackMap[id] = {
+        status: 'unassigned',
+        label: 'Error',
+        variant: 'destructive' as const,
+        icon: '⚠️'
+      };
+    });
+    
+    return fallbackMap;
+  }
+}
