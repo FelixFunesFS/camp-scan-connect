@@ -47,6 +47,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileRfidControls } from "@/components/MobileRfidControls";
 import { MobileAttendeeList } from "@/components/MobileAttendeeList";
+import { getCheckInStatus } from "@/utils/statusUtils";
 
 export interface AttendeeData {
   id: string;
@@ -99,7 +100,7 @@ export const RfidAssignment = () => {
   const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
   const [realtimeDisabled, setRealtimeDisabled] = useState(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'waiver' | 'status'>('arrival_day');
+  const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'waiver' | 'status' | 'check_in_status'>('arrival_day');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
   const [arrivalDayFilter, setArrivalDayFilter] = useState<string>('all');
@@ -445,6 +446,23 @@ export const RfidAssignment = () => {
           aValue = a.rfid_uid && a.rfid_status === 'assigned' ? 'assigned' : 'unassigned';
           bValue = b.rfid_uid && b.rfid_status === 'assigned' ? 'assigned' : 'unassigned';
           break;
+        case 'check_in_status':
+          // Sort by check-in status: checked_in (0), assigned (1), unassigned (2)
+          const aCheckIn = getCheckInStatus(a.rfid_uid, a.activated_at);
+          const bCheckIn = getCheckInStatus(b.rfid_uid, b.activated_at);
+          const aStatusValue = aCheckIn.status === 'checked_in' ? 0 : aCheckIn.status === 'assigned' ? 1 : 2;
+          const bStatusValue = bCheckIn.status === 'checked_in' ? 0 : bCheckIn.status === 'assigned' ? 1 : 2;
+          const statusResult = aStatusValue - bStatusValue;
+          
+          // Secondary sort by order_id when status is equal
+          if (statusResult === 0) {
+            const aOrderId = a.order_id?.toLowerCase() || 'zzz-no-order';
+            const bOrderId = b.order_id?.toLowerCase() || 'zzz-no-order';
+            const secondaryResult = aOrderId.localeCompare(bOrderId);
+            return sortDirection === 'asc' ? secondaryResult : -secondaryResult;
+          }
+          
+          return sortDirection === 'asc' ? statusResult : -statusResult;
         default:
           return 0;
       }
@@ -1192,7 +1210,18 @@ export const RfidAssignment = () => {
                               </Button>
                             </TableHead>
                             <TableHead className="w-80 min-w-80">RFID Assignment</TableHead>
-                            <TableHead className="min-w-[100px]">Status</TableHead>
+                            <TableHead className="min-w-[120px]">
+                              <Button
+                                variant="ghost"
+                                className="h-auto p-0 font-semibold hover:bg-transparent"
+                                onClick={() => handleSort('check_in_status')}
+                              >
+                                <div className="flex items-center gap-2">
+                                  Check-In Status
+                                  {getSortIcon('check_in_status')}
+                                </div>
+                              </Button>
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1291,17 +1320,22 @@ export const RfidAssignment = () => {
                                     />
                                   </TableCell>
                                   <TableCell>
-                                    {isAssigned ? (
-                                      <div className="flex items-center gap-1 text-success">
-                                        <CheckCircle className="h-4 w-4" />
-                                        <span className="text-sm">Assigned</span>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center gap-1 text-warning">
-                                        <AlertTriangle className="h-4 w-4" />
-                                        <span className="text-sm">Pending</span>
-                                      </div>
-                                    )}
+                                    {(() => {
+                                      const checkInStatus = getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+                                      return (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm">{checkInStatus.icon}</span>
+                                          <Badge variant={checkInStatus.variant} className="text-xs">
+                                            {checkInStatus.label}
+                                          </Badge>
+                                          {attendee.activated_at && (
+                                            <span className="text-xs text-muted-foreground ml-1">
+                                              {new Date(attendee.activated_at).toLocaleDateString()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
                                   </TableCell>
                                 </TableRow>
                               );

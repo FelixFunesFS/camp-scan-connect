@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { User, Phone, Mail, CreditCard, Radio, Ticket, Utensils, Calendar, Camera, Usb } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
+import { getCheckInStatus } from "@/utils/statusUtils";
 import type { AttendeeData } from "@/pages/RfidAssignment";
 
 interface MobileRfidAssignmentCardProps {
@@ -25,13 +26,19 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
   const hasRfid = !!attendee.rfid_uid;
 
   const getRfidStatusBadge = () => {
-    if (isActivated) {
-      return <Badge variant="default" className="text-xs bg-success text-success-foreground"><Radio className="h-3 w-3 mr-1" />Active</Badge>;
-    }
-    if (hasRfid) {
-      return <Badge variant="secondary" className="text-xs bg-warning text-warning-foreground"><Radio className="h-3 w-3 mr-1" />Assigned</Badge>;
-    }
-    return <Badge variant="outline" className="text-xs text-muted-foreground"><Radio className="h-3 w-3 mr-1" />Unassigned</Badge>;
+    const checkInStatus = getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+    const colorClass = checkInStatus.status === 'checked_in' 
+      ? 'bg-success text-success-foreground' 
+      : checkInStatus.status === 'assigned'
+      ? 'bg-warning text-warning-foreground'
+      : 'text-muted-foreground';
+      
+    return (
+      <Badge variant={checkInStatus.variant} className={`text-xs ${colorClass}`}>
+        <Radio className="h-3 w-3 mr-1" />
+        {checkInStatus.label}
+      </Badge>
+    );
   };
 
   const getTicketTypeBadge = () => {

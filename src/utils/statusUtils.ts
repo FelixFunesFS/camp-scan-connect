@@ -58,3 +58,40 @@ export function getRegistrationStatusDisplayText(status: string): string {
       return status || 'Unknown';
   }
 }
+
+/**
+ * Get check-in status based on RFID assignment and activation
+ */
+export interface CheckInStatus {
+  status: 'unassigned' | 'assigned' | 'checked_in';
+  label: string;
+  variant: 'destructive' | 'secondary' | 'default';
+  icon: string;
+}
+
+export function getCheckInStatus(rfidUid: string | null, activatedAt: string | null): CheckInStatus {
+  if (rfidUid && activatedAt) {
+    return {
+      status: 'checked_in',
+      label: 'Checked In',
+      variant: 'default',
+      icon: '🟢'
+    };
+  }
+  
+  if (rfidUid && !activatedAt) {
+    return {
+      status: 'assigned',
+      label: 'Assigned',
+      variant: 'secondary', 
+      icon: '🟡'
+    };
+  }
+  
+  return {
+    status: 'unassigned',
+    label: 'Unassigned',
+    variant: 'destructive',
+    icon: '🔴'
+  };
+}
