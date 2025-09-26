@@ -13,7 +13,7 @@ import { RfidTag, AttendeeReadiness, StationType, TransactionType } from "@/type
 import { StationActivationPrompt } from "@/components/StationActivationPrompt";
 import { StationRfidIssueAlert } from "@/components/StationRfidIssueAlert";
 import { StaffOverridePanel } from "@/components/StaffOverridePanel";
-import { StaffAssistedActivationPanel } from "@/components/StaffAssistedActivationPanel";
+import { QuickStaffActivation } from "@/components/QuickStaffActivation";
 import { GroupActivationResult } from "@/services/phoneActivationService";
 
 interface UnifiedStationScannerProps {
@@ -380,12 +380,11 @@ export function UnifiedStationScanner({
           </CardContent>
         </Card>
 
-        {/* Staff Assisted Activation Panel */}
+        {/* Quick Staff Activation */}
         {showStaffActivation && (
-          <StaffAssistedActivationPanel
-            onActivationSuccess={handleStaffActivation}
+          <QuickStaffActivation
+            onSuccess={handleStaffActivation}
             onCancel={() => setShowStaffActivation(false)}
-            stationName={stationTitle}
           />
         )}
 

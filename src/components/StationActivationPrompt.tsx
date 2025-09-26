@@ -71,27 +71,20 @@ export function StationActivationPrompt({
         {/* Staff Assistance Options */}
         {showStaffOverride && (
           <div className="pt-3 border-t border-border/50 space-y-3">
-            {/* Staff Can Help Activate */}
+            {/* Quick Staff Activation */}
             {onStaffActivation && attendeeReadiness.hasAssignment && !attendeeReadiness.hasActivation && (
-              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary" />
-                      Staff Can Help Activate Now
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Search for this attendee and activate their wristband immediately
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={onStaffActivation}
-                    size="sm"
-                    className="ml-4"
-                  >
-                    Help Activate
-                  </Button>
-                </div>
+              <div>
+                <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Staff: Activate Now
+                </p>
+                <Button 
+                  onClick={onStaffActivation}
+                  size="touch"
+                  className="w-full"
+                >
+                  Quick Activate
+                </Button>
               </div>
             )}
             
