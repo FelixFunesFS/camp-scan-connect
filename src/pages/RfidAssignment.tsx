@@ -123,45 +123,57 @@ export const RfidAssignment = () => {
   // Update progress data using enhanced status calculation
   useEffect(() => {
     const updateProgress = async () => {
-      const { getEnhancedCheckInStatus } = await import('@/utils/statusUtils');
+      if (!attendees.length) return;
       
-      let checkedInCount = 0;
-      let assignedCount = 0;
-      let unassignedCount = 0;
+      try {
+        const { getEnhancedCheckInStatus } = await import('@/utils/statusUtils');
+        
+        let checkedInCount = 0;
+        let assignedCount = 0;
+        let unassignedCount = 0;
 
-      const statusPromises = attendees.map(async (a) => {
-        const status = await getEnhancedCheckInStatus(a.id, a.rfid_uid);
-        return status.status;
-      });
-      
-      const statuses = await Promise.all(statusPromises);
-      
-      statuses.forEach(status => {
-        if (status === 'checked_in') {
-          checkedInCount++;
-        } else if (status === 'assigned') {
-          assignedCount++;
-        } else {
-          unassignedCount++;
-        }
-      });
+        const statusPromises = attendees.map(async (a) => {
+          const status = await getEnhancedCheckInStatus(a.id, a.rfid_uid);
+          return status.status;
+        });
+        
+        const statuses = await Promise.all(statusPromises);
+        
+        statuses.forEach(status => {
+          if (status === 'checked_in') {
+            checkedInCount++;
+          } else if (status === 'assigned') {
+            assignedCount++;
+          } else {
+            unassignedCount++;
+          }
+        });
 
-      const totalCount = attendees.length;
-      const totalAssignedCount = assignedCount + checkedInCount;
-      const progressPercent = totalCount > 0 ? (totalAssignedCount / totalCount) * 100 : 0;
+        const currentTotalCount = attendees.length;
+        const totalAssignedCount = assignedCount + checkedInCount;
+        const progressPercent = currentTotalCount > 0 ? (totalAssignedCount / currentTotalCount) * 100 : 0;
 
-      setProgressData({
-        checkedInCount,
-        assignedCount,
-        unassignedCount,
-        totalCount,
-        progressPercent
-      });
+        setProgressData({
+          checkedInCount,
+          assignedCount,
+          unassignedCount,
+          totalCount: currentTotalCount,
+          progressPercent
+        });
+      } catch (error) {
+        console.error('Error updating progress data:', error);
+        // Set default values if error occurs
+        setProgressData({
+          checkedInCount: 0,
+          assignedCount: 0,
+          unassignedCount: attendees.length,
+          totalCount: attendees.length,
+          progressPercent: 0
+        });
+      }
     };
 
-    if (attendees.length > 0) {
-      updateProgress();
-    }
+    updateProgress();
   }, [attendees]);
 
   // Load attendees data optimized for assignment workflow
