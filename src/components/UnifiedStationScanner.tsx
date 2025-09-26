@@ -13,6 +13,8 @@ import { RfidTag, AttendeeReadiness, StationType, TransactionType } from "@/type
 import { StationActivationPrompt } from "@/components/StationActivationPrompt";
 import { StationRfidIssueAlert } from "@/components/StationRfidIssueAlert";
 import { StaffOverridePanel } from "@/components/StaffOverridePanel";
+import { StaffAssistedActivationPanel } from "@/components/StaffAssistedActivationPanel";
+import { GroupActivationResult } from "@/services/phoneActivationService";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -48,6 +50,7 @@ export function UnifiedStationScanner({
   const [error, setError] = useState<string>("");
   const [autoTriggered, setAutoTriggered] = useState(false);
   const [showStaffOverride, setShowStaffOverride] = useState(false);
+  const [showStaffActivation, setShowStaffActivation] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -157,6 +160,7 @@ export function UnifiedStationScanner({
     setError("");
     setAutoTriggered(false);
     setShowStaffOverride(false);
+    setShowStaffActivation(false);
   };
 
   const handleStaffOverride = async (notes: string) => {
@@ -187,6 +191,28 @@ export function UnifiedStationScanner({
     } catch (error) {
       console.error("Failed to record staff override:", error);
       toast.error("Failed to record staff override");
+    }
+  };
+
+  const handleStaffActivation = async (result: GroupActivationResult) => {
+    try {
+      toast.success(`Successfully activated ${result.activated_count} attendee(s) via staff assistance!`);
+      
+      // Clear current state and allow normal station flow
+      setShowStaffActivation(false);
+      setSelectedRfid(null);
+      setAttendeeReadiness(null);
+      setManualUid("");
+      setError("");
+      
+      // Focus back on manual input for next scan
+      const input = document.getElementById('manual-uid');
+      if (input) {
+        input.focus();
+      }
+    } catch (error) {
+      console.error("Failed to handle staff activation result:", error);
+      toast.error("Failed to process staff activation");
     }
   };
 
@@ -354,6 +380,15 @@ export function UnifiedStationScanner({
           </CardContent>
         </Card>
 
+        {/* Staff Assisted Activation Panel */}
+        {showStaffActivation && (
+          <StaffAssistedActivationPanel
+            onActivationSuccess={handleStaffActivation}
+            onCancel={() => setShowStaffActivation(false)}
+            stationName={stationTitle}
+          />
+        )}
+
         {/* Staff Override Panel */}
         {showStaffOverride && selectedRfid?.attendee && (
           <StaffOverridePanel
@@ -370,6 +405,7 @@ export function UnifiedStationScanner({
             attendeeName={`${selectedRfid!.attendee.first_name} ${selectedRfid!.attendee.last_name}`}
             attendeeReadiness={attendeeReadiness!}
             onStaffOverride={() => setShowStaffOverride(true)}
+            onStaffActivation={() => setShowStaffActivation(true)}
           />
         )}
 

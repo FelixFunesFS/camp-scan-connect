@@ -9,6 +9,7 @@ interface StationActivationPromptProps {
   attendeeName: string;
   attendeeReadiness: AttendeeReadiness;
   onStaffOverride?: () => void;
+  onStaffActivation?: () => void;
   showStaffOverride?: boolean;
 }
 
@@ -16,6 +17,7 @@ export function StationActivationPrompt({
   attendeeName, 
   attendeeReadiness,
   onStaffOverride,
+  onStaffActivation,
   showStaffOverride = true 
 }: StationActivationPromptProps) {
   return (
@@ -66,23 +68,52 @@ export function StationActivationPrompt({
           </div>
         </div>
 
-        {/* Staff Override Option */}
-        {showStaffOverride && onStaffOverride && (
-          <div className="pt-3 border-t border-border/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Need immediate assistance?</p>
-                <p className="text-xs text-muted-foreground">Staff can help activate this attendee</p>
+        {/* Staff Assistance Options */}
+        {showStaffOverride && (
+          <div className="pt-3 border-t border-border/50 space-y-3">
+            {/* Staff Can Help Activate */}
+            {onStaffActivation && attendeeReadiness.hasAssignment && !attendeeReadiness.hasActivation && (
+              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                      Staff Can Help Activate Now
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Search for this attendee and activate their wristband immediately
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={onStaffActivation}
+                    size="sm"
+                    className="ml-4"
+                  >
+                    Help Activate
+                  </Button>
+                </div>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={onStaffOverride}
-                className="ml-4"
-              >
-                Staff Override
-              </Button>
-            </div>
+            )}
+            
+            {/* Staff Override for Other Issues */}
+            {onStaffOverride && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Having technical issues?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Staff can override RFID problems and authorize service
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={onStaffOverride}
+                  className="ml-4"
+                >
+                  Staff Override
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
