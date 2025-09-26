@@ -28,6 +28,8 @@ interface MobileRfidControlsProps {
   onMealPlanFilterChange: (value: string) => void;
   arrivalDayFilter: string;
   onArrivalDayFilterChange: (value: string) => void;
+  checkInStatusFilter: string;
+  onCheckInStatusFilterChange: (value: string) => void;
   viewMode: 'individual' | 'group' | 'site-location';
   onViewModeChange: (mode: 'individual' | 'group' | 'site-location') => void;
   onSync: () => void;
@@ -46,6 +48,8 @@ export const MobileRfidControls: React.FC<MobileRfidControlsProps> = ({
   onMealPlanFilterChange,
   arrivalDayFilter,
   onArrivalDayFilterChange,
+  checkInStatusFilter,
+  onCheckInStatusFilterChange,
   viewMode,
   onViewModeChange,
   onSync,
@@ -204,6 +208,21 @@ export const MobileRfidControls: React.FC<MobileRfidControlsProps> = ({
                 <SelectItem value="all">All Days</SelectItem>
                 <SelectItem value="early">Thursday (Early)</SelectItem>
                 <SelectItem value="standard">Friday (Standard)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Check-In Status</Label>
+            <Select value={checkInStatusFilter} onValueChange={onCheckInStatusFilterChange}>
+              <SelectTrigger className="touch-target">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="checked_in">✅ Checked In</SelectItem>
+                <SelectItem value="assigned">🟡 Assigned</SelectItem>
+                <SelectItem value="unassigned">🔴 Unassigned</SelectItem>
               </SelectContent>
             </Select>
           </div>

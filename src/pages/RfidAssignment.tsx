@@ -104,16 +104,23 @@ export const RfidAssignment = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [mealPlanFilter, setMealPlanFilter] = useState<string>('all');
   const [arrivalDayFilter, setArrivalDayFilter] = useState<string>('all');
+  const [checkInStatusFilter, setCheckInStatusFilter] = useState<string>('all');
   const [showFAQ, setShowFAQ] = useState(false);
   const [hasRfidInputFocused, setHasRfidInputFocused] = useState(false);
   
   const { exportToCsv } = useCsvExport();
   const isMobile = useIsMobile();
 
-  // Progress calculations
+  // Progress calculations - using consistent check-in status logic
   const totalCount = attendees.length;
-  const checkedInCount = attendees.filter(a => a.rfid_uid && a.rfid_status === 'active').length;
-  const assignedCount = attendees.filter(a => a.rfid_uid && a.rfid_status === 'assigned').length;
+  const checkedInCount = attendees.filter(a => {
+    const checkInStatus = getCheckInStatus(a.rfid_uid, a.activated_at);
+    return checkInStatus.status === 'checked_in';
+  }).length;
+  const assignedCount = attendees.filter(a => {
+    const checkInStatus = getCheckInStatus(a.rfid_uid, a.activated_at);
+    return checkInStatus.status === 'assigned';
+  }).length;
   const totalAssignedCount = assignedCount + checkedInCount;
   const unassignedCount = totalCount - totalAssignedCount;
   const progressPercent = totalCount > 0 ? (totalAssignedCount / totalCount) * 100 : 0;
@@ -343,6 +350,14 @@ export const RfidAssignment = () => {
       filtered = filtered.filter(a => a.arrival_window === arrivalDayFilter);
     }
 
+    // Filter by check-in status
+    if (checkInStatusFilter !== 'all') {
+      filtered = filtered.filter(a => {
+        const checkInStatus = getCheckInStatus(a.rfid_uid, a.activated_at);
+        return checkInStatus.status === checkInStatusFilter;
+      });
+    }
+
     // Enhanced search with companion inclusion
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
@@ -389,11 +404,17 @@ export const RfidAssignment = () => {
       if (arrivalDayFilter !== 'all') {
         filtered = filtered.filter(a => a.arrival_window === arrivalDayFilter);
       }
+      if (checkInStatusFilter !== 'all') {
+        filtered = filtered.filter(a => {
+          const checkInStatus = getCheckInStatus(a.rfid_uid, a.activated_at);
+          return checkInStatus.status === checkInStatusFilter;
+        });
+      }
     }
 
     setFilteredAttendees(filtered);
     setCurrentPage(1); // Reset to first page on filter change
-  }, [attendees, searchTerm, showOnlyUnassigned, mealPlanFilter, arrivalDayFilter]);
+  }, [attendees, searchTerm, showOnlyUnassigned, mealPlanFilter, arrivalDayFilter, checkInStatusFilter]);
 
   // Sorting and pagination
   const sortedAndPaginatedAttendees = useMemo(() => {
@@ -801,10 +822,12 @@ export const RfidAssignment = () => {
               onSearchChange={setSearchTerm}
               showOnlyUnassigned={showOnlyUnassigned}
               onShowOnlyUnassignedChange={setShowOnlyUnassigned}
-              mealPlanFilter={mealPlanFilter}
-              onMealPlanFilterChange={setMealPlanFilter}
-              arrivalDayFilter={arrivalDayFilter}
-              onArrivalDayFilterChange={setArrivalDayFilter}
+               mealPlanFilter={mealPlanFilter}
+               onMealPlanFilterChange={setMealPlanFilter}
+               arrivalDayFilter={arrivalDayFilter}
+               onArrivalDayFilterChange={setArrivalDayFilter}
+               checkInStatusFilter={checkInStatusFilter}
+               onCheckInStatusFilterChange={setCheckInStatusFilter}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               onSync={handleRegFoxSync}
@@ -1068,6 +1091,18 @@ export const RfidAssignment = () => {
                       <SelectItem value="all">All Days</SelectItem>
                       <SelectItem value="early">Thursday</SelectItem>
                       <SelectItem value="standard">Friday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={checkInStatusFilter} onValueChange={setCheckInStatusFilter}>
+                    <SelectTrigger className="w-36">
+                      <SelectValue placeholder="Check-In Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="checked_in">✅ Checked In</SelectItem>
+                      <SelectItem value="assigned">🟡 Assigned</SelectItem>
+                      <SelectItem value="unassigned">🔴 Unassigned</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
