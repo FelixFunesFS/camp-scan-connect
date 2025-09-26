@@ -114,7 +114,16 @@ export async function getEnhancedCheckInStatus(attendeeId: string, rfidUid: stri
       .limit(1)
       .maybeSingle();
 
-    const isActivated = activationTransaction?.transaction_type === 'activate';
+    // Get RFID status to determine actual activation state
+    const { supabase: supabaseClient } = await import("@/integrations/supabase/client");
+    const { data: rfidTag } = await supabaseClient
+      .from('rfid_tags')
+      .select('status')
+      .eq('uid', rfidUid)
+      .in('status', ['assigned', 'active'])
+      .maybeSingle();
+
+    const isActivated = rfidTag?.status === 'active';
 
     if (rfidUid && isActivated) {
       return {
@@ -175,7 +184,7 @@ export async function getActivationStatusFromTransactions(attendeeId: string): P
       .maybeSingle();
 
     const hasRfid = !!rfidTag;
-    const isActivated = activationTransaction?.transaction_type === 'activate';
+    const isActivated = rfidTag?.status === 'active';
 
     if (hasRfid && isActivated) {
       return {
@@ -267,7 +276,7 @@ export async function getBulkEnhancedCheckInStatuses(attendeeIds: string[]): Pro
       const rfid = rfidMap.get(attendeeId);
       
       const hasRfid = !!rfid;
-      const isActivated = activation?.transaction_type === 'activate';
+      const isActivated = rfid?.status === 'active';
 
       if (hasRfid && isActivated) {
         statusMap[attendeeId] = {
