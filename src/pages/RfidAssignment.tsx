@@ -47,7 +47,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileRfidControls } from "@/components/MobileRfidControls";
 import { MobileAttendeeList } from "@/components/MobileAttendeeList";
-import { getCheckInStatus } from "@/utils/statusUtils";
+import { getCheckInStatus, getEnhancedCheckInStatus } from "@/utils/statusUtils";
 
 export interface AttendeeData {
   id: string;
@@ -111,19 +111,58 @@ export const RfidAssignment = () => {
   const { exportToCsv } = useCsvExport();
   const isMobile = useIsMobile();
 
-  // Progress calculations - using consistent check-in status logic
-  const totalCount = attendees.length;
-  const checkedInCount = attendees.filter(a => {
-    const checkInStatus = getCheckInStatus(a.rfid_uid, a.activated_at);
-    return checkInStatus.status === 'checked_in';
-  }).length;
-  const assignedCount = attendees.filter(a => {
-    const checkInStatus = getCheckInStatus(a.rfid_uid, a.activated_at);
-    return checkInStatus.status === 'assigned';
-  }).length;
-  const totalAssignedCount = assignedCount + checkedInCount;
-  const unassignedCount = totalCount - totalAssignedCount;
-  const progressPercent = totalCount > 0 ? (totalAssignedCount / totalCount) * 100 : 0;
+  // Progress calculations - using enhanced check-in status logic
+  const [progressData, setProgressData] = useState({
+    checkedInCount: 0,
+    assignedCount: 0,
+    unassignedCount: 0,
+    totalCount: 0,
+    progressPercent: 0
+  });
+
+  // Update progress data using enhanced status calculation
+  useEffect(() => {
+    const updateProgress = async () => {
+      const { getEnhancedCheckInStatus } = await import('@/utils/statusUtils');
+      
+      let checkedInCount = 0;
+      let assignedCount = 0;
+      let unassignedCount = 0;
+
+      const statusPromises = attendees.map(async (a) => {
+        const status = await getEnhancedCheckInStatus(a.id, a.rfid_uid);
+        return status.status;
+      });
+      
+      const statuses = await Promise.all(statusPromises);
+      
+      statuses.forEach(status => {
+        if (status === 'checked_in') {
+          checkedInCount++;
+        } else if (status === 'assigned') {
+          assignedCount++;
+        } else {
+          unassignedCount++;
+        }
+      });
+
+      const totalCount = attendees.length;
+      const totalAssignedCount = assignedCount + checkedInCount;
+      const progressPercent = totalCount > 0 ? (totalAssignedCount / totalCount) * 100 : 0;
+
+      setProgressData({
+        checkedInCount,
+        assignedCount,
+        unassignedCount,
+        totalCount,
+        progressPercent
+      });
+    };
+
+    if (attendees.length > 0) {
+      updateProgress();
+    }
+  }, [attendees]);
 
   // Load attendees data optimized for assignment workflow
   const loadAttendees = useCallback(async () => {
@@ -832,9 +871,9 @@ export const RfidAssignment = () => {
               onViewModeChange={setViewMode}
               onSync={handleRegFoxSync}
               syncing={syncing}
-              totalCount={totalCount}
-              assignedCount={assignedCount}
-              progressPercent={progressPercent}
+              totalCount={progressData.totalCount}
+              assignedCount={progressData.assignedCount}
+              progressPercent={progressData.progressPercent}
             />
 
             {/* Mobile Content */}
@@ -937,7 +976,7 @@ export const RfidAssignment = () => {
                     <TooltipTrigger asChild>
                       <Card>
                         <CardContent className="pt-6">
-                          <div className="text-2xl font-bold text-foreground">{totalCount}</div>
+                          <div className="text-2xl font-bold text-foreground">{progressData.totalCount}</div>
                           <p className="text-xs text-muted-foreground">Total Attendees</p>
                         </CardContent>
                       </Card>
@@ -951,7 +990,7 @@ export const RfidAssignment = () => {
                     <TooltipTrigger asChild>
                       <Card>
                         <CardContent className="pt-6">
-                          <div className="text-2xl font-bold text-warning">{unassignedCount}</div>
+                          <div className="text-2xl font-bold text-warning">{progressData.unassignedCount}</div>
                           <p className="text-xs text-muted-foreground">Unassigned</p>
                         </CardContent>
                       </Card>
@@ -965,7 +1004,7 @@ export const RfidAssignment = () => {
                     <TooltipTrigger asChild>
                       <Card>
                         <CardContent className="pt-6">
-                          <div className="text-2xl font-bold text-secondary">{assignedCount}</div>
+                          <div className="text-2xl font-bold text-secondary">{progressData.assignedCount}</div>
                           <p className="text-xs text-muted-foreground">Assigned</p>
                         </CardContent>
                       </Card>
@@ -979,7 +1018,7 @@ export const RfidAssignment = () => {
                     <TooltipTrigger asChild>
                       <Card>
                         <CardContent className="pt-6">
-                          <div className="text-2xl font-bold text-primary">{checkedInCount}</div>
+                          <div className="text-2xl font-bold text-primary">{progressData.checkedInCount}</div>
                           <p className="text-xs text-muted-foreground">Checked In</p>
                         </CardContent>
                       </Card>
@@ -996,9 +1035,9 @@ export const RfidAssignment = () => {
                     <TooltipTrigger asChild>
                       <Card>
                         <CardContent className="pt-6">
-                          <div className="text-2xl font-bold text-success">{Math.round(progressPercent)}%</div>
+                          <div className="text-2xl font-bold text-success">{Math.round(progressData.progressPercent)}%</div>
                           <p className="text-xs text-muted-foreground">Progress</p>
-                          <Progress value={progressPercent} className="mt-2 h-2" />
+                          <Progress value={progressData.progressPercent} className="mt-2 h-2" />
                         </CardContent>
                       </Card>
                     </TooltipTrigger>
