@@ -103,18 +103,18 @@ export async function getEnhancedCheckInStatus(attendeeId: string, rfidUid: stri
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     
-    // Check if attendee has activation transaction
+    // Get the most recent activation transaction (activate OR deactivate)
     const { data: activationTransaction } = await supabase
       .from('station_transactions')
       .select('transaction_type')
       .eq('attendee_id', attendeeId)
       .eq('station_type', 'activation')
-      .eq('transaction_type', 'activate')
+      .in('transaction_type', ['activate', 'deactivate'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    const isActivated = !!activationTransaction;
+    const isActivated = activationTransaction?.transaction_type === 'activate';
 
     if (rfidUid && isActivated) {
       return {
@@ -155,15 +155,16 @@ export async function getActivationStatusFromTransactions(attendeeId: string): P
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     
-    // Check if attendee has activation transaction
+    // Get the most recent activation transaction (activate OR deactivate)
     const { data: activationTransaction } = await supabase
       .from('station_transactions')
       .select('transaction_type, created_at')
       .eq('attendee_id', attendeeId)
       .eq('station_type', 'activation')
+      .in('transaction_type', ['activate', 'deactivate'])
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     // Check if attendee has RFID assignment
     const { data: rfidTag } = await supabase
@@ -171,7 +172,7 @@ export async function getActivationStatusFromTransactions(attendeeId: string): P
       .select('uid, status')
       .eq('attendee_id', attendeeId)
       .in('status', ['assigned', 'active'])
-      .single();
+      .maybeSingle();
 
     const hasRfid = !!rfidTag;
     const isActivated = activationTransaction?.transaction_type === 'activate';
