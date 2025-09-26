@@ -95,3 +95,67 @@ export function getCheckInStatus(rfidUid: string | null, activatedAt: string | n
     icon: '🔴'
   };
 }
+
+/**
+ * Get check-in status based on activation transactions (single source of truth)
+ * This checks the station_transactions table for actual activation status
+ */
+export async function getActivationStatusFromTransactions(attendeeId: string): Promise<CheckInStatus> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    
+    // Check if attendee has activation transaction
+    const { data: activationTransaction } = await supabase
+      .from('station_transactions')
+      .select('transaction_type, created_at')
+      .eq('attendee_id', attendeeId)
+      .eq('station_type', 'activation')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    // Check if attendee has RFID assignment
+    const { data: rfidTag } = await supabase
+      .from('rfid_tags')
+      .select('uid, status')
+      .eq('attendee_id', attendeeId)
+      .in('status', ['assigned', 'active'])
+      .single();
+
+    const hasRfid = !!rfidTag;
+    const isActivated = activationTransaction?.transaction_type === 'activate';
+
+    if (hasRfid && isActivated) {
+      return {
+        status: 'checked_in',
+        label: 'Checked In',
+        variant: 'default',
+        icon: '🟢'
+      };
+    }
+    
+    if (hasRfid && !isActivated) {
+      return {
+        status: 'assigned',
+        label: 'Assigned',
+        variant: 'secondary', 
+        icon: '🟡'
+      };
+    }
+    
+    return {
+      status: 'unassigned',
+      label: 'Unassigned',
+      variant: 'destructive',
+      icon: '🔴'
+    };
+  } catch (error) {
+    console.error('Error checking activation status:', error);
+    return {
+      status: 'unassigned',
+      label: 'Error',
+      variant: 'destructive',
+      icon: '🔴'
+    };
+  }
+}
