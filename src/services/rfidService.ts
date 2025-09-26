@@ -289,8 +289,55 @@ class RfidService {
       console.error('Error recording transaction:', error);
     }
   }
-  // New method to check if attendee is both assigned and activated
+  // Enhanced method to check if attendee is both assigned and activated
   async checkAttendeeReadiness(attendeeId: string): Promise<{ isReady: boolean; message: string; hasAssignment: boolean; hasActivation: boolean }> {
+    try {
+      // Use the database function for consistent validation
+      const { data, error } = await supabase
+        .rpc('check_station_access', { p_attendee_id: attendeeId });
+
+      if (error) {
+        console.error('Error checking station access:', error);
+        return {
+          isReady: false,
+          message: "Error validating station access",
+          hasAssignment: false,
+          hasActivation: false
+        };
+      }
+
+      const accessRecord = data?.[0];
+      if (!accessRecord) {
+        return {
+          isReady: false,
+          message: "No access information available",
+          hasAssignment: false,
+          hasActivation: false
+        };
+      }
+
+      const hasAssignment = accessRecord.rfid_status !== 'unassigned';
+      const hasActivation = accessRecord.activation_status === 'activate';
+
+      return {
+        isReady: accessRecord.has_access,
+        message: accessRecord.access_reason,
+        hasAssignment,
+        hasActivation
+      };
+    } catch (error) {
+      console.error('Error checking attendee readiness:', error);
+      return {
+        isReady: false,
+        message: "Error checking attendee status",
+        hasAssignment: false,
+        hasActivation: false
+      };
+    }
+  }
+
+  // Legacy method for backwards compatibility - now uses standardized validation
+  async checkAttendeeReadinessLegacy(attendeeId: string): Promise<{ isReady: boolean; message: string; hasAssignment: boolean; hasActivation: boolean }> {
     try {
       // Check if attendee has an assigned RFID
       const { data: rfidTag } = await supabase
@@ -326,7 +373,7 @@ class RfidService {
       if (!hasActivation) {
         return {
           isReady: false,
-          message: "Attendee has RFID assigned but not activated. Please visit Activation Station first.",
+          message: "RFID assigned but not activated - activation required for station services",
           hasAssignment: true,
           hasActivation: false
         };

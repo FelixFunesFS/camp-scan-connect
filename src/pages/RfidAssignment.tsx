@@ -178,9 +178,8 @@ export const RfidAssignment = () => {
         const formattedMealPlan = (attendee as any).meal_plan === '1' ? 'Plan 1' : 
                                  (attendee as any).meal_plan === '2' ? 'Plan 2' : 'No Plan';
         
-        // Determine overall status
-        const overallStatus = (attendee as any).activated_at && rfidTag?.activated_at ? 'activated' :
-                             rfidTag?.uid ? 'assigned' : 'unassigned';
+        // Determine overall status - will be updated async for proper validation
+        const overallStatus = rfidTag?.uid ? 'assigned' : 'unassigned';
         
         // Extract site location assignment from database
         const siteLocationAssignment = (attendee as any).site_location_assignment || 'Not Assigned';

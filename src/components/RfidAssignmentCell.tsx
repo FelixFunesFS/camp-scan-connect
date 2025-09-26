@@ -6,6 +6,7 @@ import { Scan, Check, X, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRfidCaptureContext } from "@/contexts/RfidCaptureContext";
+import { rfidService } from "@/services/rfidService";
 
 interface RfidAssignmentCellProps {
   attendeeId: string;

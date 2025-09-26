@@ -574,6 +574,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_station_access: {
+        Args: { p_attendee_id: string }
+        Returns: {
+          access_reason: string
+          activation_status: string
+          has_access: boolean
+          rfid_status: string
+        }[]
+      }
       cleanup_abandoned_records: {
         Args: Record<PropertyKey, never>
         Returns: {
