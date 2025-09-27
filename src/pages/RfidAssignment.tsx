@@ -80,7 +80,7 @@ export interface AttendeeData {
   group_assignment_progress?: { assigned: number; total: number; percentage: number };
 }
 
-const ROWS_PER_PAGE = 50;
+const ROWS_PER_PAGE = 100;
 
 export const RfidAssignment = () => {
   // Consolidated state for better performance
@@ -782,6 +782,8 @@ export const RfidAssignment = () => {
                       <EnhancedRfidAssignmentCell
                         attendeeId={attendee.id}
                         attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+                        currentRfidUid={attendee.rfid_uid}
+                        currentRfidStatus={attendee.rfid_status}
                         onOptimisticUpdate={handleOptimisticUpdate}
                         onAssignmentComplete={() => {}}
                       />
@@ -1104,6 +1106,8 @@ export const RfidAssignment = () => {
                             <EnhancedRfidAssignmentCell
                               attendeeId={attendee.id}
                               attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+                              currentRfidUid={attendee.rfid_uid}
+                              currentRfidStatus={attendee.rfid_status}
                               onOptimisticUpdate={handleOptimisticUpdate}
                               onAssignmentComplete={() => {}}
                             />
@@ -1138,35 +1142,12 @@ export const RfidAssignment = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setUiState(prev => ({ ...prev, currentPage: 1 }))}
-                      disabled={uiState.currentPage <= 1}
-                    >
-                      First
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
                       onClick={() => setUiState(prev => ({ ...prev, currentPage: Math.max(1, prev.currentPage - 1) }))}
                       disabled={uiState.currentPage <= 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
                       Previous
                     </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = Math.max(1, Math.min(totalPages, uiState.currentPage - 2 + i));
-                        return (
-                          <Button
-                            key={page}
-                            variant={page === uiState.currentPage ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setUiState(prev => ({ ...prev, currentPage: page }))}
-                          >
-                            {page}
-                          </Button>
-                        );
-                      })}
-                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -1175,14 +1156,6 @@ export const RfidAssignment = () => {
                     >
                       Next
                       <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setUiState(prev => ({ ...prev, currentPage: totalPages }))}
-                      disabled={uiState.currentPage >= totalPages}
-                    >
-                      Last
                     </Button>
                   </div>
                 </div>
