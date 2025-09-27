@@ -852,15 +852,299 @@ export const RfidAssignment = () => {
             </CardContent>
           </Card>
 
-          {/* The rest of the desktop view would continue here... */}
+          {/* Desktop Controls */}
           <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Search & Filter</CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCsvExport}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRegFoxSync}
+                    disabled={operationState.syncing}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${operationState.syncing ? 'animate-spin' : ''}`} />
+                    Sync RegFox
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleBulkActivation}
+                    disabled={operationState.isActivating}
+                  >
+                    <Zap className={`h-4 w-4 mr-2 ${operationState.isActivating ? 'animate-pulse' : ''}`} />
+                    Bulk Activate
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Desktop view implementation continues...</p>
-                <p className="text-sm mt-2">Performance optimizations implemented ✅</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search attendees..."
+                    value={uiState.searchTerm}
+                    onChange={(e) => setUiState(prev => ({ ...prev, searchTerm: e.target.value }))}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={uiState.mealPlanFilter} onValueChange={(value) => setUiState(prev => ({ ...prev, mealPlanFilter: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Meal Plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Meal Plans</SelectItem>
+                    <SelectItem value="1">Plan 1</SelectItem>
+                    <SelectItem value="2">Plan 2</SelectItem>
+                    <SelectItem value="none">No Plan</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={uiState.arrivalDayFilter} onValueChange={(value) => setUiState(prev => ({ ...prev, arrivalDayFilter: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Arrival Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Days</SelectItem>
+                    <SelectItem value="early">Thursday (Early)</SelectItem>
+                    <SelectItem value="standard">Friday (Standard)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={uiState.checkInStatusFilter} onValueChange={(value) => setUiState(prev => ({ ...prev, checkInStatusFilter: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Check-in Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="checked_in">Checked In</SelectItem>
+                    <SelectItem value="assigned">Assigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={uiState.showOnlyUnassigned ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setUiState(prev => ({ ...prev, showOnlyUnassigned: !prev.showOnlyUnassigned }))}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Unassigned Only
+                </Button>
+                <Button
+                  variant={uiState.showCancelledRegistrants ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setUiState(prev => ({ ...prev, showCancelledRegistrants: !prev.showCancelledRegistrants }))}
+                >
+                  Cancelled Registrants
+                </Button>
+                {uiState.searchTerm && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUiState(prev => ({ ...prev, searchTerm: '' }))}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Clear Search
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
+
+          {/* Data Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Attendee Management</span>
+                <div className="text-sm text-muted-foreground">
+                  Showing {sortedAndPaginatedAttendees.length} of {filteredAttendees.length} attendees
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+                        <div className="flex items-center gap-2">
+                          Name {getSortIcon('name')}
+                        </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('phone')}>
+                        <div className="flex items-center gap-2">
+                          Phone {getSortIcon('phone')}
+                        </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('order')}>
+                        <div className="flex items-center gap-2">
+                          Order ID {getSortIcon('order')}
+                        </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('meal_plan')}>
+                        <div className="flex items-center gap-2">
+                          Meal Plan {getSortIcon('meal_plan')}
+                        </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('arrival_day')}>
+                        <div className="flex items-center gap-2">
+                          Arrival {getSortIcon('arrival_day')}
+                        </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('waiver')}>
+                        <div className="flex items-center gap-2">
+                          Waiver {getSortIcon('waiver')}
+                        </div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('check_in_status')}>
+                        <div className="flex items-center gap-2">
+                          Status {getSortIcon('check_in_status')}
+                        </div>
+                      </TableHead>
+                      <TableHead>RFID Assignment</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedAndPaginatedAttendees.map((attendee) => {
+                      const enhancedStatus = enhancedStatuses[attendee.id] || getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+                      return (
+                        <TableRow key={attendee.id} data-attendee-id={attendee.id}>
+                          <TableCell>
+                            <div className="font-medium">
+                              {attendee.first_name} {attendee.last_name}
+                            </div>
+                            {attendee.email && (
+                              <div className="text-sm text-muted-foreground">{attendee.email}</div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {attendee.phone ? formatPhoneNumber(attendee.phone) : 'No phone'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-mono text-sm">
+                              {attendee.order_id || 'No order'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {attendee.formatted_meal_plan}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={attendee.arrival_window === 'early' ? 'default' : 'outline'}>
+                              {attendee.arrival_day}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={attendee.waiver_signed ? 'default' : 'destructive'}>
+                              {attendee.waiver_signed ? 'Signed' : 'Not Signed'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={enhancedStatus.variant}>
+                              {enhancedStatus.icon} {enhancedStatus.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <EnhancedRfidAssignmentCell
+                              attendeeId={attendee.id}
+                              attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+                              onOptimisticUpdate={handleOptimisticUpdate}
+                              onAssignmentComplete={() => {}}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedAttendeeId(attendee.id)}
+                            >
+                              View Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Card>
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Page {uiState.currentPage} of {totalPages} ({filteredAttendees.length} total attendees)
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setUiState(prev => ({ ...prev, currentPage: 1 }))}
+                      disabled={uiState.currentPage <= 1}
+                    >
+                      First
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setUiState(prev => ({ ...prev, currentPage: Math.max(1, prev.currentPage - 1) }))}
+                      disabled={uiState.currentPage <= 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const page = Math.max(1, Math.min(totalPages, uiState.currentPage - 2 + i));
+                        return (
+                          <Button
+                            key={page}
+                            variant={page === uiState.currentPage ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setUiState(prev => ({ ...prev, currentPage: page }))}
+                          >
+                            {page}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setUiState(prev => ({ ...prev, currentPage: Math.min(totalPages, prev.currentPage + 1) }))}
+                      disabled={uiState.currentPage >= totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setUiState(prev => ({ ...prev, currentPage: totalPages }))}
+                      disabled={uiState.currentPage >= totalPages}
+                    >
+                      Last
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </RfidCaptureProvider>
 
