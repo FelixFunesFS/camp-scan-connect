@@ -69,7 +69,27 @@ export interface CheckInStatus {
   icon: string;
 }
 
-export function getCheckInStatus(rfidUid: string | null, activatedAt: string | null): CheckInStatus {
+export function getCheckInStatus(rfidUid: string | null, activatedAt: string | null, rfidStatus?: string): CheckInStatus {
+  // Priority: RFID tag status > activated_at timestamp
+  if (rfidUid && rfidStatus === 'active') {
+    return {
+      status: 'checked_in',
+      label: 'Checked In',
+      variant: 'default',
+      icon: '🟢'
+    };
+  }
+  
+  if (rfidUid && rfidStatus === 'assigned') {
+    return {
+      status: 'assigned',
+      label: 'Assigned',
+      variant: 'secondary', 
+      icon: '🟡'
+    };
+  }
+  
+  // Fallback to timestamp-based logic
   if (rfidUid && activatedAt) {
     return {
       status: 'checked_in',

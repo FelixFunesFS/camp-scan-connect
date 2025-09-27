@@ -12,9 +12,29 @@ const statusCache = new Map<string, { status: CheckInStatus; timestamp: number }
 const CACHE_TTL = 30000; // 30 seconds
 
 /**
- * Get basic check-in status (no database calls)
+ * Get basic check-in status (prioritizes RFID tag status)
  */
-export function getCheckInStatus(rfidUid: string | null, activatedAt: string | null): CheckInStatus {
+export function getCheckInStatus(rfidUid: string | null, activatedAt: string | null, rfidStatus?: string): CheckInStatus {
+  // If we have RFID status, use it as primary source of truth
+  if (rfidUid && rfidStatus === 'active') {
+    return {
+      status: 'checked_in',
+      label: 'Checked In',
+      variant: 'default',
+      icon: '🟢'
+    };
+  }
+  
+  if (rfidUid && rfidStatus === 'assigned') {
+    return {
+      status: 'assigned',
+      label: 'Assigned',
+      variant: 'secondary', 
+      icon: '🟡'
+    };
+  }
+  
+  // Fallback to old logic if no RFID status provided
   if (rfidUid && activatedAt) {
     return {
       status: 'checked_in',
@@ -102,7 +122,7 @@ export async function getBulkOptimizedStatuses(attendeeIds: string[]): Promise<R
       const rfid = rfidMap.get(attendeeId);
       const activatedAt = activationMap.get(attendeeId);
       
-      const status = getCheckInStatus(rfid?.uid || null, activatedAt || null);
+      const status = getCheckInStatus(rfid?.uid || null, activatedAt || null, rfid?.status);
       
       // Cache the result
       statusCache.set(attendeeId, { status, timestamp: now });

@@ -141,7 +141,8 @@ export const RfidManagementPanel: React.FC = () => {
     try {
       const { count: totalAttendees } = await supabase
         .from('attendees')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('registration_status', 'registered');
 
       // Get attendees with assigned RFIDs (status = 'assigned')
       const { data: assignedRfids } = await supabase
@@ -150,18 +151,18 @@ export const RfidManagementPanel: React.FC = () => {
           id,
           rfid_tags!inner(uid, status)
         `)
-        .eq('rfid_tags.status', 'assigned');
+        .eq('rfid_tags.status', 'assigned')
+        .eq('registration_status', 'registered');
 
-      // Get attendees with active RFIDs (status = 'active' AND attendee activated_at is not null)
+      // Get attendees with active RFIDs (status = 'active') - prioritize RFID status over activated_at
       const { data: activeRfids } = await supabase
         .from('attendees')
         .select(`
           id,
-          activated_at,
           rfid_tags!inner(uid, status)
         `)
         .eq('rfid_tags.status', 'active')
-        .not('activated_at', 'is', null);
+        .eq('registration_status', 'registered');
 
       const total = totalAttendees || 0;
       const assigned = assignedRfids?.length || 0;
