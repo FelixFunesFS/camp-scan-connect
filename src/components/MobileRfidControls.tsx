@@ -37,6 +37,8 @@ interface MobileRfidControlsProps {
   totalCount: number;
   assignedCount: number;
   progressPercent: number;
+  onBulkActivation: () => void;
+  isActivating: boolean;
 }
 
 export const MobileRfidControls: React.FC<MobileRfidControlsProps> = ({
@@ -56,7 +58,9 @@ export const MobileRfidControls: React.FC<MobileRfidControlsProps> = ({
   syncing,
   totalCount,
   assignedCount,
-  progressPercent
+  progressPercent,
+  onBulkActivation,
+  isActivating
 }) => {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
@@ -126,6 +130,16 @@ export const MobileRfidControls: React.FC<MobileRfidControlsProps> = ({
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
           {syncing ? 'Syncing...' : 'Sync RegFox'}
+        </Button>
+
+        <Button
+          onClick={onBulkActivation}
+          disabled={isActivating || assignedCount === 0}
+          variant="default"
+          className="touch-target flex-1"
+        >
+          <Zap className={`h-4 w-4 mr-2 ${isActivating ? 'animate-pulse' : ''}`} />
+          {isActivating ? 'Activating...' : `Activate ${assignedCount}`}
         </Button>
         
         <div className="flex items-center gap-2 flex-1">

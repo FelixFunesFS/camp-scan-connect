@@ -98,6 +98,7 @@ export const RfidAssignment = () => {
   const [lastInteraction, setLastInteraction] = useState<'data-load' | 'search' | 'filter' | 'rfid-assignment'>('data-load');
   const [recentRfidAssignment, setRecentRfidAssignment] = useState(false);
   const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
+  const [isActivating, setIsActivating] = useState(false);
   const [realtimeDisabled, setRealtimeDisabled] = useState(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [sortField, setSortField] = useState<'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'waiver' | 'status' | 'check_in_status'>('arrival_day');
@@ -843,6 +844,37 @@ export const RfidAssignment = () => {
     debouncedLoadAttendees(); // Use debounced refresh after assignment
   }, [debouncedLoadAttendees]);
 
+  const handleBulkActivation = useCallback(async () => {
+    setIsActivating(true);
+    
+    try {
+      const { data, error } = await supabase.rpc('bulk_activate_assigned_rfids');
+      
+      if (error) {
+        console.error('Bulk activation error:', error);
+        toast.error(`Activation failed: ${error.message}`);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const result = data[0];
+        if (result.activation_successful) {
+          toast.success(`Successfully activated ${result.total_activated} attendees${result.veterans_thanked > 0 ? ` (${result.veterans_thanked} veterans thanked)` : ''}`);
+          debouncedLoadAttendees(); // Refresh data
+        } else {
+          toast.error('Activation failed - check logs for details');
+        }
+      } else {
+        toast.info('No assigned RFIDs found to activate');
+      }
+    } catch (error) {
+      console.error('Bulk activation error:', error);
+      toast.error('Failed to activate assigned RFIDs');
+    } finally {
+      setIsActivating(false);
+    }
+  }, [debouncedLoadAttendees]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -901,6 +933,8 @@ export const RfidAssignment = () => {
               totalCount={progressData.totalCount}
               assignedCount={progressData.assignedCount}
               progressPercent={progressData.progressPercent}
+              onBulkActivation={handleBulkActivation}
+              isActivating={isActivating}
             />
 
             {/* Mobile Content */}
@@ -982,7 +1016,7 @@ export const RfidAssignment = () => {
                         )}
                       </>
                     )}
-                    <Button 
+                     <Button 
                       variant="outline" 
                       onClick={handleRegFoxSync}
                       disabled={syncing}
@@ -991,6 +1025,16 @@ export const RfidAssignment = () => {
                     >
                       <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
                       {syncing ? 'Syncing...' : 'Sync RegFox Data'}
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      onClick={handleBulkActivation}
+                      disabled={isActivating || progressData.assignedCount === 0}
+                      className="flex items-center gap-2"
+                      title="Activate all attendees with assigned RFIDs"
+                    >
+                      <Zap className={`h-4 w-4 ${isActivating ? 'animate-pulse' : ''}`} />
+                      {isActivating ? 'Activating...' : `Activate ${progressData.assignedCount} Assigned`}
                     </Button>
                   </div>
                 </div>
