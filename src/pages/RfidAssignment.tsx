@@ -148,19 +148,22 @@ export const RfidAssignment = () => {
   const isMobile = useIsMobile();
   const dataCache = useDataCache<any>({ ttl: 300000, maxSize: 50 });
   
-  // Optimized data loading with caching
+  // Optimized data loading with caching and debug logging
   const loadAttendees = useCallback(async () => {
+    console.log('🔄 Starting loadAttendees...');
     const cacheKey = `attendees-${uiState.mode}-${uiState.showCancelledRegistrants}`;
     const cached = dataCache.get(cacheKey);
     
     if (cached) {
+      console.log('✅ Using cached data');
       setAttendees(cached.attendees);
-      setEnhancedStatuses(cached.statuses);
+      setEnhancedStatuses(cached.statuses || {});
       setOperationState(prev => ({ ...prev, loading: false }));
       return;
     }
 
     setOperationState(prev => ({ ...prev, loading: true }));
+    console.log('⏳ Loading attendees from database...');
     
     try {
       let query = supabase
@@ -205,6 +208,8 @@ export const RfidAssignment = () => {
       const { data, error } = await query;
       if (error) throw error;
 
+      console.log(`📊 Loaded ${data?.length || 0} attendees from database`);
+
       const processedAttendees: AttendeeData[] = (data || []).map(attendee => {
         const rfidTags = (attendee as any).rfid_tags;
         const rfidTag = Array.isArray(rfidTags) ? rfidTags[0] : rfidTags;
@@ -241,22 +246,48 @@ export const RfidAssignment = () => {
         };
       });
 
-      // Bulk load enhanced statuses with new optimized function
-      const attendeeIds = processedAttendees.map(a => a.id);
-      const bulkStatuses = await getBulkOptimizedStatuses(attendeeIds);
-      
-      // Cache the results
-      dataCache.set(cacheKey, { attendees: processedAttendees, statuses: bulkStatuses });
-      
+      // Set attendees first to show data immediately
       setAttendees(processedAttendees);
-      setEnhancedStatuses(bulkStatuses);
+      setOperationState(prev => ({ ...prev, loading: false }));
+      console.log('✅ Attendees loaded and UI updated');
+
+      // Load enhanced statuses separately with timeout
+      try {
+        console.log('🔍 Loading enhanced statuses...');
+        const attendeeIds = processedAttendees.map(a => a.id);
+        
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Status loading timeout')), 10000);
+        });
+        
+        const bulkStatusesPromise = getBulkOptimizedStatuses(attendeeIds);
+        const bulkStatuses = await Promise.race([bulkStatusesPromise, timeoutPromise]);
+        
+        console.log(`✅ Enhanced statuses loaded for ${Object.keys(bulkStatuses).length} attendees`);
+        setEnhancedStatuses(bulkStatuses);
+        
+        // Cache the results with both attendees and statuses
+        dataCache.set(cacheKey, { attendees: processedAttendees, statuses: bulkStatuses });
+      } catch (statusError) {
+        console.warn('⚠️ Failed to load enhanced statuses:', statusError);
+        // Use fallback statuses
+        const fallbackStatuses: Record<string, any> = {};
+        processedAttendees.forEach(attendee => {
+          fallbackStatuses[attendee.id] = getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+        });
+        setEnhancedStatuses(fallbackStatuses);
+        
+        // Cache with basic data
+        dataCache.set(cacheKey, { attendees: processedAttendees, statuses: fallbackStatuses });
+      }
+      
     } catch (error) {
-      console.error('Error loading attendees:', error);
+      console.error('❌ Error loading attendees:', error);
       toast.error("Failed to load attendee data");
-    } finally {
       setOperationState(prev => ({ ...prev, loading: false }));
     }
-  }, [uiState.mode, uiState.showCancelledRegistrants]);
+  }, [uiState.mode, uiState.showCancelledRegistrants, dataCache]);
 
   // Optimistic update function
   const handleOptimisticUpdate = useCallback((attendeeId: string, rfidUid: string | null, rfidStatus: string) => {
@@ -566,7 +597,9 @@ export const RfidAssignment = () => {
   }, [filteredAttendees, exportToCsv]);
 
   // Effects
+  // Initial load with performance tracking
   useEffect(() => {
+    console.log('🚀 Component mounted, initializing...');
     loadAttendees();
   }, [loadAttendees]);
 
@@ -592,10 +625,21 @@ export const RfidAssignment = () => {
     };
   }, []);
 
+  // Loading state with debug information
   if (operationState.loading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
-        <Skeleton className="h-8 w-64" />
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-8 w-64" />
+          <div className="text-sm text-muted-foreground animate-pulse">
+            Loading attendee data...
+          </div>
+        </div>
+        <Alert>
+          <AlertDescription>
+            🔄 Loading RFID assignment data. If this takes more than 10 seconds, please refresh the page.
+          </AlertDescription>
+        </Alert>
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-16 w-full" />
         ))}
