@@ -66,7 +66,7 @@ export function PostProductionAnalysis() {
           activation_method
         `)
         .gte('created_at', cutoffDate)
-        .neq('rfid_uid', 'MOCK%'); // Exclude test transactions
+        .or('rfid_uid.is.null,and(rfid_uid.not.like.MOCK%)'); // Include NULL values but exclude MOCK test transactions
 
       if (error) throw error;
 
