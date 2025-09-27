@@ -146,7 +146,9 @@ export const RfidAssignment = () => {
   // Hooks
   const { exportToCsv } = useCsvExport();
   const isMobile = useIsMobile();
-  const dataCache = useDataCache<any>({ ttl: 300000, maxSize: 50 });
+  
+  // Stabilize dataCache to prevent infinite re-renders
+  const dataCache = useMemo(() => useDataCache<any>({ ttl: 300000, maxSize: 50 }), []);
   
   // Optimized data loading with caching and debug logging
   const loadAttendees = useCallback(async () => {
@@ -597,11 +599,11 @@ export const RfidAssignment = () => {
   }, [filteredAttendees, exportToCsv]);
 
   // Effects
-  // Initial load with performance tracking
+  // Initial load with performance tracking - only run on mount
   useEffect(() => {
     console.log('🚀 Component mounted, initializing...');
     loadAttendees();
-  }, [loadAttendees]);
+  }, []); // Empty dependency array to prevent infinite loops
 
   useEffect(() => {
     const interval = setInterval(checkActiveSyncs, 10000); // Check every 10 seconds
