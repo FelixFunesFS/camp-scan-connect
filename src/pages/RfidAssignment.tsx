@@ -49,6 +49,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileRfidControls } from "@/components/MobileRfidControls";
 import { MobileAttendeeList } from "@/components/MobileAttendeeList";
 import { getCheckInStatus, getEnhancedCheckInStatus } from "@/utils/statusUtils";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { GroupRfidProvider } from "@/components/GroupRfidProvider";
 
 export interface AttendeeData {
   id: string;
@@ -86,6 +88,7 @@ export const RfidAssignment = () => {
   const [attendees, setAttendees] = useState<AttendeeData[]>([]);
   const [filteredAttendees, setFilteredAttendees] = useState<AttendeeData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataLoadingPhase, setDataLoadingPhase] = useState<'initial' | 'attendees' | 'processing' | 'complete'>('initial');
   const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -180,9 +183,12 @@ export const RfidAssignment = () => {
     updateProgress();
   }, [attendees]);
 
-  // Load attendees data optimized for assignment workflow
+  // Load attendees data optimized for assignment workflow  
   const loadAttendees = useCallback(async () => {
+    console.log('🔄 Starting attendee data load...');
     setLoading(true);
+    setDataLoadingPhase('attendees');
+    
     try {
       let query = supabase
         .from('attendees')
@@ -209,86 +215,57 @@ export const RfidAssignment = () => {
           site_location_assignment,
           rfid_tags(uid, status, activated_at)
         `)
-        .order('arrival_window', { ascending: true }) // Default: Thursday before Friday
-        .order('order_id', { ascending: true }); // Secondary sort by order ID
+        .order('arrival_window', { ascending: true })
+        .order('order_id', { ascending: true })
+        .order('created_at', { ascending: false });
 
-      // Filter registration status based on toggle
-      if (showCancelledRegistrants) {
-        query = query.eq('registration_status', 'cancelled');
-      } else {
-        // Only show registered and pending - exclude cancelled and waitlisted
-        query = query.in('registration_status', ['registered', 'pending']);
-      }
-
+      // Filter by registration status based on mode
       if (mode === 'day-of') {
-        // Day-of mode: prioritize recent registrants
-        query = query.order('created_at', { ascending: false });
+        if (showCancelledRegistrants) {
+          query = query.in('registration_status', ['registered', 'pending', 'cancelled']);
+        } else {
+          query = query.in('registration_status', ['registered', 'pending']);
+        }
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      console.log('📡 Fetching attendee data from Supabase...');
+      const { data: rawAttendees, error } = await query;
 
-      const processedAttendees: AttendeeData[] = data.map(attendee => {
-        // Fix RFID data extraction - handle both array and single object
-        const rfidTags = (attendee as any).rfid_tags;
-        const rfidTag = Array.isArray(rfidTags) ? rfidTags[0] : rfidTags;
-        
-        // Map arrival window to readable day
-        const arrivalDay = (attendee as any).arrival_window === 'early' ? 'Thursday' : 'Friday';
-        
-        // Format meal plan for display
-        const formattedMealPlan = (attendee as any).meal_plan === '1' ? 'Plan 1' : 
-                                 (attendee as any).meal_plan === '2' ? 'Plan 2' : 'No Plan';
-        
-        // Determine overall status - will be updated async for proper validation
-        const overallStatus = rfidTag?.uid ? 'assigned' : 'unassigned';
-        
-        // Extract site location assignment from database
-        const siteLocationAssignment = (attendee as any).site_location_assignment || 'Not Assigned';
+      if (error) {
+        console.error('❌ Error fetching attendees:', error);
+        throw error;
+      }
+
+      console.log(`✅ Fetched ${rawAttendees?.length || 0} attendees`);
+      setDataLoadingPhase('processing');
+
+      // Process attendees data with minimal transformations initially
+      const processedAttendees = (rawAttendees || []).map((attendee: any) => {
+        const rfidTag = attendee.rfid_tags?.[0];
         
         return {
-          id: attendee.id,
-          first_name: attendee.first_name,
-          last_name: attendee.last_name,
-          email: attendee.email,
-          phone: attendee.phone,
-          order_id: attendee.order_id,
-          ticket_type: attendee.ticket_type,
-          meal_plan: (attendee as any).meal_plan,
-          arrival_window: (attendee as any).arrival_window,
-          arrival_day: arrivalDay,
-          formatted_meal_plan: formattedMealPlan,
-          site_location_assignment: siteLocationAssignment,
-          waiver_signed: (attendee as any).waiver_signed,
-          activated_at: (attendee as any).activated_at,
-          is_veteran: (attendee as any).is_veteran,
-          veteran_thanked_at: (attendee as any).veteran_thanked_at,
-          created_at: attendee.created_at,
-          registration_status: (attendee as any).registration_status,
-          regfox_id: (attendee as any).regfox_id,
-          city: (attendee as any).city,
-          state: (attendee as any).state,
+          ...attendee,
           rfid_uid: rfidTag?.uid || null,
-          rfid_status: rfidTag?.status || 'unissued',
-        };
+          rfid_status: rfidTag?.status || null,
+          // Simplified meal plan formatting
+          formatted_meal_plan: attendee.meal_plan === '1' ? 'Plan 1' : attendee.meal_plan || 'None',
+          // Simplified arrival day computation
+          arrival_day: attendee.arrival_window === 'early' ? 'Thursday' : 'Friday',
+        } as AttendeeData;
       });
 
-      // Bulk load enhanced check-in statuses
-      const { getBulkEnhancedCheckInStatuses } = await import('@/utils/statusUtils');
-      const attendeeIds = processedAttendees.map(a => a.id);
-      const bulkStatuses = await getBulkEnhancedCheckInStatuses(attendeeIds);
-      
-      // Update enhanced statuses state
-      setEnhancedStatuses(bulkStatuses);
-
+      console.log('✅ Data processing complete');
       setAttendees(processedAttendees);
-    } catch (error) {
-      console.error('Error loading attendees:', error);
-      toast.error("Failed to load attendee data");
+      setDataLoadingPhase('complete');
+      
+    } catch (error: any) {
+      console.error('❌ Error in loadAttendees:', error);
+      toast.error('Failed to load attendees: ' + (error.message || 'Unknown error'));
+      setDataLoadingPhase('initial');
     } finally {
       setLoading(false);
     }
-  }, [mode, showCancelledRegistrants, toast]);
+  }, [mode, showCancelledRegistrants]);
 
   // Optimistic update function to immediately update local state
   const handleOptimisticUpdate = useCallback((attendeeId: string, rfidUid: string | null, rfidStatus: string) => {
@@ -297,6 +274,10 @@ export const RfidAssignment = () => {
         ? { ...attendee, rfid_uid: rfidUid, rfid_status: rfidStatus }
         : attendee
     ));
+    
+    // Mark that a recent RFID assignment occurred to prevent auto-focus
+    setRecentRfidAssignment(true);
+    setTimeout(() => setRecentRfidAssignment(false), 2000);
   }, []);
 
   // Debounced version of loadAttendees to prevent excessive reloads
