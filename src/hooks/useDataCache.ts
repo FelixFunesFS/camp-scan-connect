@@ -14,7 +14,7 @@ interface CacheOptions {
 export function useDataCache<T>(options: CacheOptions = {}) {
   const { ttl = 300000, maxSize = 100 } = options; // 5 minutes default TTL
   const cacheRef = useRef<Map<string, CacheEntry<T>>>(new Map());
-  const [cacheStats, setCacheStats] = useState({ hits: 0, misses: 0, size: 0 });
+  const cacheStatsRef = useRef({ hits: 0, misses: 0, size: 0 });
 
   const cleanExpiredEntries = useCallback(() => {
     const now = Date.now();
@@ -29,7 +29,7 @@ export function useDataCache<T>(options: CacheOptions = {}) {
     }
     
     if (cleaned > 0) {
-      setCacheStats(prev => ({ ...prev, size: cache.size }));
+      cacheStatsRef.current.size = cache.size;
     }
   }, []);
 
@@ -46,7 +46,7 @@ export function useDataCache<T>(options: CacheOptions = {}) {
       cache.delete(entries[i][0]);
     }
     
-    setCacheStats(prev => ({ ...prev, size: cache.size }));
+    cacheStatsRef.current.size = cache.size;
   }, [maxSize]);
 
   const get = useCallback((key: string): T | null => {
@@ -54,18 +54,19 @@ export function useDataCache<T>(options: CacheOptions = {}) {
     
     const entry = cacheRef.current.get(key);
     if (!entry) {
-      setCacheStats(prev => ({ ...prev, misses: prev.misses + 1 }));
+      cacheStatsRef.current.misses++;
       return null;
     }
 
     const now = Date.now();
     if (now > entry.expiry) {
       cacheRef.current.delete(key);
-      setCacheStats(prev => ({ ...prev, misses: prev.misses + 1, size: prev.size - 1 }));
+      cacheStatsRef.current.misses++;
+      cacheStatsRef.current.size--;
       return null;
     }
 
-    setCacheStats(prev => ({ ...prev, hits: prev.hits + 1 }));
+    cacheStatsRef.current.hits++;
     return entry.data;
   }, [cleanExpiredEntries]);
 
@@ -82,20 +83,20 @@ export function useDataCache<T>(options: CacheOptions = {}) {
     });
 
     enforceMaxSize();
-    setCacheStats(prev => ({ ...prev, size: cacheRef.current.size }));
+    cacheStatsRef.current.size = cacheRef.current.size;
   }, [cleanExpiredEntries, enforceMaxSize, ttl]);
 
   const remove = useCallback((key: string) => {
     const deleted = cacheRef.current.delete(key);
     if (deleted) {
-      setCacheStats(prev => ({ ...prev, size: prev.size - 1 }));
+      cacheStatsRef.current.size--;
     }
     return deleted;
   }, []);
 
   const clear = useCallback(() => {
     cacheRef.current.clear();
-    setCacheStats({ hits: 0, misses: 0, size: 0 });
+    cacheStatsRef.current = { hits: 0, misses: 0, size: 0 };
   }, []);
 
   const has = useCallback((key: string): boolean => {
@@ -104,9 +105,9 @@ export function useDataCache<T>(options: CacheOptions = {}) {
   }, [cleanExpiredEntries]);
 
   const getHitRate = useCallback(() => {
-    const total = cacheStats.hits + cacheStats.misses;
-    return total > 0 ? (cacheStats.hits / total) * 100 : 0;
-  }, [cacheStats]);
+    const total = cacheStatsRef.current.hits + cacheStatsRef.current.misses;
+    return total > 0 ? (cacheStatsRef.current.hits / total) * 100 : 0;
+  }, []);
 
   return {
     get,
@@ -114,7 +115,7 @@ export function useDataCache<T>(options: CacheOptions = {}) {
     remove,
     clear,
     has,
-    stats: cacheStats,
+    stats: cacheStatsRef.current,
     hitRate: getHitRate()
   };
 }

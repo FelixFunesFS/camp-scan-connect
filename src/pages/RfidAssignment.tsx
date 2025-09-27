@@ -256,7 +256,7 @@ export const RfidAssignment = () => {
     } finally {
       setOperationState(prev => ({ ...prev, loading: false }));
     }
-  }, [uiState.mode, uiState.showCancelledRegistrants, dataCache]);
+  }, [uiState.mode, uiState.showCancelledRegistrants]);
 
   // Optimistic update function
   const handleOptimisticUpdate = useCallback((attendeeId: string, rfidUid: string | null, rfidStatus: string) => {
