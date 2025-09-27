@@ -35,7 +35,7 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
       } catch (error) {
         console.error('Error calculating enhanced status for attendee:', error);
         // Fallback to basic status
-        setEnhancedStatus(getCheckInStatus(attendee.rfid_uid, attendee.activated_at));
+        setEnhancedStatus(getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status));
       }
     };
 
@@ -44,7 +44,7 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
 
   const getRfidStatusBadge = () => {
     // Use enhanced status if available, otherwise fallback to basic status
-    const checkInStatus = enhancedStatus || getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+    const checkInStatus = enhancedStatus || getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status);
     const colorClass = checkInStatus.status === 'checked_in' 
       ? 'bg-success text-success-foreground' 
       : checkInStatus.status === 'assigned'

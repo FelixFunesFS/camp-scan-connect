@@ -126,7 +126,7 @@ export const RfidAssignment = () => {
 
     attendees.forEach(attendee => {
       const enhancedStatus = enhancedStatuses[attendee.id];
-      const status = enhancedStatus?.status || getCheckInStatus(attendee.rfid_uid, attendee.activated_at).status;
+      const status = enhancedStatus?.status || getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status).status;
       
       if (status === 'checked_in') {
         checkedInCount++;
@@ -274,7 +274,7 @@ export const RfidAssignment = () => {
         // Use fallback statuses
         const fallbackStatuses: Record<string, any> = {};
         processedAttendees.forEach(attendee => {
-          fallbackStatuses[attendee.id] = getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+          fallbackStatuses[attendee.id] = getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status);
         });
         setEnhancedStatuses(fallbackStatuses);
         
@@ -300,11 +300,11 @@ export const RfidAssignment = () => {
     invalidateStatusCache([attendeeId]);
   }, []);
 
-  // Optimized refresh with adaptive intervals
+  // Optimized refresh with adaptive intervals - disabled during initial load
   const { isRefreshing, manualRefresh } = useOptimizedRefresh({
     onRefresh: loadAttendees,
-    interval: 10000, // 10 seconds instead of 3
-    enabled: !operationState.realtimeDisabled,
+    interval: 30000, // 30 seconds to reduce frequency
+    enabled: !operationState.realtimeDisabled && !operationState.loading,
     adaptiveInterval: true,
     onError: (error) => console.error('Background refresh error:', error)
   });
@@ -404,7 +404,7 @@ export const RfidAssignment = () => {
     if (uiState.checkInStatusFilter !== 'all') {
       filtered = filtered.filter(a => {
         const enhancedStatus = enhancedStatuses[a.id];
-        const checkInStatus = enhancedStatus || getCheckInStatus(a.rfid_uid, a.activated_at);
+        const checkInStatus = enhancedStatus || getCheckInStatus(a.rfid_uid, a.activated_at, a.rfid_status);
         return checkInStatus.status === uiState.checkInStatusFilter;
       });
     }
@@ -455,7 +455,7 @@ export const RfidAssignment = () => {
       if (uiState.checkInStatusFilter !== 'all') {
         filtered = filtered.filter(a => {
           const enhancedStatus = enhancedStatuses[a.id];
-          const checkInStatus = enhancedStatus || getCheckInStatus(a.rfid_uid, a.activated_at);
+          const checkInStatus = enhancedStatus || getCheckInStatus(a.rfid_uid, a.activated_at, a.rfid_status);
           return checkInStatus.status === uiState.checkInStatusFilter;
         });
       }
@@ -503,8 +503,8 @@ export const RfidAssignment = () => {
           bValue = b.rfid_uid ? 'assigned' : 'unassigned';
           break;
         case 'check_in_status':
-          const aStatus = enhancedStatuses[a.id] || getCheckInStatus(a.rfid_uid, a.activated_at);
-          const bStatus = enhancedStatuses[b.id] || getCheckInStatus(b.rfid_uid, b.activated_at);
+          const aStatus = enhancedStatuses[a.id] || getCheckInStatus(a.rfid_uid, a.activated_at, a.rfid_status);
+          const bStatus = enhancedStatuses[b.id] || getCheckInStatus(b.rfid_uid, b.activated_at, b.rfid_status);
           aValue = aStatus.status;
           bValue = bStatus.status;
           break;
@@ -756,7 +756,7 @@ export const RfidAssignment = () => {
             {/* Attendee List - simplified */}
             <div className="space-y-3">
               {sortedAndPaginatedAttendees.map(attendee => {
-                const enhancedStatus = enhancedStatuses[attendee.id] || getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+                const enhancedStatus = enhancedStatuses[attendee.id] || getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status);
                 return (
                   <Card key={attendee.id} className="p-4">
                     <div className="flex justify-between items-start">
@@ -1061,7 +1061,7 @@ export const RfidAssignment = () => {
                   </TableHeader>
                   <TableBody>
                     {sortedAndPaginatedAttendees.map((attendee) => {
-                      const enhancedStatus = enhancedStatuses[attendee.id] || getCheckInStatus(attendee.rfid_uid, attendee.activated_at);
+                      const enhancedStatus = enhancedStatuses[attendee.id] || getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status);
                       return (
                         <TableRow key={attendee.id} data-attendee-id={attendee.id}>
                           <TableCell>
