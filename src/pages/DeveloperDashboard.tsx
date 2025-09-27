@@ -11,8 +11,9 @@ import { DebugTools } from "@/components/dev/DebugTools";
 import { ProductionReadiness } from "@/components/dev/ProductionReadiness";
 import AdminRequestManager from "@/components/dev/AdminRequestManager";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare, Shield } from "lucide-react";
+import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare, Shield, AlertTriangle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PostProductionAnalysis } from "@/components/dev/PostProductionAnalysis";
 
 const DeveloperDashboard = () => {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ const DeveloperDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="timeline" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="timeline" className="gap-2">
@@ -125,6 +126,17 @@ const DeveloperDashboard = () => {
                 <p>Developer tools for testing, data export, and system diagnostics</p>
               </TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="postproduction" className="gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Post-Production Analysis
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>RFID error analysis, edge cases, and system improvement recommendations</p>
+              </TooltipContent>
+            </Tooltip>
           </TabsList>
 
           <TabsContent value="timeline" className="space-y-6">
@@ -149,6 +161,10 @@ const DeveloperDashboard = () => {
 
           <TabsContent value="debug" className="space-y-6">
             <DebugTools />
+          </TabsContent>
+
+          <TabsContent value="postproduction" className="space-y-6">
+            <PostProductionAnalysis />
           </TabsContent>
         </Tabs>
       </div>

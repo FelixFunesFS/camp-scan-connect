@@ -88,7 +88,7 @@ function TShirtsContent({
     setIsProcessing(true);
 
     try {
-      await TShirtService.recordTShirtPickups(selectedRfid.attendee_id, selectedOrders);
+      await TShirtService.recordTShirtPickups(selectedRfid.attendee_id, selectedOrders, selectedRfid.uid);
 
       // Update local state to reflect pickups
       setTShirtOrders(prev => 
