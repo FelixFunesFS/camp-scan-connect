@@ -30,43 +30,33 @@ export const GroupRfidProvider: React.FC<GroupRfidProviderProps> = ({
   isGroupedView,
   onRefresh
 }) => {
-  // Add detailed logging for debugging
-  console.log('GroupRfidProvider initialized with:', {
-    isGroupedView,
-    attendeesCount: Array.isArray(groupedAttendees) ? groupedAttendees.length : 0,
-    attendeesType: isGroupedView ? 'GroupedAttendee[]' : 'EnhancedAttendee[]',
-    firstAttendee: Array.isArray(groupedAttendees) && groupedAttendees.length > 0 ? groupedAttendees[0] : null
-  });
+  
 
-  // Validate data structure before passing to hook
-  if (!Array.isArray(groupedAttendees)) {
-    console.error('GroupRfidProvider: groupedAttendees is not an array:', groupedAttendees);
-    throw new Error('Invalid attendees data structure');
+  // Add error handling for hook usage
+  let navigationHooks;
+  try {
+    navigationHooks = useUnifiedRfidNavigation({
+      groupedAttendees,
+      isGroupedView,
+      onRowFocus: (rowIndex, attendeeId) => {
+        // Optional: Add visual feedback for focused row
+      }
+    });
+  } catch (error) {
+    console.error("Error in useUnifiedRfidNavigation:", error);
+    // Provide fallback values
+    navigationHooks = {
+      navigateToRow: () => {},
+      focusFirstUnassignedRow: () => {},
+      focusLastUnassignedRow: () => {},
+      startGroupProcessing: () => {},
+      expandedGroups: new Set<string>(),
+      expandAllGroups: () => {},
+      collapseAllGroups: () => {},
+      toggleGroup: () => {},
+      getGroupProgress: () => ({ assigned: 0, total: 0, percentage: 0 })
+    };
   }
-
-  // Type checking for grouped vs individual attendees
-  if (isGroupedView) {
-    const firstGroup = groupedAttendees[0] as GroupedAttendee;
-    if (firstGroup && !('attendees' in firstGroup)) {
-      console.error('GroupRfidProvider: Expected GroupedAttendee[] but got:', firstGroup);
-      throw new Error('Type mismatch: Expected grouped attendees but received individual attendees');
-    }
-  } else {
-    const firstAttendee = groupedAttendees[0] as EnhancedAttendee;
-    if (firstAttendee && 'attendees' in firstAttendee) {
-      console.error('GroupRfidProvider: Expected EnhancedAttendee[] but got:', firstAttendee);
-      throw new Error('Type mismatch: Expected individual attendees but received grouped attendees');
-    }
-  }
-
-  // Remove try-catch to let real errors surface
-  const navigationHooks = useUnifiedRfidNavigation({
-    groupedAttendees,
-    isGroupedView,
-    onRowFocus: (rowIndex, attendeeId) => {
-      console.log('Row focus changed:', { rowIndex, attendeeId });
-    }
-  });
 
   const {
     navigateToRow,

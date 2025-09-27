@@ -562,16 +562,6 @@ export type Database = {
           staff_role: Database["public"]["Enums"]["staff_role"]
         }[]
       }
-      bulk_activate_assigned_rfids: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          activated_attendees: Json[]
-          activation_details: Json
-          activation_successful: boolean
-          total_activated: number
-          veterans_thanked: number
-        }[]
-      }
       bulk_generate_mock_rfids: {
         Args: { p_limit?: number }
         Returns: {
