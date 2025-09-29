@@ -147,8 +147,7 @@ export const RfidAssignment = () => {
   const { exportToCsv } = useCsvExport();
   const isMobile = useIsMobile();
   
-  // Stabilize dataCache to prevent infinite re-renders
-  const dataCache = useMemo(() => useDataCache<any>({ ttl: 300000, maxSize: 50 }), []);
+  const dataCache = useDataCache<any>({ ttl: 300000, maxSize: 50 });
   
   // Optimized data loading with caching and debug logging
   const loadAttendees = useCallback(async () => {
