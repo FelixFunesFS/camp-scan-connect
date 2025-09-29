@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { BusinessPriorityMatrix } from "@/components/BusinessPriorityMatrix";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import { 
   TrendingUp, 
@@ -360,47 +361,70 @@ export default function EventDebrief() {
           </div>
         </TabsContent>
 
-        {/* Goals vs Outcomes Tab */}
+        {/* Goals vs Outcomes Tab - Enhanced with Business Priority Ranking */}
         <TabsContent value="goals" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Current Performance Overview */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Activation Goals
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Target className="h-4 w-4" />
+                  Activation Performance
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span>Target Activation Rate</span>
+                    <span className="text-sm">Target Rate</span>
                     <Badge variant="outline">85%</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Actual Activation Rate</span>
+                    <span className="text-sm">Actual Rate</span>
                     <Badge className="bg-success text-success-foreground">{metrics?.activationRate.toFixed(1)}%</Badge>
                   </div>
-                  <Progress value={(metrics?.activationRate || 0) / 85 * 100} className="h-3" />
-                  <p className="text-sm text-success">✓ Exceeded target by {((metrics?.activationRate || 0) - 85).toFixed(1)}%</p>
+                  <Progress value={(metrics?.activationRate || 0) / 85 * 100} className="h-2" />
+                  <p className="text-xs text-success">✓ Exceeded by {((metrics?.activationRate || 0) - 85).toFixed(1)}%</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>RFID System Performance</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Station Performance</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span>Tags Issued</span>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span>Activation Station</span>
+                    <Badge className="bg-blue-500 text-white">715 transactions</Badge>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>T-Shirts Station</span>
+                    <Badge className="bg-red-500 text-white">0% RFID success</Badge>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Equipment Stations</span>
+                    <Badge variant="outline">2 total transactions</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">System Health</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span>RFID Tags Issued</span>
                     <span className="font-medium">{metrics?.rfidTagsIssued}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span>Tags Active</span>
                     <span className="font-medium">{metrics?.rfidTagsActive}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span>System Uptime</span>
                     <Badge className="bg-success text-success-foreground">99.2%</Badge>
                   </div>
@@ -408,6 +432,22 @@ export default function EventDebrief() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Business Priority Ranking System */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Business Priority Ranking & Development Roadmap
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Data-driven priority matrix for full system development based on event performance analysis
+              </p>
+            </CardHeader>
+            <CardContent>
+              <BusinessPriorityMatrix />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* What Worked Tab */}

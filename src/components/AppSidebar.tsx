@@ -37,6 +37,7 @@ const navigationItems = [
     items: [
       { title: "Dashboard", url: "/", icon: Home },
       { title: "Reports", url: "/reports", icon: BarChart3 },
+      { title: "Event Debrief", url: "/debrief", icon: FileText },
       { title: "Developer Tools", url: "/dev", icon: Settings },
     ]
   },
