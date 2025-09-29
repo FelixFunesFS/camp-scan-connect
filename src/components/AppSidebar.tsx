@@ -14,7 +14,8 @@ import {
   Package2,
   DoorOpen,
   User,
-  Shirt
+  Shirt,
+  FileText
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -36,6 +37,7 @@ const navigationItems = [
     items: [
       { title: "Dashboard", url: "/", icon: Home },
       { title: "Reports", url: "/reports", icon: BarChart3 },
+      { title: "Event Debrief", url: "/debrief", icon: FileText },
       { title: "Developer Tools", url: "/dev", icon: Settings },
     ]
   },

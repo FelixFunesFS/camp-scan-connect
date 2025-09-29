@@ -21,6 +21,7 @@ import EquipmentHub from "./pages/EquipmentHub";
 import AttendeeDetail from "./pages/AttendeeDetail";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
 import Reports from "./pages/Reports";
+import EventDebrief from "./pages/EventDebrief";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/equipment-hub" element={<EquipmentHub />} />
             <Route path="/attendee/:id" element={<AttendeeDetail />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/debrief" element={<EventDebrief />} />
             <Route path="/dev" element={<DeveloperDashboard />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
