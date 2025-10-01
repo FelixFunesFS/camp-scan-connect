@@ -622,6 +622,12 @@ export const RfidAssignment = () => {
       'Site Location': attendee.site_location_assignment || '',
       'RFID UID': attendee.rfid_uid || '',
       'RFID Status': attendee.rfid_status || '',
+      'Most Recent Activation Method': attendee.most_recent_activation_method 
+        ? (attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff Assisted' : 'Self Activated')
+        : 'Not Activated',
+      'Most Recent Activation Time': attendee.most_recent_activation_at 
+        ? new Date(attendee.most_recent_activation_at).toLocaleString()
+        : '',
       'Waiver Signed': attendee.waiver_signed ? 'Yes' : 'No',
       'Registration Status': attendee.registration_status || ''
     }));
