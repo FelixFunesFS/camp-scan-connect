@@ -78,6 +78,8 @@ export interface AttendeeData {
   veteran_thanked_at?: string;
   order_companions?: AttendeeData[];
   group_assignment_progress?: { assigned: number; total: number; percentage: number };
+  most_recent_activation_method?: string;
+  most_recent_activation_at?: string;
 }
 
 const ROWS_PER_PAGE = 100;
@@ -94,7 +96,7 @@ export const RfidAssignment = () => {
     showFAQ: false,
     isSearching: false,
     hasRfidInputFocused: false,
-    sortField: 'arrival_day' as 'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'waiver' | 'status' | 'check_in_status',
+    sortField: 'arrival_day' as 'name' | 'phone' | 'order' | 'meal_plan' | 'arrival_day' | 'ticket_type' | 'waiver' | 'status' | 'check_in_status' | 'most_recent_activation',
     sortDirection: 'asc' as 'asc' | 'desc',
     mealPlanFilter: 'all',
     arrivalDayFilter: 'all',
@@ -167,6 +169,7 @@ export const RfidAssignment = () => {
     console.log('⏳ Loading attendees from database...');
     
     try {
+      // First, get attendees data
       let query = supabase
         .from('attendees')
         .select(`
@@ -211,6 +214,27 @@ export const RfidAssignment = () => {
 
       console.log(`📊 Loaded ${data?.length || 0} attendees from database`);
 
+      // Fetch activation data for all attendees
+      const attendeeIds = (data || []).map(a => a.id);
+      const { data: activationData } = await supabase
+        .from('station_transactions')
+        .select('attendee_id, activation_method, created_at')
+        .in('attendee_id', attendeeIds)
+        .eq('station_type', 'activation')
+        .eq('transaction_type', 'activate')
+        .order('created_at', { ascending: false });
+
+      // Create a map of most recent activations
+      const activationMap = new Map<string, { method: string; timestamp: string }>();
+      (activationData || []).forEach((activation: any) => {
+        if (!activationMap.has(activation.attendee_id)) {
+          activationMap.set(activation.attendee_id, {
+            method: activation.activation_method,
+            timestamp: activation.created_at
+          });
+        }
+      });
+
       const processedAttendees: AttendeeData[] = (data || []).map(attendee => {
         const rfidTags = (attendee as any).rfid_tags;
         const rfidTag = Array.isArray(rfidTags) ? rfidTags[0] : rfidTags;
@@ -219,6 +243,8 @@ export const RfidAssignment = () => {
         const formattedMealPlan = (attendee as any).meal_plan === '1' ? 'Plan 1' : 
                                  (attendee as any).meal_plan === '2' ? 'Plan 2' : 'No Plan';
         const siteLocationAssignment = (attendee as any).site_location_assignment || 'Not Assigned';
+        
+        const activation = activationMap.get(attendee.id);
         
         return {
           id: attendee.id,
@@ -244,6 +270,8 @@ export const RfidAssignment = () => {
           state: (attendee as any).state,
           rfid_uid: rfidTag?.uid || null,
           rfid_status: rfidTag?.status || 'unissued',
+          most_recent_activation_method: activation?.method,
+          most_recent_activation_at: activation?.timestamp,
         };
       });
 
@@ -509,6 +537,10 @@ export const RfidAssignment = () => {
           aValue = aStatus.status;
           bValue = bStatus.status;
           break;
+        case 'most_recent_activation':
+          aValue = a.most_recent_activation_at || '';
+          bValue = b.most_recent_activation_at || '';
+          break;
         default:
           aValue = '';
           bValue = '';
@@ -765,6 +797,22 @@ export const RfidAssignment = () => {
                         <h3 className="font-medium">{attendee.first_name} {attendee.last_name}</h3>
                         <p className="text-sm text-muted-foreground">{attendee.phone}</p>
                         <p className="text-sm text-muted-foreground">{attendee.order_id}</p>
+                        {attendee.most_recent_activation_method && (
+                          <div className="mt-2">
+                            <Badge variant={attendee.most_recent_activation_method === 'staff_assisted' ? 'default' : 'secondary'} className="text-xs">
+                              {attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff Assisted' : 'Self Activated'}
+                            </Badge>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {new Date(attendee.most_recent_activation_at!).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <Badge variant={enhancedStatus.variant}>
@@ -1058,6 +1106,11 @@ export const RfidAssignment = () => {
                           Status {getSortIcon('check_in_status')}
                         </div>
                       </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => handleSort('most_recent_activation')}>
+                        <div className="flex items-center gap-2">
+                          Most Recent Activation {getSortIcon('most_recent_activation')}
+                        </div>
+                      </TableHead>
                       <TableHead>RFID Assignment</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -1102,6 +1155,29 @@ export const RfidAssignment = () => {
                             <Badge variant={enhancedStatus.variant}>
                               {enhancedStatus.icon} {enhancedStatus.label}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {attendee.most_recent_activation_method ? (
+                              <div className="space-y-1">
+                                <Badge variant={attendee.most_recent_activation_method === 'staff_assisted' ? 'default' : 'secondary'}>
+                                  {attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff Assisted' : 'Self Activated'}
+                                </Badge>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(attendee.most_recent_activation_at!).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                  })}
+                                </div>
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-muted-foreground">
+                                Not Activated
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <EnhancedRfidAssignmentCell
