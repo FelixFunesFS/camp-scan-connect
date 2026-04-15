@@ -25,8 +25,7 @@ export class AdminRequestService {
     try {
       console.log('Creating admin request:', request);
       
-      const { data, error } = await supabase
-        .from('admin_tasks')
+      const { data, error } = await (supabase.from as any)('admin_tasks')
         .insert([{
           ...request,
           created_at: new Date().toISOString()
