@@ -416,9 +416,13 @@ export type Database = {
       bulk_activate_assigned_rfids: {
         Args: never
         Returns: {
+          activated_attendees: Json
           activated_count: number
+          activation_successful: boolean
           details: Json
           failed_count: number
+          total_activated: number
+          veterans_thanked: number
         }[]
       }
       check_station_access: {
@@ -443,6 +447,12 @@ export type Database = {
         Args: never
         Returns: {
           deleted_count: number
+        }[]
+      }
+      format_phone_number: {
+        Args: { p_format: string }
+        Returns: {
+          formatted_phone: string
         }[]
       }
       lookup_attendees_by_phone: {
