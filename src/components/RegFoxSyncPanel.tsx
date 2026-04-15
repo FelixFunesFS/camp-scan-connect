@@ -36,7 +36,7 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [lastSyncStatus, setLastSyncStatus] = useState<SyncLog | null>(null);
   const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch sync logs
   const fetchSyncLogs = useCallback(async () => {
