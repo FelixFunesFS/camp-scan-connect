@@ -22,7 +22,7 @@ export const useEnhancedBackgroundRefresh = ({
   onSuccess,
   onError
 }: UseEnhancedBackgroundRefreshProps) => {
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const refreshTriggerRef = useRef(refreshTrigger);
   const [refreshState, setRefreshState] = useState<RefreshState>({
     isRefreshing: false,

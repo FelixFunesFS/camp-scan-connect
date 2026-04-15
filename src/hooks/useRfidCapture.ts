@@ -57,7 +57,7 @@ export const useRfidCapture = ({
     if (!enabled) return;
 
     let inputBuffer = '';
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
 
     const handleKeyPress = (event: KeyboardEvent) => {
       // Only capture when focused on an RFID input field

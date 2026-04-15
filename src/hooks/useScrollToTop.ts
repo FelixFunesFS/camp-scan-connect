@@ -39,7 +39,7 @@ export const useScrollToTop = ({
     const scrollContainer = container === window ? window : container as HTMLElement;
     
     // Throttle scroll events for performance
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     const throttledHandleScroll = () => {
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(handleScroll, 16); // ~60fps

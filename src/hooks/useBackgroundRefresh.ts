@@ -11,7 +11,7 @@ export const useBackgroundRefresh = ({
   interval = 30000, 
   refreshTrigger 
 }: UseBackgroundRefreshProps) => {
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const refreshTriggerRef = useRef(refreshTrigger);
 
   // Handle manual refresh triggers
