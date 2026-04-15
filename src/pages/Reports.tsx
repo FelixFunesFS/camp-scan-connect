@@ -111,8 +111,8 @@ const Reports = () => {
       if (attendees) {
         const formattedData = attendees.map(attendee => ({
           ...attendee,
-          rfid_uid: attendee.rfid_tags?.[0]?.uid,
-          rfid_status: attendee.rfid_tags?.[0]?.status,
+          rfid_uid: (attendee as any).rfid_tags?.[0]?.uid,
+          rfid_status: (attendee as any).rfid_tags?.[0]?.status,
           formatted_meal_plan: attendee.meal_plan || 'No Plan'
         }));
 

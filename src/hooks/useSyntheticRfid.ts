@@ -18,7 +18,7 @@ export const useSyntheticRfid = ({
   const [isActive, setIsActive] = useState(false);
   const [scanCount, setScanCount] = useState(0);
   const [lastUid, setLastUid] = useState<string>('');
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<ReturnType<typeof setInterval>>();
 
   const generateAndCapture = useCallback(() => {
     const uid = generateTestRfidUid(uidType);

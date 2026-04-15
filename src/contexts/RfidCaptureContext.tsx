@@ -72,7 +72,7 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
     if (!enabled) return;
 
     let inputBuffer = '';
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
 
     const handleKeyPress = (event: KeyboardEvent) => {
       const activeElement = document.activeElement as HTMLElement;

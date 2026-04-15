@@ -215,7 +215,7 @@ export const RfidAssignment = () => {
       console.log(`📊 Loaded ${data?.length || 0} attendees from database`);
 
       // Fetch activation data for all attendees
-      const attendeeIds = (data || []).map(a => a.id);
+      const attendeeIds = (data || []).map((a: any) => a.id);
       const { data: activationData } = await supabase
         .from('station_transactions')
         .select('attendee_id, activation_method, created_at')

@@ -92,8 +92,8 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
         // Get attendees checked in today (ET timezone) for peak hour calculation
         const todayBoundaries = getStandardTimeBoundaries('today');
         const checkedInToday = checkedInAttendees.filter(a => {
-          const activationDate = a.activated_at || 
-            attendees?.find(att => att.id === a.id)?.rfid_tags?.[0]?.activated_at;
+          const activationDate = (a as any).activated_at || 
+            (attendees as any)?.find((att: any) => att.id === a.id)?.rfid_tags?.[0]?.activated_at;
           return activationDate && 
             new Date(activationDate) >= todayBoundaries.start && 
             new Date(activationDate) < todayBoundaries.end;
