@@ -23,6 +23,7 @@ export type Database = {
           city: string | null
           created_at: string
           deactivated_at: string | null
+          early_access: boolean | null
           email: string | null
           first_name: string
           id: string
@@ -55,6 +56,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           deactivated_at?: string | null
+          early_access?: boolean | null
           email?: string | null
           first_name: string
           id?: string
@@ -87,6 +89,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           deactivated_at?: string | null
+          early_access?: boolean | null
           email?: string | null
           first_name?: string
           id?: string
@@ -370,7 +373,88 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      activate_entire_order_by_phone: {
+        Args: { p_activation_method: string; p_phone: string }
+        Returns: {
+          activated_count: number
+          already_active_count: number
+          attendee_details: Json
+          order_id: string
+          total_attendees: number
+          warnings: string[]
+        }[]
+      }
+      activate_group_by_phone: {
+        Args: { p_activation_method: string; p_phone: string }
+        Returns: {
+          activated_count: number
+          already_active_count: number
+          attendee_details: Json
+          order_id: string
+          total_attendees: number
+          warnings: string[]
+        }[]
+      }
+      activate_remaining_rfids_by_phone: {
+        Args: { p_activation_method: string; p_phone: string }
+        Returns: {
+          activated_count: number
+          already_active_count: number
+          attendee_details: Json
+          order_id: string
+          total_attendees: number
+          warnings: string[]
+        }[]
+      }
+      authenticate_staff_code: {
+        Args: { p_code: string }
+        Returns: {
+          display_name: string
+          staff_id: string
+        }[]
+      }
+      bulk_activate_assigned_rfids: {
+        Args: never
+        Returns: {
+          activated_count: number
+          details: Json
+          failed_count: number
+        }[]
+      }
+      check_station_access: {
+        Args: { p_attendee_id: string }
+        Returns: {
+          access_reason: string
+          activation_status: string
+          has_access: boolean
+          rfid_status: string
+        }[]
+      }
+      cleanup_abandoned_records: {
+        Args: never
+        Returns: {
+          cleanup_details: Json
+          cleanup_successful: boolean
+          records_removed: number
+          rfids_cleared: number
+        }[]
+      }
+      cleanup_generated_rfids: {
+        Args: never
+        Returns: {
+          deleted_count: number
+        }[]
+      }
+      lookup_attendees_by_phone: {
+        Args: { p_phone: string }
+        Returns: {
+          attendee_count: number
+          attendee_details: Json
+          has_group_order: boolean
+          order_companions: Json
+          order_id: string
+        }[]
+      }
     }
     Enums: {
       meal_plan: "standard" | "premium" | "none"
@@ -390,6 +474,7 @@ export type Database = {
         | "walkie_talkies"
         | "golf_carts"
         | "rfid_assignment"
+        | "activation"
       tag_status:
         | "unissued"
         | "assigned"
@@ -573,6 +658,7 @@ export const Constants = {
         "walkie_talkies",
         "golf_carts",
         "rfid_assignment",
+        "activation",
       ],
       tag_status: [
         "unissued",
