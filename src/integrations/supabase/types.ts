@@ -317,6 +317,7 @@ export type Database = {
       }
       station_transactions: {
         Row: {
+          activation_method: string | null
           attendee_id: string
           created_at: string
           current_status: string | null
@@ -329,6 +330,7 @@ export type Database = {
           transaction_type: Database["public"]["Enums"]["transaction_type"]
         }
         Insert: {
+          activation_method?: string | null
           attendee_id: string
           created_at?: string
           current_status?: string | null
@@ -341,6 +343,7 @@ export type Database = {
           transaction_type: Database["public"]["Enums"]["transaction_type"]
         }
         Update: {
+          activation_method?: string | null
           attendee_id?: string
           created_at?: string
           current_status?: string | null
@@ -412,6 +415,20 @@ export type Database = {
         | "drink"
         | "headphone_checkout"
         | "headphone_checkin"
+        | "golf_cart_checkout"
+        | "golf_cart_checkin"
+        | "walkie_talkie_checkout"
+        | "walkie_talkie_checkin"
+        | "fanny_pack_checkout"
+        | "fanny_pack_checkin"
+        | "meal_sat_breakfast"
+        | "meal_sun_breakfast"
+        | "meal_fri_lunch"
+        | "meal_sat_lunch"
+        | "meal_fri_dinner"
+        | "meal_sat_dinner"
+        | "gate_entry"
+        | "gate_exit"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -584,6 +601,20 @@ export const Constants = {
         "drink",
         "headphone_checkout",
         "headphone_checkin",
+        "golf_cart_checkout",
+        "golf_cart_checkin",
+        "walkie_talkie_checkout",
+        "walkie_talkie_checkin",
+        "fanny_pack_checkout",
+        "fanny_pack_checkin",
+        "meal_sat_breakfast",
+        "meal_sun_breakfast",
+        "meal_fri_lunch",
+        "meal_sat_lunch",
+        "meal_fri_dinner",
+        "meal_sat_dinner",
+        "gate_entry",
+        "gate_exit",
       ],
     },
   },
