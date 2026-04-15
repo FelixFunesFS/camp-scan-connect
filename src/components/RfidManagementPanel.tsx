@@ -70,7 +70,7 @@ export const RfidManagementPanel: React.FC = () => {
     try {
       console.log(`Clearing ${format} RFIDs...`);
 
-      const { data, error } = await supabase.rpc('cleanup_generated_rfids', { p_format: format });
+      const { data, error } = await (supabase.rpc as any)('cleanup_generated_rfids', { p_format: format });
 
       if (error) throw error;
 

@@ -185,12 +185,12 @@ export const RfidAssignmentCell = ({
         .from('rfid_tags')
         .update({
           status: 'unissued',
-          attendee_id: null,
-          deactivated_at: null,
-          reason: null,
-          activated_at: null,
-          activation_method: null
-        })
+          attendee_id: null as any,
+          deactivated_at: null as any,
+          reason: null as any,
+          activated_at: null as any,
+          activation_method: null as any
+        } as any)
         .eq('uid', currentRfidUid);
 
       // Reset attendee activation status since they no longer have an RFID
