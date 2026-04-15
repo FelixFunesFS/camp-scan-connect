@@ -1,0 +1,2 @@
+-- Apply migrations from existing project
+-- This is a placeholder - migrations should be applied through the Cloud UI
