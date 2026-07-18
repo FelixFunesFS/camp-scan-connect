@@ -14,28 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_tasks: {
+        Row: {
+          actual_hours: number | null
+          assigned_to: string | null
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          estimated_hours: number | null
+          id: string
+          metadata: Json | null
+          priority: string | null
+          status: string | null
+          tags: string[] | null
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string | null
+          tags?: string[] | null
+          task_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string | null
+          tags?: string[] | null
+          task_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       attendees: {
         Row: {
           activated_at: string | null
+          additional_guests: Json | null
           arrival_day: string | null
           arrival_window: string | null
           checked_in_at: string | null
           city: string | null
+          country: string | null
           created_at: string
+          custom_fields: Json | null
+          date_of_birth: string | null
           deactivated_at: string | null
+          dietary_restrictions: string | null
           early_access: boolean | null
           email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           event_id: string | null
           first_name: string
+          gender: string | null
           id: string
           is_veteran: boolean | null
           last_name: string
+          marital_status: string | null
           meal_plan: Database["public"]["Enums"]["meal_plan"] | null
           most_recent_activation_at: string | null
           most_recent_activation_method: string | null
           notes: string | null
           order_id: string | null
           phone: string | null
+          postal_code: string | null
+          priority: string | null
           regfox_id: string | null
           registration_status:
             | Database["public"]["Enums"]["registration_status"]
@@ -45,31 +116,46 @@ export type Database = {
             | null
           special_accommodations: string | null
           state: string | null
+          status: string | null
+          street_address: string | null
+          t_shirt_size: string | null
           ticket_type: Database["public"]["Enums"]["ticket_type"]
           updated_at: string
+          veteran_thanked_at: string | null
           waiver_signed: boolean | null
         }
         Insert: {
           activated_at?: string | null
+          additional_guests?: Json | null
           arrival_day?: string | null
           arrival_window?: string | null
           checked_in_at?: string | null
           city?: string | null
+          country?: string | null
           created_at?: string
+          custom_fields?: Json | null
+          date_of_birth?: string | null
           deactivated_at?: string | null
+          dietary_restrictions?: string | null
           early_access?: boolean | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           event_id?: string | null
           first_name: string
+          gender?: string | null
           id?: string
           is_veteran?: boolean | null
           last_name: string
+          marital_status?: string | null
           meal_plan?: Database["public"]["Enums"]["meal_plan"] | null
           most_recent_activation_at?: string | null
           most_recent_activation_method?: string | null
           notes?: string | null
           order_id?: string | null
           phone?: string | null
+          postal_code?: string | null
+          priority?: string | null
           regfox_id?: string | null
           registration_status?:
             | Database["public"]["Enums"]["registration_status"]
@@ -79,31 +165,46 @@ export type Database = {
             | null
           special_accommodations?: string | null
           state?: string | null
+          status?: string | null
+          street_address?: string | null
+          t_shirt_size?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
+          veteran_thanked_at?: string | null
           waiver_signed?: boolean | null
         }
         Update: {
           activated_at?: string | null
+          additional_guests?: Json | null
           arrival_day?: string | null
           arrival_window?: string | null
           checked_in_at?: string | null
           city?: string | null
+          country?: string | null
           created_at?: string
+          custom_fields?: Json | null
+          date_of_birth?: string | null
           deactivated_at?: string | null
+          dietary_restrictions?: string | null
           early_access?: boolean | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           event_id?: string | null
           first_name?: string
+          gender?: string | null
           id?: string
           is_veteran?: boolean | null
           last_name?: string
+          marital_status?: string | null
           meal_plan?: Database["public"]["Enums"]["meal_plan"] | null
           most_recent_activation_at?: string | null
           most_recent_activation_method?: string | null
           notes?: string | null
           order_id?: string | null
           phone?: string | null
+          postal_code?: string | null
+          priority?: string | null
           regfox_id?: string | null
           registration_status?:
             | Database["public"]["Enums"]["registration_status"]
@@ -113,8 +214,12 @@ export type Database = {
             | null
           special_accommodations?: string | null
           state?: string | null
+          status?: string | null
+          street_address?: string | null
+          t_shirt_size?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
+          veteran_thanked_at?: string | null
           waiver_signed?: boolean | null
         }
         Relationships: [
@@ -213,6 +318,8 @@ export type Database = {
       }
       rfid_tags: {
         Row: {
+          activated_at: string | null
+          activation_method: string | null
           attendee_id: string | null
           deactivated_at: string | null
           event_id: string | null
@@ -222,6 +329,8 @@ export type Database = {
           uid: string
         }
         Insert: {
+          activated_at?: string | null
+          activation_method?: string | null
           attendee_id?: string | null
           deactivated_at?: string | null
           event_id?: string | null
@@ -231,6 +340,8 @@ export type Database = {
           uid: string
         }
         Update: {
+          activated_at?: string | null
+          activation_method?: string | null
           attendee_id?: string | null
           deactivated_at?: string | null
           event_id?: string | null
@@ -570,6 +681,7 @@ export type Database = {
         | "golf_carts"
         | "rfid_assignment"
         | "activation"
+        | "tshirts"
       tag_status:
         | "unissued"
         | "assigned"
@@ -609,6 +721,7 @@ export type Database = {
         | "meal_sat_dinner"
         | "gate_entry"
         | "gate_exit"
+        | "tshirt_pickup"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -754,6 +867,7 @@ export const Constants = {
         "golf_carts",
         "rfid_assignment",
         "activation",
+        "tshirts",
       ],
       tag_status: [
         "unissued",
@@ -796,6 +910,7 @@ export const Constants = {
         "meal_sat_dinner",
         "gate_entry",
         "gate_exit",
+        "tshirt_pickup",
       ],
     },
   },
