@@ -681,6 +681,7 @@ export type Database = {
         | "golf_carts"
         | "rfid_assignment"
         | "activation"
+        | "tshirts"
       tag_status:
         | "unissued"
         | "assigned"
@@ -720,6 +721,7 @@ export type Database = {
         | "meal_sat_dinner"
         | "gate_entry"
         | "gate_exit"
+        | "tshirt_pickup"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -865,6 +867,7 @@ export const Constants = {
         "golf_carts",
         "rfid_assignment",
         "activation",
+        "tshirts",
       ],
       tag_status: [
         "unissued",
@@ -907,6 +910,7 @@ export const Constants = {
         "meal_sat_dinner",
         "gate_entry",
         "gate_exit",
+        "tshirt_pickup",
       ],
     },
   },
