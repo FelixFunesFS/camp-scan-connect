@@ -72,7 +72,7 @@ export class PhoneActivationService {
         throw new Error(`Failed to activate group: ${error.message}`);
       }
 
-      return data.length > 0 ? data[0] : null;
+      return data.length > 0 ? (data[0] as any) : null;
     } catch (error) {
       console.error('Phone activation error:', error);
       throw error;
@@ -94,7 +94,7 @@ export class PhoneActivationService {
         throw new Error(`Failed to activate entire order: ${error.message}`);
       }
 
-      return data.length > 0 ? data[0] : null;
+      return data.length > 0 ? (data[0] as any) : null;
     } catch (error) {
       console.error('Order activation error:', error);
       throw error;
@@ -122,7 +122,7 @@ export class PhoneActivationService {
         }
 
         if (data && data.length > 0 && data[0].attendee_count > 0) {
-          return data[0];
+          return data[0] as any;
         }
       } catch (error) {
         console.warn(`Phone lookup error for format ${phoneFormat}:`, error);
@@ -177,7 +177,7 @@ export class PhoneActivationService {
         throw new Error(`Failed to activate remaining RFIDs: ${error.message}`);
       }
 
-      return data.length > 0 ? data[0] : null;
+      return data.length > 0 ? (data[0] as any) : null;
     } catch (error) {
       console.error('Remaining RFID activation error:', error);
       throw error;
