@@ -25,6 +25,7 @@ export type Database = {
           deactivated_at: string | null
           early_access: boolean | null
           email: string | null
+          event_id: string | null
           first_name: string
           id: string
           is_veteran: boolean | null
@@ -58,6 +59,7 @@ export type Database = {
           deactivated_at?: string | null
           early_access?: boolean | null
           email?: string | null
+          event_id?: string | null
           first_name: string
           id?: string
           is_veteran?: boolean | null
@@ -91,6 +93,7 @@ export type Database = {
           deactivated_at?: string | null
           early_access?: boolean | null
           email?: string | null
+          event_id?: string | null
           first_name?: string
           id?: string
           is_veteran?: boolean | null
@@ -113,6 +116,47 @@ export type Database = {
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
           waiver_signed?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendees_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          starts_at: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          starts_at?: string | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          starts_at?: string | null
+          updated_at?: string
+          year?: number
         }
         Relationships: []
       }
@@ -171,6 +215,7 @@ export type Database = {
         Row: {
           attendee_id: string | null
           deactivated_at: string | null
+          event_id: string | null
           issued_at: string | null
           reason: string | null
           status: Database["public"]["Enums"]["tag_status"]
@@ -179,6 +224,7 @@ export type Database = {
         Insert: {
           attendee_id?: string | null
           deactivated_at?: string | null
+          event_id?: string | null
           issued_at?: string | null
           reason?: string | null
           status?: Database["public"]["Enums"]["tag_status"]
@@ -187,6 +233,7 @@ export type Database = {
         Update: {
           attendee_id?: string | null
           deactivated_at?: string | null
+          event_id?: string | null
           issued_at?: string | null
           reason?: string | null
           status?: Database["public"]["Enums"]["tag_status"]
@@ -200,12 +247,20 @@ export type Database = {
             referencedRelation: "attendees"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "rfid_tags_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       scans: {
         Row: {
           action: Database["public"]["Enums"]["scan_action"]
           device_id: string | null
+          event_id: string | null
           extra: Json | null
           id: number
           location: string
@@ -218,6 +273,7 @@ export type Database = {
         Insert: {
           action?: Database["public"]["Enums"]["scan_action"]
           device_id?: string | null
+          event_id?: string | null
           extra?: Json | null
           id?: number
           location: string
@@ -230,6 +286,7 @@ export type Database = {
         Update: {
           action?: Database["public"]["Enums"]["scan_action"]
           device_id?: string | null
+          event_id?: string | null
           extra?: Json | null
           id?: number
           location?: string
@@ -240,6 +297,13 @@ export type Database = {
           staff_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "scans_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "scans_rfid_uid_fkey"
             columns: ["rfid_uid"]
@@ -278,6 +342,7 @@ export type Database = {
           created_at: string
           email: string | null
           error_message: string | null
+          event_id: string | null
           id: string
           issue_type: string
           phone_number: string | null
@@ -293,6 +358,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           error_message?: string | null
+          event_id?: string | null
           id?: string
           issue_type: string
           phone_number?: string | null
@@ -308,6 +374,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           error_message?: string | null
+          event_id?: string | null
           id?: string
           issue_type?: string
           phone_number?: string | null
@@ -316,7 +383,15 @@ export type Database = {
           resolved_at?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "staff_assistance_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       station_transactions: {
         Row: {
@@ -325,6 +400,7 @@ export type Database = {
           created_at: string
           current_status: string | null
           daily_count: number | null
+          event_id: string | null
           extra_data: Json | null
           id: string
           rfid_uid: string | null
@@ -338,6 +414,7 @@ export type Database = {
           created_at?: string
           current_status?: string | null
           daily_count?: number | null
+          event_id?: string | null
           extra_data?: Json | null
           id?: string
           rfid_uid?: string | null
@@ -351,6 +428,7 @@ export type Database = {
           created_at?: string
           current_status?: string | null
           daily_count?: number | null
+          event_id?: string | null
           extra_data?: Json | null
           id?: string
           rfid_uid?: string | null
@@ -364,6 +442,13 @@ export type Database = {
             columns: ["attendee_id"]
             isOneToOne: false
             referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_transactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
