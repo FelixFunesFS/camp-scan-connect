@@ -1,52 +1,61 @@
-# Fix: RFID Assignment shows "Unassigned" and "Not Activated" for everyone
+# Waiver flow, activation integrity, and where signatures live
 
-## Status in the database (correct — the page is wrong)
+## What actually happened with Jocelyn
 
-For the 2026 event (694 attendees):
-
-- **Jocelyn Mccants** is the only activated person — checked in today at 21:59 UTC
-- Her credential `92346902673388000059135708` (barcode) is `active` and correctly linked to her
-- She has **2** activation transactions: one at 21:59:22 (`pre_assignment`) and one at 21:59:51 (`self_activated`)
-- Nobody else has a credential; 0 assigned, 0 other activations
-
-So the data says "Checked In / Self Activated". Both wrong labels on the page come from the same failure.
-
-## Root cause: over-long request URLs, failing silently
-
-The page loads 682 attendees, then makes two follow-up calls that stuff every attendee ID into a URL query string:
+The waiver did not auto-activate her. The timeline from the database:
 
 ```text
-station_transactions?...&attendee_id=in.(<682 UUIDs>)
+21:58:01  Waiver signed  (typed "Jocelyn McCants", name matched)
+21:59:22  station_transactions row: transaction_type = activate, method = pre_assignment
+21:59:51  station_transactions row: transaction_type = activate, method = self_activated
 ```
 
-Each URL is roughly 25,000 characters, and the API rejects both with **400 Bad Request** (confirmed in the network log). Neither failure is handled honestly:
+The waiver trigger only sets `waiver_signed = true` — it never touches credentials or activation. Two other things happened:
 
-1. **Status column → "Unassigned".** The bulk status helper catches the error and falls back to `getCheckInStatus(null, null)` for every attendee — which *is* the "Unassigned" state — then caches that wrong answer for 30 seconds.
+1. **21:59:22 was a wristband assignment, not an activation.** The RFID Assignment screen logs its assignment as `transaction_type = 'activate'` with method `pre_assignment`. The tag itself was correctly set to `assigned`, but the audit trail now claims she was activated at assignment time. That's the bypassed workflow you're sensing — it's a mislabelled log, not a real early activation.
 
-2. **Most Recent Activation column → "Not Activated".** The attendee loader never checks the error at all. The rejected response yields no rows, the activation map stays empty, so `most_recent_activation_method` is undefined for everyone and the column renders "Not Activated".
+2. **21:59:51 was the real check-in** — the self-service phone check-in test, which is what set her tag to `active`.
 
-## The fix
+## Where waivers go today
 
-**1. Chunk every bulk-ID query**
-- Split attendee IDs into batches (roughly 100 per request), run the batches in parallel, and merge the results. URLs stay well under the limit no matter how many attendees load. Applies to both the status query and the activation-history query.
+- Signatures are stored in the `waiver_signatures` table: attendee, typed name, agreement version (`MC2026-v1`), whether the typed name matched the registered name, timestamp, and browser user-agent.
+- Rows cannot be edited or deleted — the table only accepts new signatures, which is what you want for a legal record.
+- **The attendee gets no copy.** Nothing is emailed, downloaded, or shown after signing.
+- There's a counting gap worth knowing: **335** attendees are flagged `waiver_signed`, but only **1** signature row exists. The other 334 came in flagged from the RegFox import, so there is no in-app signature record backing them — only a boolean.
 
-**2. Stop failures from masquerading as data**
-- Check and surface the error on the activation query instead of ignoring it.
-- On a genuine failure, don't write "Unassigned" into results or the cache — keep the last known good value, mark the rest unknown, and show a "Couldn't load status — retry" indicator rather than a false red badge.
-- Only cache statuses that came from a successful query, and clear the cache on error so a retry isn't served poisoned values.
+## How to think about it
 
-**3. Seed from data already on the page**
-- The attendee query already returns `rfid_tags(uid, status, activated_at)` per row. Derive each badge from that first so the table is correct on first paint; the bulk calls then only enrich with activation-method detail.
+Three separate concerns, easy to conflate:
 
-**4. Same guard everywhere**
-- Apply the chunking helper to any other call site that builds an `in.(...)` filter from a full attendee list, so this can't resurface on another page.
+- **Consent record** — the legal artifact. Must be immutable, attributable, and retrievable.
+- **Eligibility flag** — `waiver_signed`, the gate that lets someone check in.
+- **Activation event** — the physical act of a credential going live at check-in.
+
+Right now #1 and #2 are only loosely connected (334 flags with no record), and #3 is polluted by assignment events being written as activations. Each deserves its own fix.
+
+## Proposed work
+
+**1. Stop assignment from logging as activation**
+- Change the assignment write to `transaction_type` that reflects assignment, keeping `pre_assignment` as the method for history. Activation history then contains only real check-ins, and the "Most Recent Activation" column stops reporting assignments as check-ins.
+- Backfill Jocelyn's 21:59:22 row so existing history is honest.
+
+**2. Give attendees a copy of what they signed**
+- After signing, show a confirmation screen with the full agreement text, their typed name, the version, and the timestamp — with a "Download PDF" button generated in the browser.
+- Optionally email the same receipt to the address on their registration. This needs email sending set up for the project; say the word and it goes in.
+
+**3. Make the consent record retrievable by staff**
+- A waiver detail view: search an attendee, see whether a real signature exists, what version they signed, when, and whether the typed name matched. Re-download the PDF from there.
+- Distinguish "signed in app" from "flagged by import" in the Waivers panel so the 334 imported flags aren't mistaken for captured signatures.
+
+**4. Decide the import-flag policy**
+- Two options, needs your call: trust the RegFox flag as valid consent captured at registration, or require an in-app signature at check-in for everyone regardless of the flag. This determines whether 334 people sign at the gate or walk straight through.
 
 ## Technical notes
 
-- Files: `src/utils/optimizedStatusUtils.ts` (chunking, honest failure handling, no caching of fallbacks), `src/pages/RfidAssignment.tsx` (chunk the activation query, check its error, seed statuses from the nested tag data, retry affordance).
-- A small shared `chunkedIn()` helper will hold the batching logic so both call sites and future ones use one implementation.
-- No database or schema changes — schema and row data are correct.
+- Files: `src/components/EnhancedRfidAssignmentCell.tsx` and `src/components/RfidAssignmentCell.tsx` (assignment transaction type), `src/services/waiverService.ts` and `src/components/WaiverSigningDialog.tsx` (receipt), `src/components/WaiverStatusPanel.tsx` (signed-vs-imported distinction, detail view).
+- One data change to correct the existing mislabelled transaction row.
+- PDF generation runs client-side from `src/lib/waiverContent.ts`, so no new backend dependency unless you also want the emailed copy.
 
-## Side observation
+## Open question
 
-One of Jocelyn's two activation rows has `activation_method = 'pre_assignment'`, which isn't one of the two allowed values (`self_activated`, `staff_assisted`). It doesn't affect the display since the newer row wins, but worth flagging — say the word and the plan can include normalizing that write path.
+Should the 334 import-flagged attendees be required to sign in-app at check-in, or is the RegFox flag sufficient consent?
