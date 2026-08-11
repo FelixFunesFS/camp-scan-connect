@@ -1,44 +1,52 @@
-# Fix: RFID Assignment shows everyone as "Unassigned"
+# Fix: RFID Assignment shows "Unassigned" and "Not Activated" for everyone
 
-## Status in the database (unchanged, correct)
+## Status in the database (correct — the page is wrong)
 
 For the 2026 event (694 attendees):
 
-- **Jocelyn Mccants** is the only activated person — checked in today at 21:59 UTC, self-activated
+- **Jocelyn Mccants** is the only activated person — checked in today at 21:59 UTC
 - Her credential `92346902673388000059135708` (barcode) is `active` and correctly linked to her
+- She has **2** activation transactions: one at 21:59:22 (`pre_assignment`) and one at 21:59:51 (`self_activated`)
 - Nobody else has a credential; 0 assigned, 0 other activations
 
-So the data says "Checked In" for Jocelyn. The page saying "Unassigned" is a display bug.
+So the data says "Checked In / Self Activated". Both wrong labels on the page come from the same failure.
 
-## Root cause
+## Root cause: over-long request URLs, failing silently
 
-The RFID Assignment page loads all 682 visible attendees, then asks for their statuses in one bulk call. That call passes every attendee ID into a URL query string:
+The page loads 682 attendees, then makes two follow-up calls that stuff every attendee ID into a URL query string:
 
 ```text
 station_transactions?...&attendee_id=in.(<682 UUIDs>)
 ```
 
-The resulting URL is roughly 25,000 characters, which the API rejects with **400 Bad Request** — visible in the network log for both the `station_transactions` and follow-up requests.
+Each URL is roughly 25,000 characters, and the API rejects both with **400 Bad Request** (confirmed in the network log). Neither failure is handled honestly:
 
-The status helper catches that failure and, instead of surfacing it, silently falls back to `getCheckInStatus(null, null)` for every attendee — which is literally the "Unassigned" state. It then caches that wrong answer for 30 seconds. That's why Jocelyn flips from Active to Unassigned: the request failed, and the failure looks identical to "no credential".
+1. **Status column → "Unassigned".** The bulk status helper catches the error and falls back to `getCheckInStatus(null, null)` for every attendee — which *is* the "Unassigned" state — then caches that wrong answer for 30 seconds.
+
+2. **Most Recent Activation column → "Not Activated".** The attendee loader never checks the error at all. The rejected response yields no rows, the activation map stays empty, so `most_recent_activation_method` is undefined for everyone and the column renders "Not Activated".
 
 ## The fix
 
-**1. Chunk the bulk status query**
-- Split attendee IDs into batches (roughly 100 per request) and issue the batches in parallel, merging the results. This keeps every URL comfortably under the length limit regardless of how many attendees load.
+**1. Chunk every bulk-ID query**
+- Split attendee IDs into batches (roughly 100 per request), run the batches in parallel, and merge the results. URLs stay well under the limit no matter how many attendees load. Applies to both the status query and the activation-history query.
 
-**2. Stop the fallback from lying**
-- On a genuine query failure, do not write "Unassigned" into the results or the cache. Leave those attendees in an "unknown" state, keep the last known good value if there is one, and let the page show a "Couldn't load status — retry" indicator instead of a false red badge.
-- Only cache statuses that came from a successful query.
+**2. Stop failures from masquerading as data**
+- Check and surface the error on the activation query instead of ignoring it.
+- On a genuine failure, don't write "Unassigned" into results or the cache — keep the last known good value, mark the rest unknown, and show a "Couldn't load status — retry" indicator rather than a false red badge.
+- Only cache statuses that came from a successful query, and clear the cache on error so a retry isn't served poisoned values.
 
-**3. Use the data already on the page**
-- The attendee load already fetches `rfid_tags(uid, status, activated_at)` for each row. Seed each attendee's status from that nested data first, so the table renders correct badges immediately and the bulk call only enriches it with activation-transaction detail. Even if the enrichment call fails, badges stay correct.
+**3. Seed from data already on the page**
+- The attendee query already returns `rfid_tags(uid, status, activated_at)` per row. Derive each badge from that first so the table is correct on first paint; the bulk calls then only enrich with activation-method detail.
 
-**4. Reset the poisoned cache**
-- Clear the status cache when the bulk call errors, so a retry isn't served the bad 30-second-cached "Unassigned" values.
+**4. Same guard everywhere**
+- Apply the chunking helper to any other call site that builds an `in.(...)` filter from a full attendee list, so this can't resurface on another page.
 
 ## Technical notes
 
-- Files: `src/utils/optimizedStatusUtils.ts` (chunking, honest failure handling, no caching of fallbacks) and `src/pages/RfidAssignment.tsx` (seed statuses from the nested `rfid_tags` already loaded, show a retry affordance).
-- No database or schema changes — the schema and the row data are correct.
-- The same chunking guard applies to any other place that builds an `in.(...)` filter from a full attendee list, so those call sites get the same treatment to prevent the bug reappearing elsewhere.
+- Files: `src/utils/optimizedStatusUtils.ts` (chunking, honest failure handling, no caching of fallbacks), `src/pages/RfidAssignment.tsx` (chunk the activation query, check its error, seed statuses from the nested tag data, retry affordance).
+- A small shared `chunkedIn()` helper will hold the batching logic so both call sites and future ones use one implementation.
+- No database or schema changes — schema and row data are correct.
+
+## Side observation
+
+One of Jocelyn's two activation rows has `activation_method = 'pre_assignment'`, which isn't one of the two allowed values (`self_activated`, `staff_assisted`). It doesn't affect the display since the newer row wins, but worth flagging — say the word and the plan can include normalizing that write path.
