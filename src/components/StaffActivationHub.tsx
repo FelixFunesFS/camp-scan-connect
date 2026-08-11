@@ -141,7 +141,7 @@ const DEACTIVATION_REASONS = [
 export function StaffActivationHub() {
   const [staffCode, setStaffCode] = useState("");
   const [staffId, setStaffId] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [stats, setStats] = useState<StaffStats>({
     totalActive: 0,
     todayDeactivations: 0,
