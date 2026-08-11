@@ -160,7 +160,9 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
     const track = streamRef.current?.getVideoTracks()[0];
     if (!track) return;
     try {
-      await track.applyConstraints({ advanced: [{ torch: !torchOn }] } as MediaTrackConstraints);
+      await track.applyConstraints({
+        advanced: [{ torch: !torchOn }],
+      } as unknown as MediaTrackConstraints);
       setTorchOn((on) => !on);
     } catch (err) {
       console.error('Torch toggle failed:', err);
