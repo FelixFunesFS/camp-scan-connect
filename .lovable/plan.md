@@ -1,32 +1,34 @@
-# Fix: "Assigned" badge on an already checked-in attendee
+# Reset 2026 check-in data to zero
 
-## What's actually happening
+## Current state
 
-Jocelyn Mccants is already checked in. Her 2026 record shows an active wristband (`92346902673388000059135708`), waiver signed, self-activated at 21:59:51 UTC today. So the system correctly refused to check her in a second time.
+For the 2026 event (694 attendees), exactly one person is activated:
 
-The problem is purely how that is communicated. Two mismatches in the check-in screen:
+- **Jocelyn Mccants** — checked in today at 21:59 UTC, self-activated by phone
+- Credential `92346902673388000059135708` (barcode), status `active` — the only credential row in the system
+- 2 station transactions, both hers
 
-1. **Wrong badge.** The attendee card decides "Active vs Assigned" by reading `is_activated` / `activated_at`, but the phone lookup returns `is_active` / `rfid_status`. Neither field it looks for exists in the response, so an already-active person always falls through to the yellow **Assigned** badge.
+Everyone else has no credential and no activation. So the "activated" count is 1, and it should be 0.
 
-2. **Silent dead-end button.** The check-in button counts only people who are not yet active. With everyone already active, the count is zero and the button greys out reading "Nothing to check in" — with no explanation that this is because they're already checked in.
+## What to clear
 
-Together it reads as "she's only assigned, and the app won't let me activate her."
+A migration that resets the 2026 event to a pre-event state:
 
-## The fix
+1. **Attendees** — clear `checked_in_at`, `activated_at`, `deactivated_at`, `most_recent_activation_at`, and `most_recent_activation_method` for every 2026 attendee.
+2. **Credentials** — delete the test credential row from `rfid_tags` for 2026, so no wristband/barcode is assigned to anyone.
+3. **Station transactions** — delete the 2026 transaction history that came from testing.
+4. **Scans** — delete any 2026 scan rows for the same reason.
 
-**Correct the status badge**
-- Read activation from the fields the lookup actually returns (`is_active`, `rfid_status === 'active'`) in addition to the existing ones, so already-active attendees show the green **Active** badge everywhere the card is used.
+Waiver signatures are left alone: they are real attendee consent (331 signed) and must survive the reset.
 
-**Make the already-checked-in state explicit**
-- Show a clear confirmation panel at the top of the preview when everyone on the order is already active: "Already checked in" with each person's name and the time they were checked in.
-- Change the disabled button label from "Nothing to check in" to "Already checked in" when the reason is prior activation (keep "Nothing to check in" when the block is a waiver or a missing wristband).
-- Surface the per-person reason on each card when they can't be checked in: already active / waiver required / no wristband.
+## Scope guard
 
-**Confirmation after the action**
-- The check-in handler already shows an "Everyone on this order was already checked in" toast, but it clears the screen at the same time so it's easy to miss. Keep the result on screen instead of resetting, so staff see the outcome.
+Every statement is filtered to `event_id = '00000000-0000-0000-0000-000000002026'`, so 2025 and 2024 history is untouched.
 
-## Technical notes
+## After the reset
 
-- Files: `src/components/shared/MobileAttendeeCard.tsx` (badge logic), `src/components/MobileActivationPreview.tsx` (already-active panel, button label, per-person reason), `src/pages/ActivationStation.tsx` (don't reset the view on a no-op result).
-- No database or RPC changes — `activate_entire_order_by_phone` is behaving correctly, returning `activated_count: 0` / `already_active_count: 1`.
-- The lookup response already carries `rfid_status` and `is_active` per attendee; the fix consumes what's there rather than adding fields.
+Re-run the counts to confirm 0 activated, 0 checked in, 0 credentials, and 0 transactions for 2026, and report the verified numbers.
+
+## Note for repeat testing
+
+If you want to run test check-ins again without hand-cleaning the database afterward, a "Reset event check-in data" action can be added to the Developer Dashboard that performs exactly these steps for the active event behind a confirmation prompt. Say the word and it goes in the same change.
