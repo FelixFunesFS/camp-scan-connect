@@ -57,7 +57,6 @@ export class TShirtService {
       .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
       // Split letter/digit runs so "unisexCrewNeck2x" becomes "... neck 2x"
       .replace(/([a-zA-Z])(\d)/g, '$1 $2')
-      .replace(/(\d)([a-zA-Z])/g, '$1 $2')
       .toLowerCase()
       .trim()
       .replace(/\s+/g, ' ');
@@ -246,7 +245,7 @@ export class TShirtService {
       { pattern: /\b(?:extra\s*)?small\b|\bxs\b|\bs\b(?!\w)/i, size: 'Small' },
       { pattern: /\bmedium\b|\bmed\b|\bm\b(?!\w)/i, size: 'Medium' },
       { pattern: /\blarge\b|\blg\b|\bl\b(?!\w)/i, size: 'Large' },
-      { pattern: /\b(?:x-?large|extra\s*large)\b|\bxl\b/i, size: 'X-Large' },
+      { pattern: /\b(?:x-?\s?large|extra\s*large)\b|\bxl\b/i, size: 'X-Large' },
       { pattern: /\b(?:2x|2xl|xx-?large|double\s*x)\b/i, size: '2X-Large' },
       { pattern: /\b(?:3x|3xl|xxx-?large|triple\s*x)\b/i, size: '3X-Large' },
       { pattern: /\b(?:4x|4xl|xxxx-?large)\b/i, size: '4X-Large' },
@@ -562,10 +561,10 @@ export class TShirtService {
 
     // Extract size - improved patterns to handle "med" properly
     const sizePatterns = [
-      { pattern: /\b(4x|4xl|xxxx large|xxxxl)\b/i, size: '4X-Large' },
-      { pattern: /\b(3x|3xl|xxx large|xxxl)\b/i, size: '3X-Large' },
-      { pattern: /\b(2x|2xl|xx large|xxl)\b/i, size: '2X-Large' },
-      { pattern: /\b(x large|xl|extra large)\b/i, size: 'X-Large' },
+      { pattern: /\b(4x|4xl|4x ?large|xxxx ?large|xxxxl)\b/i, size: '4X-Large' },
+      { pattern: /\b(3x|3xl|3x ?large|xxx ?large|xxxl)\b/i, size: '3X-Large' },
+      { pattern: /\b(2x|2xl|2x ?large|xx ?large|xxl)\b/i, size: '2X-Large' },
+      { pattern: /\b(x ?large|xl|extra ?large)\b/i, size: 'X-Large' },
       { pattern: /\b(large|lg)\b/i, size: 'Large' },
       { pattern: /\b(medium|med)\b/i, size: 'Medium' },
       { pattern: /\b(small|sm)\b/i, size: 'Small' },
