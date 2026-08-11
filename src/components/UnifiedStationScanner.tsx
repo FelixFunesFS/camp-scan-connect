@@ -441,6 +441,61 @@ export function UnifiedStationScanner({
           onReset: handleReset
         })}
       </div>
+
+      {/* Full-screen camera scanner */}
+      <LensScanner
+        isOpen={showLens}
+        onClose={() => setShowLens(false)}
+        onScan={handleRfidFound}
+        title={stationTitle}
+        busy={isLookingUp}
+        errorMessage={error || undefined}
+      >
+        {selectedRfid?.attendee ? (
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold">
+                  {selectedRfid.attendee.first_name} {selectedRfid.attendee.last_name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedRfid.attendee.ticket_type}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleReset}>
+                Clear
+              </Button>
+            </div>
+
+            {attendeeReadiness && !attendeeReadiness.isReady && (
+              <div className="rounded-lg border border-orange-200 bg-orange-50 p-2 text-sm text-orange-800">
+                {attendeeReadiness.message}
+              </div>
+            )}
+
+            {attendeeReadiness?.isReady || showStaffOverride
+              ? children({
+                  selectedRfid,
+                  attendeeReadiness,
+                  isProcessing,
+                  setIsProcessing,
+                  executeAction,
+                  loadDailyCount,
+                  getLatestStatus,
+                  onReset: handleReset
+                })
+              : (
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => setShowLens(false)}
+                >
+                  Resolve on station screen
+                </Button>
+              )}
+          </div>
+        ) : null}
+      </LensScanner>
     </div>
   );
 }
