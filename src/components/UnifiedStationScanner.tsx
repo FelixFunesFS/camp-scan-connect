@@ -16,6 +16,8 @@ import { StaffOverridePanel } from "@/components/StaffOverridePanel";
 import { QuickStaffActivation } from "@/components/QuickStaffActivation";
 import { GroupActivationResult } from "@/services/phoneActivationService";
 import { EnhancedActivationService } from "@/services/enhancedActivationService";
+import { useScanFocus } from "@/hooks/useScanFocus";
+import { ScanFocusIndicator } from "@/components/ScanFocusIndicator";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
