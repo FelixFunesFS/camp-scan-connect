@@ -1,61 +1,59 @@
-# Connect 2026 RegFox Data
+# Connect 2026 RegFox Data (form 982600)
 
-## Current state (verified this turn)
-- Three events exist: **2024** (empty, unbound), **2025** (654 attendees, bound to form `821092`, archived), **2026** "Melanated Campout Signature 2026" (active, **0 attendees**, `regfox_form_id` is null).
-- The `REGFOX_FORM_ID` secret is currently `821092`. `regfox-config` confirms this is bound to the 2025 event.
-- Decoding the order-ID (ULID) timestamps of all 654 imported 2025 registrants shows registration ran **Jan 7 → Sep 26, 2025**, then a **143-day gap**, then only 2 stragglers in Feb 2026. So **form `821092` is the 2025 form** — it is not a 2026 form.
-- No explicit "year"/"event" field is stored on registrants today.
-- All three events have `starts_at`/`ends_at` = null (no campout dates recorded).
+## Verified this turn (live API probe, read-only)
+Form **982600** is confirmed correct:
+- `formName` = **"Melanated Campout Signature 2026"** — it is a single-event form, so **no year/Signature filter is needed**.
+- **716 registrants**, newest dated **Aug 11, 2026** (actively selling).
+- Sample of 100 statuses: 70 `completed`, 29 `pending final payment`, 1 `abandoned`.
 
-## The core problem
-The sync engine reads one form ID from the global `REGFOX_FORM_ID` secret and imports into whichever event that form is bound to. Since that's `821092` (2025), every sync lands in 2025. To pull 2026 we must point the system at the **2026 form** — which you believe is `37085` — and the 2026 form may itself contain registrants for more than one Melanated Campout edition, so a "Signature 2026" filter may be needed.
+For contrast, the currently-configured form `821092` is the **2025** form (654 records, registrations Jan–Sep 2025). The 2026 event row is active but empty and unbound.
 
-There is one open unknown I will **not** guess: the exact 2026 form ID and how "Signature 2026" registrants are distinguished inside it. Step 0 confirms it before anything is written.
+## Mapping gaps found (must fix, or 2026 imports land wrong)
+The existing mapper was written against the 2025 form. Against 2026 data it breaks in four places:
 
-## Recommended architecture: per-event form IDs (annual-friendly)
-The `events` table already has a `regfox_form_id` column. Make **that column the single source of truth** for which form each year uses:
+1. **37% of registrants have no `multipleChoice` field.** Of 100 sampled, 37 lack it — 24 are *companions on a group order* where another registrant has it, 13 are standalone (day-pass / add-on wristband buyers: `additionalActivityWristband2`, `additionalActivityWristbandRv`, `weekendDayPassOnly`). Today all 37 silently default to `dry_site`. Companions should **inherit the accommodation from their order**; standalone pass-holders should map to `day_pass`.
+2. **New `villa` accommodation value** (`multipleChoice: villa`) is unhandled and falls through to `dry_site`. Needs its own mapping — likely `cabin` or `glamping`; needs your call.
+3. **New/renamed fields** not in the mapper: `registrationOptions2`, `weekendDayPassOnly`, `premiumTentSite3`, `dryCampingTentSite`, `areYouRentingAn2`, `whatTypeOfRental`, `wantHelpFiguringOut`, `howDidYouHear2`. These currently land in `custom_fields` (not lost, just not mapped to columns).
+4. **`pending final payment` (29% of sample)** maps to `pending`. Confirm these should be imported and whether they may activate at the gate.
 
-- 2025 stays bound to `821092` (re-syncable any time).
-- 2026 gets bound to its form (`37085`, pending Step 0 confirmation).
-- The **API key stays global** (one RegFox account key works across all your forms).
-- The sync reads the *target event's* `regfox_form_id` instead of the global secret, so you never swap secrets and never accidentally import one year's roster into another.
+Good news: core identity fields are unchanged and map correctly — `name2.first/last`, `email`, `phone`, `dateOfBirth`, `gender`, `address.*`, `emergencyContactNameNumber`, `areYouVeteran`, `merchandise`, `status`. The **waiver field works as before** (`false` when unsigned, a `.pdf` filename when signed) — 34 of 100 sampled are already signed, so the waiver gate is live and meaningful.
 
-This beats the "swap the secret to 2026" alternative, because swapping makes 2025 un-re-syncable without swapping back — painful for an annual system that needs year-over-year comparison.
+## Architecture: per-event form IDs
+`events.regfox_form_id` becomes the single source of truth for which form each year uses — 2025 stays on `821092`, 2026 on `982600`. The API key stays global (one key covers all forms). This avoids swapping the `REGFOX_FORM_ID` secret every year and makes any year re-syncable for comparison.
 
 ## Steps
 
-### Step 0 — Diagnostic (read-only, do first)
-Probe the RegFox API directly to settle the two unknowns before any data moves:
-1. Confirm which form ID holds the 2026 "Signature" registrants — verify `37085` returns data (vs `821092` which is 2025), and confirm its registrant date range is recent/ongoing (2026).
-2. Inspect a few raw registrants' full `fieldData` (paths + labels) on the 2026 form to find how "Melanated Campout Signature 2026" registrants are distinguished — an explicit field/label, or whether the form is already scoped to a single event.
-3. Capture the total registrant count and a ticket-type sample so we can sanity-check the import.
+### Step 1 — Bind 2026 and switch sync to per-event form IDs
+- Set `events.regfox_form_id = '982600'` on the 2026 row.
+- `regfox-sync` and `regfox-reconcile`: read the target event's `regfox_form_id` from the event row instead of the global secret (secret kept only as a fallback). Sync/reconcile the **currently selected event**.
+- `RegFoxSyncPanel`: show the selected event's bound form ID and registrant count so the admin can see exactly where data will land before running.
 
-Output: confirmed 2026 form ID + the exact filter key (or "no filter needed"). Everything below depends on this.
+### Step 2 — Fix the mapper for the 2026 form
+In `supabase/functions/_shared/regfox.ts`:
+- **Order-level accommodation inheritance**: resolve ticket type per *order*, so companions get the buyer's site type instead of defaulting to `dry_site`.
+- **Standalone pass-holders** (`weekendDayPassOnly` / wristband-only, no accommodation) map to `day_pass`.
+- **Add `villa`** to `mapAccommodation`.
+- Map the new site-selection fields (`premiumTentSite3`, `dryCampingTentSite`, `registrationOptions2`) into the premium/dry determination.
+- Keep everything unmapped flowing into `custom_fields` as it does now.
 
-### Step 1 — Bind the 2026 form + add the Signature filter
-- Set `events.regfox_form_id = '<2026 form id>'` for the 2026 row (via the `regfox-config` binding flow or a migration).
-- If Step 0 found a distinguishing field, add a filter in `supabase/functions/_shared/regfox.ts` (`fetchAllRegistrants` / `mapRegistrant`) so only "Signature 2026" registrants are imported. If the form is already single-event, skip the filter.
+### Step 3 — Dry-run, then import
+- Run `regfox-reconcile` against 2026 **first** (it writes nothing) and review the ticket-type breakdown for all 716 before importing.
+- Then run a Full Sync with 2026 selected. Expect ~715 usable rows (abandoned excluded).
+- Verify: counts match, ticket breakdown sane, no orphans/duplicates, spot-check names/phones/waiver flags.
 
-### Step 2 — Refactor sync to read form_id from the event row
-- `regfox-sync`: accept the target `event_id` (default = selected/active event), read that event's `regfox_form_id`, and use it for the API call. Keep `REGFOX_API_KEY` from env. The global `REGFOX_FORM_ID` secret becomes an optional fallback only.
-- `regfox-reconcile`: same change — reconcile the selected event using its own form_id.
-- `regfox-config`: keep, but it should report each event's bound form (already does).
-- Frontend `RegFoxSyncPanel`: sync/reconcile against the **currently selected event** (from `EventContext`), and display that event's bound form ID + registrant count so the admin sees exactly where data will land.
+### Step 4 — Archive 2025 and set event dates
+- Year-switcher should show **2026 (live)** and **2025 (archived — read only)**; the 654 2025 records stay for comparison.
+- Set `starts_at`/`ends_at` on both events (all three are currently null) so report and debrief date buckets work — I need the 2026 campout dates from you.
+- Decide the 2 stragglers registered Feb 2026 that sit under the 2025 event: leave in 2025 or move to 2026.
 
-### Step 3 — Run the 2026 sync and verify
-- With 2026 selected in the header, trigger a Full Sync. Confirm the 2026 event populates.
-- Run reconcile: 2026 RegFox count vs DB count should match; ticket breakdown sane; no orphans/duplicates.
-- Spot-check a few 2026 attendees (name, phone, waiver, ticket type).
+### Step 5 — Ongoing sync
+The 2026 form is still selling, so schedule the existing `regfox-scheduled-sync` against 2026 (hourly is plenty) to keep the roster current through the event.
 
-### Step 4 — Archive 2025, set dates, year-switcher
-- 2025 is already `is_active=false`; confirm the year-switcher shows **2026 (live)** and **2025 (archived — read only)**. 2025's 654 records remain for comparison.
-- Set `starts_at`/`ends_at` on 2025 and 2026 events (campout dates) so reports/debrief date buckets work. 2025 ≈ late Sept 2025 (from the registration cutoff). 2026 dates — confirm with you.
-- Decide the 2 Feb-2026 stragglers currently under 2025 (reg_id 82201832 etc.): leave as 2025 or move to 2026 based on Step 0.
+## Questions I still need answered
+1. **`villa`** — should it map to `cabin` or `glamping`?
+2. **`pending final payment`** registrants — import them, and may they activate a wristband at the gate?
+3. **2026 campout dates** (start/end) for the event row.
 
-### Step 5 — Waiver gate (already delivered in Part 1)
-Phone-based self-activation already blocks until the liability waiver is signed, then activates. No further work unless Step 0 reveals a new waiver field path.
-
-## Notes for you
-- The earlier "QR pivot" is off the table — confirmed: stick with RFID + phone self-activation.
-- The "missing RFID detection / T-shirt capture" and the infinite-loading fixes from prior turns are independent of this and stay as-is.
-- After Step 0 I'll know whether `37085` is correct; if it's a different ID I'll surface it before touching the secret or bindings.
+## Technical notes
+- Files touched: `supabase/functions/_shared/regfox.ts` (mapper), `supabase/functions/regfox-sync/index.ts`, `supabase/functions/regfox-reconcile/index.ts`, `src/components/RegFoxSyncPanel.tsx`, plus one migration to bind the form ID and set event dates.
+- No change to the RFID/phone activation flow or the waiver gate — those already work and the 2026 waiver field format is identical to 2025.
