@@ -47,8 +47,10 @@ Right now #1 and #2 are only loosely connected (334 flags with no record), and #
 - A waiver detail view: search an attendee, see whether a real signature exists, what version they signed, when, and whether the typed name matched. Re-download the PDF from there.
 - Distinguish "signed in app" from "flagged by import" in the Waivers panel so the 334 imported flags aren't mistaken for captured signatures.
 
-**4. Decide the import-flag policy**
-- Two options, needs your call: trust the RegFox flag as valid consent captured at registration, or require an in-app signature at check-in for everyone regardless of the flag. This determines whether 334 people sign at the gate or walk straight through.
+**4. Waiver policy at check-in (decided)**
+- The RegFox flag counts as consent captured at registration, so those attendees walk straight through.
+- Anyone whose waiver is not signed at check-in time must sign in-app, on the spot, before their credential can go active. The waiver gate already blocks activation; the check-in screen will surface a "Sign waiver now" action as the required next step instead of a dead end, then re-run the lookup so staff can continue in one flow.
+- The Waivers panel still labels records as "signed in app" vs "flagged by import" so the distinction stays visible for the record.
 
 ## Technical notes
 
@@ -56,6 +58,4 @@ Right now #1 and #2 are only loosely connected (334 flags with no record), and #
 - One data change to correct the existing mislabelled transaction row.
 - PDF generation runs client-side from `src/lib/waiverContent.ts`, so no new backend dependency unless you also want the emailed copy.
 
-## Open question
 
-Should the 334 import-flagged attendees be required to sign in-app at check-in, or is the RegFox flag sufficient consent?
