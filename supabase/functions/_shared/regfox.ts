@@ -12,6 +12,66 @@ export const corsHeaders = {
 
 export const ACTIVE_EVENT_FALLBACK = '00000000-0000-0000-0000-000000002026';
 
+export interface SyncTarget {
+  eventId: string;
+  eventName: string | null;
+  formId: string;
+  warning: string | null;
+}
+
+/**
+ * Decide which event to import into and which RegFox form to read from.
+ *
+ * Each event owns its own `regfox_form_id`, so 2025 and 2026 both stay
+ * re-syncable without swapping a secret. The `REGFOX_FORM_ID` env var is only
+ * a fallback for an event that has not been linked to a form yet.
+ */
+// deno-lint-ignore no-explicit-any
+export async function resolveSyncTarget(
+  supabase: any,
+  requestedEventId?: string | null,
+): Promise<SyncTarget> {
+  const envFormId = Deno.env.get('REGFOX_FORM_ID') ?? null;
+
+  const query = supabase.from('events').select('id, name, regfox_form_id');
+  const { data: event } = requestedEventId
+    ? await query.eq('id', requestedEventId).maybeSingle()
+    : await query.eq('is_active', true).maybeSingle();
+
+  if (event) {
+    const formId = (event.regfox_form_id as string | null) ?? envFormId;
+    if (!formId) {
+      throw new Error(
+        `Event "${event.name}" has no RegFox form linked and no fallback is configured.`,
+      );
+    }
+    return {
+      eventId: event.id as string,
+      eventName: (event.name as string) ?? null,
+      formId,
+      warning: event.regfox_form_id
+        ? null
+        : `Event "${event.name}" has no RegFox form linked; used the fallback form ${formId}.`,
+    };
+  }
+
+  if (!envFormId) throw new Error('No event found and REGFOX_FORM_ID is not configured');
+
+  // No matching event row: fall back to whichever event owns the env form.
+  const { data: boundEvent } = await supabase
+    .from('events')
+    .select('id, name')
+    .eq('regfox_form_id', envFormId)
+    .maybeSingle();
+
+  return {
+    eventId: (boundEvent?.id as string) ?? ACTIVE_EVENT_FALLBACK,
+    eventName: (boundEvent?.name as string) ?? null,
+    formId: envFormId,
+    warning: boundEvent ? null : `No event matched; imported using fallback form ${envFormId}.`,
+  };
+}
+
 export interface RegFoxFieldData {
   label?: string;
   path?: string;
