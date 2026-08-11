@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 import { describe, it } from "vitest";
 import { TShirtService } from "@/services/tshirtService";
 const S: any = TShirtService;
