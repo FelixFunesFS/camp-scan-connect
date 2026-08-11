@@ -1,60 +1,59 @@
-# Pre-Event Readiness Review: Edge Cases, Risks, and Fixes
+# 2026 Check-In Hardening
 
-A review of the live 2026 data plus the activation/check-in flows. Findings are ordered by risk, each with a concrete fix. Nothing below is implemented yet.
+Wristbands are assigned before the event, so tag inventory is out of scope. This plan covers the five remaining readiness items.
 
-## What the live data shows
+## 1. Multi-order phone disambiguation
 
-- 2026 is active with 692 attendees across 476 orders; 2025 (654) and 2024 (empty) are archived and read-only.
-- 359 of 692 attendees have not signed the waiver — over half will hit the activation gate at the gate.
-- 68 attendees are still "pending" (unpaid/partial) and are currently treated exactly like paid attendees.
-- 0 wristbands exist in the system for 2026. No tag inventory means no one can be assigned or activated today.
-- 22 phone numbers appear on more than one separate order (one number covers 6 registrations).
-- Every phone number is a valid 10-digit value, so no malformed-phone cleanup is needed.
+Today a phone number pulls in every order it appears on and checks them all in at once, while showing only one order number. In the live 2026 data, 22 numbers cover more than one order (one covers six registrations).
 
-## Critical issues
+- Lookup returns orders as a list: order number, party size, names, and per-person status.
+- When there is more than one order, the attendee picks which party they are checking in — one tap per order card, no drag or typing.
+- Activation takes the chosen order and only touches that order's people.
+- Single-order lookups behave exactly as they do now: straight to the preview screen.
 
-### 1. No wristband inventory for 2026
-Assignment, activation, and every station scan depend on tag records that do not exist. Need an inventory load step (bulk import or scan-to-create on first assignment) plus a visible "tags loaded" readiness indicator before gates open.
+## 2. In-app waiver signing
 
-### 2. One phone, multiple orders
-Phone check-in gathers every order tied to a matching number and activates all of them, while reporting only one order ID back to the attendee. A person who registered twice, or a host who booked two separate parties, silently activates people they may not be standing with. Fix: when a phone resolves to more than one order, show an order picker (order ID, party size, names) and activate only the chosen one.
+359 of 692 attendees have not signed. Right now they are blocked with no way forward except finding staff.
 
-### 3. Staff code authentication is a no-op
-The staff-code check ignores the code entirely and always returns the first admin. Anything gated behind "staff override" is effectively open. Fix: validate a real per-event code (or per-staff PIN) server-side and return no row on mismatch.
+- Blocked people get a "Sign waiver" button directly in the check-in preview.
+- A sheet shows the waiver text, a typed full-name signature field, and an agree checkbox; minors or anyone under the age cutoff route to staff.
+- On submit, the signature, typed name, and timestamp are recorded against that attendee, and they immediately become eligible in the same session — no re-lookup.
+- Staff can also capture a waiver for someone from the staff activation screen.
 
-### 4. Public read/write on attendee data
-Attendees, RFID tags, scans, station transactions, and assistance requests are all fully open to anonymous clients — full PII (name, phone, email, address, DOB, emergency contacts) is readable and writable by anyone with the app URL. Fix: keep the self-service phone flow going through security-definer functions that return only what the kiosk needs, and require authentication for the admin/station tables.
+## 3. Staff code and access lockdown
 
-## Workflow edge cases to close
+- The staff code check currently ignores the code entered and always returns an admin. Replace it with a real per-event code stored hashed, verified server-side, returning nothing on mismatch, with attempt rate limiting.
+- The client-side fallback code (year-based string) is removed.
+- Attendee, wristband, scan, transaction, and assistance tables are currently readable and writable by anyone with the app URL, exposing names, phones, emails, addresses, dates of birth, and emergency contacts. Lock them down: the public kiosk keeps working through narrow server functions that return only what the check-in screen needs, and everything else requires a signed-in staff account.
+- Staff roles move to a dedicated roles table checked server-side.
 
-- **Unpaid registrations**: pending attendees should be flagged at check-in ("balance due — see staff") rather than activated silently.
-- **Waiver-blocked attendees**: the gate correctly blocks them, but there is no in-app way to sign. Needs an on-device waiver capture (name, timestamp, agreement text) that unblocks activation immediately.
-- **Partial group activation**: a group where some members are waiver-blocked or lack a wristband currently activates the rest and returns warnings. Ensure the UI shows a clear per-person outcome list, not just toasts.
-- **Not in the system**: walk-ups, transfers, wrong number, and name-change cases all funnel into the assistance modal, which only files a ticket. Needs a staff path to create or re-point a registration on the spot.
-- **Lost/replaced wristbands**: deactivate old tag, issue new, keep history — confirm the reassignment path exists and is reachable at the gate.
-- **Re-entry and double scans**: repeated activation is safe (already-active is reported), but station transactions can double-count; add short-window duplicate suppression per tag/station.
-- **Offline and flaky connectivity**: the entire flow is live-query dependent. At minimum, detect offline state and show a clear "hold, retry" message instead of a generic failure.
-- **Archived-year safety**: viewing 2025 shows a read-only badge, but write paths are not blocked. Guard mutations when a non-active event is selected.
+## 4. Payment, walk-ups, and duplicate scans
 
-## UX concerns
+- **Pending payment**: 68 attendees are unpaid or partially paid. Flag them at lookup with a clear "balance due — see staff" state, and let staff override with the (now real) staff code.
+- **Walk-up / transfer / not-found**: the assistance modal currently only files a ticket. Add a staff-authenticated path to create a walk-up registration, correct a phone number, or transfer a registration to a different name, all scoped to the active event and logged.
+- **Duplicate scans**: suppress repeat station transactions for the same wristband and station inside a short window, and show "already recorded a moment ago" instead of silently double-counting.
+- **Archived years**: block all writes when a past event is selected, not just the read-only badge.
 
-- Self check-in is a single mobile card; the preview/confirm step needs large per-person status chips (ready / needs waiver / needs wristband) so an attendee understands why someone in their party is blocked.
-- Error handling collapses everything to "system error" plus a staff modal. Distinguish not-found, blocked, and outage with different guidance.
-- The activation success screen should show what to do next (proceed to wristband pickup vs. see staff), not just a count.
-- Station screens should surface the attendee's blocking reason inline rather than a generic deny.
+## 5. Check-in and station UX
+
+- Per-person status chips (Ready / Needs waiver / Balance due / Already checked in) replace the stacked warning banners, so a party of six reads at a glance.
+- Warnings move from toasts into a persistent per-person result list on the success screen, with a clear next step (proceed to gate vs. see staff).
+- Error states split into not-found, blocked, and connection problem, each with its own guidance instead of a single generic modal.
+- Station screens show the specific blocking reason inline on a denied scan.
+- Offline detection with a "hold and retry" message rather than a generic failure.
 
 ## Technical notes
 
-- `activate_entire_order_by_phone` derives orders from all direct phone matches; scoping it to a caller-supplied order ID is the minimal change for issue 2.
-- `authenticate_staff_code` ignores `p_code`; replace with a hashed code compare, security definer, no fallback row.
-- Table policies of the form `ALL ... using(true)` on `attendees`, `rfid_tags`, `scans`, `station_transactions`, `staff`, `staff_assistance_requests` are the exposure surface.
-- Tag inventory needs an `event_id`-scoped bulk insert path; today `rfid_tags` is empty for the active event.
+- New RPCs: order-scoped lookup and activation (replacing the phone-wide `activate_entire_order_by_phone` call path), waiver signing, staff code verification, walk-up create/transfer.
+- New columns for waiver signature name/timestamp, and a payment-status flag derived from RegFox status during sync.
+- New tables: hashed staff access codes, user roles.
+- Policy rewrite on `attendees`, `rfid_tags`, `scans`, `station_transactions`, `staff`, `staff_assistance_requests`; anonymous access flows only through security-definer functions.
+- Duplicate suppression enforced in the database so it holds across devices.
 
-## Suggested order of work
+## Order of work
 
-1. Wristband inventory load + readiness check.
-2. Multi-order phone disambiguation.
-3. In-app waiver signing.
-4. Staff code + RLS lockdown.
-5. Pending-payment flag, walk-up/transfer path, duplicate-scan suppression.
-6. UX polish on the check-in and station screens.
+1. Multi-order disambiguation (lookup + activation + UI).
+2. In-app waiver signing.
+3. Staff code, roles, and access lockdown.
+4. Pending payment, walk-up/transfer, duplicate suppression, archived-year write guard.
+5. UX polish across check-in and station screens.
