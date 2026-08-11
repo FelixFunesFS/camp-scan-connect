@@ -1,5 +1,6 @@
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
+import { inferCredentialType } from "@/lib/credentialFormat";
 
 export interface RfidTag {
   uid: string;
