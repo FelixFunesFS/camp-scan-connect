@@ -237,10 +237,27 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
             RegFox Integration
           </CardTitle>
           <CardDescription>
-            Sync attendee data from RegFox registration system
+            Sync attendee data from RegFox for the event you are viewing
           </CardDescription>
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <Badge variant="secondary">{selectedEvent?.name ?? 'No event selected'}</Badge>
+            {boundFormId ? (
+              <Badge variant="outline">RegFox form {boundFormId}</Badge>
+            ) : (
+              <Badge className="bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100">
+                <AlertCircle className="mr-1 h-3 w-3" />
+                No RegFox form linked
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {!boundFormId && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+              This event has no RegFox form linked, so a sync would fall back to another
+              year's roster. Link the form before syncing.
+            </div>
+          )}
           {/* Sync Controls */}
           <TooltipProvider>
             <div className="space-y-4">
