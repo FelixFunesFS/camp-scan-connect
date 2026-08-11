@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { AlertCircle, CheckCircle2, RefreshCw, Clock, Download, Activity, X, Timer, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useEvent } from '@/contexts/EventContext';
 
 interface SyncLog {
   id: string;
@@ -30,6 +31,7 @@ interface RegFoxSyncPanelProps {
 }
 
 export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) => {
+  const { selectedEvent, eventId } = useEvent();
   const [isInitialSyncing, setIsInitialSyncing] = useState(false);
   const [isManualSyncing, setIsManualSyncing] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -38,12 +40,16 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
   const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch sync logs
+  const boundFormId = selectedEvent?.regfox_form_id ?? null;
+
+  // Fetch sync logs for the event being viewed
   const fetchSyncLogs = useCallback(async () => {
+    if (!eventId) return;
     try {
       const { data, error } = await supabase
         .from('regfox_sync_log')
         .select('*')
+        .eq('event_id', eventId)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -59,7 +65,7 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
     } catch (error) {
       console.error('Error fetching sync logs:', error);
     }
-  }, []);
+  }, [eventId]);
 
   // Debounced version to prevent excessive UI updates during heartbeat changes
   const debouncedFetchSyncLogs = useCallback(() => {
@@ -100,15 +106,16 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
   }, [debouncedFetchSyncLogs]);
 
   const handleInitialSync = async () => {
+    if (!eventId) return;
     setIsInitialSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke('regfox-sync', {
-        body: { sync_type: 'initial_sync' }
+        body: { sync_type: 'initial_sync', event_id: eventId }
       });
 
       if (error) throw error;
 
-      toast.success('Full sync completed successfully!');
+      toast.success(`Full sync started for ${selectedEvent?.name ?? 'this event'}`);
       fetchSyncLogs();
     } catch (error) {
       console.error('Error during initial sync:', error);
@@ -119,15 +126,16 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
   };
 
   const handleManualSync = async () => {
+    if (!eventId) return;
     setIsManualSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke('regfox-sync', {
-        body: { sync_type: 'manual_sync' }
+        body: { sync_type: 'manual_sync', event_id: eventId }
       });
 
       if (error) throw error;
 
-      toast.success('Manual sync completed successfully!');
+      toast.success(`Manual sync started for ${selectedEvent?.name ?? 'this event'}`);
       fetchSyncLogs();
     } catch (error) {
       console.error('Error during manual sync:', error);
