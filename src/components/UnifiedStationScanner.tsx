@@ -54,28 +54,12 @@ export function UnifiedStationScanner({
   const [showStaffActivation, setShowStaffActivation] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
   const navigate = useNavigate();
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Auto-focus input on mount and after reset
-  useEffect(() => {
-    const focusInput = () => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    };
-    
-    focusInput();
-    // Also focus after a short delay to ensure it works after page transitions
-    const timeout = setTimeout(focusInput, 100);
-    return () => clearTimeout(timeout);
-  }, []);
-
-  // Auto-focus after reset
-  useEffect(() => {
-    if (!selectedRfid && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [selectedRfid]);
+  const { inputRef, isFocused, focusInput, focusProps } = useScanFocus([
+    selectedRfid,
+    isLookingUp,
+    showStaffOverride,
+    showStaffActivation,
+  ]);
 
   const handleRfidFound = async (uid: string) => {
     setError("");
@@ -232,11 +216,8 @@ export function UnifiedStationScanner({
       setManualUid("");
       setError("");
       
-      // Focus back on manual input for next scan
-      const input = document.getElementById('manual-uid');
-      if (input) {
-        input.focus();
-      }
+      // Focus back on the scan input for the next scan
+      focusInput();
     } catch (error) {
       console.error("Failed to handle staff activation result:", error);
       toast.error("Failed to process staff activation");
