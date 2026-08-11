@@ -82,8 +82,8 @@ export const useRfidCapture = ({
       if (event.key.length === 1) {
         inputBuffer += event.key;
         
-        // Enhanced auto-trigger for RFID assignment mode - optimized for USB readers
-        if (inputBuffer.length >= minLength && inputBuffer.length <= 20) {
+        // Enhanced auto-trigger for assignment mode - optimized for USB readers
+        if (inputBuffer.length >= minLength && inputBuffer.length <= ANY_CREDENTIAL_MAX_LENGTH) {
           // Ultra-fast timeout for rapid assignment workflow
           timeout = setTimeout(() => {
             if (inputBuffer.length >= minLength) {
@@ -94,7 +94,7 @@ export const useRfidCapture = ({
         }
         
         // Auto-trigger if buffer gets very long (some readers don't send Enter)
-        if (inputBuffer.length > 20) {
+        if (inputBuffer.length > ANY_CREDENTIAL_MAX_LENGTH) {
           handleCapture(inputBuffer.trim());
           inputBuffer = '';
           return;
