@@ -682,6 +682,25 @@ export class TShirtService {
     };
   }
 
+  /** Prefer an active credential, then an assigned one, otherwise report none. */
+  private static pickCredentialUid(tags: Array<{ uid: string; status: string }> | null | undefined): string {
+    if (!tags || tags.length === 0) return 'No wristband yet';
+    const active = tags.find(t => t.status === 'active');
+    if (active) return active.uid;
+    const assigned = tags.find(t => t.status === 'assigned');
+    if (assigned) return assigned.uid;
+    return 'No wristband yet';
+  }
+
+  private static unusedEmptyStats(): TShirtStats {
+    return {
+      totalOrdered: 0,
+      pickedUp: 0,
+      remaining: 0,
+      sizeBreakdown: {}
+    };
+  }
+
   static async checkAttendeeHasTShirt(attendeeId: string): Promise<{ 
     hasTShirt: boolean; 
     size: string | null; 
