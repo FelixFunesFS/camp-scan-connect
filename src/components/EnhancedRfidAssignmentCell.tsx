@@ -269,8 +269,8 @@ export const EnhancedRfidAssignmentCell = ({
         .insert({
           attendee_id: attendeeId,
           rfid_uid: uid.trim(),
-          station_type: 'activation',
-          transaction_type: 'activate',
+          station_type: 'rfid_assignment',
+          transaction_type: 'rfid_assign' as any,
           activation_method: 'pre_assignment',
           extra_data: {
             assignment_source: 'assignment_station',
@@ -378,8 +378,8 @@ export const EnhancedRfidAssignmentCell = ({
         .insert({
           attendee_id: attendeeId,
           rfid_uid: editValue.trim(),
-          station_type: 'activation',
-          transaction_type: 'activate',
+          station_type: 'rfid_assignment',
+          transaction_type: 'rfid_assign' as any,
           activation_method: 'edit_assignment',
           extra_data: {
             assignment_source: 'assignment_station_edit',

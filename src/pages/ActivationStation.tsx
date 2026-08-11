@@ -258,7 +258,6 @@ export default function ActivationStation() {
             attendeeName={waiverAttendee.name}
             eventId={selectedEvent?.id}
             onSigned={() => {
-              setWaiverAttendee(null);
               runLookup(true);
             }}
           />

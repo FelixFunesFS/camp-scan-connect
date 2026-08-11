@@ -829,6 +829,7 @@ export type Database = {
         | "gate_entry"
         | "gate_exit"
         | "tshirt_pickup"
+        | "rfid_assign"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1025,6 +1026,7 @@ export const Constants = {
         "gate_entry",
         "gate_exit",
         "tshirt_pickup",
+        "rfid_assign",
       ],
     },
   },
