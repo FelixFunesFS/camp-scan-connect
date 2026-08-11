@@ -1,5 +1,6 @@
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
+import { inferCredentialType } from "@/lib/credentialFormat";
 
 export interface RfidTag {
   uid: string;
@@ -136,7 +137,8 @@ class RfidService {
             uid: uid.trim(),
             attendee_id: attendeeId,
         status: 'assigned',
-            issued_at: new Date().toISOString()
+            issued_at: new Date().toISOString(),
+            credential_type: inferCredentialType(uid)
           })
           .select()
           .single();

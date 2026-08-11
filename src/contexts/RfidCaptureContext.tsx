@@ -1,4 +1,10 @@
 import React, { createContext, useContext, useCallback, useEffect, useRef } from 'react';
+import {
+  ANY_CREDENTIAL_MAX_LENGTH,
+  ANY_CREDENTIAL_MIN_LENGTH,
+  isValidCredentialFormat,
+  type CredentialType,
+} from '@/lib/credentialFormat';
 
 interface RfidCaptureContextType {
   registerInput: (element: HTMLInputElement, onCapture: (uid: string) => void) => void;
@@ -13,34 +19,24 @@ interface RfidCaptureProviderProps {
   enabled?: boolean;
   minLength?: number;
   debounceMs?: number;
+  /** Restrict accepted payloads to one medium. Defaults to accepting any. */
+  credentialType?: CredentialType;
 }
 
 export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
   children,
   enabled = true,
-  minLength = 8,
-  debounceMs = 100
+  minLength = ANY_CREDENTIAL_MIN_LENGTH,
+  debounceMs = 100,
+  credentialType
 }) => {
   const registeredInputsRef = useRef(new Map<HTMLInputElement, (uid: string) => void>());
 
-  // RFID format validation - basic checks to prevent search text from being treated as RFID
-  const isValidRfidFormat = useCallback((uid: string) => {
-    // Basic checks to reject obvious non-RFID patterns
-    if (uid.length < 8 || uid.length > 20) return false;
-    
-    // Reject common search patterns
-    const commonWords = ['search', 'name', 'phone', 'email', 'order', 'attendee'];
-    const lowerUid = uid.toLowerCase();
-    if (commonWords.some(word => lowerUid.includes(word))) return false;
-    
-    // Reject if it looks like a name (contains spaces or common name patterns)
-    if (/\s/.test(uid) || /^[a-zA-Z]+$/.test(uid)) return false;
-    
-    // Should contain some numbers or special characters (typical of RFID UIDs)
-    if (!/\d/.test(uid) && !/[^a-zA-Z\s]/.test(uid)) return false;
-    
-    return true;
-  }, []);
+  // Accepts RFID UIDs, barcodes and QR payloads; still rejects typed search text.
+  const isValidRfidFormat = useCallback(
+    (uid: string) => isValidCredentialFormat(uid, credentialType),
+    [credentialType]
+  );
 
   const registerInput = useCallback((element: HTMLInputElement, onCapture: (uid: string) => void) => {
     registeredInputsRef.current.set(element, onCapture);
@@ -111,8 +107,8 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
       if (event.key.length === 1) {
         inputBuffer += event.key;
         
-        // Enhanced auto-trigger for RFID assignment mode - optimized for USB readers
-        if (inputBuffer.length >= minLength && inputBuffer.length <= 20) {
+        // Enhanced auto-trigger for assignment mode - optimized for USB readers
+        if (inputBuffer.length >= minLength && inputBuffer.length <= ANY_CREDENTIAL_MAX_LENGTH) {
           // Ultra-fast timeout for rapid assignment workflow
           timeout = setTimeout(() => {
             if (inputBuffer.length >= minLength && isValidRfidFormat(inputBuffer.trim())) {
@@ -123,7 +119,7 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
         }
         
         // Auto-trigger if buffer gets very long (some readers don't send Enter)
-        if (inputBuffer.length > 20) {
+        if (inputBuffer.length > ANY_CREDENTIAL_MAX_LENGTH) {
           if (isValidRfidFormat(inputBuffer.trim())) {
             onCapture(inputBuffer.trim());
           }

@@ -1,10 +1,21 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { createWorker } from 'tesseract.js';
-import { Camera, X, Scan, RotateCcw } from 'lucide-react';
+import { BrowserMultiFormatReader } from '@zxing/browser';
+import {
+  BarcodeFormat,
+  DecodeHintType,
+  type Result,
+} from '@zxing/library';
+import { Camera, Flashlight, FlashlightOff, Keyboard, RotateCcw, ScanLine, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  inferCredentialType,
+  isValidCredentialFormat,
+  normalizeCredential,
+  CREDENTIAL_TYPE_LABELS,
+} from '@/lib/credentialFormat';
 
 interface CameraBraceletScannerProps {
   isOpen: boolean;
@@ -12,256 +23,264 @@ interface CameraBraceletScannerProps {
   onScan: (code: string) => void;
 }
 
+/** Formats printed on wristbands, badges and confirmation emails. */
+const SUPPORTED_FORMATS = [
+  BarcodeFormat.QR_CODE,
+  BarcodeFormat.CODE_128,
+  BarcodeFormat.CODE_39,
+  BarcodeFormat.EAN_13,
+  BarcodeFormat.EAN_8,
+  BarcodeFormat.UPC_A,
+  BarcodeFormat.UPC_E,
+  BarcodeFormat.ITF,
+  BarcodeFormat.DATA_MATRIX,
+  BarcodeFormat.PDF_417,
+];
+
+/** Ignore repeat reads of the same code inside this window. */
+const DUPLICATE_WINDOW_MS = 2500;
+
 export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
   isOpen,
   onClose,
-  onScan
+  onScan,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const workerRef = useRef<Tesseract.Worker | null>(null);
-  
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [confidence, setConfidence] = useState<number>(0);
+  const controlsRef = useRef<{ stop: () => void } | null>(null);
+  const lastReadRef = useRef<{ code: string; at: number } | null>(null);
+
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
   const [lastResult, setLastResult] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isStarting, setIsStarting] = useState(false);
+  const [manualCode, setManualCode] = useState('');
+  const [showManual, setShowManual] = useState(false);
 
-  // Initialize Tesseract worker
-  useEffect(() => {
-    const initWorker = async () => {
-      if (!workerRef.current) {
-        const worker = await createWorker('eng');
-        await worker.setParameters({
-          tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-        });
-        workerRef.current = worker;
+  const handleDetected = useCallback(
+    (raw: string) => {
+      const code = normalizeCredential(raw);
+      if (!code) return;
+
+      // Suppress duplicate frames of the same credential.
+      const previous = lastReadRef.current;
+      if (previous && previous.code === code && Date.now() - previous.at < DUPLICATE_WINDOW_MS) {
+        return;
       }
-    };
+      lastReadRef.current = { code, at: Date.now() };
 
-    if (isOpen) {
-      initWorker();
-    }
-
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
+      if (!isValidCredentialFormat(code)) {
+        setError(`Read "${code}" but it is not a valid credential code.`);
+        return;
       }
-    };
-  }, [isOpen]);
 
-  // Camera access
+      setError('');
+      setLastResult(code);
+      onScan(code);
+    },
+    [onScan]
+  );
+
+  const stopCamera = useCallback(() => {
+    controlsRef.current?.stop();
+    controlsRef.current = null;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setTorchOn(false);
+    setTorchSupported(false);
+  }, []);
+
+  // Start / restart continuous decoding whenever the dialog or camera changes.
   useEffect(() => {
     if (!isOpen) return;
 
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'environment', // Use back camera on mobile
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        });
-        
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-        setError('');
-      } catch (err) {
-        setError('Unable to access camera. Please check permissions.');
-        console.error('Camera access error:', err);
-      }
-    };
-
-    startCamera();
-
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-    };
-  }, [isOpen]);
-
-  const captureAndProcess = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current || !workerRef.current || isProcessing) {
-      return;
-    }
-
-    setIsProcessing(true);
+    let cancelled = false;
+    setIsStarting(true);
     setError('');
 
+    const hints = new Map();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, SUPPORTED_FORMATS);
+    hints.set(DecodeHintType.TRY_HARDER, true);
+    const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 120 });
+
+    const start = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+
+        const track = stream.getVideoTracks()[0];
+        const capabilities = (track?.getCapabilities?.() ?? {}) as MediaTrackCapabilities & {
+          torch?: boolean;
+        };
+        setTorchSupported(Boolean(capabilities.torch));
+
+        if (!videoRef.current) return;
+        const controls = await reader.decodeFromStream(
+          stream,
+          videoRef.current,
+          (result: Result | undefined) => {
+            if (result) handleDetected(result.getText());
+          }
+        );
+        if (cancelled) {
+          controls.stop();
+          return;
+        }
+        controlsRef.current = controls;
+      } catch (err) {
+        console.error('Camera scanner error:', err);
+        if (!cancelled) {
+          setError(
+            'Camera unavailable. Allow camera access in your browser, or enter the code manually.'
+          );
+          setShowManual(true);
+        }
+      } finally {
+        if (!cancelled) setIsStarting(false);
+      }
+    };
+
+    start();
+
+    return () => {
+      cancelled = true;
+      stopCamera();
+    };
+  }, [isOpen, facingMode, handleDetected, stopCamera]);
+
+  const toggleTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
     try {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-
-      if (!ctx) throw new Error('Canvas context not available');
-
-      // Set canvas size to video size
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      // Draw current video frame to canvas
-      ctx.drawImage(video, 0, 0);
-
-      // Crop to top region for 7-character unique ID (first row)
-      const cropX = canvas.width * 0.05;
-      const cropY = canvas.height * 0.1; // Focus on top area where 5016230 appears
-      const cropWidth = canvas.width * 0.9;
-      const cropHeight = canvas.height * 0.4;
-
-      const imageData = ctx.getImageData(cropX, cropY, cropWidth, cropHeight);
-      
-      // Create a new canvas with cropped data
-      const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = cropWidth;
-      cropCanvas.height = cropHeight;
-      const cropCtx = cropCanvas.getContext('2d');
-      if (cropCtx) {
-        cropCtx.putImageData(imageData, 0, 0);
-        
-        // Enhance contrast for better OCR
-        cropCtx.filter = 'contrast(150%) brightness(110%)';
-        cropCtx.drawImage(cropCanvas, 0, 0);
-      }
-
-      // Perform OCR
-      const { data: { text, confidence: ocrConfidence } } = await workerRef.current.recognize(cropCanvas);
-      
-      // Split text by lines to get individual rows
-      const lines = text.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
-      
-      // Extract 7-character unique ID from FIRST row (top of bracelet)
-      let braceletId = '';
-      let extractedFromRow = '';
-      
-      // Target the FIRST row where the 7-character unique ID appears
-      if (lines.length > 0) {
-        const firstRow = lines[0].replace(/\s+/g, ''); // Remove spaces
-        
-        // Look for 7-character numeric pattern (like 5016230)
-        if (/^\d{7}$/.test(firstRow)) {
-          braceletId = firstRow;
-          extractedFromRow = 'Row 1 (top)';
-        }
-        // Also accept 6-8 character alphanumeric if exact 7 digits not found
-        else if (/^[0-9A-Z]{6,8}$/.test(firstRow)) {
-          braceletId = firstRow;
-          extractedFromRow = 'Row 1 (top, alphanumeric)';
-        }
-      }
-      
-      setLastResult(braceletId || lines.join(' | '));
-      setConfidence(ocrConfidence);
-
-      // Accept 7-character unique ID results
-      if (ocrConfidence > 60 && braceletId && braceletId.length >= 6 && braceletId.length <= 8) {
-        console.log(`7-character unique ID extracted from ${extractedFromRow}:`, braceletId);
-        onScan(braceletId);
-        onClose();
-      } else if (braceletId) {
-        setError(`Low confidence (${Math.round(ocrConfidence)}%). Try repositioning bracelet.`);
-      } else if (lines.length > 0) {
-        setError(`No 7-character ID found in top row. Detected: ${lines.join(', ')}`);
-      }
+      await track.applyConstraints({
+        advanced: [{ torch: !torchOn }],
+      } as unknown as MediaTrackConstraints);
+      setTorchOn((on) => !on);
     } catch (err) {
-      setError('Failed to process image. Please try again.');
-      console.error('OCR processing error:', err);
-    } finally {
-      setIsProcessing(false);
+      console.error('Torch toggle failed:', err);
+      setTorchSupported(false);
     }
-  }, [isProcessing, onScan, onClose]);
+  };
 
-  const handleClose = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+  const submitManual = () => {
+    const code = normalizeCredential(manualCode);
+    if (!code) return;
+    if (!isValidCredentialFormat(code)) {
+      setError('That code does not look valid. Check it and try again.');
+      return;
     }
-    onClose();
+    setError('');
+    setManualCode('');
+    onScan(code);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
-            Scan Bracelet Code
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-4 pb-3">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <ScanLine className="h-4 w-4" />
+            Scan barcode or QR code
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <Card className="relative overflow-hidden">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-64 object-cover"
-            />
-            
-            {/* Viewfinder overlay */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5 h-1/3 border-2 border-primary rounded-lg">
-                <div className="absolute -top-2 -left-2 w-4 h-4 border-l-2 border-t-2 border-primary"></div>
-                <div className="absolute -top-2 -right-2 w-4 h-4 border-r-2 border-t-2 border-primary"></div>
-                <div className="absolute -bottom-2 -left-2 w-4 h-4 border-l-2 border-b-2 border-primary"></div>
-                <div className="absolute -bottom-2 -right-2 w-4 h-4 border-r-2 border-b-2 border-primary"></div>
-              </div>
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black/50 px-2 py-1 rounded">
-                Position TOP number (7-digit code) in frame
-              </div>
+        <div className="relative bg-black aspect-[4/3] w-full">
+          <video
+            ref={videoRef}
+            className="h-full w-full object-cover"
+            muted
+            playsInline
+            autoPlay
+          />
+
+          {/* Aiming guide */}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="relative h-28 w-4/5 rounded-lg border-2 border-primary/80">
+              <div className="absolute inset-x-0 top-1/2 h-px animate-pulse bg-primary" />
             </div>
+          </div>
 
-            <canvas ref={canvasRef} className="hidden" />
-          </Card>
+          {isStarting && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-white">
+              <Camera className="mr-2 h-4 w-4 animate-pulse" />
+              Starting camera…
+            </div>
+          )}
 
-          {/* Status display */}
+          <div className="absolute bottom-3 right-3 flex gap-2">
+            {torchSupported && (
+              <Button size="icon" variant="secondary" onClick={toggleTorch} aria-label="Toggle flashlight">
+                {torchOn ? <FlashlightOff className="h-4 w-4" /> : <Flashlight className="h-4 w-4" />}
+              </Button>
+            )}
+            <Button
+              size="icon"
+              variant="secondary"
+              onClick={() => setFacingMode((m) => (m === 'environment' ? 'user' : 'environment'))}
+              aria-label="Switch camera"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-3 p-4">
+          <p className="text-sm text-muted-foreground">
+            Hold the code inside the frame. It scans automatically — no button needed.
+          </p>
+
           {lastResult && (
-            <div className="text-center space-y-2">
-              <Badge variant={confidence > 70 ? "default" : "secondary"}>
-                Confidence: {Math.round(confidence)}%
+            <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
+              <Badge variant="secondary" className="text-xs">
+                {CREDENTIAL_TYPE_LABELS[inferCredentialType(lastResult)]}
               </Badge>
-              <p className="text-sm text-muted-foreground">
-                Last read: <code className="bg-muted px-1 rounded">{lastResult}</code>
-              </p>
+              <span className="truncate font-mono text-sm">{lastResult}</span>
             </div>
           )}
 
           {error && (
-            <div className="text-center text-sm text-destructive bg-destructive/10 p-2 rounded">
-              {error}
-            </div>
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
           )}
 
-          {/* Controls */}
-          <div className="flex gap-2 justify-center">
-            <Button
-              onClick={captureAndProcess}
-              disabled={isProcessing}
-              className="flex-1"
-            >
-              {isProcessing ? (
-                <>
-                  <RotateCcw className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Scan className="h-4 w-4 mr-2" />
-                  Capture
-                </>
-              )}
+          {showManual ? (
+            <div className="flex gap-2">
+              <Input
+                autoFocus
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submitManual()}
+                placeholder="Type the printed code"
+                className="font-mono"
+                data-exclude-rfid="true"
+              />
+              <Button onClick={submitManual} disabled={!manualCode.trim()}>
+                Use
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" className="w-full" onClick={() => setShowManual(true)}>
+              <Keyboard className="mr-2 h-4 w-4" />
+              Code won't scan? Enter it manually
             </Button>
+          )}
 
-            <Button variant="outline" onClick={handleClose}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-          </div>
+          <Button variant="ghost" className="w-full" onClick={onClose}>
+            <X className="mr-2 h-4 w-4" />
+            Close
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
