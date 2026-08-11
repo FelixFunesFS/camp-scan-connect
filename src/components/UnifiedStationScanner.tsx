@@ -300,6 +300,7 @@ export function UnifiedStationScanner({
                 onChange={(e) => setManualUid(e.target.value)}
                 disabled={isLookingUp}
                 className="flex-1"
+                {...focusProps}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     handleManualScan();
@@ -317,6 +318,7 @@ export function UnifiedStationScanner({
 
             {/* Status Indicators */}
             <div className="flex items-center gap-2 text-sm">
+              <ScanFocusIndicator isFocused={isFocused} onClick={focusInput} />
               {isCapturing && (
                 <Badge variant="secondary" className="animate-pulse">
                   <Scan className="h-3 w-3 mr-1" />
