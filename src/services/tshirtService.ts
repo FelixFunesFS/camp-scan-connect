@@ -61,7 +61,7 @@ export class TShirtService {
   }
 
   static extractTShirtInfo(customFields: any): TShirtInfo {
-    console.log('T-Shirt Debug - extractTShirtInfo called with customFields:', customFields);
+    this.log('T-Shirt Debug - extractTShirtInfo called with customFields:', customFields);
     
     if (!customFields || typeof customFields !== 'object') {
       return {
@@ -91,25 +91,25 @@ export class TShirtService {
     for (const fieldName of orderStringFields) {
       if (customFields[fieldName] && typeof customFields[fieldName] === 'string') {
         const orderString = customFields[fieldName];
-        console.log(`T-Shirt Debug - Processing order string field "${fieldName}":`, orderString);
+        this.log(`T-Shirt Debug - Processing order string field "${fieldName}":`, orderString);
         const parsedOrders = this.parseOrderString(orderString);
-        console.log(`T-Shirt Debug - Parsed orders from "${fieldName}":`, parsedOrders);
+        this.log(`T-Shirt Debug - Parsed orders from "${fieldName}":`, parsedOrders);
         purchaseDetails.push(...parsedOrders);
       }
     }
 
     // Priority 2: Parse individual style/size field names with enhanced filtering
     const tshirtFields = this.filterTShirtFields(customFields);
-    console.log('T-Shirt Debug - Fields after filtering:', Object.keys(tshirtFields)); // Debug logging
+    this.log('T-Shirt Debug - Fields after filtering:', Object.keys(tshirtFields)); // Debug logging
     
     Object.entries(tshirtFields).forEach(([key, value]) => {
       if (typeof key === 'string' && value) {
         const { size, type } = this.parseTShirtProduct(key);
         if (size) {
-          console.log(`T-Shirt Debug - BEFORE extractQuantityFromValue for field "${key}": value=${JSON.stringify(value)}, type=${typeof value}`);
+          this.log(`T-Shirt Debug - BEFORE extractQuantityFromValue for field "${key}": value=${JSON.stringify(value)}, type=${typeof value}`);
           const quantity = this.extractQuantityFromValue(value);
-          console.log(`T-Shirt Debug - AFTER extractQuantityFromValue for field "${key}": returned quantity=${quantity}`);
-          console.log(`T-Shirt Debug - Processing field "${key}": size=${size}, type=${type}, value=${JSON.stringify(value)}, quantity=${quantity}`); // Enhanced debug logging
+          this.log(`T-Shirt Debug - AFTER extractQuantityFromValue for field "${key}": returned quantity=${quantity}`);
+          this.log(`T-Shirt Debug - Processing field "${key}": size=${size}, type=${type}, value=${JSON.stringify(value)}, quantity=${quantity}`); // Enhanced debug logging
           // Add multiple entries for quantities > 1
           for (let i = 0; i < quantity; i++) {
             purchaseDetails.push({ product: key, size, type });
@@ -124,8 +124,8 @@ export class TShirtService {
       primaryType = purchaseDetails[0].type;
     }
 
-    console.log('T-Shirt Debug - Final purchase details:', purchaseDetails);
-    console.log('T-Shirt Debug - Primary size/type:', { primarySize, primaryType });
+    this.log('T-Shirt Debug - Final purchase details:', purchaseDetails);
+    this.log('T-Shirt Debug - Primary size/type:', { primarySize, primaryType });
 
     return {
       size: primarySize,
@@ -263,7 +263,7 @@ export class TShirtService {
    * Extract quantity from field values - handles numbers, strings, and various formats
    */
   private static extractQuantityFromValue(value: any): number {
-    console.log(`T-Shirt Debug - extractQuantityFromValue called with:`, { 
+    this.log(`T-Shirt Debug - extractQuantityFromValue called with:`, { 
       value, 
       type: typeof value, 
       stringified: JSON.stringify(value) 
@@ -272,7 +272,7 @@ export class TShirtService {
     // Handle numbers directly
     if (typeof value === 'number') {
       const result = Math.max(1, Math.floor(value));
-      console.log(`T-Shirt Debug - Extracted quantity ${result} from number ${value}`);
+      this.log(`T-Shirt Debug - Extracted quantity ${result} from number ${value}`);
       return result;
     }
     
@@ -283,14 +283,14 @@ export class TShirtService {
       const num = parseFloat(cleanValue);
       if (Number.isFinite(num) && num > 0) {
         const result = Math.max(1, Math.floor(num));
-        console.log(`T-Shirt Debug - Extracted quantity ${result} from string "${value}"`);
+        this.log(`T-Shirt Debug - Extracted quantity ${result} from string "${value}"`);
         return result;
       }
     }
     
     // Handle boolean - if true, assume quantity 1
     if (typeof value === 'boolean' && value) {
-      console.log(`T-Shirt Debug - Extracted quantity 1 from boolean true`);
+      this.log(`T-Shirt Debug - Extracted quantity 1 from boolean true`);
       return 1;
     }
     
@@ -298,7 +298,7 @@ export class TShirtService {
     if (typeof value === 'object' && value !== null) {
       if ('quantity' in value && typeof value.quantity === 'number') {
         const result = Math.max(1, Math.floor(value.quantity));
-        console.log(`T-Shirt Debug - Extracted quantity ${result} from object.quantity`);
+        this.log(`T-Shirt Debug - Extracted quantity ${result} from object.quantity`);
         return result;
       }
       
@@ -306,12 +306,12 @@ export class TShirtService {
       const numKeys = Object.keys(value).filter(k => !isNaN(parseFloat(value[k])));
       if (numKeys.length > 0) {
         const result = Math.max(1, Math.floor(parseFloat(value[numKeys[0]])));
-        console.log(`T-Shirt Debug - Extracted quantity ${result} from object property`);
+        this.log(`T-Shirt Debug - Extracted quantity ${result} from object property`);
         return result;
       }
     }
     
-    console.log(`T-Shirt Debug - Defaulting to quantity 1 for value:`, value);
+    this.log(`T-Shirt Debug - Defaulting to quantity 1 for value:`, value);
     return 1;
   }
 
@@ -377,7 +377,7 @@ export class TShirtService {
       if (normalized.startsWith('merchandise.tshirt')) {
         const { size } = this.parseTShirtProduct(key);
         if (size && descriptiveSizes.has(size.toLowerCase())) {
-          console.log(`T-Shirt Debug - Excluding coded field "${key}" because descriptive field exists for size ${size}`);
+          this.log(`T-Shirt Debug - Excluding coded field "${key}" because descriptive field exists for size ${size}`);
           return false;
         }
       }
@@ -385,19 +385,19 @@ export class TShirtService {
       return true;
     });
     
-    console.log('T-Shirt Debug - Descriptive fields found:', descriptiveFields);
-    console.log('T-Shirt Debug - Final filtered keys:', filteredKeys);
+    this.log('T-Shirt Debug - Descriptive fields found:', descriptiveFields);
+    this.log('T-Shirt Debug - Final filtered keys:', filteredKeys);
     
     // Step 3: Group fields by detected size AND type to avoid losing different products of same size
     const sizeTypeToFields = new Map<string, { descriptive: string[], coded: string[], generic: string[] }>();
     
-    console.log('T-Shirt Debug - Starting field grouping process...');
+    this.log('T-Shirt Debug - Starting field grouping process...');
     filteredKeys.forEach(key => {
       const { size, type } = this.parseTShirtProduct(key);
       const normalizedSize = size.toLowerCase() || 'unknown';
       const normalizedType = type.toLowerCase().replace(/[^a-z0-9]/g, '') || 'tshirt';
       const groupKey = `${normalizedSize}-${normalizedType}`;
-      console.log(`T-Shirt Debug - Processing key "${key}": detected size="${size}", type="${type}", groupKey="${groupKey}"`);
+      this.log(`T-Shirt Debug - Processing key "${key}": detected size="${size}", type="${type}", groupKey="${groupKey}"`);
       
       if (!sizeTypeToFields.has(groupKey)) {
         sizeTypeToFields.set(groupKey, { descriptive: [], coded: [], generic: [] });
@@ -408,45 +408,45 @@ export class TShirtService {
       
       // Categorize field type with improved coded field detection
       if (this.isDescriptiveTShirtField(key)) {
-        console.log(`T-Shirt Debug - Categorized "${key}" as DESCRIPTIVE`);
+        this.log(`T-Shirt Debug - Categorized "${key}" as DESCRIPTIVE`);
         group.descriptive.push(key);
       } else if (normalized.startsWith('merchandise.') || normalized.match(/^\w+\.\w+\.\w+/)) {
-        console.log(`T-Shirt Debug - Categorized "${key}" as CODED`);
+        this.log(`T-Shirt Debug - Categorized "${key}" as CODED`);
         group.coded.push(key);
       } else {
-        console.log(`T-Shirt Debug - Categorized "${key}" as GENERIC`);
+        this.log(`T-Shirt Debug - Categorized "${key}" as GENERIC`);
         group.generic.push(key);
       }
     });
     
-    console.log('T-Shirt Debug - Size groups created:', Array.from(sizeTypeToFields.entries()));
+    this.log('T-Shirt Debug - Size groups created:', Array.from(sizeTypeToFields.entries()));
     
     // For each size-type combination, select the best representative field
     sizeTypeToFields.forEach((fieldGroups, groupKey) => {
-      console.log(`T-Shirt Debug - Processing group "${groupKey}" with groups:`, fieldGroups);
+      this.log(`T-Shirt Debug - Processing group "${groupKey}" with groups:`, fieldGroups);
       let selectedField: string | null = null;
       
       // Priority 1: Use descriptive field if available
       if (fieldGroups.descriptive.length > 0) {
         selectedField = fieldGroups.descriptive[0];
-        console.log(`T-Shirt Debug - Selected descriptive field "${selectedField}" for group "${groupKey}"`);
+        this.log(`T-Shirt Debug - Selected descriptive field "${selectedField}" for group "${groupKey}"`);
       }
       // Priority 2: Use coded field only if no descriptive field exists
       else if (fieldGroups.coded.length > 0) {
         selectedField = fieldGroups.coded[0];
-        console.log(`T-Shirt Debug - Selected coded field "${selectedField}" for group "${groupKey}"`);
+        this.log(`T-Shirt Debug - Selected coded field "${selectedField}" for group "${groupKey}"`);
       }
       // Priority 3: Use generic field as last resort
       else if (fieldGroups.generic.length > 0) {
         selectedField = fieldGroups.generic[0];
-        console.log(`T-Shirt Debug - Selected generic field "${selectedField}" for group "${groupKey}"`);
+        this.log(`T-Shirt Debug - Selected generic field "${selectedField}" for group "${groupKey}"`);
       }
       
       if (selectedField) {
-        console.log(`T-Shirt Debug - Adding to final fields: "${selectedField}" = ${JSON.stringify(customFields[selectedField])}`);
+        this.log(`T-Shirt Debug - Adding to final fields: "${selectedField}" = ${JSON.stringify(customFields[selectedField])}`);
         tshirtFields[selectedField] = customFields[selectedField];
       } else {
-        console.log(`T-Shirt Debug - No field selected for group "${groupKey}"`);
+        this.log(`T-Shirt Debug - No field selected for group "${groupKey}"`);
       }
     });
     
@@ -555,7 +555,7 @@ export class TShirtService {
       type = "Unisex Crew Neck"; // Default unisex style
     }
 
-    console.log('Detected type:', type);
+    this.log('Detected type:', type);
 
     // Extract size - improved patterns to handle "med" properly
     const sizePatterns = [
@@ -577,12 +577,12 @@ export class TShirtService {
       const match = cleanProduct.match(pattern);
       if (match) {
         detectedSize = size;
-        console.log('Detected size:', detectedSize);
+        this.log('Detected size:', detectedSize);
         break;
       }
     }
 
-    console.log('Final parsed result:', { size: detectedSize, type });
+    this.log('Final parsed result:', { size: detectedSize, type });
     return { size: detectedSize, type };
   }
 
@@ -767,7 +767,7 @@ export class TShirtService {
 
       tshirtInfo.purchaseDetails.forEach(detail => {
         const key = `${detail.type}-${detail.size}`;
-        console.log(`T-Shirt Debug - checkAttendeeHasTShirt processing detail:`, {
+        this.log(`T-Shirt Debug - checkAttendeeHasTShirt processing detail:`, {
           product: detail.product,
           type: detail.type,
           size: detail.size,
@@ -785,7 +785,7 @@ export class TShirtService {
         }
       });
 
-      console.log(`T-Shirt Debug - Order groups created:`, Array.from(orderGroups.entries()));
+      this.log(`T-Shirt Debug - Order groups created:`, Array.from(orderGroups.entries()));
 
       // Match transactions with orders
       transactions?.forEach(transaction => {
@@ -819,7 +819,7 @@ export class TShirtService {
         };
       });
 
-      console.log(`T-Shirt Debug - Final orders being returned:`, orders);
+      this.log(`T-Shirt Debug - Final orders being returned:`, orders);
 
       return {
         hasTShirt: tshirtInfo.hasAnyTShirt,
