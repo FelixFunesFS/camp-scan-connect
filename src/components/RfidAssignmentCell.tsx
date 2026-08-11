@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRfidCaptureContext } from "@/contexts/RfidCaptureContext";
 import { rfidService } from "@/services/rfidService";
+import { inferCredentialType } from "@/lib/credentialFormat";
 
 interface RfidAssignmentCellProps {
   attendeeId: string;
@@ -151,7 +152,8 @@ export const RfidAssignmentCell = ({
             uid: uid.trim(),
             attendee_id: attendeeId,
             status: 'assigned',
-            issued_at: new Date().toISOString()
+            issued_at: new Date().toISOString(),
+            credential_type: inferCredentialType(uid)
           });
       } else {
         // Update existing tag

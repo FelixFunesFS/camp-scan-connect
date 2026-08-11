@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRfidCaptureContext } from "@/contexts/RfidCaptureContext";
 import { CameraBraceletScanner } from "@/components/CameraBraceletScanner";
+import { inferCredentialType } from "@/lib/credentialFormat";
 
 interface EnhancedRfidAssignmentCellProps {
   attendeeId: string;
@@ -244,7 +245,8 @@ export const EnhancedRfidAssignmentCell = ({
             uid: uid.trim(),
             attendee_id: attendeeId,
             status: 'assigned',
-            issued_at: new Date().toISOString()
+            issued_at: new Date().toISOString(),
+            credential_type: inferCredentialType(uid)
           });
       } else {
         // Update existing tag (only if unissued or deactivated)
@@ -353,7 +355,8 @@ export const EnhancedRfidAssignmentCell = ({
             uid: editValue.trim(),
             attendee_id: attendeeId,
             status: 'assigned',
-            issued_at: new Date().toISOString()
+            issued_at: new Date().toISOString(),
+            credential_type: inferCredentialType(editValue)
           });
       } else {
         // Update existing tag
