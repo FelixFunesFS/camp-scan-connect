@@ -203,9 +203,20 @@ export function mapRegistrant(r: RegFoxRegistrant, eventId: string) {
   const shirt = selectedChild(fields, 'merchandise.tshirt');
   const extraPerson = (f.get('willYouBeAdding') ?? '').toLowerCase() === 'yesextraperson';
 
+  // Registrants can type impossible dates (e.g. 1985-11-31), which Postgres
+  // rejects and which would otherwise fail the whole write batch.
   const dobRaw = f.get('dateOfBirth');
   let dob: string | null = null;
-  if (dobRaw && /^\d{4}-\d{2}-\d{2}/.test(dobRaw)) dob = dobRaw.slice(0, 10);
+  if (dobRaw && /^\d{4}-\d{2}-\d{2}/.test(dobRaw)) {
+    const candidate = dobRaw.slice(0, 10);
+    const [y, m, d] = candidate.split('-').map(Number);
+    const parsed = new Date(Date.UTC(y, m - 1, d));
+    const real =
+      parsed.getUTCFullYear() === y &&
+      parsed.getUTCMonth() === m - 1 &&
+      parsed.getUTCDate() === d;
+    if (real) dob = candidate;
+  }
 
   // Anything not explicitly mapped is preserved rather than dropped.
   const handled = new Set([
