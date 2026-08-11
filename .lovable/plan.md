@@ -1,59 +1,54 @@
-# 2026 Check-In Hardening
+# Barcode vs. RFID: decision and swap plan
 
-Wristbands are assigned before the event, so tag inventory is out of scope. This plan covers the five remaining readiness items.
+## The short answer
 
-## 1. Multi-order phone disambiguation
+The app never really cares that a credential is RFID. Every station, activation, scan and report keys off a single text value (`rfid_tags.uid`) that arrives as typed characters. USB RFID readers and USB barcode scanners both behave as keyboards: they "type" the code and press Enter. So a switch to barcodes is mostly a **medium and labeling change, not a rewrite** — the capture hook, the lookup service, the station scanners and the assignment table all keep working if a barcode scanner is plugged in instead of an RFID reader.
 
-Today a phone number pulls in every order it appears on and checks them all in at once, while showing only one order number. In the live 2026 data, 22 numbers cover more than one order (one covers six registrations).
+The parts that genuinely change:
 
-- Lookup returns orders as a list: order number, party size, names, and per-person status.
-- When there is more than one order, the attendee picks which party they are checking in — one tap per order card, no drag or typing.
-- Activation takes the chosen order and only touches that order's people.
-- Single-order lookups behave exactly as they do now: straight to the preview screen.
+- **Code format validation.** The current capture rule requires 8-20 characters, rejects pure letters, and requires a digit. Barcode payloads (especially QR) can be longer or purely alphanumeric, so the validator has to accept whatever format gets printed.
+- **Camera scanning.** The existing camera scanner reads text with OCR, which is slow and error-prone. A real barcode/QR decoder replaces it and is dramatically more reliable.
+- **Naming.** ~130 files reference "rfid". Renaming everything is cosmetic churn and risk; the safer path is to keep the storage column and rename only what a user sees.
+- **Physical production.** Barcodes must be printed on wristbands, badges, or delivered digitally — that's a vendor and cost decision, not a code one.
 
-## 2. In-app waiver signing
+## How attendees would "scan their own" barcode
 
-359 of 692 attendees have not signed. Right now they are blocked with no way forward except finding staff.
+Three workable models, in order of throughput:
 
-- Blocked people get a "Sign waiver" button directly in the check-in preview.
-- A sheet shows the waiver text, a typed full-name signature field, and an agree checkbox; minors or anyone under the age cutoff route to staff.
-- On submit, the signature, typed name, and timestamp are recorded against that attendee, and they immediately become eligible in the same session — no re-lookup.
-- Staff can also capture a waiver for someone from the staff activation screen.
+1. **Attendee presents, station scans (recommended).** The attendee's code lives in their confirmation email or phone wallet. Staff scan it with a handheld scanner or a tablet camera. Fastest, no attendee-device dependency, works with bad signal.
+2. **Attendee scans their own wristband/badge with their phone.** They open the check-in link and point their camera at their own printed code. Works, but is awkward one-handed and needs camera permission plus a decent connection. Best as a self-service fallback, not the primary lane.
+3. **Station displays a QR, attendee scans it.** The station poster's QR opens the check-in page with the station pre-selected; the attendee then confirms with their phone number. This is the least equipment-dependent option and pairs well with the current phone-based activation.
 
-## 3. Staff code and access lockdown
+Given the current plan is phone-number activation with pre-assigned wristbands, model 1 for staff lanes plus the existing phone flow for self-service covers everyone without requiring attendees to scan anything.
 
-- The staff code check currently ignores the code entered and always returns an admin. Replace it with a real per-event code stored hashed, verified server-side, returning nothing on mismatch, with attempt rate limiting.
-- The client-side fallback code (year-based string) is removed.
-- Attendee, wristband, scan, transaction, and assistance tables are currently readable and writable by anyone with the app URL, exposing names, phones, emails, addresses, dates of birth, and emergency contacts. Lock them down: the public kiosk keeps working through narrow server functions that return only what the check-in screen needs, and everything else requires a signed-in staff account.
-- Staff roles move to a dedicated roles table checked server-side.
+## What a full swap entails
 
-## 4. Payment, walk-ups, and duplicate scans
+**Keep as-is (no change needed):** the tag table and its `uid` column, station transactions, scan logs, activation RPCs, reports, exports, the keyboard-wedge capture hook (with a widened format rule), the assignment table, and every station screen.
 
-- **Pending payment**: 68 attendees are unpaid or partially paid. Flag them at lookup with a clear "balance due — see staff" state, and let staff override with the (now real) staff code.
-- **Walk-up / transfer / not-found**: the assistance modal currently only files a ticket. Add a staff-authenticated path to create a walk-up registration, correct a phone number, or transfer a registration to a different name, all scoped to the active event and logged.
-- **Duplicate scans**: suppress repeat station transactions for the same wristband and station inside a short window, and show "already recorded a moment ago" instead of silently double-counting.
-- **Archived years**: block all writes when a past event is selected, not just the read-only badge.
+**Change:**
+- Credential type recorded per tag (`rfid` / `barcode` / `qr`) so both media can coexist during transition and reports can tell them apart.
+- Format validation widened and made configurable per credential type, with the ambiguity guard kept so search text is never mistaken for a scan.
+- Camera scanner swapped from OCR to a real barcode/QR decoder, with torch toggle, continuous scan, and duplicate-frame suppression.
+- User-facing labels: "wristband"/"credential" instead of "RFID", scanner setup guidance updated, staff guide screens updated.
+- Assignment flow: bulk-import a batch of printed codes, then scan-to-link, rather than typing UIDs one at a time.
+- Optional printed-code generation if codes are produced in-house rather than pre-printed by a vendor.
 
-## 5. Check-in and station UX
+**Do not change:** internal column names, service filenames, or the 130 internal "rfid" references. Renaming those buys nothing and risks breaking working flows before an event.
 
-- Per-person status chips (Ready / Needs waiver / Balance due / Already checked in) replace the stacked warning banners, so a party of six reads at a glance.
-- Warnings move from toasts into a persistent per-person result list on the success screen, with a clear next step (proceed to gate vs. see staff).
-- Error states split into not-found, blocked, and connection problem, each with its own guidance instead of a single generic modal.
-- Station screens show the specific blocking reason inline on a denied scan.
-- Offline detection with a "hold and retry" message rather than a generic failure.
+## How to think about the decision
 
-## Technical notes
+- **Cost:** barcode wristbands and handheld scanners are far cheaper than RFID tags and readers; attendee-owned phones can replace scanners entirely.
+- **Speed:** RFID taps beat barcode scans slightly, but the current bottleneck is the phone lookup and waiver gate, not the read.
+- **Durability:** printed codes on wristbands smudge, tear, and get wet over a 3-day outdoor event — this is the main risk, and it argues for a plain-text fallback code printed next to the barcode so staff can key it in.
+- **Reversibility:** with a credential-type column, the system supports both at once, so a barcode pilot at one station is possible without committing the whole event.
 
-- New RPCs: order-scoped lookup and activation (replacing the phone-wide `activate_entire_order_by_phone` call path), waiver signing, staff code verification, walk-up create/transfer.
-- New columns for waiver signature name/timestamp, and a payment-status flag derived from RegFox status during sync.
-- New tables: hashed staff access codes, user roles.
-- Policy rewrite on `attendees`, `rfid_tags`, `scans`, `station_transactions`, `staff`, `staff_assistance_requests`; anonymous access flows only through security-definer functions.
-- Duplicate suppression enforced in the database so it holds across devices.
+## Recommended sequencing
 
-## Order of work
+1. Add the credential-type column and widen scan validation so barcodes are accepted alongside RFID (no visible change yet).
+2. Replace OCR camera scanning with a real barcode/QR decoder and add a manual fallback-code entry field.
+3. Pilot barcode at one station with a printed test batch; compare read failure rate against RFID.
+4. Only if the pilot is clean: relabel the UI to credential-neutral wording and switch assignment to batch import.
 
-1. Multi-order disambiguation (lookup + activation + UI).
-2. In-app waiver signing.
-3. Staff code, roles, and access lockdown.
-4. Pending payment, walk-up/transfer, duplicate suppression, archived-year write guard.
-5. UX polish across check-in and station screens.
+## Unchanged hardening work
+
+The five readiness items still come first, since they apply regardless of medium: multi-order phone disambiguation, in-app waiver signing, staff code and access lockdown, pending-payment/walk-up/duplicate-scan handling, and check-in UX polish.
