@@ -342,6 +342,7 @@ export type Database = {
           activated_at: string | null
           activation_method: string | null
           attendee_id: string | null
+          credential_type: string
           deactivated_at: string | null
           event_id: string | null
           issued_at: string | null
@@ -353,6 +354,7 @@ export type Database = {
           activated_at?: string | null
           activation_method?: string | null
           attendee_id?: string | null
+          credential_type?: string
           deactivated_at?: string | null
           event_id?: string | null
           issued_at?: string | null
@@ -364,6 +366,7 @@ export type Database = {
           activated_at?: string | null
           activation_method?: string | null
           attendee_id?: string | null
+          credential_type?: string
           deactivated_at?: string | null
           event_id?: string | null
           issued_at?: string | null
