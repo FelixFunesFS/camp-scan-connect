@@ -294,7 +294,6 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
           attendeeName={`${signing.first_name} ${signing.last_name}`}
           eventId={getCurrentEventId()}
           onSigned={() => {
-            setSigning(null);
             load(true);
           }}
         />
