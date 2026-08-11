@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { AlertCircle, CheckCircle2, RefreshCw, Clock, Download, Activity, X, Timer, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useEvent } from '@/contexts/EventContext';
 
 interface SyncLog {
   id: string;
@@ -30,6 +31,7 @@ interface RegFoxSyncPanelProps {
 }
 
 export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) => {
+  const { selectedEvent, eventId } = useEvent();
   const [isInitialSyncing, setIsInitialSyncing] = useState(false);
   const [isManualSyncing, setIsManualSyncing] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -38,12 +40,16 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
   const [activeSyncId, setActiveSyncId] = useState<string | null>(null);
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch sync logs
+  const boundFormId = selectedEvent?.regfox_form_id ?? null;
+
+  // Fetch sync logs for the event being viewed
   const fetchSyncLogs = useCallback(async () => {
+    if (!eventId) return;
     try {
       const { data, error } = await supabase
         .from('regfox_sync_log')
         .select('*')
+        .eq('event_id', eventId)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -59,7 +65,7 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
     } catch (error) {
       console.error('Error fetching sync logs:', error);
     }
-  }, []);
+  }, [eventId]);
 
   // Debounced version to prevent excessive UI updates during heartbeat changes
   const debouncedFetchSyncLogs = useCallback(() => {
@@ -100,15 +106,16 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
   }, [debouncedFetchSyncLogs]);
 
   const handleInitialSync = async () => {
+    if (!eventId) return;
     setIsInitialSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke('regfox-sync', {
-        body: { sync_type: 'initial_sync' }
+        body: { sync_type: 'initial_sync', event_id: eventId }
       });
 
       if (error) throw error;
 
-      toast.success('Full sync completed successfully!');
+      toast.success(`Full sync started for ${selectedEvent?.name ?? 'this event'}`);
       fetchSyncLogs();
     } catch (error) {
       console.error('Error during initial sync:', error);
@@ -119,15 +126,16 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
   };
 
   const handleManualSync = async () => {
+    if (!eventId) return;
     setIsManualSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke('regfox-sync', {
-        body: { sync_type: 'manual_sync' }
+        body: { sync_type: 'manual_sync', event_id: eventId }
       });
 
       if (error) throw error;
 
-      toast.success('Manual sync completed successfully!');
+      toast.success(`Manual sync started for ${selectedEvent?.name ?? 'this event'}`);
       fetchSyncLogs();
     } catch (error) {
       console.error('Error during manual sync:', error);
@@ -229,17 +237,34 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
             RegFox Integration
           </CardTitle>
           <CardDescription>
-            Sync attendee data from RegFox registration system
+            Sync attendee data from RegFox for the event you are viewing
           </CardDescription>
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <Badge variant="secondary">{selectedEvent?.name ?? 'No event selected'}</Badge>
+            {boundFormId ? (
+              <Badge variant="outline">RegFox form {boundFormId}</Badge>
+            ) : (
+              <Badge className="bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100">
+                <AlertCircle className="mr-1 h-3 w-3" />
+                No RegFox form linked
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {!boundFormId && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+              This event has no RegFox form linked, so a sync would fall back to another
+              year's roster. Link the form before syncing.
+            </div>
+          )}
           {/* Sync Controls */}
           <TooltipProvider>
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={handleInitialSync}
-                  disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId}
+                  disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId || !boundFormId}
                   className="flex items-center gap-2"
                 >
                   {isInitialSyncing ? (
@@ -255,7 +280,7 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
                     <Button
                       variant="outline"
                       onClick={handleManualSync}
-                      disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId}
+                      disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId || !boundFormId}
                       className="flex items-center gap-2"
                     >
                       {isManualSyncing ? (

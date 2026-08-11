@@ -12,6 +12,66 @@ export const corsHeaders = {
 
 export const ACTIVE_EVENT_FALLBACK = '00000000-0000-0000-0000-000000002026';
 
+export interface SyncTarget {
+  eventId: string;
+  eventName: string | null;
+  formId: string;
+  warning: string | null;
+}
+
+/**
+ * Decide which event to import into and which RegFox form to read from.
+ *
+ * Each event owns its own `regfox_form_id`, so 2025 and 2026 both stay
+ * re-syncable without swapping a secret. The `REGFOX_FORM_ID` env var is only
+ * a fallback for an event that has not been linked to a form yet.
+ */
+// deno-lint-ignore no-explicit-any
+export async function resolveSyncTarget(
+  supabase: any,
+  requestedEventId?: string | null,
+): Promise<SyncTarget> {
+  const envFormId = Deno.env.get('REGFOX_FORM_ID') ?? null;
+
+  const query = supabase.from('events').select('id, name, regfox_form_id');
+  const { data: event } = requestedEventId
+    ? await query.eq('id', requestedEventId).maybeSingle()
+    : await query.eq('is_active', true).maybeSingle();
+
+  if (event) {
+    const formId = (event.regfox_form_id as string | null) ?? envFormId;
+    if (!formId) {
+      throw new Error(
+        `Event "${event.name}" has no RegFox form linked and no fallback is configured.`,
+      );
+    }
+    return {
+      eventId: event.id as string,
+      eventName: (event.name as string) ?? null,
+      formId,
+      warning: event.regfox_form_id
+        ? null
+        : `Event "${event.name}" has no RegFox form linked; used the fallback form ${formId}.`,
+    };
+  }
+
+  if (!envFormId) throw new Error('No event found and REGFOX_FORM_ID is not configured');
+
+  // No matching event row: fall back to whichever event owns the env form.
+  const { data: boundEvent } = await supabase
+    .from('events')
+    .select('id, name')
+    .eq('regfox_form_id', envFormId)
+    .maybeSingle();
+
+  return {
+    eventId: (boundEvent?.id as string) ?? ACTIVE_EVENT_FALLBACK,
+    eventName: (boundEvent?.name as string) ?? null,
+    formId: envFormId,
+    warning: boundEvent ? null : `No event matched; imported using fallback form ${envFormId}.`,
+  };
+}
+
 export interface RegFoxFieldData {
   label?: string;
   path?: string;
@@ -99,24 +159,43 @@ function selectedChild(
   return null;
 }
 
+export interface Accommodation {
+  ticket_type: string;
+  site_location_assignment: string | null;
+}
+
 /**
  * Accommodation question (`multipleChoice`) combined with the package tier
  * (`registrationOptions` for tents, `registrationOptions3` for RVs) decides
  * the ticket type. "Premium" packages include powered sites.
+ *
+ * Returns `null` when the registrant never answered the accommodation
+ * question. On the 2026 form this is common: companions added to a group
+ * order only carry their add-ons, so their stay is defined by the order, not
+ * by their own row. Defaulting those to a dry site would silently misreport
+ * roughly a third of the roster, so the caller resolves them instead.
  */
-export function mapAccommodation(f: Map<string, string>): {
-  ticket_type: string;
-  site_location_assignment: string | null;
-} {
+export function rawAccommodation(f: Map<string, string>): Accommodation | null {
   const stay = (f.get('multipleChoice') ?? '').toLowerCase();
   const tentTier = (f.get('registrationOptions') ?? '').toLowerCase();
+  const tentTier2 = (f.get('registrationOptions2') ?? '').toLowerCase();
   const rvTier = (f.get('registrationOptions3') ?? '').toLowerCase();
+
+  if (!stay) return null;
 
   if (stay === 'daypassonly') {
     return { ticket_type: 'day_pass', site_location_assignment: null };
   }
   if (stay === 'cabin') {
     return { ticket_type: 'cabin', site_location_assignment: 'cabin' };
+  }
+  // 2026 introduced villa lodging; it is a built structure, like a cabin.
+  if (stay === 'villa') {
+    return { ticket_type: 'cabin', site_location_assignment: 'cabin' };
+  }
+  // Glamping tents are pre-pitched and priced separately from dry tenting.
+  if (stay.includes('glamping')) {
+    return { ticket_type: 'glamping', site_location_assignment: 'glamping' };
   }
   if (stay === 'rv') {
     // premiumRv is a powered space; dryRv / pavedDryCampingRv are not.
@@ -126,12 +205,45 @@ export function mapAccommodation(f: Map<string, string>): {
       site_location_assignment: 'rv_site',
     };
   }
-  // tent, vanrooftop, or unanswered
-  const premiumTent = tentTier.includes('option2');
+  // tent, vanrooftop, or anything else that still occupies a ground site
+  const premiumTent = tentTier.includes('option2') || tentTier2.includes('option2');
   return {
     ticket_type: premiumTent ? 'premium_power' : 'dry_site',
     site_location_assignment: 'dry_site',
   };
+}
+
+/** True when the registrant bought a standalone weekend/day pass. */
+export function isPassOnly(f: Map<string, string>): boolean {
+  const pass = f.get('weekendDayPassOnly');
+  return !!pass && pass.toLowerCase() !== 'none' && pass !== '0';
+}
+
+/** Back-compat wrapper: never returns null, falls back to a dry site. */
+export function mapAccommodation(f: Map<string, string>): Accommodation {
+  return (
+    rawAccommodation(f) ??
+    (isPassOnly(f)
+      ? { ticket_type: 'day_pass', site_location_assignment: null }
+      : { ticket_type: 'dry_site', site_location_assignment: 'dry_site' })
+  );
+}
+
+/**
+ * One accommodation per order, taken from whichever registrant in that order
+ * actually answered the stay question. Companions inherit it.
+ */
+export function buildOrderAccommodations(
+  registrants: RegFoxRegistrant[],
+): Map<string, Accommodation> {
+  const byOrder = new Map<string, Accommodation>();
+  for (const r of registrants) {
+    const key = r.orderId != null ? String(r.orderId) : '';
+    if (!key || byOrder.has(key)) continue;
+    const own = rawAccommodation(indexFields(r.fieldData));
+    if (own) byOrder.set(key, own);
+  }
+  return byOrder;
 }
 
 /** A meal plan add-on under `merchandise.mealPlan`. */
@@ -188,12 +300,36 @@ export function isAbandoned(raw?: string): boolean {
   return (raw ?? '').toLowerCase().includes('abandon');
 }
 
-/** Map one RegFox registrant onto an `attendees` row. */
-export function mapRegistrant(r: RegFoxRegistrant, eventId: string) {
+/**
+ * Map one RegFox registrant onto an `attendees` row.
+ *
+ * `orderAccommodations` (from `buildOrderAccommodations`) lets companions on a
+ * group order inherit the stay booked by the order's lead registrant.
+ */
+export function mapRegistrant(
+  r: RegFoxRegistrant,
+  eventId: string,
+  orderAccommodations?: Map<string, Accommodation>,
+) {
   const fields = r.fieldData;
   const f = indexFields(fields);
 
-  const accommodation = mapAccommodation(f);
+  const orderKey = r.orderId != null ? String(r.orderId) : '';
+  const own = rawAccommodation(f);
+  const inherited = own ? null : orderAccommodations?.get(orderKey) ?? null;
+  const accommodation: Accommodation =
+    own ??
+    inherited ??
+    (isPassOnly(f)
+      ? { ticket_type: 'day_pass', site_location_assignment: null }
+      : { ticket_type: 'dry_site', site_location_assignment: null });
+  const accommodationSource = own
+    ? 'self'
+    : inherited
+      ? 'order'
+      : isPassOnly(f)
+        ? 'pass_only'
+        : 'unassigned';
   const emergency = splitEmergencyContact(f.get('emergencyContactNameNumber'));
 
   // "Additional Night (Thursday)" add-on means they arrive a day early.
@@ -223,7 +359,8 @@ export function mapRegistrant(r: RegFoxRegistrant, eventId: string) {
     'name2.first', 'name2.last', 'email', 'phone', 'dateOfBirth', 'gender', 'status',
     'address.street1', 'address.city', 'address.state', 'address.postalCode', 'address.country',
     'emergencyContactNameNumber', 'areYouVeteran', 'waiver', 'multipleChoice',
-    'registrationOptions', 'registrationOptions3', 'convenienceFee', 'tax', 'checkbox',
+    'registrationOptions', 'registrationOptions2', 'registrationOptions3',
+    'convenienceFee', 'tax', 'checkbox',
   ]);
   const customFields: Record<string, string> = {};
   for (const [path, value] of f) {
@@ -231,6 +368,7 @@ export function mapRegistrant(r: RegFoxRegistrant, eventId: string) {
     if (path.includes('.lineItemFee')) continue;
     customFields[path] = value.slice(0, 500);
   }
+  customFields['_accommodation_source'] = accommodationSource;
 
   return {
     event_id: eventId,

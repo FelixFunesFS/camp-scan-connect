@@ -1,10 +1,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
-  ACTIVE_EVENT_FALLBACK,
+  buildOrderAccommodations,
   corsHeaders,
   fetchAllRegistrants,
   isAbandoned,
   mapRegistrant,
+  resolveSyncTarget,
 } from '../_shared/regfox.ts';
 
 /**
@@ -23,20 +24,23 @@ Deno.serve(async (req) => {
     );
 
     const apiKey = Deno.env.get('REGFOX_API_KEY');
-    const formId = Deno.env.get('REGFOX_FORM_ID');
     if (!apiKey) throw new Error('REGFOX_API_KEY is not configured');
-    if (!formId) throw new Error('REGFOX_FORM_ID is not configured');
 
-    const { data: activeEvent } = await supabase
-      .from('events')
-      .select('id, name')
-      .eq('is_active', true)
-      .maybeSingle();
-    const eventId = activeEvent?.id ?? ACTIVE_EVENT_FALLBACK;
+    let body: Record<string, unknown> = {};
+    try {
+      const text = await req.text();
+      if (text) body = JSON.parse(text);
+    } catch {
+      // an empty body is fine
+    }
 
-    const registrants = (await fetchAllRegistrants(apiKey, formId)).filter(
+    const target = await resolveSyncTarget(supabase, (body.event_id as string) ?? null);
+    const eventId = target.eventId;
+
+    const registrants = (await fetchAllRegistrants(apiKey, target.formId)).filter(
       (r) => !isAbandoned(r.status),
     );
+    const orderAccommodations = buildOrderAccommodations(registrants);
 
     const { data: rows, error } = await supabase
       .from('attendees')
@@ -57,7 +61,7 @@ Deno.serve(async (req) => {
     const missingLocally = registrants
       .filter((r) => !dbById.has(String(r.id)))
       .map((r) => {
-        const m = mapRegistrant(r, eventId);
+        const m = mapRegistrant(r, eventId, orderAccommodations);
         return {
           regfox_registration_id: m.regfox_registration_id,
           name: `${m.first_name} ${m.last_name}`.trim(),
@@ -100,14 +104,15 @@ Deno.serve(async (req) => {
       }, {});
 
     const regfoxTickets = countByTicket(
-      registrants.map((r) => mapRegistrant(r, eventId).ticket_type),
+      registrants.map((r) => mapRegistrant(r, eventId, orderAccommodations).ticket_type),
     );
     const dbTickets = countByTicket((rows ?? []).map((r) => String(r.ticket_type)));
 
     return new Response(
       JSON.stringify({
         success: true,
-        event: { id: eventId, name: activeEvent?.name ?? null },
+        event: { id: eventId, name: target.eventName, regfox_form_id: target.formId },
+        warning: target.warning,
         totals: {
           regfox: registrants.length,
           database: rows?.length ?? 0,

@@ -1,11 +1,12 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import {
-  ACTIVE_EVENT_FALLBACK,
+  buildOrderAccommodations,
   contentHash,
   corsHeaders,
   fetchAllRegistrants,
   isAbandoned,
   mapRegistrant,
+  resolveSyncTarget,
 } from '../_shared/regfox.ts';
 
 /**
@@ -35,6 +36,10 @@ async function runSync(
     // Abandoned registrations are never imported.
     const usable = registrants.filter((r) => !isAbandoned(r.status));
 
+    // Companions on a group order do not answer the stay question themselves,
+    // so resolve one accommodation per order before mapping any row.
+    const orderAccommodations = buildOrderAccommodations(usable);
+
     const { data: existingRows, error: existingError } = await supabase
       .from('attendees')
       .select('id, regfox_registration_id, sync_hash')
@@ -56,7 +61,7 @@ async function runSync(
 
     for (const r of usable) {
       try {
-        const mapped = mapRegistrant(r, eventId);
+        const mapped = mapRegistrant(r, eventId, orderAccommodations);
         const hash = contentHash(mapped);
         const known = existing.has(mapped.regfox_registration_id);
 
@@ -151,34 +156,12 @@ Deno.serve(async (req) => {
     const syncType = (body.sync_type as string) ?? 'manual_sync';
 
     const apiKey = Deno.env.get('REGFOX_API_KEY');
-    const formId = Deno.env.get('REGFOX_FORM_ID');
     if (!apiKey) throw new Error('REGFOX_API_KEY is not configured');
-    if (!formId) throw new Error('REGFOX_FORM_ID is not configured');
 
-    // Route the import to the event that owns this RegFox form. Falling back
-    // to the active event would import, say, the 2025 roster into 2026.
-    const { data: boundEvent } = await supabase
-      .from('events')
-      .select('id, name')
-      .eq('regfox_form_id', formId)
-      .maybeSingle();
-
-    let targetEventId = boundEvent?.id as string | undefined;
-    let routingWarning: string | null = null;
-
-    if (!targetEventId) {
-      const { data: activeEvent } = await supabase
-        .from('events')
-        .select('id, name')
-        .eq('is_active', true)
-        .maybeSingle();
-      targetEventId = (activeEvent?.id as string | undefined) ?? ACTIVE_EVENT_FALLBACK;
-      routingWarning =
-        `No event is linked to RegFox form ${formId}; imported into the active event ` +
-        `"${activeEvent?.name ?? 'unknown'}". Link the form to an event to be sure.`;
-    }
-
-    const eventId = targetEventId;
+    // Each event owns its RegFox form, so the caller can target a specific
+    // year; otherwise the currently active event is used.
+    const target = await resolveSyncTarget(supabase, (body.event_id as string) ?? null);
+    const { eventId, formId, warning: routingWarning } = target;
 
     // Only one sync may run at a time.
     const { data: canStart, error: lockError } = await supabase.rpc('can_start_sync');
@@ -204,6 +187,7 @@ Deno.serve(async (req) => {
           total: 0,
           phase: 'starting',
           regfox_form_id: formId,
+          event_name: target.eventName,
           routing_warning: routingWarning,
         },
       })
@@ -224,6 +208,8 @@ Deno.serve(async (req) => {
         started: true,
         syncId,
         eventId,
+        eventName: target.eventName,
+        formId,
         warning: routingWarning,
         message: 'Sync started. Poll regfox_sync_log for progress.',
       }),
