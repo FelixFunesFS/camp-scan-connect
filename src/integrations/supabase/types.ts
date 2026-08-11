@@ -98,6 +98,7 @@ export type Database = {
           id: string
           is_veteran: boolean | null
           last_name: string
+          last_synced_at: string | null
           marital_status: string | null
           meal_plan: Database["public"]["Enums"]["meal_plan"] | null
           most_recent_activation_at: string | null
@@ -108,6 +109,8 @@ export type Database = {
           postal_code: string | null
           priority: string | null
           regfox_id: string | null
+          regfox_order_id: string | null
+          regfox_registration_id: string | null
           registration_status:
             | Database["public"]["Enums"]["registration_status"]
             | null
@@ -118,6 +121,7 @@ export type Database = {
           state: string | null
           status: string | null
           street_address: string | null
+          sync_hash: string | null
           t_shirt_size: string | null
           ticket_type: Database["public"]["Enums"]["ticket_type"]
           updated_at: string
@@ -147,6 +151,7 @@ export type Database = {
           id?: string
           is_veteran?: boolean | null
           last_name: string
+          last_synced_at?: string | null
           marital_status?: string | null
           meal_plan?: Database["public"]["Enums"]["meal_plan"] | null
           most_recent_activation_at?: string | null
@@ -157,6 +162,8 @@ export type Database = {
           postal_code?: string | null
           priority?: string | null
           regfox_id?: string | null
+          regfox_order_id?: string | null
+          regfox_registration_id?: string | null
           registration_status?:
             | Database["public"]["Enums"]["registration_status"]
             | null
@@ -167,6 +174,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           street_address?: string | null
+          sync_hash?: string | null
           t_shirt_size?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
@@ -196,6 +204,7 @@ export type Database = {
           id?: string
           is_veteran?: boolean | null
           last_name?: string
+          last_synced_at?: string | null
           marital_status?: string | null
           meal_plan?: Database["public"]["Enums"]["meal_plan"] | null
           most_recent_activation_at?: string | null
@@ -206,6 +215,8 @@ export type Database = {
           postal_code?: string | null
           priority?: string | null
           regfox_id?: string | null
+          regfox_order_id?: string | null
+          regfox_registration_id?: string | null
           registration_status?:
             | Database["public"]["Enums"]["registration_status"]
             | null
@@ -216,6 +227,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           street_address?: string | null
+          sync_hash?: string | null
           t_shirt_size?: string | null
           ticket_type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
@@ -239,6 +251,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          regfox_form_id: string | null
           starts_at: string | null
           updated_at: string
           year: number
@@ -249,6 +262,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          regfox_form_id?: string | null
           starts_at?: string | null
           updated_at?: string
           year: number
@@ -259,6 +273,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          regfox_form_id?: string | null
           starts_at?: string | null
           updated_at?: string
           year?: number
@@ -270,6 +285,7 @@ export type Database = {
           cancelled_at: string | null
           created_at: string
           error_message: string | null
+          event_id: string | null
           heartbeat_at: string | null
           id: string
           new_records: number | null
@@ -280,12 +296,14 @@ export type Database = {
           sync_timeout_minutes: number | null
           sync_type: string
           total_records: number | null
+          updated_at: string
           updated_records: number | null
         }
         Insert: {
           cancelled_at?: string | null
           created_at?: string
           error_message?: string | null
+          event_id?: string | null
           heartbeat_at?: string | null
           id?: string
           new_records?: number | null
@@ -296,12 +314,14 @@ export type Database = {
           sync_timeout_minutes?: number | null
           sync_type: string
           total_records?: number | null
+          updated_at?: string
           updated_records?: number | null
         }
         Update: {
           cancelled_at?: string | null
           created_at?: string
           error_message?: string | null
+          event_id?: string | null
           heartbeat_at?: string | null
           id?: string
           new_records?: number | null
@@ -312,6 +332,7 @@ export type Database = {
           sync_timeout_minutes?: number | null
           sync_type?: string
           total_records?: number | null
+          updated_at?: string
           updated_records?: number | null
         }
         Relationships: []
@@ -621,6 +642,7 @@ export type Database = {
           veterans_thanked: number
         }[]
       }
+      can_start_sync: { Args: never; Returns: boolean }
       check_station_access: {
         Args: { p_attendee_id: string }
         Returns: {
@@ -645,6 +667,7 @@ export type Database = {
           deleted_count: number
         }[]
       }
+      cleanup_stuck_syncs: { Args: never; Returns: number }
       format_phone_number: {
         Args: { p_format: string }
         Returns: {
@@ -661,10 +684,17 @@ export type Database = {
           order_id: string
         }[]
       }
+      release_sync_lock: { Args: { p_sync_id?: string }; Returns: number }
     }
     Enums: {
       meal_plan: "standard" | "premium" | "none"
-      registration_status: "registered" | "pending" | "cancelled" | "abandoned"
+      registration_status:
+        | "registered"
+        | "pending"
+        | "cancelled"
+        | "abandoned"
+        | "walk_up"
+        | "transferred"
       scan_action: "entry" | "exit" | "verify"
       scan_result: "allow" | "deny"
       site_location: "dry_site" | "glamping" | "cabin" | "rv_site"
@@ -850,7 +880,14 @@ export const Constants = {
   public: {
     Enums: {
       meal_plan: ["standard", "premium", "none"],
-      registration_status: ["registered", "pending", "cancelled", "abandoned"],
+      registration_status: [
+        "registered",
+        "pending",
+        "cancelled",
+        "abandoned",
+        "walk_up",
+        "transferred",
+      ],
       scan_action: ["entry", "exit", "verify"],
       scan_result: ["allow", "deny"],
       site_location: ["dry_site", "glamping", "cabin", "rv_site"],
