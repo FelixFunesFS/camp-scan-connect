@@ -1,39 +1,32 @@
-# Test Barcode Generator
+# Fix: "Assigned" badge on an already checked-in attendee
 
-Goal: produce a real, printable/displayable barcode you can assign to an attendee and then scan with the in-app camera scanner — a full end-to-end loop with no hardware needed.
+## What's actually happening
 
-## How to think about it
+Jocelyn Mccants is already checked in. Her 2026 record shows an active wristband (`92346902673388000059135708`), waiver signed, self-activated at 21:59:51 UTC today. So the system correctly refused to check her in a second time.
 
-A barcode is just a picture of a string. The whole system already treats a credential as "a string that arrives from a scanner". So a test barcode only needs to:
+The problem is purely how that is communicated. Two mismatches in the check-in screen:
 
-1. Generate a code string that looks like a real credential (passes the shared format rules).
-2. Render it as a scannable image on screen or on paper.
-3. Be assigned to an attendee like any other wristband.
-4. Decode back to the exact same string through the camera scanner, proving the loop.
+1. **Wrong badge.** The attendee card decides "Active vs Assigned" by reading `is_activated` / `activated_at`, but the phone lookup returns `is_active` / `rfid_status`. Neither field it looks for exists in the response, so an already-active person always falls through to the yellow **Assigned** badge.
 
-No new backend concepts — the generated code is stored in the existing credential table with `credential_type` set to `barcode` (or `qr`).
+2. **Silent dead-end button.** The check-in button counts only people who are not yet active. With everyone already active, the count is zero and the button greys out reading "Nothing to check in" — with no explanation that this is because they're already checked in.
 
-## What gets built
+Together it reads as "she's only assigned, and the app won't let me activate her."
 
-**Test Credential Studio** — a new tab in the Developer Dashboard:
-- Generate one code or a batch (e.g. 10, 25, 50).
-- Choose format: Code 128 (linear barcode) or QR.
-- Prefix defaults to `TEST-` so test codes are always identifiable and easy to purge.
-- Each code renders as an actual scannable image with the raw string printed beneath it.
-- Actions: copy string, download PNG, and a print sheet view laying out a grid of codes for badge printing.
-- "Purge test credentials" button removes every unassigned `TEST-` code.
+## The fix
 
-**Assignment**
-- From the studio, pick an unassigned 2026 attendee and assign a generated code directly, or leave codes unassigned and use the existing RFID Assignment page (typing/pasting the code works the same as scanning it).
+**Correct the status badge**
+- Read activation from the fields the lookup actually returns (`is_active`, `rfid_status === 'active'`) in addition to the existing ones, so already-active attendees show the green **Active** badge everywhere the card is used.
 
-**Scan verification**
-- A "Verify scan" mode: the generated barcode shows on one device (or printed), and scanning it at any station resolves to the assigned attendee.
-- The studio shows the last scan result for each test code (matched attendee, station, timestamp) so you can confirm the round trip.
+**Make the already-checked-in state explicit**
+- Show a clear confirmation panel at the top of the preview when everyone on the order is already active: "Already checked in" with each person's name and the time they were checked in.
+- Change the disabled button label from "Nothing to check in" to "Already checked in" when the reason is prior activation (keep "Nothing to check in" when the block is a waiver or a missing wristband).
+- Surface the per-person reason on each card when they can't be checked in: already active / waiver required / no wristband.
+
+**Confirmation after the action**
+- The check-in handler already shows an "Everyone on this order was already checked in" toast, but it clears the screen at the same time so it's easy to miss. Keep the result on screen instead of resetting, so staff see the outcome.
 
 ## Technical notes
 
-- Encoding uses `@zxing/library`'s `MultiFormatWriter` (already installed for decoding) to render Code 128 and QR to a canvas — no new dependency.
-- Generated strings follow `TEST-` + 8 alphanumeric chars, which satisfies `isValidCredentialFormat` and infers as `barcode`; QR variants infer as `qr`.
-- Codes are inserted into `rfid_tags` with `status = 'unissued'`, `credential_type` set from the chosen format, and scoped to the active event.
-- Assignment reuses the existing assignment path so tests exercise the same code as production.
-- Purge deletes only `TEST-`-prefixed rows with no attendee attached, so it can never touch real wristbands.
+- Files: `src/components/shared/MobileAttendeeCard.tsx` (badge logic), `src/components/MobileActivationPreview.tsx` (already-active panel, button label, per-person reason), `src/pages/ActivationStation.tsx` (don't reset the view on a no-op result).
+- No database or RPC changes — `activate_entire_order_by_phone` is behaving correctly, returning `activated_count: 0` / `already_active_count: 1`.
+- The lookup response already carries `rfid_status` and `is_active` per attendee; the fix consumes what's there rather than adding fields.
