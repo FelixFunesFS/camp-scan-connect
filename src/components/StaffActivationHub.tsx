@@ -1156,7 +1156,7 @@ export function StaffActivationHub() {
         </Card>
 
         {/* Individual Search & Management */}
-        <Card>
+        <Card id="individual-search">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserCheck className="h-5 w-5" />
