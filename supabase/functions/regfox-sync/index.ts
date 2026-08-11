@@ -155,12 +155,30 @@ Deno.serve(async (req) => {
     if (!apiKey) throw new Error('REGFOX_API_KEY is not configured');
     if (!formId) throw new Error('REGFOX_FORM_ID is not configured');
 
-    const { data: activeEvent } = await supabase
+    // Route the import to the event that owns this RegFox form. Falling back
+    // to the active event would import, say, the 2025 roster into 2026.
+    const { data: boundEvent } = await supabase
       .from('events')
-      .select('id')
-      .eq('is_active', true)
+      .select('id, name')
+      .eq('regfox_form_id', formId)
       .maybeSingle();
-    const eventId = activeEvent?.id ?? ACTIVE_EVENT_FALLBACK;
+
+    let targetEventId = boundEvent?.id as string | undefined;
+    let routingWarning: string | null = null;
+
+    if (!targetEventId) {
+      const { data: activeEvent } = await supabase
+        .from('events')
+        .select('id, name')
+        .eq('is_active', true)
+        .maybeSingle();
+      targetEventId = (activeEvent?.id as string | undefined) ?? ACTIVE_EVENT_FALLBACK;
+      routingWarning =
+        `No event is linked to RegFox form ${formId}; imported into the active event ` +
+        `"${activeEvent?.name ?? 'unknown'}". Link the form to an event to be sure.`;
+    }
+
+    const eventId = targetEventId;
 
     // Only one sync may run at a time.
     const { data: canStart, error: lockError } = await supabase.rpc('can_start_sync');
@@ -181,7 +199,13 @@ Deno.serve(async (req) => {
         sync_started_at: new Date().toISOString(),
         heartbeat_at: new Date().toISOString(),
         sync_timeout_minutes: 10,
-        progress_info: { processed: 0, total: 0, phase: 'starting' },
+        progress_info: {
+          processed: 0,
+          total: 0,
+          phase: 'starting',
+          regfox_form_id: formId,
+          routing_warning: routingWarning,
+        },
       })
       .select('id')
       .single();
@@ -199,6 +223,8 @@ Deno.serve(async (req) => {
         success: true,
         started: true,
         syncId,
+        eventId,
+        warning: routingWarning,
         message: 'Sync started. Poll regfox_sync_log for progress.',
       }),
       { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
