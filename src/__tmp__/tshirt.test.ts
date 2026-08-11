@@ -13,6 +13,6 @@ describe("parse", () => {
       {"merchandise.tshirt":"1","merchandise.tshirt.unisexCrewNeck3x":"1"},
       {"merchandise.tshirt":"1","merchandise.tshirt.womensFittedVneck4x":"1"},
     ];
-    for (const s of samples) console.log(JSON.stringify(s), "=>", JSON.stringify(S.extractTShirtDetails(s)));
+    for (const s of samples) console.log(JSON.stringify(s), "=>", JSON.stringify(S.extractTShirtInfo(s)));
   });
 });
