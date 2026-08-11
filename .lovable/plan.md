@@ -1,34 +1,44 @@
-# Reset 2026 check-in data to zero
+# Fix: RFID Assignment shows everyone as "Unassigned"
 
-## Current state
+## Status in the database (unchanged, correct)
 
-For the 2026 event (694 attendees), exactly one person is activated:
+For the 2026 event (694 attendees):
 
-- **Jocelyn Mccants** — checked in today at 21:59 UTC, self-activated by phone
-- Credential `92346902673388000059135708` (barcode), status `active` — the only credential row in the system
-- 2 station transactions, both hers
+- **Jocelyn Mccants** is the only activated person — checked in today at 21:59 UTC, self-activated
+- Her credential `92346902673388000059135708` (barcode) is `active` and correctly linked to her
+- Nobody else has a credential; 0 assigned, 0 other activations
 
-Everyone else has no credential and no activation. So the "activated" count is 1, and it should be 0.
+So the data says "Checked In" for Jocelyn. The page saying "Unassigned" is a display bug.
 
-## What to clear
+## Root cause
 
-A migration that resets the 2026 event to a pre-event state:
+The RFID Assignment page loads all 682 visible attendees, then asks for their statuses in one bulk call. That call passes every attendee ID into a URL query string:
 
-1. **Attendees** — clear `checked_in_at`, `activated_at`, `deactivated_at`, `most_recent_activation_at`, and `most_recent_activation_method` for every 2026 attendee.
-2. **Credentials** — delete the test credential row from `rfid_tags` for 2026, so no wristband/barcode is assigned to anyone.
-3. **Station transactions** — delete the 2026 transaction history that came from testing.
-4. **Scans** — delete any 2026 scan rows for the same reason.
+```text
+station_transactions?...&attendee_id=in.(<682 UUIDs>)
+```
 
-Waiver signatures are left alone: they are real attendee consent (331 signed) and must survive the reset.
+The resulting URL is roughly 25,000 characters, which the API rejects with **400 Bad Request** — visible in the network log for both the `station_transactions` and follow-up requests.
 
-## Scope guard
+The status helper catches that failure and, instead of surfacing it, silently falls back to `getCheckInStatus(null, null)` for every attendee — which is literally the "Unassigned" state. It then caches that wrong answer for 30 seconds. That's why Jocelyn flips from Active to Unassigned: the request failed, and the failure looks identical to "no credential".
 
-Every statement is filtered to `event_id = '00000000-0000-0000-0000-000000002026'`, so 2025 and 2024 history is untouched.
+## The fix
 
-## After the reset
+**1. Chunk the bulk status query**
+- Split attendee IDs into batches (roughly 100 per request) and issue the batches in parallel, merging the results. This keeps every URL comfortably under the length limit regardless of how many attendees load.
 
-Re-run the counts to confirm 0 activated, 0 checked in, 0 credentials, and 0 transactions for 2026, and report the verified numbers.
+**2. Stop the fallback from lying**
+- On a genuine query failure, do not write "Unassigned" into the results or the cache. Leave those attendees in an "unknown" state, keep the last known good value if there is one, and let the page show a "Couldn't load status — retry" indicator instead of a false red badge.
+- Only cache statuses that came from a successful query.
 
-## Note for repeat testing
+**3. Use the data already on the page**
+- The attendee load already fetches `rfid_tags(uid, status, activated_at)` for each row. Seed each attendee's status from that nested data first, so the table renders correct badges immediately and the bulk call only enriches it with activation-transaction detail. Even if the enrichment call fails, badges stay correct.
 
-If you want to run test check-ins again without hand-cleaning the database afterward, a "Reset event check-in data" action can be added to the Developer Dashboard that performs exactly these steps for the active event behind a confirmation prompt. Say the word and it goes in the same change.
+**4. Reset the poisoned cache**
+- Clear the status cache when the bulk call errors, so a retry isn't served the bad 30-second-cached "Unassigned" values.
+
+## Technical notes
+
+- Files: `src/utils/optimizedStatusUtils.ts` (chunking, honest failure handling, no caching of fallbacks) and `src/pages/RfidAssignment.tsx` (seed statuses from the nested `rfid_tags` already loaded, show a retry affordance).
+- No database or schema changes — the schema and the row data are correct.
+- The same chunking guard applies to any other place that builds an `in.(...)` filter from a full attendee list, so those call sites get the same treatment to prevent the bug reappearing elsewhere.
