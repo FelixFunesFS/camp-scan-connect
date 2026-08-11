@@ -55,6 +55,9 @@ export class TShirtService {
       .replace(/[._-]+/g, ' ')
       .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
       .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+      // Split letter/digit runs so "unisexCrewNeck2x" becomes "... neck 2x"
+      .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+      .replace(/(\d)([a-zA-Z])/g, '$1 $2')
       .toLowerCase()
       .trim()
       .replace(/\s+/g, ' ');
