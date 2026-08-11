@@ -99,24 +99,43 @@ function selectedChild(
   return null;
 }
 
+export interface Accommodation {
+  ticket_type: string;
+  site_location_assignment: string | null;
+}
+
 /**
  * Accommodation question (`multipleChoice`) combined with the package tier
  * (`registrationOptions` for tents, `registrationOptions3` for RVs) decides
  * the ticket type. "Premium" packages include powered sites.
+ *
+ * Returns `null` when the registrant never answered the accommodation
+ * question. On the 2026 form this is common: companions added to a group
+ * order only carry their add-ons, so their stay is defined by the order, not
+ * by their own row. Defaulting those to a dry site would silently misreport
+ * roughly a third of the roster, so the caller resolves them instead.
  */
-export function mapAccommodation(f: Map<string, string>): {
-  ticket_type: string;
-  site_location_assignment: string | null;
-} {
+export function rawAccommodation(f: Map<string, string>): Accommodation | null {
   const stay = (f.get('multipleChoice') ?? '').toLowerCase();
   const tentTier = (f.get('registrationOptions') ?? '').toLowerCase();
+  const tentTier2 = (f.get('registrationOptions2') ?? '').toLowerCase();
   const rvTier = (f.get('registrationOptions3') ?? '').toLowerCase();
+
+  if (!stay) return null;
 
   if (stay === 'daypassonly') {
     return { ticket_type: 'day_pass', site_location_assignment: null };
   }
   if (stay === 'cabin') {
     return { ticket_type: 'cabin', site_location_assignment: 'cabin' };
+  }
+  // 2026 introduced villa lodging; it is a built structure, like a cabin.
+  if (stay === 'villa') {
+    return { ticket_type: 'cabin', site_location_assignment: 'cabin' };
+  }
+  // Glamping tents are pre-pitched and priced separately from dry tenting.
+  if (stay.includes('glamping')) {
+    return { ticket_type: 'glamping', site_location_assignment: 'glamping' };
   }
   if (stay === 'rv') {
     // premiumRv is a powered space; dryRv / pavedDryCampingRv are not.
@@ -126,12 +145,45 @@ export function mapAccommodation(f: Map<string, string>): {
       site_location_assignment: 'rv_site',
     };
   }
-  // tent, vanrooftop, or unanswered
-  const premiumTent = tentTier.includes('option2');
+  // tent, vanrooftop, or anything else that still occupies a ground site
+  const premiumTent = tentTier.includes('option2') || tentTier2.includes('option2');
   return {
     ticket_type: premiumTent ? 'premium_power' : 'dry_site',
     site_location_assignment: 'dry_site',
   };
+}
+
+/** True when the registrant bought a standalone weekend/day pass. */
+export function isPassOnly(f: Map<string, string>): boolean {
+  const pass = f.get('weekendDayPassOnly');
+  return !!pass && pass.toLowerCase() !== 'none' && pass !== '0';
+}
+
+/** Back-compat wrapper: never returns null, falls back to a dry site. */
+export function mapAccommodation(f: Map<string, string>): Accommodation {
+  return (
+    rawAccommodation(f) ??
+    (isPassOnly(f)
+      ? { ticket_type: 'day_pass', site_location_assignment: null }
+      : { ticket_type: 'dry_site', site_location_assignment: 'dry_site' })
+  );
+}
+
+/**
+ * One accommodation per order, taken from whichever registrant in that order
+ * actually answered the stay question. Companions inherit it.
+ */
+export function buildOrderAccommodations(
+  registrants: RegFoxRegistrant[],
+): Map<string, Accommodation> {
+  const byOrder = new Map<string, Accommodation>();
+  for (const r of registrants) {
+    const key = r.orderId != null ? String(r.orderId) : '';
+    if (!key || byOrder.has(key)) continue;
+    const own = rawAccommodation(indexFields(r.fieldData));
+    if (own) byOrder.set(key, own);
+  }
+  return byOrder;
 }
 
 /** A meal plan add-on under `merchandise.mealPlan`. */
