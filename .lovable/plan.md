@@ -19,6 +19,36 @@ The Self-Service Check-In page calls these and will report "no attendees found" 
 
 Also verified: the database holds **0 attendees, 0 RFID tags, 0 transactions**. The events table already has 2024, 2025, and 2026 rows with 2026 marked active, and `attendees.event_id` already defaults to 2026.
 
+**The RegFox sync is also broken**, which matters because it is what puts attendees in the database in the first place. Verified:
+
+- Both `regfox-sync` and `regfox-scheduled-sync` call a database function named `can_start_sync` — **that function does not exist**. Every sync attempt throws before it does any work.
+- `regfox-sync` invokes an edge function called `regfox-cleanup`, and the sync panel's Cancel and Force Reset buttons invoke `regfox-sync-cancel` and `regfox-cleanup` — **neither of those edge functions exists** in the project. Only `regfox-sync`, `regfox-scheduled-sync`, and `get-secrets` are deployed.
+- `regfox_sync_log` has no `event_id`, so sync history cannot be separated by year.
+
+So right now: no attendees can be imported, and no attendees can be activated. Both pipelines need to be repaired.
+
+---
+
+## Part 0 — RegFox API ingestion (do this first)
+
+The RegFox API is sufficient on its own — no webhook needed. Polling the API is actually the safer choice for accuracy: the API is the source of truth, so each poll re-reads a window of records and self-heals anything missed, whereas a webhook can silently drop a delivery or double-fire on an edit and create duplicates.
+
+`REGFOX_API_KEY` and `REGFOX_FORM_ID` are already stored as secrets.
+
+**What gets built:**
+
+1. **Sync locking.** Create the missing `can_start_sync()` and `release_sync_lock()` functions plus a stuck-sync reaper that clears any sync whose heartbeat has gone stale past `sync_timeout_minutes`. This alone unblocks the two existing functions.
+2. **Create the two missing edge functions** — `regfox-cleanup` (clears stuck syncs) and `regfox-sync-cancel` (cancels a running sync) — so the Cancel and Force Reset buttons in the sync panel actually work.
+3. **Rebuild `regfox-sync` against the current schema.** It pages through the WebConnex registrants API for the configured form, then **upserts on the RegFox registration ID** so re-running a sync can never create duplicates. Each record is written with the active `event_id` (2026).
+4. **Field mapping.** RegFox returns a loose `fieldData` array rather than fixed columns, so an explicit mapping layer translates it into: name, email, phone, order ID, ticket type, meal plan, arrival day, **waiver signed**, t-shirt size, emergency contact, and dietary restrictions. Anything unmapped is preserved in `custom_fields` so nothing is lost. This mapping is the piece most likely to need a tweak once we see the real 2026 form.
+5. **Status handling.** Cancelled and refunded registrations sync in but are marked so they cannot activate, rather than being skipped and silently reappearing as "not found" at the gate.
+6. **Change detection.** A content hash per record means unchanged rows are skipped instead of rewritten, so the sync log's new/updated counts are meaningful.
+7. **Scheduling.** A scheduled job runs the sync every 15 minutes normally, with an "event mode" toggle that drops it to every 2 minutes during the event so late registrations reach the gate quickly.
+8. **Reconciliation view.** A panel comparing RegFox's roster against the database: counts by ticket type, records present in RegFox but missing locally, records present locally but gone from RegFox, and suspected duplicates. This is how you confirm the roster is correct before doors open.
+9. **Event scoping.** `regfox_sync_log` gets an `event_id` so 2025 and 2026 sync history stay separate.
+
+Waiver status arriving from RegFox feeds directly into the waiver gate in Part 2 — anyone who signed during online registration is pre-cleared, and only the gaps get prompted at check-in.
+
 ---
 
 ## Part 1 — Rebuild the activation engine (foundation)
@@ -111,27 +141,31 @@ Requirement: 2026 is what everyone sees; 2025 stays retrievable for comparison.
 
 ## Suggested build order
 
-1. Rebuild the six stub functions (nothing works until this is done)
-2. Waiver gate, database-enforced
-3. Event scoping + archive flag + year switcher
-4. Edge cases: fuzzy lookup, walk-up, transfers, group selection
-5. Year-over-year comparison
-6. 2025 data import when the export is available
+1. Repair RegFox API ingestion (nothing exists to activate until attendees are in)
+2. Rebuild the six stub activation functions
+3. Waiver gate, database-enforced
+4. Event scoping + archive flag + year switcher
+5. Edge cases: fuzzy lookup, walk-up, transfers, group selection
+6. Year-over-year comparison
+7. 2025 data import when the export is available
 
 ## Sizing for your invoice
 
 | Part | Effort |
 |---|---|
+| RegFox API ingestion repair + reconciliation | 2 days |
 | Rebuild activation engine | 2 days |
 | Waiver gate | 1 day |
 | Event scoping, archiving, year switcher | 1.5 days |
 | Edge case flows (walk-up, transfer, fuzzy, group) | 2.5 days |
 | Year-over-year comparison | 1 day |
 | 2025 import + QA dry run | 1 day |
-| **Total** | **~9 days** |
+| **Total** | **~11 days** |
 
 ## Open items
 
+- Confirm the 2026 RegFox form ID — the stored `REGFOX_FORM_ID` currently points at the prior year's form.
+- Confirm the waiver is collected as a field on the RegFox registration form, so signed status can sync in rather than being collected at the gate.
 - 2025 data export from the previous system, to make the archive real.
 - Final liability waiver text from the client (legal copy).
 - Confirm whether walk-up registrations collect payment on site or are comp only.
