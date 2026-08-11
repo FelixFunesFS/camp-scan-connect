@@ -512,22 +512,31 @@ export class TShirtService {
       't-shirt', 't shirt', 'tshirt',
       'souvenir', 'fitted', 'crew neck', 'v-neck',
       'vneck', 'crewneck', 'unisex', "women's", "men's",
-      'merchandise.tshirt' // Include merchandise fields
+      'merchandise.tshirt', // Include merchandise fields
+      'shirt' // Volunteer shirts and any other *shirt* product
     ];
     
     return tshirtKeywords.some(keyword => normalized.includes(keyword));
   }
 
   private static parseTShirtProduct(productName: string): { size: string; type: string } {
-    console.log('Parsing T-shirt product:', productName);
-    
-    // First, clean up the product name by normalizing hyphens and spaces
-    const cleanProduct = productName.toLowerCase().trim().replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
-    console.log('Cleaned product name:', cleanProduct);
+    this.log('Parsing T-shirt product:', productName);
+
+    // Normalize separators AND camelCase so "volunteerShirt.unisexMed" becomes
+    // "volunteer shirt unisex med" and word-boundary patterns can match.
+    const cleanProduct = this.humanizeFieldName(productName);
+    this.log('Cleaned product name:', cleanProduct);
     
     // Determine full style name from the product name
     let type = 'T-Shirt'; // default
-    
+
+    // Volunteer shirts are a distinct garment — label them so staff hand out the right one.
+    if (cleanProduct.includes('volunteer')) {
+      const volunteerSize = this.extractSizeFromString(cleanProduct);
+      this.log('Detected volunteer shirt:', { size: volunteerSize });
+      return { size: volunteerSize, type: 'Volunteer Shirt' };
+    }
+
     // Check for specific style patterns in order of specificity - improved to handle hyphens
     if (cleanProduct.includes("women's fitted v neck") || cleanProduct.includes("women's fitted vneck") ||
         (cleanProduct.includes("women's") && cleanProduct.includes("fitted") && cleanProduct.includes("v neck"))) {
