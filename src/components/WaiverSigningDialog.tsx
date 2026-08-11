@@ -92,11 +92,8 @@ export function WaiverSigningDialog({
           <p className="text-sm font-medium text-foreground pt-1">Signing as {attendeeName}</p>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0" onScrollCapture={handleScroll as any}>
-          <div
-            className="p-4 sm:p-6 space-y-5 text-sm leading-relaxed"
-            onScroll={handleScroll}
-          >
+        <div className="flex-1 min-h-0 overflow-y-auto" onScroll={handleScroll}>
+          <div className="p-4 sm:p-6 space-y-5 text-sm leading-relaxed">
             {WAIVER_SECTIONS.map((section) => (
               <section key={section.heading} className="space-y-2">
                 <h3 className="font-semibold text-foreground">{section.heading}</h3>
@@ -113,7 +110,7 @@ export function WaiverSigningDialog({
             <p className="text-xs text-muted-foreground border-t pt-4">{ESIGN_NOTICE}</p>
             <div ref={bottomRef} />
           </div>
-        </ScrollArea>
+        </div>
 
         <div className="border-t p-4 sm:p-6 space-y-4 bg-background">
           {!scrolledToEnd ? (
