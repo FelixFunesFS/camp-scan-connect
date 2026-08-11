@@ -1,60 +1,50 @@
-# Scan Focus Discipline + Digital Waiver Signing
+# Lens-Style Camera Scanning in an Installable App
 
-Two related "the station must never stall" problems: the cursor must always be in the scan field, and a blocked waiver must be resolvable on the spot.
+## How to think about this
 
-## Part 1 — Scan focus: how to think about it
+"Google Lens" is really two separate things, and it helps to keep them apart:
 
-A keyboard-wedge scanner types into whatever has focus. If focus is lost, the scan goes nowhere (or into the wrong field) and staff think the hardware failed. So the rule is: **on any scan page, the scan input owns focus by default, and focus returns to it after every state change.**
+1. **The container** — Lens feels like an app because it launches from a home-screen icon, fills the screen, and has no browser chrome. That is the installable-app (PWA) part: a web app manifest plus icons. No offline caching needed.
+2. **The experience** — Lens feels magical because the camera is *always live and always decoding*. You don't press "scan", frame a shot, and confirm. You point, it reads, it acts, it stays open for the next one.
 
-Today this is inconsistent:
-- `UnifiedStationScanner` focuses on mount and when the selection clears — good, but not after a toast, dialog close, tab switch, or window refocus.
-- RFID assignment cells focus per-row via table navigation.
-- Some station screens have no focus restore at all after a successful/failed scan.
+The app already has the hard part: `CameraBraceletScanner` decodes QR, Code 128, Code 39, PDF417 and more with ZXing, with torch, camera flip, and duplicate suppression. What's missing is that it is a small dialog used as a fallback, and stations are built keyboard-wedge-first (`useRfidCapture` + `useScanFocus`). The work is to promote the camera to a first-class, full-screen, continuous mode — and to make the app installable so it opens like a native scanner.
 
-The fix is one shared behavior rather than per-page patches:
+Important reality check: a phone camera is slower and less reliable than a hardware wedge scanner in bad lighting. So camera mode is the **mobile/roaming staff** path, not a replacement. Hardware scanners stay the default at fixed stations.
 
-**A `useScanFocus` hook** attached to the scan input on every scan surface. It restores focus:
-- on mount and after page/route transition
-- after a scan completes (success, duplicate, or error) once the result renders
-- after any dialog/sheet/toast closes
-- when the browser tab or window regains focus
-- when the user clicks dead space on the page (not on another input or button)
-- never when a real input (search, notes, phone entry) is intentionally focused, and never on touch devices where it would pop the on-screen keyboard
+## Part 1 — Make the app installable (manifest only)
 
-**A visible focus state** so staff can see the field is armed: a "Ready to scan" pill with a pulsing indicator when focused, and a muted "Tap here to scan" when not. Ambiguity about whether the field is live is the actual operational failure, so it must be visible, not implicit.
+- Add `public/manifest.webmanifest`: app name "Camp Scan", short name, `display: "standalone"`, portrait orientation, brand theme + background colors, and icon entries (192, 512, maskable).
+- Generate app icons into `public/` and add `manifest`, `theme-color`, and `apple-touch-icon` tags to `index.html`.
+- No service worker, no offline caching — staff are online at stations, and offline caching risks serving stale screens mid-event.
 
-Applies to: main gate, meals, drinks, headphones, t-shirts, fanny packs, walkie talkies, golf carts, RFID assignment, and the staff activation hub.
+Result: staff open the app once, "Add to Home Screen", and thereafter launch a full-screen scanner with no address bar stealing vertical space.
 
-## Part 2 — Digital waiver signing
+## Part 2 — A Lens-style full-screen scan mode
 
-The uploaded MC2026 Terms, Waiver & Consent Agreement becomes the in-app waiver. It already states that a typed electronic acknowledgment carries the same legal weight as a handwritten signature under E-SIGN, so **typed full name is sufficient** — a drawn signature is offered as an optional extra, not a requirement.
+New component `LensScanner` (built from the existing ZXing logic, so decoding behavior is unchanged):
 
-### Where it appears
-1. **Self-service check-in** — when a person shows "waiver required", a "Sign Waiver" action opens the agreement instead of dead-ending.
-2. **Staff activation hub / attendee detail** — staff can present the agreement on a tablet for the attendee to sign themselves; a separate staff-attested path is recorded as such.
-3. Group orders gate each person individually: whoever signed activates, the rest each get their own sign action.
+- Full-viewport live camera, safe-area aware, with a dimmed overlay and a centered reticle.
+- **Continuous decode loop** — no shutter button. Found codes fire immediately.
+- **Result as an overlay card**, not a page change: the attendee name, ticket type, waiver/payment status chips, and the station action button slide up over the live feed. Camera keeps running behind it.
+- **Scan-next without leaving**: after an action succeeds, show a brief confirmation chip and re-arm. The same credential is ignored for a cooldown window (reuse the existing duplicate suppression) so one wristband can't be double-counted.
+- **Failure states are on-camera**: "Not found", "Waiver not signed — Sign now", "Payment pending" as overlay banners with the recovery action, instead of dumping the user back to a form.
+- Controls: torch, camera flip, close, and a "Type code" fallback that opens the manual input.
 
-### The signing screen
-- Full agreement text, section by section, scrollable, readable on a phone.
-- Continue button stays disabled until the text has been scrolled to the end.
-- Explicit checkboxes: 21+ confirmation, read and agree to terms including assumption of risk and liability release, and media/AI consent.
-- Typed full legal name, which must reasonably match the registration name (mismatch is allowed but flagged).
-- Optional finger/stylus signature pad.
-- Date auto-stamped; consent language and E-SIGN notice shown above the submit button.
-- On submit: waiver marked signed and the flow continues straight into activation, no re-lookup.
+## Part 3 — Wiring it into the stations
 
-### What gets recorded
-A `waiver_signatures` record per person per event: typed name, optional signature image, timestamp, which agreement version was shown, whether it was self-signed or staff-attested (with staff identity), and the device/IP. This is the audit trail that makes the signature defensible.
+- Add a shared `ScanSource` toggle to `UnifiedStationScanner`: **Scanner** (current keyboard-wedge input, default on desktop/tablet) and **Camera** (default on small screens).
+- Both paths feed the *same* handler that the wedge input uses today, so lookup, waiver gate, transaction recording, and staff override behave identically regardless of source.
+- When camera mode is active, suspend `useScanFocus` re-focus attempts so the two systems don't fight over focus.
+- Keep the current dialog scanner working; `LensScanner` supersedes it as the mobile default.
 
-### Enforcement
-The gate stays in the database function, not just the UI — an unsigned attendee cannot be activated even if the button is bypassed. Signing is the only thing that clears it, aside from a logged staff override with a required reason.
+## Part 4 — Attendee-facing self scan (optional, flagged)
+
+The same component can back a public self-service screen where an attendee points their own phone at a station QR to check in. Worth building only after staff-side camera mode is proven at the event; noted here so the component is designed to be reusable rather than station-coupled.
 
 ## Technical notes
-- New `useScanFocus` hook plus a small `ScanFocusIndicator`; scan pages adopt it rather than each keeping bespoke focus effects.
-- Waiver text stored as structured content in the app with a version string, so a future revision does not invalidate prior signatures.
-- New `waiver_signatures` table with RLS and explicit grants; signature images (if drawn) go to a private storage bucket.
-- Activation RPCs updated to read signed status from the new table as well as `attendees.waiver_signed`, so RegFox-synced signatures still count.
 
-## Open items
-- Should the drawn signature pad be offered at all, or typed name only?
-- Should staff be allowed to sign on an attendee's behalf, or must the attendee always type their own name?
+- Camera requires HTTPS — works on the published domain and preview, not on plain `http://` LAN addresses.
+- iOS Safari requires a user gesture to start the stream; the mode opens on an explicit "Camera" tap, never auto-starts.
+- Stop all tracks on unmount, tab hide, and dialog close to avoid a hot camera draining staff phones.
+- Reuse `normalizeCredential` / `isValidCredentialFormat` so camera reads and wedge reads validate through one code path.
+- No database or edge-function changes.
