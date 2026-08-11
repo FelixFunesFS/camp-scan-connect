@@ -240,12 +240,36 @@ export function isAbandoned(raw?: string): boolean {
   return (raw ?? '').toLowerCase().includes('abandon');
 }
 
-/** Map one RegFox registrant onto an `attendees` row. */
-export function mapRegistrant(r: RegFoxRegistrant, eventId: string) {
+/**
+ * Map one RegFox registrant onto an `attendees` row.
+ *
+ * `orderAccommodations` (from `buildOrderAccommodations`) lets companions on a
+ * group order inherit the stay booked by the order's lead registrant.
+ */
+export function mapRegistrant(
+  r: RegFoxRegistrant,
+  eventId: string,
+  orderAccommodations?: Map<string, Accommodation>,
+) {
   const fields = r.fieldData;
   const f = indexFields(fields);
 
-  const accommodation = mapAccommodation(f);
+  const orderKey = r.orderId != null ? String(r.orderId) : '';
+  const own = rawAccommodation(f);
+  const inherited = own ? null : orderAccommodations?.get(orderKey) ?? null;
+  const accommodation: Accommodation =
+    own ??
+    inherited ??
+    (isPassOnly(f)
+      ? { ticket_type: 'day_pass', site_location_assignment: null }
+      : { ticket_type: 'dry_site', site_location_assignment: null });
+  const accommodationSource = own
+    ? 'self'
+    : inherited
+      ? 'order'
+      : isPassOnly(f)
+        ? 'pass_only'
+        : 'unassigned';
   const emergency = splitEmergencyContact(f.get('emergencyContactNameNumber'));
 
   // "Additional Night (Thursday)" add-on means they arrive a day early.
@@ -275,7 +299,8 @@ export function mapRegistrant(r: RegFoxRegistrant, eventId: string) {
     'name2.first', 'name2.last', 'email', 'phone', 'dateOfBirth', 'gender', 'status',
     'address.street1', 'address.city', 'address.state', 'address.postalCode', 'address.country',
     'emergencyContactNameNumber', 'areYouVeteran', 'waiver', 'multipleChoice',
-    'registrationOptions', 'registrationOptions3', 'convenienceFee', 'tax', 'checkbox',
+    'registrationOptions', 'registrationOptions2', 'registrationOptions3',
+    'convenienceFee', 'tax', 'checkbox',
   ]);
   const customFields: Record<string, string> = {};
   for (const [path, value] of f) {
@@ -283,6 +308,7 @@ export function mapRegistrant(r: RegFoxRegistrant, eventId: string) {
     if (path.includes('.lineItemFee')) continue;
     customFields[path] = value.slice(0, 500);
   }
+  customFields['_accommodation_source'] = accommodationSource;
 
   return {
     event_id: eventId,
