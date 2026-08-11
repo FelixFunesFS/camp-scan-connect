@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CheckInStatus {
@@ -89,6 +90,7 @@ export async function getBulkOptimizedStatuses(attendeeIds: string[]): Promise<R
     const { data: transactions, error: transError } = await supabase
       .from('station_transactions')
       .select('attendee_id, transaction_type, created_at')
+        .eq('event_id', getCurrentEventId())
       .in('attendee_id', uncachedIds)
       .eq('station_type', 'activation')
       .order('created_at', { ascending: false });
@@ -99,6 +101,7 @@ export async function getBulkOptimizedStatuses(attendeeIds: string[]): Promise<R
     const { data: rfidData, error: rfidError } = await supabase
       .from('rfid_tags')
       .select('attendee_id, uid, status')
+        .eq('event_id', getCurrentEventId())
       .in('attendee_id', uncachedIds)
       .in('status', ['assigned', 'active']);
 

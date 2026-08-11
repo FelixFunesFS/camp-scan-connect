@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { RfidCaptureProvider } from '@/contexts/RfidCaptureContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -195,6 +196,7 @@ export const RfidAssignment = () => {
           site_location_assignment,
           rfid_tags(uid, status, activated_at)
         `)
+        .eq('event_id', getCurrentEventId())
         .order('arrival_window', { ascending: true })
         .order('order_id', { ascending: true });
 
@@ -219,6 +221,7 @@ export const RfidAssignment = () => {
       const { data: activationData } = await supabase
         .from('station_transactions')
         .select('attendee_id, activation_method, created_at')
+        .eq('event_id', getCurrentEventId())
         .in('attendee_id', attendeeIds)
         .eq('station_type', 'activation')
         .eq('transaction_type', 'activate')

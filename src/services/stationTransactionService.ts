@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
 import { StationTransaction, StationType, TransactionType } from "@/types/station";
 
@@ -20,6 +21,7 @@ export class StationTransactionService {
     let query = supabase
       .from("station_transactions")
       .select("*")
+        .eq('event_id', getCurrentEventId())
       .eq("attendee_id", attendeeId)
       .eq("station_type", stationType)
       .gte("created_at", new Date().toISOString().split('T')[0]);
@@ -46,6 +48,7 @@ export class StationTransactionService {
     const { data, error } = await supabase
       .from("station_transactions")
       .select("*")
+        .eq('event_id', getCurrentEventId())
       .eq("attendee_id", attendeeId)
       .eq("station_type", stationType)
       .order("created_at", { ascending: false })

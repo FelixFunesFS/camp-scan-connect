@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Users, Smartphone, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Users, Smartphone, AlertCircle, CheckCircle2, FileWarning } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { MobileAttendeeCard } from "@/components/shared/MobileAttendeeCard";
 import type { PhoneLookupResult } from "@/services/phoneActivationService";
@@ -21,10 +22,18 @@ export function MobileActivationPreview({
   onActivateEntireOrder,
   onBack
 }: MobileActivationPreviewProps) {
-  const hasCompanions = lookupResult.order_companions && lookupResult.order_companions.length > 0;
-  const directCount = lookupResult.attendee_details?.length || 0;
-  const companionCount = lookupResult.order_companions?.length || 0;
-  const totalInOrder = directCount + companionCount;
+  const all: any[] = lookupResult.attendee_details ?? [];
+  const companions: any[] = lookupResult.order_companions ?? [];
+  const companionIds = new Set(companions.map((c: any) => c.attendee_id ?? c.id));
+  const direct = all.filter((a: any) => !companionIds.has(a.attendee_id ?? a.id));
+  const hasCompanions = companions.length > 0;
+  const directCount = direct.length;
+  const companionCount = companions.length;
+  const totalInOrder = all.length || directCount + companionCount;
+
+  const waiverBlocked = all.filter((a: any) => a.blocked_reason === 'waiver_required');
+  const needsRfid = all.filter((a: any) => a.blocked_reason === 'needs_rfid');
+  const eligibleCount = all.filter((a: any) => !a.blocked_reason && !a.is_active).length;
 
   return (
     <div className="space-y-4">
@@ -57,6 +66,28 @@ export function MobileActivationPreview({
         </CardContent>
       </Card>
 
+      {/* Waiver gate */}
+      {waiverBlocked.length > 0 && (
+        <Alert variant="destructive">
+          <FileWarning className="h-4 w-4" />
+          <AlertDescription>
+            <span className="font-medium">Liability waiver required.</span>{' '}
+            {waiverBlocked.map((a: any) => a.name).join(', ')} must sign the waiver before
+            check-in. See a staff member to sign — everyone else on this order can still check in.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {needsRfid.length > 0 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            No wristband is assigned yet for {needsRfid.map((a: any) => a.name).join(', ')}.
+            A staff member needs to assign one.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Direct Phone Matches */}
       {directCount > 0 && (
         <div className="space-y-3">
@@ -65,7 +96,7 @@ export function MobileActivationPreview({
             Your Registration ({directCount})
           </h4>
           <div className="space-y-2">
-            {lookupResult.attendee_details?.map((attendee: any, index: number) => (
+            {direct.map((attendee: any, index: number) => (
               <MobileAttendeeCard
                 key={`direct-${index}`}
                 attendee={attendee}
@@ -89,7 +120,7 @@ export function MobileActivationPreview({
             These people are in the same order but have different phone numbers:
           </p>
           <div className="space-y-2">
-            {lookupResult.order_companions?.map((companion: any, index: number) => (
+            {companions.map((companion: any, index: number) => (
               <MobileAttendeeCard
                 key={`companion-${index}`}
                 attendee={companion}
@@ -106,7 +137,7 @@ export function MobileActivationPreview({
           {/* Primary Action: Check-In Entire Order */}
           <Button
             onClick={onActivateEntireOrder}
-            disabled={isProcessing}
+            disabled={isProcessing || eligibleCount === 0}
             size="lg"
             className="w-full h-12 text-base font-medium"
           >
@@ -115,10 +146,15 @@ export function MobileActivationPreview({
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 Checking in...
               </div>
+            ) : eligibleCount === 0 ? (
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                Nothing to check in
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
-                Check-In Entire Order ({totalInOrder})
+                Check-In ({eligibleCount} of {totalInOrder})
               </div>
             )}
           </Button>

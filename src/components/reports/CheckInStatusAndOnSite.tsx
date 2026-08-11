@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useCallback } from 'react';
 import { CurrentlyOnSiteAttendees } from './CurrentlyOnSiteAttendees';
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ export const CheckInStatusAndOnSite = ({ refreshTrigger, selectedPeriod }: Check
       const { data: gateTransactions } = await supabase
         .from('station_transactions')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .eq('station_type', 'main_gate')
         .in('transaction_type', ['gate_entry', 'gate_exit'])
         .gte('created_at', boundaries.start.toISOString())
@@ -66,6 +68,7 @@ export const CheckInStatusAndOnSite = ({ refreshTrigger, selectedPeriod }: Check
         const { data: attendeeData } = await supabase
           .from('attendees')
           .select('id, first_name, last_name')
+        .eq('event_id', getCurrentEventId())
           .in('id', onSiteAttendeeIds);
 
         const attendeeMap = new Map(attendeeData?.map(a => [a.id, `${a.first_name} ${a.last_name}`]) || []);

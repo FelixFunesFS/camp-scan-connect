@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
 import { StationType, TransactionType } from "@/types/station";
 
@@ -38,6 +39,7 @@ export class EquipmentStatusService {
     const { data, error } = await supabase
       .from('station_transactions')
       .select('transaction_type, created_at, rfid_uid')
+        .eq('event_id', getCurrentEventId())
       .eq('attendee_id', attendeeId)
       .eq('station_type', stationType)
       .in('transaction_type', [checkoutType, checkinType])
@@ -97,6 +99,7 @@ export class EquipmentStatusService {
           created_at,
           rfid_uid
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('station_type', stationType)
         .in('transaction_type', [checkoutType, checkinType])
         .order('created_at', { ascending: false });
@@ -118,6 +121,7 @@ export class EquipmentStatusService {
           created_at,
           rfid_uid
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('station_type', stationType)
         .in('transaction_type', [checkoutType, checkinType])
         .gte('created_at', todayStart)
@@ -134,6 +138,7 @@ export class EquipmentStatusService {
       const { data: attendees, error: attendeeError } = await supabase
         .from('attendees')
         .select('id, first_name, last_name, phone')
+        .eq('event_id', getCurrentEventId())
         .in('id', allAttendeeIds);
 
       if (attendeeError) {

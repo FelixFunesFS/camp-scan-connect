@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
 import { PhoneActivationService, PhoneLookupResult, GroupActivationResult } from "./phoneActivationService";
 
@@ -92,6 +93,7 @@ export class EnhancedActivationService {
       const { data: attendeesData, error: attendeesError } = await supabase
         .from('attendees')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .ilike('email', `%${email.trim()}%`);
 
       if (attendeesError) throw attendeesError;
@@ -102,6 +104,7 @@ export class EnhancedActivationService {
       const { data: rfidData } = await supabase
         .from('rfid_tags')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .in('attendee_id', attendeeIds);
 
       // Process attendees with RFID data
@@ -141,6 +144,7 @@ export class EnhancedActivationService {
         const { data: companionData } = await supabase
           .from('attendees')
           .select('*')
+        .eq('event_id', getCurrentEventId())
           .in('order_id', uniqueOrderIds)
           .not('email', 'ilike', email.trim());
 
@@ -152,6 +156,7 @@ export class EnhancedActivationService {
           const { data: companionRfidData } = await supabase
             .from('rfid_tags')
             .select('*')
+        .eq('event_id', getCurrentEventId())
             .in('attendee_id', companionIds);
 
           orderCompanions = companionData.map(companion => {
@@ -204,6 +209,7 @@ export class EnhancedActivationService {
       const { data: attendeesData, error: attendeesError } = await supabase
         .from('attendees')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .eq('order_id', cleanOrderId);
 
       if (attendeesError) throw attendeesError;
@@ -214,6 +220,7 @@ export class EnhancedActivationService {
       const { data: rfidData } = await supabase
         .from('rfid_tags')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .in('attendee_id', attendeeIds);
 
       // Process all attendees as "details" since they're all in the same order
@@ -265,6 +272,7 @@ export class EnhancedActivationService {
       const { data: attendeesData, error: attendeesError } = await supabase
         .from('attendees')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`);
 
       if (attendeesError) throw attendeesError;
@@ -275,6 +283,7 @@ export class EnhancedActivationService {
       const { data: rfidData } = await supabase
         .from('rfid_tags')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .in('attendee_id', attendeeIds);
 
       // Process attendees with RFID data
@@ -314,6 +323,7 @@ export class EnhancedActivationService {
         const companionQuery = supabase
           .from('attendees')
           .select('*')
+        .eq('event_id', getCurrentEventId())
           .in('order_id', uniqueOrderIds);
 
         // Apply NOT condition for name search to exclude direct matches
@@ -329,6 +339,7 @@ export class EnhancedActivationService {
           const { data: companionRfidData } = await supabase
             .from('rfid_tags')
             .select('*')
+        .eq('event_id', getCurrentEventId())
             .in('attendee_id', companionIds);
 
           orderCompanions = companionData.map(companion => {
@@ -382,6 +393,7 @@ export class EnhancedActivationService {
       const { data: attendee } = await supabase
         .from('attendees')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .eq('id', attendeeId)
         .single();
 
@@ -392,6 +404,7 @@ export class EnhancedActivationService {
       const { data: rfidTag } = await supabase
         .from('rfid_tags')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .eq('attendee_id', attendeeId)
         .single();
 

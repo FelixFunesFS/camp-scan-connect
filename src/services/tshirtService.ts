@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface TShirtInfo {
@@ -55,12 +56,17 @@ export class TShirtService {
     let primarySize: string | null = null;
     let primaryType: string | null = null;
 
-    // Priority 1: Parse detailed order strings from main fields
-    const orderStringFields = [
-      'Souvenir 2025 T-Shirt',
-      'merchandise.tshirt',
-      't_shirt_products'
-    ];
+    // Priority 1: Parse detailed order strings from main fields.
+    // Matched by pattern (e.g. "Souvenir 2026 T-Shirt") so the SKU year never
+    // has to be hard-coded.
+    const orderStringFields = Object.keys(customFields).filter((key) => {
+      const k = key.toLowerCase();
+      return (
+        k === 'merchandise.tshirt' ||
+        k === 't_shirt_products' ||
+        (/souvenir/.test(k) && /t-?shirt/.test(k))
+      );
+    });
 
     for (const fieldName of orderStringFields) {
       if (customFields[fieldName] && typeof customFields[fieldName] === 'string') {
@@ -342,8 +348,8 @@ export class TShirtService {
     const filteredKeys = allKeys.filter(key => {
       const normalized = key.toLowerCase();
       
-      // Always skip generic quantity indicators
-      if (normalized === 'souvenir 2025 t-shirt' || normalized === 't-shirt') {
+      // Always skip generic quantity indicators (any year's souvenir SKU)
+      if (/^souvenir\s+\d{4}\s+t-?shirt$/.test(normalized) || normalized === 't-shirt') {
         return false;
       }
       
@@ -565,6 +571,7 @@ export class TShirtService {
           custom_fields,
           rfid_tags!inner(uid, status)
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('registration_status', 'registered')
         .in('rfid_tags.status', ['assigned', 'active']);
 
@@ -574,6 +581,7 @@ export class TShirtService {
       const { data: transactions } = await supabase
         .from('station_transactions')
         .select('attendee_id, created_at, rfid_uid, extra_data')
+        .eq('event_id', getCurrentEventId())
         .eq('station_type', 'tshirts' as any)
         .eq('transaction_type', 'tshirt_pickup' as any);
 
@@ -692,6 +700,7 @@ export class TShirtService {
       const { data: attendee } = await supabase
         .from('attendees')
         .select('custom_fields, t_shirt_size')
+        .eq('event_id', getCurrentEventId())
         .eq('id', attendeeId)
         .single();
 
@@ -705,6 +714,7 @@ export class TShirtService {
       const { data: transactions } = await supabase
         .from('station_transactions')
         .select('extra_data, created_at')
+        .eq('event_id', getCurrentEventId())
         .eq('attendee_id', attendeeId)
         .eq('station_type', 'tshirts')
         .eq('transaction_type', 'tshirt_pickup');

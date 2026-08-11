@@ -13,6 +13,7 @@ import { MobileActivationSuccess } from "@/components/MobileActivationSuccess";
 import { StaffAssistanceModal } from "@/components/StaffAssistanceModal";
 import { SelfActivationInstructions } from "@/components/SelfActivationInstructions";
 import { SelfActivationFAQ } from "@/components/SelfActivationFAQ";
+import { useEvent } from "@/contexts/EventContext";
 
 export default function ActivationStation() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -24,6 +25,7 @@ export default function ActivationStation() {
   const [errorType, setErrorType] = useState<'not_found' | 'unassigned' | 'activation_failed' | 'system_error'>('system_error');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const navigate = useNavigate();
+  const { selectedEvent } = useEvent();
   
   const isMobile = useIsMobile();
 
@@ -76,7 +78,13 @@ export default function ActivationStation() {
 
       if (result) {
         setActivationResult(result);
-        toast.success(`Check-In Complete! Activated ${result.activated_count - result.already_active_count} new attendee(s)`);
+        if (result.activated_count > 0) {
+          toast.success(`Check-In Complete! Activated ${result.activated_count} attendee(s)`);
+        }
+        (result.warnings ?? []).forEach((w) => toast.warning(w));
+        if (result.activated_count === 0 && (result.warnings?.length ?? 0) === 0) {
+          toast.info("Everyone on this order was already checked in");
+        }
         setShowPreview(false);
         setLookupResult(null);
       } else {
@@ -139,7 +147,9 @@ export default function ActivationStation() {
                   Welcome, Camp Cousin!
                 </h2>
                 <p className="text-lg text-foreground mb-2">
-                  Ready to get your campout experience started? Let's get you checked in and ready for an amazing weekend of music, food, and memories at Melanated Campout 2025!
+                  Ready to get your campout experience started? Let's get you checked in and ready
+                  for an amazing weekend of music, food, and memories at{" "}
+                  {selectedEvent?.name ?? "the campout"}!
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Your RFID wristband gives you access to drinks, activities, and all the campout fun - plus meals if you purchased a meal package! Let's get you checked in!

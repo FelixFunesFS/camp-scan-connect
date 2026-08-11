@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -142,6 +143,7 @@ export const RfidManagementPanel: React.FC = () => {
       const { count: totalAttendees } = await supabase
         .from('attendees')
         .select('*', { count: 'exact', head: true })
+        .eq('event_id', getCurrentEventId())
         .eq('registration_status', 'registered');
 
       // Get attendees with assigned RFIDs (status = 'assigned')
@@ -151,6 +153,7 @@ export const RfidManagementPanel: React.FC = () => {
           id,
           rfid_tags!inner(uid, status)
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('rfid_tags.status', 'assigned')
         .eq('registration_status', 'registered');
 
@@ -161,6 +164,7 @@ export const RfidManagementPanel: React.FC = () => {
           id,
           rfid_tags!inner(uid, status)
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('rfid_tags.status', 'active')
         .eq('registration_status', 'registered');
 

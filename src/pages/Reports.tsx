@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,7 +107,8 @@ const Reports = () => {
           waiver_signed,
           created_at,
           rfid_tags!inner(uid, status, activated_at)
-        `);
+        `)
+        .eq('event_id', getCurrentEventId());
 
       if (attendees) {
         const formattedData = attendees.map(attendee => ({

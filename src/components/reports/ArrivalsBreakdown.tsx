@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -34,12 +35,14 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
           activated_at,
           rfid_tags!inner(uid, status)
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('registration_status', 'registered')
         .eq('rfid_tags.status', 'active');
 
       const { data: allAttendees } = await supabase
         .from('attendees')
         .select('id, ticket_type, activated_at')
+        .eq('event_id', getCurrentEventId())
         .eq('registration_status', 'registered');
 
       if (!allAttendees) return;

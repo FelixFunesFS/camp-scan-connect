@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -164,6 +165,7 @@ export const EnhancedRfidAssignmentCell = ({
       const { data: existingTag } = await supabase
         .from('rfid_tags')
         .select('attendee_id, status, issued_at, attendee:attendees(first_name, last_name)')
+        .eq('event_id', getCurrentEventId())
         .eq('uid', rfidUid)
         .in('status', ['assigned', 'active'])
         .single();
@@ -203,6 +205,7 @@ export const EnhancedRfidAssignmentCell = ({
       const { data: existingRfid } = await supabase
         .from('rfid_tags')
         .select('uid, status')
+        .eq('event_id', getCurrentEventId())
         .eq('attendee_id', attendeeId)
         .in('status', ['assigned', 'active'])
         .single();
@@ -223,6 +226,7 @@ export const EnhancedRfidAssignmentCell = ({
       const { data: tagExists } = await supabase
         .from('rfid_tags')
         .select('uid, status, attendee_id')
+        .eq('event_id', getCurrentEventId())
         .eq('uid', uid.trim())
         .single();
 
@@ -337,6 +341,7 @@ export const EnhancedRfidAssignmentCell = ({
       const { data: tagExists } = await supabase
         .from('rfid_tags')
         .select('uid, status')
+        .eq('event_id', getCurrentEventId())
         .eq('uid', editValue.trim())
         .single();
 
