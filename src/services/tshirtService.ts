@@ -40,6 +40,26 @@ export interface TShirtOrder {
 }
 
 export class TShirtService {
+  /** Verbose parser logging. Off by default — thousands of lines on a full sync otherwise. */
+  private static get debug(): boolean {
+    return typeof window !== 'undefined' && (window as any).__TSHIRT_DEBUG__ === true;
+  }
+
+  private static log(...args: unknown[]) {
+    if (this.debug) console.log(...args);
+  }
+
+  /** Turn "volunteerShirt.unisexMed" into "volunteer shirt unisex med" so word-boundary patterns work. */
+  private static humanizeFieldName(productName: string): string {
+    return productName
+      .replace(/[._-]+/g, ' ')
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ');
+  }
+
   static extractTShirtInfo(customFields: any): TShirtInfo {
     console.log('T-Shirt Debug - extractTShirtInfo called with customFields:', customFields);
     
