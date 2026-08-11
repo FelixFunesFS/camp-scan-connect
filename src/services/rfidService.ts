@@ -136,7 +136,8 @@ class RfidService {
             uid: uid.trim(),
             attendee_id: attendeeId,
         status: 'assigned',
-            issued_at: new Date().toISOString()
+            issued_at: new Date().toISOString(),
+            credential_type: inferCredentialType(uid)
           })
           .select()
           .single();
