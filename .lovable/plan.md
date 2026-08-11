@@ -1,50 +1,48 @@
-# Lens-Style Camera Scanning in an Installable App
+# T-Shirt Station Data Review + Waivers Section in Staff Hub
 
-## How to think about this
+## Part 1 — What the T-shirt data actually looks like right now
 
-"Google Lens" is really two separate things, and it helps to keep them apart:
+Checked the live 2026 records rather than the code alone:
 
-1. **The container** — Lens feels like an app because it launches from a home-screen icon, fills the screen, and has no browser chrome. That is the installable-app (PWA) part: a web app manifest plus icons. No offline caching needed.
-2. **The experience** — Lens feels magical because the camera is *always live and always decoding*. You don't press "scan", frame a shot, and confirm. You point, it reads, it acts, it stays open for the next one.
+| Check | Result |
+| --- | --- |
+| 2026 attendees synced | 692 |
+| Attendees with any shirt field from RegFox | 140 |
+| `merchandise.tshirt` order strings (the good, detailed ones) | 129 |
+| Volunteer shirt fields (`volunteerShirt*`) | 13 |
+| T-shirt pickups recorded | 0 (expected — pre-event) |
+| Wristband/credential records in the whole database | **0** |
 
-The app already has the hard part: `CameraBraceletScanner` decodes QR, Code 128, Code 39, PDF417 and more with ZXing, with torch, camera flip, and duplicate suppression. What's missing is that it is a small dialog used as a fallback, and stations are built keyboard-wedge-first (`useRfidCapture` + `useScanFocus`). The work is to promote the camera to a first-class, full-screen, continuous mode — and to make the app installable so it opens like a native scanner.
+So the RegFox side **is** current 2026 data. Three real problems sit on top of it:
 
-Important reality check: a phone camera is slower and less reliable than a hardware wedge scanner in bad lighting. So camera mode is the **mobile/roaming staff** path, not a replacement. Hardware scanners stay the default at fixed stations.
+**1. The tracker is invisible until wristbands exist.** `getTShirtPickupData()` joins `rfid_tags!inner`, so an attendee with no assigned wristband is dropped entirely. With zero credential records today, the T-Shirt Distribution Tracking card reports 0 ordered / 0 remaining even though 140 people bought shirts. Fix: make the credential join optional and show "No wristband yet" in the RFID column, so ordered counts are true from day one and don't depend on assignment progress.
 
-## Part 1 — Make the app installable (manifest only)
+**2. Volunteer shirts are partly missed.** The bare `volunteerShirt` field (13 attendees) isn't recognized as a shirt product at all, and the sized variants (`volunteerShirt.unisexMed`, etc.) get relabeled "Unisex Crew Neck" instead of "Volunteer Shirt". Fix: recognize any `*shirt*` key, and give volunteer shirts their own style label so staff hand out the right garment.
 
-- Add `public/manifest.webmanifest`: app name "Camp Scan", short name, `display: "standalone"`, portrait orientation, brand theme + background colors, and icon entries (192, 512, maskable).
-- Generate app icons into `public/` and add `manifest`, `theme-color`, and `apple-touch-icon` tags to `index.html`.
-- No service worker, no offline caching — staff are online at stations, and offline caching risks serving stale screens mid-event.
+**3. The parser logs on every record.** `extractTShirtInfo` prints dozens of debug lines per attendee. Across 692 records that's thousands of console writes per page load on staff tablets. Fix: gate the logging behind a debug flag.
 
-Result: staff open the app once, "Add to Home Screen", and thereafter launch a full-screen scanner with no address bar stealing vertical space.
+Also worth doing while in here: a small "Ordered vs. Assigned" note on the tracker so staff understand a 0% pickup rate before the event is normal, not a bug.
 
-## Part 2 — A Lens-style full-screen scan mode
+## Part 2 — Waivers section in the Staff Hub
 
-New component `LensScanner` (built from the existing ZXing logic, so decoding behavior is unchanged):
+Current state: 333 of 692 attendees are marked waiver-signed and **359 are not** — that's 52% of the event blocked from activation by the waiver gate. Every one of those 333 came from the RegFox import; zero waivers have been signed in-app yet. Staff have no screen that shows this, so they'd discover it one attendee at a time at the gate.
 
-- Full-viewport live camera, safe-area aware, with a dimmed overlay and a centered reticle.
-- **Continuous decode loop** — no shutter button. Found codes fire immediately.
-- **Result as an overlay card**, not a page change: the attendee name, ticket type, waiver/payment status chips, and the station action button slide up over the live feed. Camera keeps running behind it.
-- **Scan-next without leaving**: after an action succeeds, show a brief confirmation chip and re-arm. The same credential is ignored for a cooldown window (reuse the existing duplicate suppression) so one wristband can't be double-counted.
-- **Failure states are on-camera**: "Not found", "Waiver not signed — Sign now", "Payment pending" as overlay banners with the recovery action, instead of dumping the user back to a form.
-- Controls: torch, camera flip, close, and a "Type code" fallback that opens the manual input.
+The right way to think about it: the waiver isn't a report, it's a **queue of work staff must clear**. So it belongs on `/staff-hub` as an actionable panel, not a chart.
 
-## Part 3 — Wiring it into the stations
+Add a **Waivers** section to the Staff Activation Hub with:
 
-- Add a shared `ScanSource` toggle to `UnifiedStationScanner`: **Scanner** (current keyboard-wedge input, default on desktop/tablet) and **Camera** (default on small screens).
-- Both paths feed the *same* handler that the wedge input uses today, so lookup, waiver gate, transaction recording, and staff override behave identically regardless of source.
-- When camera mode is active, suspend `useScanFocus` re-focus attempts so the two systems don't fight over focus.
-- Keep the current dialog scanner working; `LensScanner` supersedes it as the mobile default.
+- **Three headline counts** — Signed, Not signed, and % complete, scoped to the active event year.
+- **A filter chip row** on the existing attendee list: "Waiver missing" as a one-tap quick filter, so a staffer can work the unsigned list directly.
+- **An unsigned list** with name, phone, order ID, and a **Sign waiver** button that opens the existing `WaiverSigningDialog` — same typed-name flow already built, so the attendee types their own name on the staff device.
+- **Source badge per attendee** — "Signed at registration" vs. "Signed on-site", read from whether a `waiver_signatures` row exists. This matters for disputes: the on-site ones have a typed name, timestamp, and agreement version on file; the imported ones only have RegFox's flag.
+- **Group awareness** — when one person in an order is unsigned, show the order's other unsigned members together, since families arrive as a unit.
+- **CSV export** of the unsigned list for pre-event outreach.
 
-## Part 4 — Attendee-facing self scan (optional, flagged)
-
-The same component can back a public self-service screen where an attendee points their own phone at a station QR to check in. Worth building only after staff-side camera mode is proven at the event; noted here so the component is designed to be reusable rather than station-coupled.
+Placement: a collapsible card near the top of the Staff Hub, above the attendee list, so the count is visible on arrival without pushing the scan tools off screen. Collapsed by default on mobile.
 
 ## Technical notes
 
-- Camera requires HTTPS — works on the published domain and preview, not on plain `http://` LAN addresses.
-- iOS Safari requires a user gesture to start the stream; the mode opens on an explicit "Camera" tap, never auto-starts.
-- Stop all tracks on unmount, tab hide, and dialog close to avoid a hot camera draining staff phones.
-- Reuse `normalizeCredential` / `isValidCredentialFormat` so camera reads and wedge reads validate through one code path.
-- No database or edge-function changes.
+- No schema changes. Waiver counts come from `attendees.waiver_signed` scoped by `event_id`; signature provenance comes from `waiver_signatures`.
+- Reuse `WaiverSigningDialog`, `waiverService`, and the existing `UnifiedSearchFilter` quick-filter pattern rather than adding parallel UI.
+- T-shirt fixes are confined to `src/services/tshirtService.ts` and the RFID column in `src/components/reports/TShirtTracker.tsx`; pickup recording logic is unchanged.
+- Refresh the waiver panel on the same background-refresh interval the hub already uses.
