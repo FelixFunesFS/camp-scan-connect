@@ -305,14 +305,85 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
                   </ScrollArea>
                 )}
 
-                {/* Provenance summary */}
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Badge variant="outline">
-                    Signed on-site: {onSiteSignedIds.size}
-                  </Badge>
-                  <Badge variant="outline">
-                    Signed at registration: {Math.max(signed.length - onSiteSignedIds.size, 0)}
-                  </Badge>
+                {/* Signature records */}
+                <div className="space-y-3 border-t pt-4">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-sm font-medium mr-1">Signature records</span>
+                    <Badge variant="outline">Signed in app: {signatures.size}</Badge>
+                    <Badge variant="outline">
+                      Flagged by import: {Math.max(signed.length - signatures.size, 0)}
+                    </Badge>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="pl-9"
+                      placeholder="Look up a signed attendee to view or download their record..."
+                      value={recordSearch}
+                      onChange={(e) => setRecordSearch(e.target.value)}
+                    />
+                  </div>
+
+                  {recordSearch.trim() && (
+                    <div className="space-y-2">
+                      {signedMatches.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-2">
+                          No signed attendee matches that search.
+                        </p>
+                      ) : (
+                        signedMatches.map((a) => {
+                          const record = signatures.get(a.id);
+                          const name = `${a.first_name} ${a.last_name}`;
+                          return (
+                            <div
+                              key={a.id}
+                              className="rounded-lg border p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+                            >
+                              <div className="min-w-0 space-y-0.5">
+                                <div className="font-medium truncate">{name}</div>
+                                {record ? (
+                                  <div className="text-xs text-muted-foreground">
+                                    Signed in app as "{record.typed_name}" •{" "}
+                                    {new Date(record.signed_at).toLocaleString()} •{" "}
+                                    {record.agreement_version}
+                                    {record.name_match === false && " • name mismatch"}
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-muted-foreground">
+                                    Flagged as signed at registration — no in-app signature captured
+                                  </div>
+                                )}
+                              </div>
+                              {record ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="shrink-0"
+                                  onClick={() =>
+                                    downloadWaiverReceipt({
+                                      attendeeName: name,
+                                      typedName: record.typed_name,
+                                      signedAt: record.signed_at,
+                                      agreementVersion: record.agreement_version,
+                                      nameMatch: record.name_match,
+                                    })
+                                  }
+                                >
+                                  <FileDown className="h-4 w-4 mr-2" />
+                                  PDF
+                                </Button>
+                              ) : (
+                                <Badge variant="outline" className="shrink-0">
+                                  Registration
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
               </>
             )}
