@@ -45,6 +45,7 @@ import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { NotificationState } from "@/types/attendee";
 import { StaffAssistanceNotifications } from "@/components/StaffAssistanceNotifications";
+import { WaiverStatusPanel } from "@/components/WaiverStatusPanel";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
 
@@ -494,12 +495,14 @@ export function StaffActivationHub() {
     const assignedCount = attendees.filter(a => a.rfid_status === 'assigned' || a.rfid_status === 'active').length;
     const unassignedCount = attendees.filter(a => a.rfid_status === 'unissued').length;
     const veteransCount = attendees.filter(a => a.is_veteran).length;
+    const waiverMissingCount = attendees.filter(a => !a.waiver_signed).length;
 
     return [
       { key: "all", label: "All Attendees", count: totalCount },
       { key: "activated", label: "Activated", count: activatedCount },
       { key: "assigned", label: "RFID Assigned", count: assignedCount },
       { key: "unassigned", label: "Needs RFID", count: unassignedCount },
+      { key: "waiver_missing", label: "Waiver Missing", count: waiverMissingCount },
       { key: "veterans", label: "Veterans Only", count: veteransCount }
     ];
   }, [attendees]);
@@ -514,6 +517,7 @@ export function StaffActivationHub() {
         case 'activated': filtered = filtered.filter(a => a.activated_at); break;
         case 'assigned': filtered = filtered.filter(a => a.rfid_status === 'assigned' || a.rfid_status === 'active'); break;
         case 'unassigned': filtered = filtered.filter(a => a.rfid_status === 'unissued'); break;
+        case 'waiver_missing': filtered = filtered.filter(a => !a.waiver_signed); break;
         case 'veterans': filtered = filtered.filter(a => a.is_veteran); break;
       }
     }
@@ -1065,6 +1069,14 @@ export function StaffActivationHub() {
         {/* Staff Assistance Queue */}
         <StaffAssistanceNotifications />
 
+        {/* Waiver completion queue */}
+        <WaiverStatusPanel
+          onFilterUnsigned={() => {
+            setActiveQuickFilter('waiver_missing');
+            document.getElementById('individual-search')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
+
         {/* Unified Multi-Criteria Activation Section */}
         <Card>
           <CardHeader>
@@ -1144,7 +1156,7 @@ export function StaffActivationHub() {
         </Card>
 
         {/* Individual Search & Management */}
-        <Card>
+        <Card id="individual-search">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserCheck className="h-5 w-5" />
