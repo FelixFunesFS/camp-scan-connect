@@ -569,11 +569,10 @@ export class TShirtService {
           phone,
           t_shirt_size,
           custom_fields,
-          rfid_tags!inner(uid, status)
+          rfid_tags(uid, status)
         `)
         .eq('event_id', getCurrentEventId())
-        .eq('registration_status', 'registered')
-        .in('rfid_tags.status', ['assigned', 'active']);
+        .eq('registration_status', 'registered');
 
       if (!attendees) return { pickups: [], stats: this.getEmptyStats() };
 
@@ -652,7 +651,7 @@ export class TShirtService {
                   tshirtType: group.style,
                   pickedUp: false,
                   pickupTime: null,
-                  rfidUid: attendee.rfid_tags[0]?.uid || 'Unknown'
+                  rfidUid: this.pickCredentialUid(attendee.rfid_tags)
                 });
               }
             }
