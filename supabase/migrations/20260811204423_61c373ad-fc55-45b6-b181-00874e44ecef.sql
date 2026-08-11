@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.apply_waiver_signature() FROM PUBLIC, anon, authenticated;
