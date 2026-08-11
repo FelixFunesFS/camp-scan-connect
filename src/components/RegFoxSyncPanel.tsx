@@ -264,7 +264,7 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
               <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={handleInitialSync}
-                  disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId}
+                  disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId || !boundFormId}
                   className="flex items-center gap-2"
                 >
                   {isInitialSyncing ? (
@@ -280,7 +280,7 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
                     <Button
                       variant="outline"
                       onClick={handleManualSync}
-                      disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId}
+                      disabled={isInitialSyncing || isManualSyncing || isCancelling || !!activeSyncId || !boundFormId}
                       className="flex items-center gap-2"
                     >
                       {isManualSyncing ? (
