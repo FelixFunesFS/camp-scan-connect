@@ -270,57 +270,69 @@ export function UnifiedStationScanner({
           <h1 className="text-2xl font-bold">{stationTitle}</h1>
         </div>
 
-        {/* RFID Scanner Card */}
+        {/* Camera Scanner Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Scan className="h-5 w-5" />
-              Scan RFID Tag
+              Scan attendee code
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Manual RFID Input */}
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                data-rfid-input="true"
-                placeholder="Scan RFID or type manually..."
-                value={manualUid}
-                onChange={(e) => setManualUid(e.target.value)}
-                disabled={isLookingUp}
-                className="flex-1"
-                {...focusProps}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleManualScan();
-                  }
-                }}
-              />
-              <Button 
-                onClick={handleManualScan}
-                disabled={isLookingUp || !manualUid.trim()}
-                size="default"
+            {/* Primary action: open the in-app camera scanner */}
+            <Button
+              size="lg"
+              className="w-full h-14 text-base"
+              onClick={() => setShowLens(true)}
+              disabled={isLookingUp}
+            >
+              <Camera className="h-5 w-5 mr-2" />
+              Scan with camera
+            </Button>
+
+            {showManualEntry ? (
+              <div className="flex gap-2">
+                <Input
+                  ref={inputRef}
+                  autoFocus
+                  data-exclude-rfid="true"
+                  placeholder="Type the printed code..."
+                  value={manualUid}
+                  onChange={(e) => setManualUid(e.target.value)}
+                  disabled={isLookingUp}
+                  className="flex-1 font-mono"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleManualScan();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={handleManualScan}
+                  disabled={isLookingUp || !manualUid.trim()}
+                >
+                  {isLookingUp ? "Looking up..." : "Look up"}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="link"
+                className="w-full text-muted-foreground"
+                onClick={() => setShowManualEntry(true)}
               >
-                {isLookingUp ? "Looking up..." : "Scan"}
+                Code won't scan? Enter it manually
               </Button>
-            </div>
+            )}
 
             {/* Status Indicators */}
-            <div className="flex items-center gap-2 text-sm">
-              <ScanFocusIndicator isFocused={isFocused} onClick={focusInput} />
-              {isCapturing && (
-                <Badge variant="secondary" className="animate-pulse">
-                  <Scan className="h-3 w-3 mr-1" />
-                  Capturing: {capturedUid}
-                </Badge>
-              )}
-              {isLookingUp && (
+            {isLookingUp && (
+              <div className="flex items-center gap-2 text-sm">
                 <Badge variant="secondary">
                   <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-1" />
                   Looking up attendee...
                 </Badge>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Error Display */}
             {error && (
