@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { FileSignature, ChevronDown, Download, Search, CheckCircle2, AlertTriangle, Users } from "lucide-react";
+import { FileSignature, ChevronDown, Download, Search, CheckCircle2, AlertTriangle, Users, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
+import { downloadWaiverReceipt } from "@/lib/waiverReceipt";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -23,6 +24,13 @@ interface WaiverAttendee {
   waiver_signed: boolean;
 }
 
+interface SignatureRecord {
+  typed_name: string;
+  agreement_version: string;
+  name_match: boolean | null;
+  signed_at: string;
+}
+
 interface WaiverStatusPanelProps {
   /** Bump to force a refresh from the parent's background refresh cycle. */
   refreshTrigger?: number;
@@ -33,10 +41,11 @@ interface WaiverStatusPanelProps {
 export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverStatusPanelProps) {
   const isMobile = useIsMobile();
   const [attendees, setAttendees] = useState<WaiverAttendee[]>([]);
-  const [onSiteSignedIds, setOnSiteSignedIds] = useState<Set<string>>(new Set());
+  const [signatures, setSignatures] = useState<Map<string, SignatureRecord>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [recordSearch, setRecordSearch] = useState("");
   const [signing, setSigning] = useState<WaiverAttendee | null>(null);
 
   useEffect(() => {
@@ -57,9 +66,9 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
 
       if (error) throw error;
 
-      const { data: signatures } = await supabase
+      const { data: signatureRows } = await supabase
         .from("waiver_signatures")
-        .select("attendee_id")
+        .select("attendee_id, typed_name, agreement_version, name_match, signed_at")
         .eq("event_id", eventId);
 
       setAttendees(
@@ -72,7 +81,19 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
           waiver_signed: !!r.waiver_signed,
         }))
       );
-      setOnSiteSignedIds(new Set((signatures || []).map((s) => s.attendee_id)));
+      setSignatures(
+        new Map(
+          (signatureRows || []).map((s) => [
+            s.attendee_id,
+            {
+              typed_name: s.typed_name,
+              agreement_version: s.agreement_version,
+              name_match: s.name_match,
+              signed_at: s.signed_at,
+            },
+          ])
+        )
+      );
     } catch (err) {
       console.error("Error loading waiver status:", err);
     } finally {
@@ -113,6 +134,19 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
       members,
     }));
   }, [unsigned, search]);
+
+  /** Signed attendees, searchable, with in-app signature detail when we captured one. */
+  const signedMatches = useMemo(() => {
+    const term = recordSearch.trim().toLowerCase();
+    if (!term) return [];
+    return signed
+      .filter((a) =>
+        [a.first_name, a.last_name, a.phone, a.order_id].some((f) =>
+          f?.toLowerCase().includes(term)
+        )
+      )
+      .slice(0, 25);
+  }, [signed, recordSearch]);
 
   const exportUnsigned = () => {
     if (!unsigned.length) {
