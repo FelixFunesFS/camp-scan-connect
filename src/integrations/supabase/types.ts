@@ -588,6 +588,66 @@ export type Database = {
           },
         ]
       }
+      waiver_signatures: {
+        Row: {
+          agreement_version: string
+          attendee_id: string
+          created_at: string
+          event_id: string | null
+          id: string
+          name_match: boolean | null
+          signed_at: string
+          signed_by_self: boolean
+          typed_name: string
+          updated_at: string
+          user_agent: string | null
+          witnessed_by: string | null
+        }
+        Insert: {
+          agreement_version?: string
+          attendee_id: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          name_match?: boolean | null
+          signed_at?: string
+          signed_by_self?: boolean
+          typed_name: string
+          updated_at?: string
+          user_agent?: string | null
+          witnessed_by?: string | null
+        }
+        Update: {
+          agreement_version?: string
+          attendee_id?: string
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          name_match?: boolean | null
+          signed_at?: string
+          signed_by_self?: boolean
+          typed_name?: string
+          updated_at?: string
+          user_agent?: string | null
+          witnessed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waiver_signatures_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: false
+            referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waiver_signatures_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

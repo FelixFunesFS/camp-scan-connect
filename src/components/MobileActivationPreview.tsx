@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, Smartphone, AlertCircle, CheckCircle2, FileWarning } from "lucide-react";
+import { FileSignature } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { MobileAttendeeCard } from "@/components/shared/MobileAttendeeCard";
@@ -13,6 +14,7 @@ interface MobileActivationPreviewProps {
   isProcessing: boolean;
   onActivateEntireOrder: () => void;
   onBack: () => void;
+  onSignWaiver: (attendee: any) => void;
 }
 
 export function MobileActivationPreview({
@@ -20,7 +22,8 @@ export function MobileActivationPreview({
   lookupResult,
   isProcessing,
   onActivateEntireOrder,
-  onBack
+  onBack,
+  onSignWaiver
 }: MobileActivationPreviewProps) {
   const all: any[] = lookupResult.attendee_details ?? [];
   const companions: any[] = lookupResult.order_companions ?? [];
@@ -70,10 +73,31 @@ export function MobileActivationPreview({
       {waiverBlocked.length > 0 && (
         <Alert variant="destructive">
           <FileWarning className="h-4 w-4" />
-          <AlertDescription>
-            <span className="font-medium">Liability waiver required.</span>{' '}
-            {waiverBlocked.map((a: any) => a.name).join(', ')} must sign the waiver before
-            check-in. See a staff member to sign — everyone else on this order can still check in.
+          <AlertDescription className="space-y-3">
+            <p>
+              <span className="font-medium">Liability waiver required.</span> Each person signs for
+              themselves — everyone else on this order can still check in.
+            </p>
+            <div className="space-y-2">
+              {waiverBlocked.map((a: any) => (
+                <div
+                  key={a.attendee_id ?? a.id}
+                  className="flex items-center justify-between gap-3 rounded-md bg-background/60 p-2"
+                >
+                  <span className="text-sm font-medium truncate">{a.name}</span>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="shrink-0"
+                    disabled={isProcessing}
+                    onClick={() => onSignWaiver(a)}
+                  >
+                    <FileSignature className="h-4 w-4 mr-1.5" />
+                    Sign Waiver
+                  </Button>
+                </div>
+              ))}
+            </div>
           </AlertDescription>
         </Alert>
       )}

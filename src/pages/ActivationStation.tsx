@@ -14,6 +14,7 @@ import { StaffAssistanceModal } from "@/components/StaffAssistanceModal";
 import { SelfActivationInstructions } from "@/components/SelfActivationInstructions";
 import { SelfActivationFAQ } from "@/components/SelfActivationFAQ";
 import { useEvent } from "@/contexts/EventContext";
+import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
 
 export default function ActivationStation() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -24,12 +25,17 @@ export default function ActivationStation() {
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [errorType, setErrorType] = useState<'not_found' | 'unassigned' | 'activation_failed' | 'system_error'>('system_error');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [waiverAttendee, setWaiverAttendee] = useState<{ id: string; name: string } | null>(null);
   const navigate = useNavigate();
   const { selectedEvent } = useEvent();
   
   const isMobile = useIsMobile();
 
   const handlePhoneLookup = async () => {
+    return runLookup(false);
+  };
+
+  const runLookup = async (silent: boolean) => {
     const validation = PhoneActivationService.validatePhone(phoneNumber);
     if (!validation.isValid) {
       toast.error("Invalid Phone Number - " + validation.error);
@@ -43,7 +49,7 @@ export default function ActivationStation() {
       if (result && result.attendee_count > 0) {
         setLookupResult(result);
         setShowPreview(true);
-      } else {
+      } else if (!silent) {
         setErrorType('not_found');
         setErrorMessage('No attendees found with this phone number');
         setShowStaffModal(true);
@@ -51,7 +57,10 @@ export default function ActivationStation() {
     } catch (error) {
       console.error('Lookup error:', error);
       const errorMsg = error instanceof Error ? error.message : "Unknown error occurred";
-      
+      if (silent) {
+        setIsProcessing(false);
+        return;
+      }
       // Determine error type based on error message
       if (errorMsg.toLowerCase().includes('network') || errorMsg.toLowerCase().includes('connection')) {
         setErrorType('system_error');
@@ -200,6 +209,14 @@ export default function ActivationStation() {
                           isProcessing={isProcessing}
                           onActivateEntireOrder={handleActivateEntireOrder}
                           onBack={() => setShowPreview(false)}
+                          onSignWaiver={(attendee) =>
+                            setWaiverAttendee({
+                              id: attendee.attendee_id ?? attendee.id,
+                              name:
+                                attendee.name ??
+                                `${attendee.first_name ?? ''} ${attendee.last_name ?? ''}`.trim(),
+                            })
+                          }
                         />
                     )}
                   </>
@@ -232,6 +249,20 @@ export default function ActivationStation() {
           errorType={errorType}
           errorMessage={errorMessage}
         />
+
+        {waiverAttendee && (
+          <WaiverSigningDialog
+            open={!!waiverAttendee}
+            onOpenChange={(open) => !open && setWaiverAttendee(null)}
+            attendeeId={waiverAttendee.id}
+            attendeeName={waiverAttendee.name}
+            eventId={selectedEvent?.id}
+            onSigned={() => {
+              setWaiverAttendee(null);
+              runLookup(true);
+            }}
+          />
+        )}
       </div>
     </div>
   );
