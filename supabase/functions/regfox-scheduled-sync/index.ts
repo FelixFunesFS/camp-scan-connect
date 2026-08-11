@@ -1,77 +1,41 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/regfox.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  // Handle CORS preflight requests
+/** Cron entrypoint. Skips cleanly when a sync is already running. */
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
 
-    console.log('Scheduled RegFox sync triggered');
+    const { data: canStart, error: lockError } = await supabase.rpc('can_start_sync');
+    if (lockError) throw new Error(`Failed to check sync lock: ${lockError.message}`);
 
-    // Check if a sync is already in progress
-    const { data: canStart } = await supabase.rpc('can_start_sync');
-    
     if (!canStart) {
-      console.log('Sync already in progress, skipping scheduled sync');
-      return new Response(JSON.stringify({
-        success: true,
-        message: 'Sync already in progress, skipping scheduled sync',
-        skipped: true
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, message: 'Sync already in progress' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
-    // Trigger the API sync function with scheduled flag
-    const { data: syncResponse, error: syncError } = await supabase.functions.invoke('regfox-sync', {
-      body: { 
-        scheduled_sync: true,
-        sync_type: 'scheduled'
-      }
+    const { data, error } = await supabase.functions.invoke('regfox-sync', {
+      body: { sync_type: 'scheduled' },
     });
+    if (error) throw new Error(error.message);
 
-    if (syncError) {
-      console.error('Error triggering scheduled sync:', syncError);
-      return new Response(JSON.stringify({
-        success: false,
-        error: `Failed to trigger scheduled sync: ${syncError.message}`
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('Scheduled sync triggered successfully:', syncResponse);
-    
-    return new Response(JSON.stringify({
-      success: true,
-      message: 'Scheduled sync triggered successfully',
-      sync_response: syncResponse
-    }), {
+    return new Response(JSON.stringify({ success: true, sync_response: data }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
   } catch (error) {
-    console.error('Scheduled sync error:', error);
-    
-    return new Response(JSON.stringify({
-      success: false,
-      error: `Scheduled sync failed: ${(error as Error).message}`
-    }), {
+    const message = (error as Error).message;
+    console.error('Scheduled sync failed:', message);
+    return new Response(JSON.stringify({ success: false, error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
