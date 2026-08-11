@@ -97,6 +97,10 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Distribution Stats */}
+        <p className="text-xs text-muted-foreground">
+          Counts come from registration orders, so totals are accurate before wristbands are
+          assigned. A 0% pickup rate ahead of the event is expected.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center p-4 bg-info/10 rounded-lg">
             <Package className="h-6 w-6 text-info mx-auto mb-2" />
@@ -212,9 +216,15 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="text-xs font-mono">
-                            {pickup.rfidUid}
-                          </Badge>
+                          {pickup.rfidUid === 'No wristband yet' ? (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                              No wristband yet
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs font-mono">
+                              {pickup.rfidUid}
+                            </Badge>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
