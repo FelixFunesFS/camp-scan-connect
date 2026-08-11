@@ -3,10 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Scan, User, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Camera, Scan, User, CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { rfidService } from "@/services/rfidService";
 import { StationTransactionService } from "@/services/stationTransactionService";
 import { RfidTag, AttendeeReadiness, StationType, TransactionType } from "@/types/station";
@@ -16,8 +15,7 @@ import { StaffOverridePanel } from "@/components/StaffOverridePanel";
 import { QuickStaffActivation } from "@/components/QuickStaffActivation";
 import { GroupActivationResult } from "@/services/phoneActivationService";
 import { EnhancedActivationService } from "@/services/enhancedActivationService";
-import { useScanFocus } from "@/hooks/useScanFocus";
-import { ScanFocusIndicator } from "@/components/ScanFocusIndicator";
+import { LensScanner } from "@/components/LensScanner";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -55,13 +53,10 @@ export function UnifiedStationScanner({
   const [showStaffOverride, setShowStaffOverride] = useState(false);
   const [showStaffActivation, setShowStaffActivation] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
+  const [showLens, setShowLens] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState(false);
   const navigate = useNavigate();
-  const { inputRef, isFocused, focusInput, focusProps } = useScanFocus([
-    selectedRfid,
-    isLookingUp,
-    showStaffOverride,
-    showStaffActivation,
-  ]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleRfidFound = async (uid: string) => {
     setError("");
@@ -96,12 +91,6 @@ export function UnifiedStationScanner({
       setIsLookingUp(false);
     }
   };
-
-  // RFID capture hook for hardware scanners
-  const { capturedUid, isCapturing } = useRfidCapture({
-    onCapture: handleRfidFound,
-    enabled: true
-  });
 
   const handleManualScan = () => {
     if (manualUid.trim()) {
@@ -218,8 +207,8 @@ export function UnifiedStationScanner({
       setManualUid("");
       setError("");
       
-      // Focus back on the scan input for the next scan
-      focusInput();
+      // Ready for the next scan
+      setShowLens(false);
     } catch (error) {
       console.error("Failed to handle staff activation result:", error);
       toast.error("Failed to process staff activation");
