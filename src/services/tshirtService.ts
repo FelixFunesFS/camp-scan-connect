@@ -692,15 +692,6 @@ export class TShirtService {
     return 'No wristband yet';
   }
 
-  private static unusedEmptyStats(): TShirtStats {
-    return {
-      totalOrdered: 0,
-      pickedUp: 0,
-      remaining: 0,
-      sizeBreakdown: {}
-    };
-  }
-
   static async checkAttendeeHasTShirt(attendeeId: string): Promise<{ 
     hasTShirt: boolean; 
     size: string | null; 
