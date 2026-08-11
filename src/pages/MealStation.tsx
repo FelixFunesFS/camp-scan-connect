@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -101,6 +102,7 @@ function MealContent({
       const { data, error } = await supabase
         .from('attendees')
         .select('meal_plan')
+        .eq('event_id', getCurrentEventId())
         .eq('id', selectedRfid.attendee_id)
         .maybeSingle();
         
@@ -122,6 +124,7 @@ function MealContent({
         const { data, error } = await supabase
           .from('station_transactions')
           .select('id')
+        .eq('event_id', getCurrentEventId())
           .eq('attendee_id', selectedRfid.attendee_id)
           .eq('station_type', 'meal')
           .eq('transaction_type', meal.id)

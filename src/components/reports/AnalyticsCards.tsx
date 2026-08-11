@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +75,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger, section = 'all'
         const { data: drinks } = await supabase
           .from('station_transactions')
           .select('*')
+        .eq('event_id', getCurrentEventId())
           .eq('station_type', 'drinks')
           .eq('transaction_type', 'drink')
           .gte('created_at', drinksBoundaries.start.toISOString())
@@ -101,6 +103,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger, section = 'all'
         const { data: headphoneTransactions } = await supabase
           .from('station_transactions')
           .select('attendee_id, created_at, transaction_type')
+        .eq('event_id', getCurrentEventId())
           .eq('station_type', 'headphones')
           .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
           .gte('created_at', drinksBoundaries.start.toISOString())
@@ -135,6 +138,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger, section = 'all'
         const { data: allTransactions } = await supabase
           .from('station_transactions')
           .select('created_at, transaction_type')
+        .eq('event_id', getCurrentEventId())
           .gte('created_at', standardBoundaries.start.toISOString())
           .lt('created_at', standardBoundaries.end.toISOString());
 
@@ -158,6 +162,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger, section = 'all'
         const { data: meals, error: mealsError } = await supabase
           .from('station_transactions')
           .select('transaction_type, created_at')
+        .eq('event_id', getCurrentEventId())
           .eq('station_type', 'meal')
           .gte('created_at', standardBoundaries.start.toISOString())
           .lt('created_at', standardBoundaries.end.toISOString());
@@ -200,6 +205,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger, section = 'all'
         const { data: gateTransactions } = await supabase
           .from('station_transactions')
           .select('*')
+        .eq('event_id', getCurrentEventId())
           .eq('station_type', 'main_gate')
           .in('transaction_type', ['gate_entry', 'gate_exit'])
           .gte('created_at', standardBoundaries.start.toISOString())
@@ -241,6 +247,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger, section = 'all'
           const { data: compDrinks } = await supabase
             .from('station_transactions')
             .select('*')
+        .eq('event_id', getCurrentEventId())
             .eq('station_type', 'drinks')
             .eq('transaction_type', 'drink')
             .gte('created_at', drinksComparisonBoundaries.start.toISOString())
@@ -249,6 +256,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger, section = 'all'
           const { data: compHeadphones } = await supabase
             .from('station_transactions')
             .select('attendee_id, created_at, transaction_type')
+        .eq('event_id', getCurrentEventId())
             .eq('station_type', 'headphones')
             .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
             .gte('created_at', drinksComparisonBoundaries.start.toISOString())

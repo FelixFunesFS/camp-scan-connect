@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getCurrentEventId, getEventStartDate } from "@/lib/eventRuntime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -52,10 +53,11 @@ export function PostProductionAnalysis() {
     try {
       setIsLoading(true);
       
-      // Fetch all station transactions after Sep 25, 2025 6am ET
-      const cutoffDate = '2025-09-25 10:00:00'; // 6am ET = 10am UTC
+      // Event-relative cutoff: from the morning the event opened (6am ET).
+      const start = getEventStartDate();
+      const cutoffDate = new Date(start.getTime() + 10 * 60 * 60 * 1000).toISOString();
       
-      const { data: transactions, error } = await supabase
+      let query = supabase
         .from('station_transactions')
         .select(`
           id,
@@ -67,6 +69,11 @@ export function PostProductionAnalysis() {
         `)
         .gte('created_at', cutoffDate)
         .or('rfid_uid.is.null,and(rfid_uid.not.like.MOCK%)'); // Include NULL values but exclude MOCK test transactions
+
+      const eventId = getCurrentEventId();
+      if (eventId) query = query.eq('event_id', eventId);
+
+      const { data: transactions, error } = await query;
 
       if (error) throw error;
 

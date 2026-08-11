@@ -2,9 +2,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Settings, BarChart3, ArrowRight, Key, Headphones, Utensils, Wine, Zap, Scan, Car, Radio, Package, DoorOpen, Shirt } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEvent } from "@/contexts/EventContext";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { selectedEvent } = useEvent();
+
+  const dateRange = (() => {
+    if (!selectedEvent?.starts_at) return null;
+    const fmt = (d: string) =>
+      new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const start = fmt(selectedEvent.starts_at);
+    const end = selectedEvent.ends_at ? fmt(selectedEvent.ends_at) : null;
+    return `${start}${end ? `-${end.replace(/^\w+\s/, "")}` : ""}, ${selectedEvent.year}`;
+  })();
 
   return (
     <div className="min-h-screen bg-background">
@@ -19,11 +30,11 @@ const Index = () => {
             />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Melanated Campout 2025
+            {selectedEvent?.name ?? "Melanated Campout"}
           </h1>
           <p className="text-xl text-muted-foreground mb-6">RFID Management System</p>
           <Badge variant="secondary" className="text-sm px-4 py-2">
-            Veterans Campground, Cordele, GA • Sep 26-28, 2025
+            Veterans Campground, Cordele, GA{dateRange ? ` • ${dateRange}` : ""}
           </Badge>
         </div>
 

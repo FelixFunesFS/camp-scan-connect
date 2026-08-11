@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RfidTag {
@@ -45,6 +46,7 @@ class RfidService {
             phone
           )
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('uid', uid)
         .in('status', ['assigned', 'active'])
         .single();
@@ -71,6 +73,7 @@ class RfidService {
           status,
           attendee:attendees(first_name, last_name)
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('uid', uid.trim())
         .single();
 
@@ -101,6 +104,7 @@ class RfidService {
       const { data: existingRfid } = await supabase
         .from('rfid_tags')
         .select('uid')
+        .eq('event_id', getCurrentEventId())
         .eq('attendee_id', attendeeId)
         .in('status', ['assigned', 'active'])
         .single();
@@ -120,6 +124,7 @@ class RfidService {
       const { data: tagExists } = await supabase
         .from('rfid_tags')
         .select('uid')
+        .eq('event_id', getCurrentEventId())
         .eq('uid', uid.trim())
         .single();
 
@@ -193,6 +198,7 @@ class RfidService {
       const { data: rfidTag } = await supabase
         .from('rfid_tags')
         .select('attendee_id')
+        .eq('event_id', getCurrentEventId())
         .eq('uid', uid)
         .single();
 
@@ -250,6 +256,7 @@ class RfidService {
       const { data, error } = await supabase
         .from('rfid_tags')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .eq('attendee_id', attendeeId)
         .in('status', ['assigned', 'active'])
         .single();
@@ -343,6 +350,7 @@ class RfidService {
       const { data: rfidTag } = await supabase
         .from('rfid_tags')
         .select('uid, status')
+        .eq('event_id', getCurrentEventId())
         .eq('attendee_id', attendeeId)
         .in('status', ['assigned', 'active'])
         .single();
@@ -362,6 +370,7 @@ class RfidService {
       const { data: activationTransaction } = await supabase
         .from('station_transactions')
         .select('transaction_type, created_at')
+        .eq('event_id', getCurrentEventId())
         .eq('attendee_id', attendeeId)
         .eq('station_type', 'activation')
         .order('created_at', { ascending: false })

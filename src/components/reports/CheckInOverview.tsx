@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Users, UserCheck, AlertTriangle, TrendingUp, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getStandardTimeBoundaries, getCurrentETDate } from "@/utils/etTimezone";
+import { getEventDay, getCurrentEventId } from "@/lib/eventRuntime";
 import { PendingIssuesModal } from "./PendingIssuesModal";
 
 interface CheckInStats {
@@ -68,12 +69,14 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
           id, activated_at, created_at, arrival_window, early_access,
           rfid_tags!inner(uid, status, activated_at)
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('registration_status', 'registered')
         .eq('rfid_tags.status', 'active');
 
       const { data: allAttendees } = await supabase
         .from('attendees')
         .select('id, activated_at, arrival_window, early_access')
+        .eq('event_id', getCurrentEventId())
         .eq('registration_status', 'registered');
 
       if (!allAttendees) return;
@@ -103,6 +106,7 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
         const { data: assistanceRequests } = await supabase
           .from('staff_assistance_requests')
           .select('id')
+        .eq('event_id', getCurrentEventId())
           .in('status', ['open', 'in_progress']);
 
         const pendingIssues = assistanceRequests?.length || 0;
@@ -111,23 +115,22 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
         const { data: activationData } = await supabase
           .from('station_transactions')
           .select('activation_method')
+        .eq('event_id', getCurrentEventId())
           .eq('transaction_type', 'activate')
           .not('activation_method', 'is', null);
 
         const selfActivated = activationData?.filter(a => a.activation_method === 'self').length || 0;
         const staffAssisted = activationData?.filter(a => a.activation_method === 'staff').length || 0;
 
-        // Calculate arrival day breakdown - Sept 25-26, 2025
+        // Arrival day breakdown, derived from the event start date
         const thursdayAttendees = allAttendees.filter(a => a.early_access === true || a.arrival_window === 'early');
         const fridayAttendees = allAttendees.filter(a => a.early_access === false || a.arrival_window === 'standard');
         
-        // Sept 25, 2025 boundaries (Thursday)
-        const sept25Start = new Date('2025-09-25T00:00:00-04:00'); // Sept 25 midnight ET
-        const sept25End = new Date('2025-09-26T00:00:00-04:00');   // Sept 26 midnight ET
-        
-        // Sept 26, 2025 boundaries (Friday) 
-        const sept26Start = new Date('2025-09-26T00:00:00-04:00'); // Sept 26 midnight ET
-        const sept26End = new Date('2025-09-27T00:00:00-04:00');   // Sept 27 midnight ET
+        // Early-access day (day 1 of the event) and standard arrival day (day 2)
+        const sept25Start = getEventDay(0);
+        const sept25End = getEventDay(1);
+        const sept26Start = getEventDay(1);
+        const sept26End = getEventDay(2);
         
         const thursdayExpected = thursdayAttendees.length;
         const thursdayCheckedIn = thursdayAttendees.filter(a => {

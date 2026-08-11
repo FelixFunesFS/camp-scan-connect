@@ -127,6 +127,7 @@ export async function getEnhancedCheckInStatus(attendeeId: string, rfidUid: stri
     const { data: activationTransaction } = await supabase
       .from('station_transactions')
       .select('transaction_type')
+        .eq('event_id', getCurrentEventId())
       .eq('attendee_id', attendeeId)
       .eq('station_type', 'activation')
       .in('transaction_type', ['activate', 'deactivate'])
@@ -139,6 +140,7 @@ export async function getEnhancedCheckInStatus(attendeeId: string, rfidUid: stri
     const { data: rfidTag } = await supabaseClient
       .from('rfid_tags')
       .select('status')
+        .eq('event_id', getCurrentEventId())
       .eq('uid', rfidUid)
       .in('status', ['assigned', 'active'])
       .maybeSingle();
@@ -188,6 +190,7 @@ export async function getActivationStatusFromTransactions(attendeeId: string): P
     const { data: activationTransaction } = await supabase
       .from('station_transactions')
       .select('transaction_type, created_at')
+        .eq('event_id', getCurrentEventId())
       .eq('attendee_id', attendeeId)
       .eq('station_type', 'activation')
       .in('transaction_type', ['activate', 'deactivate'])
@@ -199,6 +202,7 @@ export async function getActivationStatusFromTransactions(attendeeId: string): P
     const { data: rfidTag } = await supabase
       .from('rfid_tags')
       .select('uid, status')
+        .eq('event_id', getCurrentEventId())
       .eq('attendee_id', attendeeId)
       .in('status', ['assigned', 'active'])
       .maybeSingle();
@@ -254,6 +258,7 @@ export async function getBulkEnhancedCheckInStatuses(attendeeIds: string[]): Pro
     const { data: activationTransactions } = await supabase
       .from('station_transactions')
       .select('attendee_id, transaction_type, created_at')
+        .eq('event_id', getCurrentEventId())
       .eq('station_type', 'activation')
       .in('attendee_id', attendeeIds)
       .in('transaction_type', ['activate', 'deactivate'])
@@ -263,6 +268,7 @@ export async function getBulkEnhancedCheckInStatuses(attendeeIds: string[]): Pro
     const { data: rfidTags } = await supabase
       .from('rfid_tags')
       .select('attendee_id, uid, status')
+        .eq('event_id', getCurrentEventId())
       .in('attendee_id', attendeeIds)
       .in('status', ['assigned', 'active']);
 
@@ -340,3 +346,4 @@ export async function getBulkEnhancedCheckInStatuses(attendeeIds: string[]): Pro
     return fallbackMap;
   }
 }
+import { getCurrentEventId } from "@/lib/eventRuntime";

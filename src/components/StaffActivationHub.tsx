@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -221,6 +222,7 @@ export function StaffActivationHub() {
       let query = supabase
         .from('attendees')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .order('created_at', { ascending: false });
 
       // Staff Hub shows ALL registration statuses for complete oversight
@@ -232,13 +234,15 @@ export function StaffActivationHub() {
 
       const { data: rfidData, error: rfidError } = await supabase
         .from('rfid_tags')
-        .select('*');
+        .select('*')
+        .eq('event_id', getCurrentEventId());
 
       if (rfidError) throw rfidError;
 
       const { data: transactionData, error: transactionError } = await supabase
         .from('station_transactions')
-        .select('*');
+        .select('*')
+        .eq('event_id', getCurrentEventId());
 
       if (transactionError) throw transactionError;
 

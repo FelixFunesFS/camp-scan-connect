@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -59,6 +60,7 @@ export const RfidScanner = ({
           attendee_id,
           attendee:attendees(first_name, last_name, ticket_type)
         `)
+        .eq('event_id', getCurrentEventId())
         .in('status', ['active', 'assigned']);
 
       if (error) throw error;
@@ -104,6 +106,7 @@ export const RfidScanner = ({
             attendee_id,
             attendee:attendees(first_name, last_name, ticket_type)
           `)
+        .eq('event_id', getCurrentEventId())
           .eq('uid', scannedUid)
           .in('status', ['active', 'assigned'])
           .single();

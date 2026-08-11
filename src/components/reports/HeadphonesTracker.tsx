@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
         const { data: currentCheckouts } = await supabase
           .from('station_transactions')
           .select('id, attendee_id, rfid_uid, created_at')
+        .eq('event_id', getCurrentEventId())
           .eq('station_type', 'headphones')
           .eq('transaction_type', 'headphone_checkout')
           .gte('created_at', boundaries.start.toISOString())
@@ -65,6 +67,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
           const { data } = await supabase
             .from('attendees')
             .select('id, first_name, last_name, phone')
+        .eq('event_id', getCurrentEventId())
             .in('id', attendeeIds);
           attendeesData = data || [];
         }
@@ -78,6 +81,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
         const { data: checkins } = await supabase
           .from('station_transactions')
           .select('attendee_id, created_at')
+        .eq('event_id', getCurrentEventId())
           .eq('station_type', 'headphones')
           .eq('transaction_type', 'headphone_checkin')
           .gte('created_at', boundaries.start.toISOString())
@@ -117,6 +121,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
             created_at,
             transaction_type
           `)
+        .eq('event_id', getCurrentEventId())
           .eq('station_type', 'headphones')
           .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
           .gte('created_at', boundaries.start.toISOString())

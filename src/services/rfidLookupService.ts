@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AttendeeSearchResult {
@@ -52,6 +53,7 @@ class RfidLookupService {
             status
           )
         `)
+        .eq('event_id', getCurrentEventId())
         .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%,order_id.ilike.%${query}%`)
         .order('last_name');
 
@@ -97,6 +99,7 @@ class RfidLookupService {
             is_veteran
           )
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('uid', uid.trim())
         .single();
 
@@ -128,6 +131,7 @@ class RfidLookupService {
       const { data: rfidTag, error: rfidError } = await supabase
         .from('rfid_tags')
         .select('attendee_id, status')
+        .eq('event_id', getCurrentEventId())
         .eq('uid', uid.trim())
         .single();
 
@@ -188,6 +192,7 @@ class RfidLookupService {
       const { data: rfidTag, error: rfidError } = await supabase
         .from('rfid_tags')
         .select('attendee_id, status')
+        .eq('event_id', getCurrentEventId())
         .eq('uid', uid.trim())
         .single();
 
@@ -300,6 +305,7 @@ class RfidLookupService {
             is_veteran
           )
         `)
+        .eq('event_id', getCurrentEventId())
         .eq('status', 'active')
         .order('uid');
 
@@ -378,6 +384,7 @@ class RfidLookupService {
       const { data: transactions, error: txError } = await supabase
         .from('station_transactions')
         .select('id, created_at, transaction_type, rfid_uid, extra_data, attendee_id')
+        .eq('event_id', getCurrentEventId())
         .eq('station_type', 'activation')
         .not('staff_id', 'is', null)
         .order('created_at', { ascending: false })
@@ -391,6 +398,7 @@ class RfidLookupService {
       const { data: attendees, error: attendeeError } = await supabase
         .from('attendees')
         .select('id, first_name, last_name')
+        .eq('event_id', getCurrentEventId())
         .in('id', attendeeIds);
 
       if (attendeeError) throw attendeeError;

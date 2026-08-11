@@ -1,4 +1,5 @@
 import React from 'react';
+import { getStaffOverrideCode } from '@/lib/eventRuntime';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +51,7 @@ export const SafetyConfirmationDialog: React.FC<SafetyConfirmationProps> = ({
       return false;
     }
     
-    if (requiresStaffCode && staffCode.toLowerCase() !== 'mc2025') {
+    if (requiresStaffCode && staffCode.toLowerCase() !== getStaffOverrideCode().toLowerCase()) {
       return false;
     }
     

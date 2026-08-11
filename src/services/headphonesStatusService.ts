@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface HeadphonesStatus {
@@ -15,6 +16,7 @@ export class HeadphonesStatusService {
     const { data, error } = await supabase
       .from('station_transactions')
       .select('transaction_type, created_at')
+        .eq('event_id', getCurrentEventId())
       .eq('attendee_id', attendeeId)
       .eq('station_type', 'headphones')
       .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
@@ -63,6 +65,7 @@ export class HeadphonesStatusService {
     const { data, error } = await supabase
       .from('station_transactions')
       .select('attendee_id, transaction_type, created_at')
+        .eq('event_id', getCurrentEventId())
       .in('attendee_id', attendeeIds)
       .eq('station_type', 'headphones')
       .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])

@@ -1,5 +1,6 @@
 // ET Timezone utilities for operational data (drinks, headphones)
 // Handles automatic DST conversion for 3 AM ET boundaries
+import { getEventStartDate } from "@/lib/eventRuntime";
 
 export type TimePeriod = 'today' | 'yesterday' | 'this_event' | 'all_time';
 
@@ -84,8 +85,8 @@ export const getDrinksHeadphonesTimeBoundaries = (period: TimePeriod): TimeBound
     }
     
     case 'this_event': {
-      // Current event start date - September 19, 2025
-      const eventStart = new Date('2025-09-19'); 
+      // Event start comes from the events table, never a hard-coded year.
+      const eventStart = getEventStartDate();
       const start3AM = get3AMET(eventStart);
       return {
         start: start3AM,
@@ -160,8 +161,7 @@ export const getStandardTimeBoundaries = (period: TimePeriod): TimeBoundary => {
     }
     
     case 'this_event': {
-      // Current event start date - September 19, 2025
-      const eventStart = new Date('2025-09-19'); 
+      const eventStart = getEventStartDate();
       const startMidnight = getMidnightET(eventStart);
       return {
         start: startMidnight,

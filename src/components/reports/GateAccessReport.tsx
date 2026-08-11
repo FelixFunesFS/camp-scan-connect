@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,7 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
       const { data: gateTransactions, error } = await supabase
         .from('station_transactions')
         .select('*')
+        .eq('event_id', getCurrentEventId())
         .eq('station_type', 'main_gate')
         .in('transaction_type', ['gate_entry', 'gate_exit'])
         .gte('created_at', boundaries.start.toISOString())
@@ -159,6 +161,7 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
         const { data: attendeeData } = await supabase
           .from('attendees')
           .select('id, first_name, last_name')
+        .eq('event_id', getCurrentEventId())
           .in('id', onSiteAttendeeIds);
 
         const attendeeMap = new Map(attendeeData?.map(a => [a.id, `${a.first_name} ${a.last_name}`]) || []);

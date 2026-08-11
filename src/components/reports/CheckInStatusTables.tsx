@@ -1,3 +1,4 @@
+import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
             activated_at, activation_method, uid,
             attendees!inner(id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, site_location_assignment, created_at)
           `)
+        .eq('event_id', getCurrentEventId())
           .eq('attendees.registration_status', 'registered')
           .not('activated_at', 'is', null)
           .gte('activated_at', todayBoundaries.start.toISOString())

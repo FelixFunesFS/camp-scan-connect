@@ -623,6 +623,18 @@ export type Database = {
           warnings: string[]
         }[]
       }
+      attendees_for_phone: {
+        Args: { p_event_id?: string; p_phone: string }
+        Returns: {
+          first_name: string
+          id: string
+          is_direct: boolean
+          last_name: string
+          order_id: string
+          phone: string
+          waiver_signed: boolean
+        }[]
+      }
       authenticate_staff_code: {
         Args: { p_code: string }
         Returns: {
@@ -668,6 +680,7 @@ export type Database = {
         }[]
       }
       cleanup_stuck_syncs: { Args: never; Returns: number }
+      current_event_id: { Args: never; Returns: string }
       format_phone_number: {
         Args: { p_format: string }
         Returns: {
@@ -684,6 +697,7 @@ export type Database = {
           order_id: string
         }[]
       }
+      normalize_phone_digits: { Args: { p_phone: string }; Returns: string }
       release_sync_lock: { Args: { p_sync_id?: string }; Returns: number }
     }
     Enums: {
