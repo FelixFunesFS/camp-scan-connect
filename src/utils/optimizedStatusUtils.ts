@@ -2,10 +2,26 @@ import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CheckInStatus {
-  status: 'unassigned' | 'assigned' | 'checked_in';
+  status: 'unassigned' | 'assigned' | 'checked_in' | 'unknown';
   label: string;
-  variant: 'destructive' | 'secondary' | 'default';
+  variant: 'destructive' | 'secondary' | 'default' | 'outline';
   icon: string;
+}
+
+const UNKNOWN_STATUS: CheckInStatus = {
+  status: 'unknown',
+  label: 'Unknown',
+  variant: 'outline',
+  icon: '⚪',
+};
+
+// Keep request URLs well under server limits when filtering by id lists
+const ID_CHUNK_SIZE = 100;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
 }
 
 // Cache for status calculations
@@ -86,26 +102,40 @@ export async function getBulkOptimizedStatuses(attendeeIds: string[]): Promise<R
   }
 
   try {
-    // Single optimized query for all uncached attendees
-    const { data: transactions, error: transError } = await supabase
-      .from('station_transactions')
-      .select('attendee_id, transaction_type, created_at')
-        .eq('event_id', getCurrentEventId())
-      .in('attendee_id', uncachedIds)
-      .eq('station_type', 'activation')
-      .order('created_at', { ascending: false });
+    const eventId = getCurrentEventId();
+    const batches = chunk(uncachedIds, ID_CHUNK_SIZE);
 
-    if (transError) throw transError;
+    // Chunked queries keep the request URL short enough for large attendee lists
+    const [transactionBatches, rfidBatches] = await Promise.all([
+      Promise.all(
+        batches.map(async (ids) => {
+          const { data, error } = await supabase
+            .from('station_transactions')
+            .select('attendee_id, transaction_type, created_at')
+            .eq('event_id', eventId)
+            .in('attendee_id', ids)
+            .eq('station_type', 'activation')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          return data ?? [];
+        })
+      ),
+      Promise.all(
+        batches.map(async (ids) => {
+          const { data, error } = await supabase
+            .from('rfid_tags')
+            .select('attendee_id, uid, status')
+            .eq('event_id', eventId)
+            .in('attendee_id', ids)
+            .in('status', ['assigned', 'active']);
+          if (error) throw error;
+          return data ?? [];
+        })
+      ),
+    ]);
 
-    // Get RFID data in parallel
-    const { data: rfidData, error: rfidError } = await supabase
-      .from('rfid_tags')
-      .select('attendee_id, uid, status')
-        .eq('event_id', getCurrentEventId())
-      .in('attendee_id', uncachedIds)
-      .in('status', ['assigned', 'active']);
-
-    if (rfidError) throw rfidError;
+    const transactions = transactionBatches.flat();
+    const rfidData = rfidBatches.flat();
 
     // Process results efficiently
     const rfidMap = new Map<string, { uid: string; status: string }>();
@@ -134,12 +164,11 @@ export async function getBulkOptimizedStatuses(attendeeIds: string[]): Promise<R
 
   } catch (error) {
     console.error('Error in getBulkOptimizedStatuses:', error);
-    
-    // Fallback to basic status for uncached IDs
+
+    // Never report a failed lookup as "Unassigned" — that is fabricated data.
+    // Surface it as Unknown and do not cache it, so the next refresh retries.
     for (const id of uncachedIds) {
-      const fallbackStatus = getCheckInStatus(null, null);
-      results[id] = fallbackStatus;
-      statusCache.set(id, { status: fallbackStatus, timestamp: now });
+      if (!results[id]) results[id] = UNKNOWN_STATUS;
     }
   }
 
