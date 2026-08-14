@@ -218,14 +218,29 @@ export const RfidAssignment = () => {
 
       // Fetch activation data for all attendees
       const attendeeIds = (data || []).map((a: any) => a.id);
-      const { data: activationData } = await supabase
-        .from('station_transactions')
-        .select('attendee_id, activation_method, created_at')
-        .eq('event_id', getCurrentEventId())
-        .in('attendee_id', attendeeIds)
-        .eq('station_type', 'activation')
-        .eq('transaction_type', 'activate')
-        .order('created_at', { ascending: false });
+      // Chunked so the request URL stays short enough for large attendee lists
+      const ID_CHUNK = 100;
+      const idBatches: string[][] = [];
+      for (let i = 0; i < attendeeIds.length; i += ID_CHUNK) {
+        idBatches.push(attendeeIds.slice(i, i + ID_CHUNK));
+      }
+      const activationBatches = await Promise.all(
+        idBatches.map(async (ids) => {
+          const { data: rows, error: txError } = await supabase
+            .from('station_transactions')
+            .select('attendee_id, activation_method, created_at')
+            .eq('event_id', getCurrentEventId())
+            .in('attendee_id', ids)
+            .eq('station_type', 'activation')
+            .eq('transaction_type', 'activate')
+            .order('created_at', { ascending: false });
+          if (txError) throw txError;
+          return rows || [];
+        })
+      );
+      const activationData = activationBatches
+        .flat()
+        .sort((a: any, b: any) => (a.created_at < b.created_at ? 1 : -1));
 
       // Create a map of most recent activations
       const activationMap = new Map<string, { method: string; timestamp: string }>();
