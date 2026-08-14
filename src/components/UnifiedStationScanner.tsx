@@ -57,6 +57,10 @@ export function UnifiedStationScanner({
   const [showManualEntry, setShowManualEntry] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  // Guards against a single scan committing more than one transaction
+  const inFlightRef = useRef(false);
+  const lastCommitRef = useRef<{ key: string; at: number } | null>(null);
+  const COMMIT_WINDOW_MS = 4000;
 
   const handleRfidFound = async (uid: string) => {
     setError("");
@@ -100,7 +104,21 @@ export function UnifiedStationScanner({
 
   const executeAction = async (transactionType: TransactionType, extraData?: any) => {
     if (!selectedRfid?.attendee_id) return;
-    
+
+    const key = `${selectedRfid.uid}:${stationType}:${transactionType}`;
+    const now = Date.now();
+
+    if (inFlightRef.current) return;
+    if (
+      lastCommitRef.current &&
+      lastCommitRef.current.key === key &&
+      now - lastCommitRef.current.at < COMMIT_WINDOW_MS
+    ) {
+      toast.info("Already recorded for this scan");
+      return;
+    }
+
+    inFlightRef.current = true;
     const transaction = {
       attendee_id: selectedRfid.attendee_id,
       station_type: stationType,
@@ -109,7 +127,12 @@ export function UnifiedStationScanner({
       ...extraData
     };
 
-    await StationTransactionService.recordTransaction(transaction);
+    try {
+      await StationTransactionService.recordTransaction(transaction);
+      lastCommitRef.current = { key, at: Date.now() };
+    } finally {
+      inFlightRef.current = false;
+    }
   };
 
   const loadDailyCount = async (transactionTypes?: TransactionType[]) => {
@@ -138,6 +161,7 @@ export function UnifiedStationScanner({
     setAutoTriggered(false);
     setShowStaffOverride(false);
     setShowStaffActivation(false);
+    lastCommitRef.current = null;
   };
 
   const handleStaffOverride = async (notes: string) => {
