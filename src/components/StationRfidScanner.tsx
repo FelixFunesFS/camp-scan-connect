@@ -30,7 +30,7 @@ export const StationRfidScanner = ({
   onScan, 
   stationType, 
   disabled = false, 
-  title = "RFID Scanner",
+  title = "Scanner",
   isProcessing = false,
   showTicketType = true
 }: StationRfidScannerProps) => {
@@ -63,8 +63,8 @@ export const StationRfidScanner = ({
       onScan(attendee, uid);
       
     } catch (error) {
-      console.error('Error processing RFID scan:', error);
-      setError('Failed to process RFID scan. Please try again.');
+      console.error('Error processing code scan:', error);
+      setError('Failed to process code scan. Please try again.');
       setAttendeeInfo(null);
     }
   }, [onScan]);
@@ -94,14 +94,14 @@ export const StationRfidScanner = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Manual input for RFID UID */}
+        {/* Manual input for Code */}
         <div className="flex gap-2">
           <Input
             type="text"
             value={manualUid}
             onChange={(e) => setManualUid(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleManualScan()}
-            placeholder="Scan or enter RFID UID"
+            placeholder="Scan or enter Code"
             className="font-mono"
             disabled={disabled || isProcessing}
             data-rfid-input="true"
@@ -119,7 +119,7 @@ export const StationRfidScanner = ({
         {isCapturing && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="animate-pulse w-2 h-2 bg-green-500 rounded-full" />
-            Waiting for RFID scan...
+            Waiting for code scan...
           </div>
         )}
 
@@ -162,7 +162,7 @@ export const StationRfidScanner = ({
             )}
             
             <div className="text-xs text-muted-foreground font-mono">
-              RFID: {lastScannedUid}
+              Code: {lastScannedUid}
             </div>
           </div>
         )}

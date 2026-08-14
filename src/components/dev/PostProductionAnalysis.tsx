@@ -77,7 +77,7 @@ export function PostProductionAnalysis() {
 
       if (error) throw error;
 
-      // Analyze RFID capture rates
+      // Analyze code capture rates
       const totalTransactions = transactions?.length || 0;
       const transactionsWithRfid = transactions?.filter(t => t.rfid_uid).length || 0;
       const transactionsWithoutRfid = totalTransactions - transactionsWithRfid;
@@ -116,11 +116,11 @@ export function PostProductionAnalysis() {
 
       Object.entries(stationBreakdown).forEach(([station, data]) => {
         if (data.captureRate === 0 && data.total > 0) {
-          criticalIssues.push(`${station.toUpperCase()}: Zero RFID capture rate (${data.total} transactions without RFID UIDs)`);
-          recommendations.push(`Fix ${station} station integration to capture RFID UIDs in transaction records`);
+          criticalIssues.push(`${station.toUpperCase()}: Zero code capture rate (${data.total} transactions without Codes)`);
+          recommendations.push(`Fix ${station} station integration to capture Codes in transaction records`);
         } else if (data.captureRate < 90 && data.total > 10) {
-          criticalIssues.push(`${station.toUpperCase()}: Low RFID capture rate (${data.captureRate.toFixed(1)}%)`);
-          recommendations.push(`Investigate ${station} station workflow for RFID scanning inconsistencies`);
+          criticalIssues.push(`${station.toUpperCase()}: Low code capture rate (${data.captureRate.toFixed(1)}%)`);
+          recommendations.push(`Investigate ${station} station workflow for code scanning inconsistencies`);
         }
       });
 
@@ -276,18 +276,18 @@ export function PostProductionAnalysis() {
             <CardHeader>
               <CardTitle>RFID Scanning Audit</CardTitle>
               <CardDescription>
-                Analysis of RFID UID capture across all station transactions
+                Analysis of Code capture across all station transactions
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div className="p-4 border rounded-lg">
                   <div className="text-2xl font-bold text-green-600">{analysisData.transactionsWithRfid}</div>
-                  <div className="text-sm text-muted-foreground">With RFID UID</div>
+                  <div className="text-sm text-muted-foreground">With Code</div>
                 </div>
                 <div className="p-4 border rounded-lg">
                   <div className="text-2xl font-bold text-red-600">{analysisData.transactionsWithoutRfid}</div>
-                  <div className="text-sm text-muted-foreground">Missing RFID UID</div>
+                  <div className="text-sm text-muted-foreground">Missing Code</div>
                 </div>
                 <div className="p-4 border rounded-lg">
                   <div className="text-2xl font-bold">{analysisData.rfidCaptureRate.toFixed(1)}%</div>
@@ -374,8 +374,8 @@ export function PostProductionAnalysis() {
                       <Alert className="mt-4">
                         <AlertTriangle className="h-4 w-4" />
                         <AlertDescription>
-                          <strong>Critical Issue:</strong> This station is not capturing RFID UIDs in transaction records. 
-                          This creates a security and audit gap where transactions cannot be tied to physical RFID scans.
+                          <strong>Critical Issue:</strong> This station is not capturing Codes in transaction records. 
+                          This creates a security and audit gap where transactions cannot be tied to physical code scans.
                         </AlertDescription>
                       </Alert>
                     )}
@@ -412,7 +412,7 @@ export function PostProductionAnalysis() {
                   <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-600" />
                   <div className="text-lg font-medium text-green-800">System Performance Excellent</div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    No critical issues detected in RFID scanning workflows
+                    No critical issues detected in code scanning workflows
                   </div>
                 </div>
               )}
@@ -424,7 +424,7 @@ export function PostProductionAnalysis() {
                     <div className="flex items-start gap-2">
                       <Shield className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                       <div className="text-sm">
-                        <strong>Security Enhancement:</strong> Implement RFID UID validation across all station transaction types to ensure complete audit trails.
+                        <strong>Security Enhancement:</strong> Implement Code validation across all station transaction types to ensure complete audit trails.
                       </div>
                     </div>
                   </div>
@@ -440,7 +440,7 @@ export function PostProductionAnalysis() {
                     <div className="flex items-start gap-2">
                       <TrendingUp className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
                       <div className="text-sm">
-                        <strong>Performance Monitoring:</strong> Implement real-time alerts for stations with RFID capture rates below 95% to catch issues immediately.
+                        <strong>Performance Monitoring:</strong> Implement real-time alerts for stations with code capture rates below 95% to catch issues immediately.
                       </div>
                     </div>
                   </div>

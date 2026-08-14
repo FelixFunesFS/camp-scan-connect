@@ -17,7 +17,7 @@ export const useRfidTableNavigation = ({ totalRows, onRowFocus }: UseRfidTableNa
       targetRow = currentRow + 1;
     }
 
-    // Find the next RFID input field
+    // Find the next code input field
     const targetInput = document.querySelector(`[data-row-index="${targetRow}"] input[data-rfid-input="true"]`) as HTMLInputElement;
     
     if (targetInput) {

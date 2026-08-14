@@ -70,7 +70,7 @@ export function SelfActivationInstructions() {
         </CardContent>
       </Card>
 
-      {/* RFID Status Guide */}
+      {/* Credential Status Guide */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -88,13 +88,13 @@ export function SelfActivationInstructions() {
             </div>
             <div className="flex items-center gap-3">
               <Badge variant="secondary" className="text-xs bg-warning text-warning-foreground">
-                RFID Assigned
+                Assigned
               </Badge>
               <span className="text-sm text-muted-foreground">You have a wristband but need to activate it</span>
             </div>
             <div className="flex items-center gap-3">
               <Badge variant="default" className="text-xs bg-success text-success-foreground">
-                RFID Activated
+                Activated
               </Badge>
               <span className="text-sm text-muted-foreground">Ready to use all services!</span>
             </div>

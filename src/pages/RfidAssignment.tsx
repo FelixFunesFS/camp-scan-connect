@@ -218,14 +218,29 @@ export const RfidAssignment = () => {
 
       // Fetch activation data for all attendees
       const attendeeIds = (data || []).map((a: any) => a.id);
-      const { data: activationData } = await supabase
-        .from('station_transactions')
-        .select('attendee_id, activation_method, created_at')
-        .eq('event_id', getCurrentEventId())
-        .in('attendee_id', attendeeIds)
-        .eq('station_type', 'activation')
-        .eq('transaction_type', 'activate')
-        .order('created_at', { ascending: false });
+      // Chunked so the request URL stays short enough for large attendee lists
+      const ID_CHUNK = 100;
+      const idBatches: string[][] = [];
+      for (let i = 0; i < attendeeIds.length; i += ID_CHUNK) {
+        idBatches.push(attendeeIds.slice(i, i + ID_CHUNK));
+      }
+      const activationBatches = await Promise.all(
+        idBatches.map(async (ids) => {
+          const { data: rows, error: txError } = await supabase
+            .from('station_transactions')
+            .select('attendee_id, activation_method, created_at')
+            .eq('event_id', getCurrentEventId())
+            .in('attendee_id', ids)
+            .eq('station_type', 'activation')
+            .eq('transaction_type', 'activate')
+            .order('created_at', { ascending: false });
+          if (txError) throw txError;
+          return rows || [];
+        })
+      );
+      const activationData = activationBatches
+        .flat()
+        .sort((a: any, b: any) => (a.created_at < b.created_at ? 1 : -1));
 
       // Create a map of most recent activations
       const activationMap = new Map<string, { method: string; timestamp: string }>();
@@ -605,7 +620,7 @@ export const RfidAssignment = () => {
       loadAttendees();
     } catch (error) {
       console.error('Bulk activation error:', error);
-      toast.error("Failed to activate RFIDs");
+      toast.error("Failed to activate credentials");
     } finally {
       setOperationState(prev => ({ ...prev, isActivating: false }));
     }
@@ -623,8 +638,8 @@ export const RfidAssignment = () => {
       'Meal Plan': attendee.formatted_meal_plan || '',
       'Arrival Day': attendee.arrival_day || '',
       'Site Location': attendee.site_location_assignment || '',
-      'RFID UID': attendee.rfid_uid || '',
-      'RFID Status': attendee.rfid_status || '',
+      'Code': attendee.rfid_uid || '',
+      'Credential Status': attendee.rfid_status || '',
       'Most Recent Activation Method': attendee.most_recent_activation_method 
         ? (attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff Assisted' : 'Self Activated')
         : 'Not Activated',
@@ -679,7 +694,7 @@ export const RfidAssignment = () => {
         </div>
         <Alert>
           <AlertDescription>
-            🔄 Loading RFID assignment data. If this takes more than 10 seconds, please refresh the page.
+            🔄 Loading credential assignment data. If this takes more than 10 seconds, please refresh the page.
           </AlertDescription>
         </Alert>
         {Array.from({ length: 5 }).map((_, i) => (
@@ -696,7 +711,7 @@ export const RfidAssignment = () => {
           <div className="space-y-4">
             {/* FAQ Toggle */}
             <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold">RFID Assignment</h1>
+              <h1 className="text-2xl font-bold">Credential Assignment</h1>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -897,7 +912,7 @@ export const RfidAssignment = () => {
       <RfidCaptureProvider enabled={uiState.hasRfidInputFocused}>
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">RFID Assignment</h1>
+            <h1 className="text-3xl font-bold">Credential Assignment</h1>
             <Button 
               variant="outline" 
               onClick={() => setUiState(prev => ({ ...prev, showFAQ: !prev.showFAQ }))}
@@ -1120,7 +1135,7 @@ export const RfidAssignment = () => {
                           Most Recent Activation {getSortIcon('most_recent_activation')}
                         </div>
                       </TableHead>
-                      <TableHead>RFID Assignment</TableHead>
+                      <TableHead>Credential Assignment</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>

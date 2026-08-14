@@ -161,7 +161,7 @@ export default function ActivationStation() {
                   {selectedEvent?.name ?? "the campout"}!
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Your RFID wristband gives you access to drinks, activities, and all the campout fun - plus meals if you purchased a meal package! Let's get you checked in!
+                  Your wristband gives you access to drinks, activities, and all the campout fun - plus meals if you purchased a meal package! Let's get you checked in!
                 </p>
               </CardContent>
             </Card>

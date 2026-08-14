@@ -409,10 +409,10 @@ export class EnhancedActivationService {
         .single();
 
       if (!rfidTag) {
-        return { success: false, message: 'RFID tag not assigned to this attendee' };
+        return { success: false, message: 'credential not assigned to this attendee' };
       }
 
-      // Activate RFID tag
+      // Activate credential
       const { error: rfidError } = await supabase
         .from('rfid_tags')
         .update({
@@ -513,7 +513,7 @@ export class EnhancedActivationService {
         attendee_details: attendeeResults,
         warnings: searchResult.attendee_details
           .filter(a => !a.has_rfid)
-          .map(a => `ℹ️ ${a.name} needs RFID assignment to use services`)
+          .map(a => `ℹ️ ${a.name} needs credential assignment to use services`)
       };
 
     } catch (error) {
@@ -564,7 +564,7 @@ export class EnhancedActivationService {
         attendee_details: attendeeResults,
         warnings: allAttendees
           .filter(a => !a.has_rfid)
-          .map(a => `ℹ️ ${a.name} needs RFID assignment to use services`)
+          .map(a => `ℹ️ ${a.name} needs credential assignment to use services`)
       };
 
     } catch (error) {

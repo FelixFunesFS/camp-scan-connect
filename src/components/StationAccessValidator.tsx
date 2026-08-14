@@ -18,7 +18,7 @@ interface AccessInfo {
 
 /**
  * Component that validates station access using the standardized check_station_access function
- * This ensures all stations use the same validation logic as the RFID assignment page
+ * This ensures all stations use the same validation logic as the credential assignment page
  */
 export function StationAccessValidator({ attendeeId, children }: StationAccessValidatorProps) {
   const [accessInfo, setAccessInfo] = useState<AccessInfo>({

@@ -26,7 +26,7 @@ export const useUnifiedRfidNavigation = ({
   
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(initialExpandedGroups);
 
-  // Build a flat list of all attendees that can have RFID inputs (unassigned)
+  // Build a flat list of all attendees that can have code inputs (unassigned)
   const focusableRows = useMemo(() => {
     if (!isGroupedView) {
       // Individual view - flat array of attendees
@@ -54,7 +54,7 @@ export const useUnifiedRfidNavigation = ({
     }
   }, [groupedAttendees, isGroupedView, expandedGroups]);
 
-  // Navigate between RFID input fields with arrow keys
+  // Navigate between code input fields with arrow keys
   const navigateToRow = useCallback((direction: 'up' | 'down', preventScroll = false) => {
     if (!focusableRows.length) return;
     

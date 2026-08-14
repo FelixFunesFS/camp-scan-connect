@@ -25,7 +25,7 @@ export const useRfidCapture = ({
   const [capturedUid, setCapturedUid] = useState<string>('');
   const [isCapturing, setIsCapturing] = useState(false);
 
-  // Accepts RFID UIDs, barcodes and QR payloads; still rejects typed search text.
+  // Accepts Codes, barcodes and QR payloads; still rejects typed search text.
   const isValidRfidFormat = useCallback(
     (uid: string) => isValidCredentialFormat(uid, credentialType),
     [credentialType]
@@ -56,7 +56,7 @@ export const useRfidCapture = ({
     let timeout: ReturnType<typeof setTimeout>;
 
     const handleKeyPress = (event: KeyboardEvent) => {
-      // Only capture when focused on an RFID input field
+      // Only capture when focused on an code input field
       const activeElement = document.activeElement as HTMLElement;
       
       if (!activeElement || activeElement.getAttribute('data-rfid-input') !== 'true') {
@@ -68,7 +68,7 @@ export const useRfidCapture = ({
         clearTimeout(timeout);
       }
 
-      // Handle Enter key (typical end of RFID scan)
+      // Handle Enter key (typical end of code scan)
       if (event.key === 'Enter') {
         if (inputBuffer.length >= minLength) {
           event.preventDefault();

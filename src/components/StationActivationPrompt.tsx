@@ -28,7 +28,7 @@ export function StationActivationPrompt({
           Self-Activation Required
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          {attendeeName} needs to activate their RFID wristband before using station services.
+          {attendeeName} needs to activate their wristband before using station services.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -36,7 +36,7 @@ export function StationActivationPrompt({
         <div className="p-3 bg-muted/30 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary" className="bg-warning text-warning-foreground">
-              RFID Assigned - Not Activated
+              Assigned - Not Activated
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">Staff can activate this attendee directly.</p>

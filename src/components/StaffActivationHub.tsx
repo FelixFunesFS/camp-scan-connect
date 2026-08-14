@@ -128,9 +128,9 @@ export interface AttendeeNotification {
 }
 
 const DEACTIVATION_REASONS = [
-  { value: "lost", label: "Lost RFID" },
-  { value: "damaged", label: "Damaged RFID" },
-  { value: "replaced", label: "Replaced with New RFID" },
+  { value: "lost", label: "Lost credential" },
+  { value: "damaged", label: "Damaged credential" },
+  { value: "replaced", label: "Replaced with new credential" },
   { value: "checkout", label: "Event Checkout/Departure" },
   { value: "sunday_mass", label: "Sunday Mass Deactivation" },
   { value: "staff_request", label: "Staff Request" },
@@ -193,7 +193,7 @@ export function StaffActivationHub() {
     { key: 'order_id', label: 'Order ID', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
     { key: 'ticket_type', label: 'Ticket Type', desktop: true, width: 'min-w-24', sortable: true },
     { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
-    { key: 'rfid_status', label: 'RFID Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
+    { key: 'rfid_status', label: 'Credential Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
     { key: 'headphones', label: 'Headphones', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
     { key: 'golf_carts', label: 'Golf Carts', desktop: true, width: 'min-w-28', sortable: true },
     { key: 'walkie_talkies', label: 'Walkie Talkies', desktop: true, width: 'min-w-32', sortable: true },
@@ -500,8 +500,8 @@ export function StaffActivationHub() {
     return [
       { key: "all", label: "All Attendees", count: totalCount },
       { key: "activated", label: "Activated", count: activatedCount },
-      { key: "assigned", label: "RFID Assigned", count: assignedCount },
-      { key: "unassigned", label: "Needs RFID", count: unassignedCount },
+      { key: "assigned", label: "Assigned", count: assignedCount },
+      { key: "unassigned", label: "Needs credential", count: unassignedCount },
       { key: "waiver_missing", label: "Waiver Missing", count: waiverMissingCount },
       { key: "veterans", label: "Veterans Only", count: veteransCount }
     ];
@@ -597,7 +597,7 @@ export function StaffActivationHub() {
       if (!attendee) return;
 
       if (!attendee.rfid_uid) {
-        toast.error("Attendee needs an RFID tag assigned first");
+        toast.error("Attendee needs an credential assigned first");
         return;
       }
 
@@ -640,7 +640,7 @@ export function StaffActivationHub() {
           result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
         }`);
       } else if (result && result.warnings && result.warnings.length > 0) {
-        toast.error("Remaining attendees need RFID tags assigned before activation");
+        toast.error("Remaining attendees need credentials assigned before activation");
       } else {
         toast.info("All attendees with this phone number are already activated");
       }
@@ -664,7 +664,7 @@ export function StaffActivationHub() {
       const activatableAttendees = orderAttendees.filter(a => a.rfid_uid && !a.activated_at);
       
       if (activatableAttendees.length === 0) {
-        toast.info("All attendees in this group are already activated or missing RFID tags");
+        toast.info("All attendees in this group are already activated or missing credentials");
         return;
       }
 
@@ -752,13 +752,13 @@ export function StaffActivationHub() {
         const attendee = await rfidLookupService.getRfidWithAttendee(uid);
         toast.success(attendee ? 
           `${attendee.first_name} ${attendee.last_name} deactivated` :
-          "RFID deactivated successfully");
+          "Credential deactivated successfully");
         loadDashboardData();
       } else {
         toast.error(result.message);
       }
     } catch (error) {
-      toast.error("Failed to deactivate RFID");
+      toast.error("Failed to deactivate credential");
     } finally {
       setIsProcessing(false);
     }
@@ -848,7 +848,7 @@ export function StaffActivationHub() {
             resultNotifications.push({
               attendeeId: attendee.id || attendee.name,
               state: 'error',
-              message: '❌ RFID tag required for activation',
+              message: '❌ credential required for activation',
               showNotification: true
             });
           }
@@ -863,7 +863,7 @@ export function StaffActivationHub() {
             resultNotifications.push({
               attendeeId: attendee.id,
               state: 'error',
-              message: '❌ RFID tag required for activation',
+              message: '❌ credential required for activation',
               showNotification: true
             });
           } else if (attendee.is_activated) {
@@ -930,12 +930,12 @@ export function StaffActivationHub() {
 
       // Provide contextual messaging based on activation results
       if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
-        toast.error("No attendees could be activated - RFID tags must be assigned first");
+        toast.error("No attendees could be activated - credentials must be assigned first");
       } else if (result.activated_count === 0) {
         toast.info("All order members are already activated");
       } else if (result.activated_count < result.total_attendees) {
         toast.warning(`Activated ${result.activated_count} of ${result.total_attendees} attendees${
-          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} need RFID assignment.` : ''
+          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} need credential assignment.` : ''
         }`);
       } else {
         toast.success(`Successfully activated all ${result.activated_count} order members`);
@@ -1326,7 +1326,7 @@ export function StaffActivationHub() {
                                         })()}
                                      </div>
                                      {attendee.rfid_uid && (
-                                       <p className="font-mono text-xs">RFID: {attendee.rfid_uid}</p>
+                                       <p className="font-mono text-xs">Code: {attendee.rfid_uid}</p>
                                      )}
                                     {attendee.order_id && (
                                       <p className="font-mono text-xs">Order: {attendee.order_id}</p>
@@ -1345,7 +1345,7 @@ export function StaffActivationHub() {
                                   ) : attendee.rfid_uid ? (
                                     <><Clock className="h-3 w-3 mr-1" />Pending</>
                                   ) : (
-                                    <><AlertTriangle className="h-3 w-3 mr-1" />No RFID</>
+                                    <><AlertTriangle className="h-3 w-3 mr-1" />No credential</>
                                   )}
                                 </Badge>
                                 
@@ -1628,7 +1628,7 @@ export function StaffActivationHub() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats.totalActive}</p>
-                  <p className="text-sm text-muted-foreground">Active RFIDs</p>
+                  <p className="text-sm text-muted-foreground">Active credentials</p>
                 </div>
               </div>
             </CardContent>
@@ -1684,7 +1684,7 @@ export function StaffActivationHub() {
                         {(activity.attendee as any)?.first_name} {(activity.attendee as any)?.last_name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {activity.transaction_type === 'activate' ? 'Activated' : 'Deactivated'} • RFID: {activity.rfid_uid}
+                        {activity.transaction_type === 'activate' ? 'Activated' : 'Deactivated'} • Code: {activity.rfid_uid}
                       </p>
                       {activity.extra_data?.reason && (
                         <Badge variant="outline" className="text-xs mt-1">
@@ -1782,33 +1782,33 @@ export function StaffActivationHub() {
                   </CardContent>
                 </Card>
 
-                {/* RFID Scanner */}
+                {/* Scanner */}
                 <RfidScanner
                   onScan={handleRfidScan}
                   stationType="activation"
                   disabled={isProcessing}
-                  title="Staff RFID Scanner (Individual Deactivation)"
+                  title="Staff Scanner (Individual Deactivation)"
                   showAttendeeInfo={true}
                   autoTrigger={true}
                 />
 
-                {/* Manual RFID Entry */}
+                {/* Manual code entry */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <UserMinus className="h-5 w-5" />
-                      Manual RFID Entry
+                      Manual code entry
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <Label htmlFor="manual-rfid" className="sr-only">RFID UID</Label>
+                        <Label htmlFor="manual-rfid" className="sr-only">Code</Label>
                         <Input
                           id="manual-rfid"
                           value={manualRfid}
                           onChange={(e) => setManualRfid(e.target.value)}
-                          placeholder="Enter RFID UID..."
+                          placeholder="Enter Code..."
                           onKeyPress={(e) => e.key === 'Enter' && handleManualDeactivation()}
                         />
                       </div>

@@ -39,7 +39,7 @@ export const EnhancedRfidAssignmentCell = ({
   const editInputRef = useRef<HTMLInputElement>(null);
   const { registerInput, unregisterInput, triggerCapture } = useRfidCaptureContext();
 
-  // Register main input with centralized RFID capture
+  // Register main input with centralized code capture
   useEffect(() => {
     const input = inputRef.current;
     if (!input || isEditing) return;
@@ -55,7 +55,7 @@ export const EnhancedRfidAssignmentCell = ({
     };
   }, [registerInput, unregisterInput, isEditing]);
 
-  // Register edit input with centralized RFID capture
+  // Register edit input with centralized code capture
   useEffect(() => {
     const editInput = editInputRef.current;
     if (!editInput || !isEditing) return;
@@ -223,7 +223,7 @@ export const EnhancedRfidAssignmentCell = ({
           .eq('uid', existingRfid.uid);
       }
 
-      // Check if the new RFID UID exists in the system but only allow unissued tags
+      // Check if the new Code exists in the system but only allow unissued tags
       const { data: tagExists } = await supabase
         .from('rfid_tags')
         .select('uid, status, attendee_id')
@@ -238,7 +238,7 @@ export const EnhancedRfidAssignmentCell = ({
       }
 
       if (!tagExists) {
-        // Create new RFID tag entry
+        // Create new credential entry
         await supabase
           .from('rfid_tags')
           .insert({
@@ -278,7 +278,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`RFID Assigned Successfully: ${uid.trim()} → ${attendeeName}`);
+      toast.success(`Assigned Successfully: ${uid.trim()} → ${attendeeName}`);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
@@ -293,8 +293,8 @@ export const EnhancedRfidAssignmentCell = ({
       }, 300);
 
     } catch (error) {
-      console.error('RFID assignment error:', error);
-      toast.error("Assignment Failed - Failed to assign RFID. Please try again.");
+      console.error('credential assignment error:', error);
+      toast.error("Assignment Failed - Failed to assign credential. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -326,7 +326,7 @@ export const EnhancedRfidAssignmentCell = ({
         return;
       }
 
-      // Clear the old RFID assignment
+      // Clear the old credential assignment
       if (currentRfidUid && currentRfidUid !== editValue.trim()) {
         await supabase
           .from('rfid_tags')
@@ -339,7 +339,7 @@ export const EnhancedRfidAssignmentCell = ({
           .eq('uid', currentRfidUid);
       }
 
-      // Check if the new RFID UID exists in the system
+      // Check if the new Code exists in the system
       const { data: tagExists } = await supabase
         .from('rfid_tags')
         .select('uid, status')
@@ -348,7 +348,7 @@ export const EnhancedRfidAssignmentCell = ({
         .single();
 
       if (!tagExists) {
-        // Create new RFID tag entry
+        // Create new credential entry
         await supabase
           .from('rfid_tags')
           .insert({
@@ -405,7 +405,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     } catch (error) {
       console.error('RFID edit error:', error);
-      toast.error("Edit Failed - Failed to update RFID assignment. Please try again.");
+      toast.error("Edit Failed - Failed to update credential assignment. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -447,7 +447,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`RFID Cleared: ${currentRfidUid} has been unassigned from ${attendeeName}`);
+      toast.success(`Credential cleared: ${currentRfidUid} has been unassigned from ${attendeeName}`);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
@@ -460,7 +460,7 @@ export const EnhancedRfidAssignmentCell = ({
       }, 300);
     } catch (error) {
       console.error('RFID clear error:', error);
-      toast.error("Clear Failed - Failed to clear RFID assignment.");
+      toast.error("Clear Failed - Failed to clear credential assignment.");
     } finally {
       setIsProcessing(false);
     }
@@ -489,7 +489,7 @@ export const EnhancedRfidAssignmentCell = ({
               type="text"
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
-              placeholder="Enter new RFID UID"
+              placeholder="Enter new Code"
               className={`font-mono text-sm ${validationError ? 'border-destructive' : ''}`}
               disabled={isProcessing}
               data-rfid-input="true"
@@ -553,7 +553,7 @@ export const EnhancedRfidAssignmentCell = ({
             onClick={handleStartEdit}
             disabled={isProcessing}
             className="h-8 px-3"
-            title="Edit RFID assignment"
+            title="Edit credential assignment"
           >
             <Edit3 className="h-3 w-3" />
           </Button>
@@ -563,7 +563,7 @@ export const EnhancedRfidAssignmentCell = ({
             onClick={handleClearRfid}
             disabled={isProcessing}
             className="h-8 px-3"
-            title="Clear RFID assignment"
+            title="Clear credential assignment"
           >
             {isProcessing ? (
               <Loader2 className="h-3 w-3 animate-spin" />

@@ -60,61 +60,13 @@ export function getRegistrationStatusDisplayText(status: string): string {
 }
 
 /**
- * Get check-in status based on RFID assignment and activation
+ * Get check-in status based on credential assignment and activation
  */
-export interface CheckInStatus {
-  status: 'unassigned' | 'assigned' | 'checked_in';
-  label: string;
-  variant: 'destructive' | 'secondary' | 'default';
-  icon: string;
-}
+import type { CheckInStatus } from './optimizedStatusUtils';
+import { getCheckInStatus } from './optimizedStatusUtils';
 
-export function getCheckInStatus(rfidUid: string | null, activatedAt: string | null, rfidStatus?: string): CheckInStatus {
-  // Priority: RFID tag status > activated_at timestamp
-  if (rfidUid && rfidStatus === 'active') {
-    return {
-      status: 'checked_in',
-      label: 'Checked In',
-      variant: 'default',
-      icon: '🟢'
-    };
-  }
-  
-  if (rfidUid && rfidStatus === 'assigned') {
-    return {
-      status: 'assigned',
-      label: 'Assigned',
-      variant: 'secondary', 
-      icon: '🟡'
-    };
-  }
-  
-  // Fallback to timestamp-based logic
-  if (rfidUid && activatedAt) {
-    return {
-      status: 'checked_in',
-      label: 'Checked In',
-      variant: 'default',
-      icon: '🟢'
-    };
-  }
-  
-  if (rfidUid && !activatedAt) {
-    return {
-      status: 'assigned',
-      label: 'Assigned',
-      variant: 'secondary', 
-      icon: '🟡'
-    };
-  }
-  
-  return {
-    status: 'unassigned',
-    label: 'Unassigned',
-    variant: 'destructive',
-    icon: '🔴'
-  };
-}
+export type { CheckInStatus };
+export { getCheckInStatus };
 
 /**
  * Enhanced check-in status that prioritizes activation transactions over attendee.activated_at
@@ -198,7 +150,7 @@ export async function getActivationStatusFromTransactions(attendeeId: string): P
       .limit(1)
       .maybeSingle();
 
-    // Check if attendee has RFID assignment
+    // Check if attendee has credential assignment
     const { data: rfidTag } = await supabase
       .from('rfid_tags')
       .select('uid, status')
@@ -264,7 +216,7 @@ export async function getBulkEnhancedCheckInStatuses(attendeeIds: string[]): Pro
       .in('transaction_type', ['activate', 'deactivate'])
       .order('created_at', { ascending: false });
 
-    // Get all RFID tags for these attendees
+    // Get all credentials for these attendees
     const { data: rfidTags } = await supabase
       .from('rfid_tags')
       .select('attendee_id, uid, status')
@@ -286,7 +238,7 @@ export async function getBulkEnhancedCheckInStatuses(attendeeIds: string[]): Pro
       }
     });
 
-    // Process RFID tags
+    // Process credentials
     rfidTags?.forEach(tag => {
       rfidMap.set(tag.attendee_id, {
         uid: tag.uid, 

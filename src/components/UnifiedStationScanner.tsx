@@ -57,10 +57,18 @@ export function UnifiedStationScanner({
   const [showManualEntry, setShowManualEntry] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  // Guards against a single scan committing more than one transaction
+  const inFlightRef = useRef(false);
+  const lastCommitRef = useRef<{ key: string; at: number } | null>(null);
+  const COMMIT_WINDOW_MS = 4000;
 
   const handleRfidFound = async (uid: string) => {
     setError("");
     setIsLookingUp(true);
+    // A new code starts a fresh scan: clear the one-commit-per-scan guard
+    if (lastCommitRef.current && !lastCommitRef.current.key.startsWith(`${uid}:`)) {
+      lastCommitRef.current = null;
+    }
     
     try {
       // Find attendee by RFID
@@ -78,7 +86,7 @@ export function UnifiedStationScanner({
         setAutoTriggered(false);
         
       } else {
-        setError("RFID tag not found or not assigned to an attendee");
+        setError("credential not found or not assigned to an attendee");
         setSelectedRfid(null);
         setAttendeeReadiness(null);
       }
@@ -100,7 +108,21 @@ export function UnifiedStationScanner({
 
   const executeAction = async (transactionType: TransactionType, extraData?: any) => {
     if (!selectedRfid?.attendee_id) return;
-    
+
+    const key = `${selectedRfid.uid}:${stationType}:${transactionType}`;
+    const now = Date.now();
+
+    if (inFlightRef.current) return;
+    if (
+      lastCommitRef.current &&
+      lastCommitRef.current.key === key &&
+      now - lastCommitRef.current.at < COMMIT_WINDOW_MS
+    ) {
+      toast.info("Already recorded for this scan");
+      return;
+    }
+
+    inFlightRef.current = true;
     const transaction = {
       attendee_id: selectedRfid.attendee_id,
       station_type: stationType,
@@ -109,7 +131,12 @@ export function UnifiedStationScanner({
       ...extraData
     };
 
-    await StationTransactionService.recordTransaction(transaction);
+    try {
+      await StationTransactionService.recordTransaction(transaction);
+      lastCommitRef.current = { key, at: Date.now() };
+    } finally {
+      inFlightRef.current = false;
+    }
   };
 
   const loadDailyCount = async (transactionTypes?: TransactionType[]) => {
@@ -138,6 +165,7 @@ export function UnifiedStationScanner({
     setAutoTriggered(false);
     setShowStaffOverride(false);
     setShowStaffActivation(false);
+    lastCommitRef.current = null;
   };
 
   const handleStaffOverride = async (notes: string) => {
@@ -157,7 +185,7 @@ export function UnifiedStationScanner({
       toast.success("Staff override recorded successfully");
       setShowStaffOverride(false);
       
-      // Allow station to proceed despite RFID issues
+      // Allow station to proceed despite credential issues
       setAttendeeReadiness({
         isReady: true,
         message: "Staff override applied - service authorized",
@@ -424,13 +452,14 @@ export function UnifiedStationScanner({
         {/* RFID Issue Alert for Unassigned/Unreadable RFIDs */}
         {shouldShowRfidIssueAlert() && (
           <StationRfidIssueAlert
-            errorMessage={error || attendeeReadiness?.message || "RFID assignment issue detected"}
+            errorMessage={error || attendeeReadiness?.message || "credential assignment issue detected"}
             onStaffOverride={() => setShowStaffOverride(true)}
           />
         )}
 
-        {/* Station-specific Action Area */}
-        {selectedRfid?.attendee && (attendeeReadiness?.isReady || showStaffOverride) && children({
+        {/* Station-specific Action Area — rendered only when the camera overlay is
+            closed, so the action panel never exists twice at the same time. */}
+        {!showLens && selectedRfid?.attendee && (attendeeReadiness?.isReady || showStaffOverride) && children({
           selectedRfid,
           attendeeReadiness,
           isProcessing,

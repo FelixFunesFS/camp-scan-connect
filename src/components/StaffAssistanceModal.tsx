@@ -42,7 +42,7 @@ export function StaffAssistanceModal({ isOpen, onClose, phoneNumber, errorType, 
           icon: Users,
           description: "Your registration was found, but your wristband needs to be programmed by staff.",
           instructions: "Your wristband has no RFID code loaded yet. Find staff to program your wristband, then return here to activate.",
-          staffAction: "Program attendee's wristband with RFID UID, then guide them back to self-activation."
+          staffAction: "Program attendee's wristband with Code, then guide them back to self-activation."
         };
       case 'activation_failed':
         return {

@@ -233,7 +233,7 @@ function MealContent({
       <Card>
         <CardContent className="pt-6">
           <div className="text-center p-6 text-muted-foreground">
-            {attendeeReadiness ? attendeeReadiness.message : "Ready to scan RFID tag..."}
+            {attendeeReadiness ? attendeeReadiness.message : "Ready to scan code..."}
           </div>
         </CardContent>
       </Card>

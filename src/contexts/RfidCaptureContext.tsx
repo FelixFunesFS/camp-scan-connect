@@ -32,7 +32,7 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
 }) => {
   const registeredInputsRef = useRef(new Map<HTMLInputElement, (uid: string) => void>());
 
-  // Accepts RFID UIDs, barcodes and QR payloads; still rejects typed search text.
+  // Accepts Codes, barcodes and QR payloads; still rejects typed search text.
   const isValidRfidFormat = useCallback(
     (uid: string) => isValidCredentialFormat(uid, credentialType),
     [credentialType]
@@ -53,7 +53,7 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
         onCapture(uid);
       }
     } else {
-      // Find the currently focused RFID input
+      // Find the currently focused code input
       const activeElement = document.activeElement as HTMLInputElement;
       if (activeElement?.getAttribute('data-rfid-input') === 'true') {
         const onCapture = registeredInputsRef.current.get(activeElement);
@@ -73,7 +73,7 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
     const handleKeyPress = (event: KeyboardEvent) => {
       const activeElement = document.activeElement as HTMLElement;
       
-      // Only capture when focused on an RFID input field
+      // Only capture when focused on an code input field
       if (!activeElement || activeElement.getAttribute('data-rfid-input') !== 'true') {
         return;
       }
@@ -93,7 +93,7 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
         clearTimeout(timeout);
       }
 
-      // Handle Enter key (typical end of RFID scan)
+      // Handle Enter key (typical end of code scan)
       if (event.key === 'Enter') {
         if (inputBuffer.length >= minLength && isValidRfidFormat(inputBuffer.trim())) {
           event.preventDefault();

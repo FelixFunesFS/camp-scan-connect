@@ -143,12 +143,12 @@ export function ProductionReadiness() {
         impact: 'critical'
       });
 
-      // Test 3: RFID Assignment Gaps
+      // Test 3: Credential Assignment Gaps
       const unassignedCount = healthMetrics?.unassignedRfids || 0;
       results.push({
-        testName: 'RFID Assignment Coverage',
+        testName: 'Credential Assignment Coverage',
         status: unassignedCount < 50 ? 'pass' : 'warning',
-        message: `${unassignedCount} RFID tags available for assignment`,
+        message: `${unassignedCount} credentials available for assignment`,
         impact: 'medium'
       });
 
@@ -404,7 +404,7 @@ export function ProductionReadiness() {
                   Compare RegFox Data
                 </Button>
                 <Button variant="outline" className="w-full justify-start">
-                  Bulk RFID Assignment
+                  Bulk Credential Assignment
                 </Button>
                 <Button variant="outline" className="w-full justify-start">
                   Mass Attendee Import
@@ -481,13 +481,13 @@ export function ProductionReadiness() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  RFID Scanner Hardware Failure
+                  Scanner Hardware Failure
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <ol className="list-decimal list-inside space-y-2 text-sm">
                   <li>Switch to manual UID entry mode</li>
-                  <li>Use backup USB RFID scanner if available</li>
+                  <li>Use backup USB scanner if available</li>
                   <li>Record RFID numbers manually on backup forms</li>
                   <li>Contact hardware support: ext. 915</li>
                   <li>Process manual entries during next sync</li>

@@ -2,7 +2,7 @@
  * Credential format rules shared by every scan input.
  *
  * A credential is just a string that a reader "types" into a focused input.
- * USB RFID readers and USB barcode/QR scanners both behave as keyboards, so
+ * USB scanners and USB barcode/QR scanners both behave as keyboards, so
  * the same capture path serves all media — only the accepted shape differs.
  */
 
@@ -11,7 +11,7 @@ export type CredentialType = 'rfid' | 'barcode' | 'qr';
 export const CREDENTIAL_TYPES: CredentialType[] = ['rfid', 'barcode', 'qr'];
 
 export const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
-  rfid: 'RFID tag',
+  rfid: 'credential',
   barcode: 'Barcode',
   qr: 'QR code',
 };
@@ -34,7 +34,7 @@ export const ANY_CREDENTIAL_MAX_LENGTH = 128;
 const SEARCH_WORDS = ['search', 'name', 'phone', 'email', 'order', 'attendee'];
 
 /**
- * Accepts RFID UIDs, linear barcodes and QR payloads while still rejecting
+ * Accepts Codes, linear barcodes and QR payloads while still rejecting
  * typed search text. Pass a credentialType to tighten the length window.
  */
 export const isValidCredentialFormat = (

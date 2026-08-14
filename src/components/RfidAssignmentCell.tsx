@@ -37,7 +37,7 @@ export const RfidAssignmentCell = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const { registerInput, unregisterInput } = useRfidCaptureContext();
 
-  // Register input with centralized RFID capture
+  // Register input with centralized code capture
   useEffect(() => {
     const input = inputRef.current;
     if (!input) return;
@@ -61,7 +61,7 @@ export const RfidAssignmentCell = ({
     }
   }, [currentRfidUid]);
 
-  // Listen for RFID reader input and keyboard navigation
+  // Listen for scanner input and keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target === inputRef.current) {
@@ -84,7 +84,7 @@ export const RfidAssignmentCell = ({
 
   const validateRfidUid = async (rfidUid: string): Promise<boolean> => {
     if (!rfidUid.trim()) {
-      setValidationError("RFID UID cannot be empty");
+      setValidationError("Code cannot be empty");
       return false;
     }
 
@@ -136,7 +136,7 @@ export const RfidAssignmentCell = ({
           .eq('uid', existingRfid.uid);
       }
 
-      // Check if the new RFID UID exists in the system
+      // Check if the new Code exists in the system
       const { data: tagExists } = await supabase
         .from('rfid_tags')
         .select('uid')
@@ -145,7 +145,7 @@ export const RfidAssignmentCell = ({
         .single();
 
       if (!tagExists) {
-        // Create new RFID tag entry
+        // Create new credential entry
         await supabase
           .from('rfid_tags')
           .insert({
@@ -169,13 +169,13 @@ export const RfidAssignmentCell = ({
           .eq('uid', uid.trim());
       }
 
-      toast.success(`RFID Assigned: UID ${uid.trim()} assigned to ${attendeeName}. Use Activation Station to activate.`);
+      toast.success(`Assigned: UID ${uid.trim()} assigned to ${attendeeName}. Use Activation Station to activate.`);
 
       setUid("");
       onAssignmentComplete();
     } catch (error) {
-      console.error('RFID assignment error:', error);
-      toast.error("Assignment Failed - Failed to assign RFID. Please try again.");
+      console.error('credential assignment error:', error);
+      toast.error("Assignment Failed - Failed to assign credential. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -225,12 +225,12 @@ export const RfidAssignmentCell = ({
         console.error('Transaction logging error:', transactionError);
       }
 
-      toast.success(`RFID Cleared: UID ${currentRfidUid} has been cleared and is now unassigned`);
+      toast.success(`Credential cleared: UID ${currentRfidUid} has been cleared and is now unassigned`);
 
       onAssignmentComplete();
     } catch (error) {
       console.error('RFID deactivation error:', error);
-      toast.error("Clear Failed - Failed to clear RFID. Please try again.");
+      toast.error("Clear Failed - Failed to clear credential. Please try again.");
     } finally {
       setIsProcessing(false);
     }

@@ -130,7 +130,7 @@ export function StaffGuideHub() {
       icon: <Coffee className="h-5 w-5" />,
       description: 'Beverage service and tracking',
       keyProcedures: [
-        'RFID scan for drink validation',
+        'code scan for drink validation',
         'Age verification for alcoholic beverages',
         'Daily consumption tracking',
         'Special event drink distributions'
@@ -251,7 +251,7 @@ export function StaffGuideHub() {
       contacts: ['IT Support: ext. 911', 'Event Director: ext. 100']
     },
     {
-      title: 'RFID Scanner Hardware Failure',
+      title: 'Scanner Hardware Failure',
       icon: <CreditCard className="h-5 w-5" />,
       severity: 'high',
       steps: [

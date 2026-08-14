@@ -590,7 +590,7 @@ export class TShirtService {
 
   static async getTShirtPickupData(): Promise<{ pickups: TShirtPickupData[]; stats: TShirtStats }> {
     try {
-      // Get all attendees with their RFID tags and pickup transactions
+      // Get all attendees with their credentials and pickup transactions
       const { data: attendees } = await supabase
         .from('attendees')
         .select(`
@@ -842,7 +842,7 @@ export class TShirtService {
       attendee_id: attendeeId,
       station_type: 'tshirts' as any,
       transaction_type: 'tshirt_pickup' as any,
-      rfid_uid: rfidUid, // Include RFID UID for proper audit trail
+      rfid_uid: rfidUid, // Include Code for proper audit trail
       current_status: 'picked_up',
       extra_data: {
         tshirt_style: order.style,

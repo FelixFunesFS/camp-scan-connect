@@ -26,7 +26,7 @@ export interface RfidAssignmentResult {
 }
 
 class RfidService {
-  // Find attendee by RFID UID
+  // Find attendee by Code
   async findAttendeeByRfid(uid: string): Promise<RfidTag | null> {
     try {
       const { data, error } = await supabase
@@ -64,7 +64,7 @@ class RfidService {
     }
   }
 
-  // Validate RFID UID availability
+  // Validate Code availability
   async validateRfidUid(uid: string, excludeAttendeeId?: string): Promise<{ isValid: boolean; message: string }> {
     try {
       const { data: existingTag } = await supabase
@@ -116,7 +116,7 @@ class RfidService {
           .update({
             status: 'replaced',
             deactivated_at: new Date().toISOString(),
-            reason: 'Replaced with new RFID'
+            reason: 'Replaced with new credential'
           })
           .eq('uid', existingRfid.uid);
       }
@@ -130,7 +130,7 @@ class RfidService {
         .single();
 
       if (!tagExists) {
-        // Create new RFID tag
+        // Create new credential
         const { data, error } = await supabase
           .from('rfid_tags')
           .insert({
@@ -183,13 +183,13 @@ class RfidService {
 
       return {
         success: true,
-        message: 'RFID assigned successfully'
+        message: 'Credential assigned successfully'
       };
     } catch (error) {
       console.error('Error assigning RFID:', error);
       return {
         success: false,
-        message: 'Failed to assign RFID. Please try again.'
+        message: 'Failed to assign credential. Please try again.'
       };
     }
   }
@@ -205,7 +205,7 @@ class RfidService {
         .single();
 
       if (!rfidTag) {
-        return { success: false, message: 'RFID tag not found' };
+        return { success: false, message: 'credential not found' };
       }
 
       // Update RFID status
@@ -241,13 +241,13 @@ class RfidService {
 
       return {
         success: true,
-        message: 'RFID deactivated successfully'
+        message: 'Credential deactivated successfully'
       };
     } catch (error) {
       console.error('Error deactivating RFID:', error);
       return {
         success: false,
-        message: 'Failed to deactivate RFID. Please try again.'
+        message: 'Failed to deactivate credential. Please try again.'
       };
     }
   }
