@@ -62,8 +62,11 @@ export function getRegistrationStatusDisplayText(status: string): string {
 /**
  * Get check-in status based on credential assignment and activation
  */
-export type { CheckInStatus } from './optimizedStatusUtils';
-export { getCheckInStatus } from './optimizedStatusUtils';
+import type { CheckInStatus } from './optimizedStatusUtils';
+import { getCheckInStatus } from './optimizedStatusUtils';
+
+export type { CheckInStatus };
+export { getCheckInStatus };
 
 /**
  * Enhanced check-in status that prioritizes activation transactions over attendee.activated_at
