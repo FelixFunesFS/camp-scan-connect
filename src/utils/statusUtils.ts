@@ -62,59 +62,8 @@ export function getRegistrationStatusDisplayText(status: string): string {
 /**
  * Get check-in status based on credential assignment and activation
  */
-export interface CheckInStatus {
-  status: 'unassigned' | 'assigned' | 'checked_in';
-  label: string;
-  variant: 'destructive' | 'secondary' | 'default';
-  icon: string;
-}
-
-export function getCheckInStatus(rfidUid: string | null, activatedAt: string | null, rfidStatus?: string): CheckInStatus {
-  // Priority: credential status > activated_at timestamp
-  if (rfidUid && rfidStatus === 'active') {
-    return {
-      status: 'checked_in',
-      label: 'Checked In',
-      variant: 'default',
-      icon: '🟢'
-    };
-  }
-  
-  if (rfidUid && rfidStatus === 'assigned') {
-    return {
-      status: 'assigned',
-      label: 'Assigned',
-      variant: 'secondary', 
-      icon: '🟡'
-    };
-  }
-  
-  // Fallback to timestamp-based logic
-  if (rfidUid && activatedAt) {
-    return {
-      status: 'checked_in',
-      label: 'Checked In',
-      variant: 'default',
-      icon: '🟢'
-    };
-  }
-  
-  if (rfidUid && !activatedAt) {
-    return {
-      status: 'assigned',
-      label: 'Assigned',
-      variant: 'secondary', 
-      icon: '🟡'
-    };
-  }
-  
-  return {
-    status: 'unassigned',
-    label: 'Unassigned',
-    variant: 'destructive',
-    icon: '🔴'
-  };
-}
+export type { CheckInStatus } from './optimizedStatusUtils';
+export { getCheckInStatus } from './optimizedStatusUtils';
 
 /**
  * Enhanced check-in status that prioritizes activation transactions over attendee.activated_at
