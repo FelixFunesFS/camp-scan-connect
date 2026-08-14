@@ -457,8 +457,9 @@ export function UnifiedStationScanner({
           />
         )}
 
-        {/* Station-specific Action Area */}
-        {selectedRfid?.attendee && (attendeeReadiness?.isReady || showStaffOverride) && children({
+        {/* Station-specific Action Area — rendered only when the camera overlay is
+            closed, so the action panel never exists twice at the same time. */}
+        {!showLens && selectedRfid?.attendee && (attendeeReadiness?.isReady || showStaffOverride) && children({
           selectedRfid,
           attendeeReadiness,
           isProcessing,
