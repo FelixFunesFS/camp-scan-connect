@@ -86,7 +86,7 @@ export function UnifiedStationScanner({
         setAutoTriggered(false);
         
       } else {
-        setError("RFID tag not found or not assigned to an attendee");
+        setError("credential not found or not assigned to an attendee");
         setSelectedRfid(null);
         setAttendeeReadiness(null);
       }
@@ -185,7 +185,7 @@ export function UnifiedStationScanner({
       toast.success("Staff override recorded successfully");
       setShowStaffOverride(false);
       
-      // Allow station to proceed despite RFID issues
+      // Allow station to proceed despite credential issues
       setAttendeeReadiness({
         isReady: true,
         message: "Staff override applied - service authorized",
@@ -452,7 +452,7 @@ export function UnifiedStationScanner({
         {/* RFID Issue Alert for Unassigned/Unreadable RFIDs */}
         {shouldShowRfidIssueAlert() && (
           <StationRfidIssueAlert
-            errorMessage={error || attendeeReadiness?.message || "RFID assignment issue detected"}
+            errorMessage={error || attendeeReadiness?.message || "credential assignment issue detected"}
             onStaffOverride={() => setShowStaffOverride(true)}
           />
         )}

@@ -54,7 +54,7 @@ export const RfidManagementPanel: React.FC = () => {
       setStats(result.statistics);
       setLastGenerated(result.generated_rfids);
 
-      toast.success(`Mock RFIDs Generated Successfully - Generated ${result.generated_count} mock RFID tags`);
+      toast.success(`Mock RFIDs Generated Successfully - Generated ${result.generated_count} mock credentials`);
 
       console.log('Generated RFIDs:', result.generated_rfids);
 
@@ -77,7 +77,7 @@ export const RfidManagementPanel: React.FC = () => {
 
       const result = data[0];
       
-      toast.success(`${format} RFIDs Cleared - Reset ${result.deleted_count} RFID assignments`);
+      toast.success(`${format} RFIDs Cleared - Reset ${result.deleted_count} credential assignments`);
 
       // Refresh stats and clear generated list if needed
       await loadCurrentStats();
@@ -199,7 +199,7 @@ export const RfidManagementPanel: React.FC = () => {
             RFID Management
           </CardTitle>
           <CardDescription>
-            Generate mock RFID UIDs for testing and manage RFID assignments
+            Generate mock Codes for testing and manage credential assignments
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

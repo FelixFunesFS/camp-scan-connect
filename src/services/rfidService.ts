@@ -26,7 +26,7 @@ export interface RfidAssignmentResult {
 }
 
 class RfidService {
-  // Find attendee by RFID UID
+  // Find attendee by Code
   async findAttendeeByRfid(uid: string): Promise<RfidTag | null> {
     try {
       const { data, error } = await supabase
@@ -64,7 +64,7 @@ class RfidService {
     }
   }
 
-  // Validate RFID UID availability
+  // Validate Code availability
   async validateRfidUid(uid: string, excludeAttendeeId?: string): Promise<{ isValid: boolean; message: string }> {
     try {
       const { data: existingTag } = await supabase
@@ -130,7 +130,7 @@ class RfidService {
         .single();
 
       if (!tagExists) {
-        // Create new RFID tag
+        // Create new credential
         const { data, error } = await supabase
           .from('rfid_tags')
           .insert({
@@ -205,7 +205,7 @@ class RfidService {
         .single();
 
       if (!rfidTag) {
-        return { success: false, message: 'RFID tag not found' };
+        return { success: false, message: 'credential not found' };
       }
 
       // Update RFID status

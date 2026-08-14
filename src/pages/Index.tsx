@@ -61,7 +61,7 @@ const Index = () => {
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <Key className="h-5 w-5 text-primary" />
-                    <span className="font-medium">RFID Assignment</span>
+                    <span className="font-medium">Credential Assignment</span>
                     <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity" />
                   </div>
                   <p className="text-sm text-muted-foreground">Assign tags to attendees</p>
@@ -162,7 +162,7 @@ const Index = () => {
                     <span className="font-medium">Self-Service Check-In</span>
                     <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity" />
                   </div>
-                  <p className="text-sm text-muted-foreground">Check-in and activate your RFID wristband</p>
+                  <p className="text-sm text-muted-foreground">Check-in and activate your wristband</p>
                 </div>
               </div>
             </CardContent>

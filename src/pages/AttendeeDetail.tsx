@@ -104,7 +104,7 @@ export default function AttendeeDetail() {
       if (attendeeError) throw attendeeError;
       setAttendee(attendeeData);
 
-      // Fetch RFID tag
+      // Fetch credential
       const { data: rfidData, error: rfidError } = await supabase
         .from("rfid_tags")
         .select("*")
@@ -353,7 +353,7 @@ export default function AttendeeDetail() {
             {rfidTag ? (
               <div className="space-y-4">
                 <div>
-                  <p className="font-medium text-muted-foreground">RFID UID</p>
+                  <p className="font-medium text-muted-foreground">Code</p>
                   <p className="font-mono text-sm">{rfidTag.uid}</p>
                 </div>
                 <div>
@@ -382,7 +382,7 @@ export default function AttendeeDetail() {
                 )}
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm">No RFID tag assigned</p>
+              <p className="text-muted-foreground text-sm">No credential assigned</p>
             )}
           </CardContent>
         </Card>

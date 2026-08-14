@@ -182,7 +182,7 @@ export function AttendeeDetailModal({
                     </div>
                     {attendee.rfid_uid && (
                       <div>
-                        <span className="text-sm font-medium">RFID UID:</span>
+                        <span className="text-sm font-medium">Code:</span>
                         <span className="ml-2 font-mono text-sm bg-muted px-2 py-1 rounded">
                           {attendee.rfid_uid}
                         </span>
@@ -410,7 +410,7 @@ export function AttendeeDetailModal({
                               </div>
                               {selectedCompanion.rfid_uid && (
                                 <div>
-                                  <span className="text-sm font-medium">RFID UID:</span>
+                                  <span className="text-sm font-medium">Code:</span>
                                   <span className="ml-2 font-mono text-sm bg-muted px-2 py-1 rounded">
                                     {selectedCompanion.rfid_uid}
                                   </span>

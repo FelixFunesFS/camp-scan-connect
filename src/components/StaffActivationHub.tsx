@@ -500,7 +500,7 @@ export function StaffActivationHub() {
     return [
       { key: "all", label: "All Attendees", count: totalCount },
       { key: "activated", label: "Activated", count: activatedCount },
-      { key: "assigned", label: "RFID Assigned", count: assignedCount },
+      { key: "assigned", label: "Assigned", count: assignedCount },
       { key: "unassigned", label: "Needs RFID", count: unassignedCount },
       { key: "waiver_missing", label: "Waiver Missing", count: waiverMissingCount },
       { key: "veterans", label: "Veterans Only", count: veteransCount }
@@ -597,7 +597,7 @@ export function StaffActivationHub() {
       if (!attendee) return;
 
       if (!attendee.rfid_uid) {
-        toast.error("Attendee needs an RFID tag assigned first");
+        toast.error("Attendee needs an credential assigned first");
         return;
       }
 
@@ -640,7 +640,7 @@ export function StaffActivationHub() {
           result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
         }`);
       } else if (result && result.warnings && result.warnings.length > 0) {
-        toast.error("Remaining attendees need RFID tags assigned before activation");
+        toast.error("Remaining attendees need credentials assigned before activation");
       } else {
         toast.info("All attendees with this phone number are already activated");
       }
@@ -664,7 +664,7 @@ export function StaffActivationHub() {
       const activatableAttendees = orderAttendees.filter(a => a.rfid_uid && !a.activated_at);
       
       if (activatableAttendees.length === 0) {
-        toast.info("All attendees in this group are already activated or missing RFID tags");
+        toast.info("All attendees in this group are already activated or missing credentials");
         return;
       }
 
@@ -848,7 +848,7 @@ export function StaffActivationHub() {
             resultNotifications.push({
               attendeeId: attendee.id || attendee.name,
               state: 'error',
-              message: '❌ RFID tag required for activation',
+              message: '❌ credential required for activation',
               showNotification: true
             });
           }
@@ -863,7 +863,7 @@ export function StaffActivationHub() {
             resultNotifications.push({
               attendeeId: attendee.id,
               state: 'error',
-              message: '❌ RFID tag required for activation',
+              message: '❌ credential required for activation',
               showNotification: true
             });
           } else if (attendee.is_activated) {
@@ -930,12 +930,12 @@ export function StaffActivationHub() {
 
       // Provide contextual messaging based on activation results
       if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
-        toast.error("No attendees could be activated - RFID tags must be assigned first");
+        toast.error("No attendees could be activated - credentials must be assigned first");
       } else if (result.activated_count === 0) {
         toast.info("All order members are already activated");
       } else if (result.activated_count < result.total_attendees) {
         toast.warning(`Activated ${result.activated_count} of ${result.total_attendees} attendees${
-          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} need RFID assignment.` : ''
+          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} need credential assignment.` : ''
         }`);
       } else {
         toast.success(`Successfully activated all ${result.activated_count} order members`);
@@ -1782,12 +1782,12 @@ export function StaffActivationHub() {
                   </CardContent>
                 </Card>
 
-                {/* RFID Scanner */}
+                {/* Scanner */}
                 <RfidScanner
                   onScan={handleRfidScan}
                   stationType="activation"
                   disabled={isProcessing}
-                  title="Staff RFID Scanner (Individual Deactivation)"
+                  title="Staff Scanner (Individual Deactivation)"
                   showAttendeeInfo={true}
                   autoTrigger={true}
                 />
@@ -1803,12 +1803,12 @@ export function StaffActivationHub() {
                   <CardContent className="space-y-4">
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <Label htmlFor="manual-rfid" className="sr-only">RFID UID</Label>
+                        <Label htmlFor="manual-rfid" className="sr-only">Code</Label>
                         <Input
                           id="manual-rfid"
                           value={manualRfid}
                           onChange={(e) => setManualRfid(e.target.value)}
-                          placeholder="Enter RFID UID..."
+                          placeholder="Enter Code..."
                           onKeyPress={(e) => e.key === 'Enter' && handleManualDeactivation()}
                         />
                       </div>

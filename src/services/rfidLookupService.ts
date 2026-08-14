@@ -78,7 +78,7 @@ class RfidLookupService {
     }
   }
 
-  // Get RFID tag with attendee details
+  // Get credential with attendee details
   async getRfidWithAttendee(uid: string): Promise<AttendeeSearchResult | null> {
     try {
       const { data, error } = await supabase
@@ -136,7 +136,7 @@ class RfidLookupService {
         .single();
 
       if (rfidError || !rfidTag) {
-        return { success: false, message: 'RFID tag not found' };
+        return { success: false, message: 'credential not found' };
       }
 
       if (rfidTag.status === 'active') {
@@ -197,7 +197,7 @@ class RfidLookupService {
         .single();
 
       if (rfidError || !rfidTag) {
-        return { success: false, message: 'RFID tag not found' };
+        return { success: false, message: 'credential not found' };
       }
 
       if (rfidTag.status === 'deactivated') {
@@ -367,7 +367,7 @@ class RfidLookupService {
 
       return {
         success: true,
-        message: `Successfully deactivated ${activeRfids.length} RFID tags`,
+        message: `Successfully deactivated ${activeRfids.length} credentials`,
         processed_count: activeRfids.length,
         failed_count: 0
       };

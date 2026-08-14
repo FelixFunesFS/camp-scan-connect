@@ -42,7 +42,7 @@ const navigationItems = [
   {
     label: "Staff Operations", 
     items: [
-      { title: "RFID Assignment", url: "/rfid-assignment", icon: Users },
+      { title: "Credential Assignment", url: "/rfid-assignment", icon: Users },
       { title: "Staff Hub", url: "/staff-hub", icon: UserCog },
       { title: "Equipment Hub", url: "/equipment-hub", icon: Package },
     ]

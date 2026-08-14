@@ -71,7 +71,7 @@ export const useSyntheticRfid = ({
       });
       input.dispatchEvent(enterEvent);
     } else {
-      // Simulate global keyboard input (like real RFID reader)
+      // Simulate global keyboard input (like real scanner)
       const uid = generateTestRfidUid(uidType);
       
       // Dispatch individual character events

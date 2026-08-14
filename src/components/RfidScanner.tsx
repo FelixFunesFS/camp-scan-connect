@@ -35,8 +35,8 @@ export const RfidScanner = ({
   onScan, 
   stationType, 
   disabled = false, 
-  placeholder = "Select RFID tag...",
-  title = "RFID Scanner",
+  placeholder = "Select credential...",
+  title = "Scanner",
   showAttendeeInfo = true,
   autoTrigger = false,
   isProcessing = false,
@@ -66,7 +66,7 @@ export const RfidScanner = ({
       if (error) throw error;
       setAvailableRfids(data || []);
     } catch (error) {
-      console.error('Error loading RFID tags:', error);
+      console.error('Error loading credentials:', error);
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +89,7 @@ export const RfidScanner = ({
     }
   };
 
-  // Enhanced RFID scanning with actual RFID reader support
+  // Enhanced code scanning with actual scanner support
   const handleDirectRfidScan = async (scannedUid: string) => {
     if (!scannedUid.trim()) return;
     
@@ -125,7 +125,7 @@ export const RfidScanner = ({
     }
   };
 
-  // Use RFID capture hook for auto-scanning
+  // Use code capture hook for auto-scanning
   const { isCapturing } = useRfidCapture({
     onCapture: handleDirectRfidScan,
     enabled: !disabled && !isProcessing
@@ -146,7 +146,7 @@ export const RfidScanner = ({
         {isCapturing && (
           <div className="flex items-center justify-center p-2 bg-green-50 border border-green-200 rounded-lg">
             <div className="animate-pulse w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-            <span className="text-sm text-green-700">Waiting for RFID scan...</span>
+            <span className="text-sm text-green-700">Waiting for code scan...</span>
           </div>
         )}
 

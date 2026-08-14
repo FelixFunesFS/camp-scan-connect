@@ -379,7 +379,7 @@ const Reports = () => {
               </TooltipTrigger>
               <TooltipContent>
                 <p>Download complete attendee data as CSV</p>
-                <p className="text-xs text-muted-foreground mt-1">Includes RFID assignments, check-in status, and contact info</p>
+                <p className="text-xs text-muted-foreground mt-1">Includes credential assignments, check-in status, and contact info</p>
               </TooltipContent>
             </Tooltip>
           </div>

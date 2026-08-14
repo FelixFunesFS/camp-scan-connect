@@ -64,7 +64,7 @@ export function SelfActivationFAQ() {
                 <p className="text-sm font-medium">Technical explanation:</p>
                 <div className="flex items-start gap-2">
                   <HelpCircle className="h-4 w-4 text-primary mt-0.5" />
-                  <span className="text-sm">Your wristband exists but has no RFID UID loaded onto it</span>
+                  <span className="text-sm">Your wristband exists but has no Code loaded onto it</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Users className="h-4 w-4 text-primary mt-0.5" />
@@ -184,7 +184,7 @@ export function SelfActivationFAQ() {
               <div className="space-y-1 text-sm text-muted-foreground ml-4">
                 <div>• Finding your registration by name or email</div>
                 <div>• Manual check-in if technical issues occur</div>
-                <div>• RFID wristband assignment</div>
+                <div>• wristband assignment</div>
                 <div>• Registration corrections or updates</div>
               </div>
               <Alert>

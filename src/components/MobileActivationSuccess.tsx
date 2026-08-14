@@ -94,7 +94,7 @@ export function MobileActivationSuccess({
     } else {
       return {
         type: 'none',
-        title: 'Need RFID Assignment',
+        title: 'Need Credential Assignment',
         subtitle: 'Contact staff to program wristbands',
         icon: AlertCircle,
         cardClass: 'border-warning/30 bg-warning/5',
@@ -303,7 +303,7 @@ export function MobileActivationSuccess({
           {/* No RFID Attendees */}
           {noRfidAttendees.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-md font-medium text-amber-700">🏷️ Need RFID Assignment</h4>
+              <h4 className="text-md font-medium text-amber-700">🏷️ Need Credential Assignment</h4>
               <div className="space-y-2">
                 {noRfidAttendees.map((attendee: any, index: number) => (
                   <MobileAttendeeCard

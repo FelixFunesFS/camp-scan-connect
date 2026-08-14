@@ -198,12 +198,12 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
         </CardContent>
       </Card>
 
-      {/* RFID Scanner */}
+      {/* Scanner */}
       <RfidScanner
         onScan={handleRfidScan}
         stationType="activation"
         disabled={isProcessing}
-        title="Staff RFID Scanner (Individual Deactivation)"
+        title="Staff Scanner (Individual Deactivation)"
         showAttendeeInfo={true}
         autoTrigger={true}
       />
@@ -219,12 +219,12 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <div className="flex-1">
-              <Label htmlFor="manual-rfid" className="sr-only">RFID UID</Label>
+              <Label htmlFor="manual-rfid" className="sr-only">Code</Label>
               <Input
                 id="manual-rfid"
                 value={manualRfid}
                 onChange={(e) => setManualRfid(e.target.value)}
-                placeholder="Enter RFID UID..."
+                placeholder="Enter Code..."
                 onKeyPress={(e) => e.key === 'Enter' && handleManualDeactivation()}
               />
             </div>
@@ -345,7 +345,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
               <h4 className="font-semibold text-blue-900 mb-1">Individual Deactivation Only</h4>
               <p className="text-sm text-blue-800">
                 This panel handles individual RFID deactivations. For bulk operations or mass deactivations, 
-                use the Bulk Operations section in the RFID Assignment tab.
+                use the Bulk Operations section in the Credential Assignment tab.
               </p>
             </div>
           </div>

@@ -60,7 +60,7 @@ export function getRegistrationStatusDisplayText(status: string): string {
 }
 
 /**
- * Get check-in status based on RFID assignment and activation
+ * Get check-in status based on credential assignment and activation
  */
 export interface CheckInStatus {
   status: 'unassigned' | 'assigned' | 'checked_in';
@@ -70,7 +70,7 @@ export interface CheckInStatus {
 }
 
 export function getCheckInStatus(rfidUid: string | null, activatedAt: string | null, rfidStatus?: string): CheckInStatus {
-  // Priority: RFID tag status > activated_at timestamp
+  // Priority: credential status > activated_at timestamp
   if (rfidUid && rfidStatus === 'active') {
     return {
       status: 'checked_in',
@@ -198,7 +198,7 @@ export async function getActivationStatusFromTransactions(attendeeId: string): P
       .limit(1)
       .maybeSingle();
 
-    // Check if attendee has RFID assignment
+    // Check if attendee has credential assignment
     const { data: rfidTag } = await supabase
       .from('rfid_tags')
       .select('uid, status')
@@ -264,7 +264,7 @@ export async function getBulkEnhancedCheckInStatuses(attendeeIds: string[]): Pro
       .in('transaction_type', ['activate', 'deactivate'])
       .order('created_at', { ascending: false });
 
-    // Get all RFID tags for these attendees
+    // Get all credentials for these attendees
     const { data: rfidTags } = await supabase
       .from('rfid_tags')
       .select('attendee_id, uid, status')
@@ -286,7 +286,7 @@ export async function getBulkEnhancedCheckInStatuses(attendeeIds: string[]): Pro
       }
     });
 
-    // Process RFID tags
+    // Process credentials
     rfidTags?.forEach(tag => {
       rfidMap.set(tag.attendee_id, {
         uid: tag.uid, 

@@ -145,10 +145,10 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
             )}
           </div>
 
-          {/* RFID Assignment Section - Always Visible */}
+          {/* Credential Assignment Section - Always Visible */}
           <div className="border-t pt-4">
             <div className="mb-2">
-              <span className="text-sm font-medium text-muted-foreground">RFID Assignment</span>
+              <span className="text-sm font-medium text-muted-foreground">Credential Assignment</span>
             </div>
             <EnhancedRfidAssignmentCell
               attendeeId={attendee.id}

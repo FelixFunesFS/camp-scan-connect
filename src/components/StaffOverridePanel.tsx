@@ -35,15 +35,15 @@ export function StaffOverridePanel({
     switch (issueType) {
       case 'unactivated':
         return {
-          title: "RFID Assigned - Not Activated",
-          description: "Attendee has an RFID wristband but needs activation",
+          title: "Assigned - Not Activated",
+          description: "Attendee has an wristband but needs activation",
           action: "Activate and process service request",
           variant: "secondary" as const
         };
       case 'unassigned':
         return {
           title: "RFID Not Assigned or Readable",
-          description: "Attendee needs new RFID wristband assignment",
+          description: "Attendee needs new wristband assignment",
           action: "Override for manual service (recommend Info Desk visit)",
           variant: "destructive" as const
         };
@@ -108,7 +108,7 @@ export function StaffOverridePanel({
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              <strong>Recommendation:</strong> Direct attendee to Info Desk for proper RFID assignment. 
+              <strong>Recommendation:</strong> Direct attendee to Info Desk for proper credential assignment. 
               Override should only be used for immediate service needs.
             </AlertDescription>
           </Alert>

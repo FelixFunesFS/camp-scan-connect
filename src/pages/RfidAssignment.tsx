@@ -623,7 +623,7 @@ export const RfidAssignment = () => {
       'Meal Plan': attendee.formatted_meal_plan || '',
       'Arrival Day': attendee.arrival_day || '',
       'Site Location': attendee.site_location_assignment || '',
-      'RFID UID': attendee.rfid_uid || '',
+      'Code': attendee.rfid_uid || '',
       'RFID Status': attendee.rfid_status || '',
       'Most Recent Activation Method': attendee.most_recent_activation_method 
         ? (attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff Assisted' : 'Self Activated')
@@ -679,7 +679,7 @@ export const RfidAssignment = () => {
         </div>
         <Alert>
           <AlertDescription>
-            🔄 Loading RFID assignment data. If this takes more than 10 seconds, please refresh the page.
+            🔄 Loading credential assignment data. If this takes more than 10 seconds, please refresh the page.
           </AlertDescription>
         </Alert>
         {Array.from({ length: 5 }).map((_, i) => (
@@ -696,7 +696,7 @@ export const RfidAssignment = () => {
           <div className="space-y-4">
             {/* FAQ Toggle */}
             <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold">RFID Assignment</h1>
+              <h1 className="text-2xl font-bold">Credential Assignment</h1>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -897,7 +897,7 @@ export const RfidAssignment = () => {
       <RfidCaptureProvider enabled={uiState.hasRfidInputFocused}>
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">RFID Assignment</h1>
+            <h1 className="text-3xl font-bold">Credential Assignment</h1>
             <Button 
               variant="outline" 
               onClick={() => setUiState(prev => ({ ...prev, showFAQ: !prev.showFAQ }))}
@@ -1120,7 +1120,7 @@ export const RfidAssignment = () => {
                           Most Recent Activation {getSortIcon('most_recent_activation')}
                         </div>
                       </TableHead>
-                      <TableHead>RFID Assignment</TableHead>
+                      <TableHead>Credential Assignment</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>

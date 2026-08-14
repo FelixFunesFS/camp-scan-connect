@@ -85,7 +85,7 @@ const formatDuration = (minutes: number): string => {
               <TableHeader className="sticky top-0 bg-background">
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>RFID UID</TableHead>
+                  <TableHead>Code</TableHead>
                   <TableHead>Entry Time</TableHead>
                   <TableHead>Duration</TableHead>
                 </TableRow>

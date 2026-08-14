@@ -46,7 +46,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
         <div className="sticky top-0 bg-background border-b p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-lg">RFID Assignment Guide</h2>
+            <h2 className="font-semibold text-lg">Credential Assignment Guide</h2>
           </div>
           <Button
             variant="ghost"
@@ -77,11 +77,11 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                   </div>
                   <div className="flex items-start gap-2">
                     <Badge variant="secondary" className="text-xs">2</Badge>
-                    <span className="text-sm">Click in the RFID UID field (blue highlight indicates active)</span>
+                    <span className="text-sm">Click in the Code field (blue highlight indicates active)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Badge variant="secondary" className="text-xs">3</Badge>
-                    <span className="text-sm">Scan or tap RFID tag near scanner</span>
+                    <span className="text-sm">Scan or tap credential near scanner</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Badge variant="secondary" className="text-xs">4</Badge>
@@ -97,19 +97,19 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               </AccordionContent>
             </AccordionItem>
 
-            {/* RFID Scanner Setup */}
+            {/* Scanner Setup */}
             <AccordionItem value="scanner">
               <AccordionTrigger className="text-left">
                 <div className="flex items-center gap-2">
                   <WifiOff className="h-4 w-4" />
-                  RFID Scanner Instructions
+                  Scanner Instructions
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-3">
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">Hardware Setup:</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Connect USB RFID scanner to computer</li>
+                    <li>• Connect USB scanner to computer</li>
                     <li>• Ensure scanner is in "keyboard emulation" mode</li>
                     <li>• Scanner should send data + Enter key automatically</li>
                   </ul>
@@ -118,7 +118,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">Scanning Process:</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Position RFID tag within 1-2 inches of scanner</li>
+                    <li>• Position credential within 1-2 inches of scanner</li>
                     <li>• Listen for beep or see LED confirmation</li>
                     <li>• UID appears instantly in active field</li>
                     <li>• System validates and saves automatically</li>
@@ -145,7 +145,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">"Show Only Unassigned" Toggle:</h4>
                   <p className="text-sm text-muted-foreground">
-                    When ON: Shows only attendees needing RFID assignment (workflow focus).
+                    When ON: Shows only attendees needing credential assignment (workflow focus).
                     When OFF: Shows all active attendees (comprehensive overview).
                   </p>
                 </div>
@@ -178,7 +178,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">Individual Assignment:</h4>
                   <p className="text-sm text-muted-foreground">
-                    Assign RFID tags one person at a time. Best for accuracy and when attendees are present.
+                    Assign credentials one person at a time. Best for accuracy and when attendees are present.
                   </p>
                 </div>
 
@@ -252,7 +252,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm">Assigned - RFID tag successfully linked</span>
+                    <span className="text-sm">Assigned - credential successfully linked</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
@@ -264,7 +264,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                    <span className="text-sm">Unassigned - No RFID tag linked</span>
+                    <span className="text-sm">Unassigned - No credential linked</span>
                   </div>
                 </div>
 

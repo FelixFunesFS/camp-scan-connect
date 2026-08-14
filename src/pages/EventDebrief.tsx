@@ -77,7 +77,7 @@ const defaultUserStories: UserStoryCard[] = [
     perspective: 'staff',
     category: 'hardware',
     type: 'issue',
-    title: 'RFID Scanner Reliability',
+    title: 'Scanner Reliability',
     description: 'Some station scanners experienced intermittent connectivity issues during peak hours, requiring manual intervention.',
     impact: 'medium',
     timeframe: 'short_term',

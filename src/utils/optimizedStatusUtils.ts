@@ -29,7 +29,7 @@ const statusCache = new Map<string, { status: CheckInStatus; timestamp: number }
 const CACHE_TTL = 30000; // 30 seconds
 
 /**
- * Get basic check-in status (prioritizes RFID tag status)
+ * Get basic check-in status (prioritizes credential status)
  */
 export function getCheckInStatus(rfidUid: string | null, activatedAt: string | null, rfidStatus?: string): CheckInStatus {
   // If we have RFID status, use it as primary source of truth

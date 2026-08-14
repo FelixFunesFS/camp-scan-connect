@@ -22,7 +22,7 @@ export function StationRfidIssueAlert({
           RFID Issue Detected
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Your RFID wristband needs attention from our staff.
+          Your wristband needs attention from our staff.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -43,7 +43,7 @@ export function StationRfidIssueAlert({
             <div className="space-y-2">
               <p className="font-medium text-sm text-primary">📍 Main Activity Tent - Info Desk</p>
               <p className="text-sm text-muted-foreground">
-                Our staff will issue you a new RFID wristband and activate it immediately.
+                Our staff will issue you a new wristband and activate it immediately.
               </p>
             </div>
           </div>
@@ -85,7 +85,7 @@ export function StationRfidIssueAlert({
         <Alert>
           <Clock className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            <strong>Info Desk Hours:</strong> Open 24/7 during the event for immediate assistance with RFID issues.
+            <strong>Info Desk Hours:</strong> Open 24/7 during the event for immediate assistance with credential issues.
           </AlertDescription>
         </Alert>
 

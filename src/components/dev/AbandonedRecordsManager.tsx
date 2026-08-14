@@ -85,7 +85,7 @@ export function AbandonedRecordsCleanup() {
         .order('created_at');
 
       if (abandonedRecords) {
-        // Check RFID assignments for abandoned records
+        // Check credential assignments for abandoned records
         const { data: rfidData } = await supabase
           .from('rfid_tags')
           .select('uid, attendee_id, status')
@@ -165,7 +165,7 @@ export function AbandonedRecordsCleanup() {
 
       if (result.cleanup_successful) {
         toast.success(
-          `Successfully removed ${result.records_removed} abandoned records and cleared ${result.rfids_cleared} RFID assignments.`, 
+          `Successfully removed ${result.records_removed} abandoned records and cleared ${result.rfids_cleared} credential assignments.`, 
           { id: toastId, duration: 6000 }
         );
         // Rescan for duplicates after successful cleanup
@@ -291,7 +291,7 @@ export function AbandonedRecordsCleanup() {
                 <strong>Abandoned Records Cleanup:</strong>
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Remove all records with 'abandoned' RegFox status</li>
-                  <li>Clear any RFID assignments from abandoned records</li>
+                  <li>Clear any credential assignments from abandoned records</li>
                   <li>Remove related station transactions</li>
                   <li>Maintain audit trail of cleanup actions</li>
                   <li>These records should not be in the system</li>

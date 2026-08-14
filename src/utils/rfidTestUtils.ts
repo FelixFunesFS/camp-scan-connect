@@ -20,7 +20,7 @@ export interface TestScenario {
   setupSteps: string[];
 }
 
-// Generate realistic RFID UIDs
+// Generate realistic Codes
 export const generateTestRfidUid = (type: 'valid' | 'short' | 'long' | 'special' | 'duplicate' = 'valid'): string => {
   const chars = 'ABCDEF0123456789';
   
@@ -73,7 +73,7 @@ export const generateTestAttendee = (type: 'standard' | 'veteran' | 'volunteer' 
 // Pre-defined test scenarios
 export const TEST_SCENARIOS: TestScenario[] = [
   {
-    name: 'New Attendee RFID Assignment',
+    name: 'New Attendee Credential Assignment',
     description: 'Assign RFID to a new attendee without existing tag',
     attendee: generateTestAttendee('standard'),
     expectedOutcome: 'success',
@@ -85,11 +85,11 @@ export const TEST_SCENARIOS: TestScenario[] = [
     attendee: generateTestAttendee('veteran'),
     rfidUid: generateTestRfidUid('valid'),
     expectedOutcome: 'success',
-    setupSteps: ['Create veteran attendee', 'Assign RFID tag', 'Test activation flow']
+    setupSteps: ['Create veteran attendee', 'Assign credential', 'Test activation flow']
   },
   {
-    name: 'Duplicate RFID Assignment',
-    description: 'Attempt to assign already-used RFID UID',
+    name: 'Duplicate Credential Assignment',
+    description: 'Attempt to assign already-used Code',
     attendee: generateTestAttendee('standard'),
     rfidUid: generateTestRfidUid('duplicate'),
     expectedOutcome: 'error',
@@ -149,7 +149,7 @@ export class RfidTestDatabase {
       
       return !error;
     } catch (error) {
-      console.error('Failed to create test RFID tag:', error);
+      console.error('Failed to create test credential:', error);
       return false;
     }
   }
@@ -186,7 +186,7 @@ export class RfidTestDatabase {
         .delete()
         .like('regfox_id', 'TEST_%');
 
-      // Clean up test RFID tags
+      // Clean up test credentials
       await supabase
         .from('rfid_tags')
         .delete()
@@ -213,7 +213,7 @@ export const performanceTests = {
     for (let i = 0; i < count; i++) {
       const start = performance.now();
       
-      // Simulate RFID scan processing
+      // Simulate code scan processing
       const uid = generateTestRfidUid('valid');
       const { data } = await supabase
         .from('rfid_tags')
