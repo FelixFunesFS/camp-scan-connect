@@ -426,7 +426,7 @@ export function AbandonedRecordsCleanup() {
                         </div>
                         {record.rfid_uid && (
                           <div className="text-muted-foreground">
-                            RFID: {record.rfid_uid}
+                            Code: {record.rfid_uid}
                           </div>
                         )}
                       </div>

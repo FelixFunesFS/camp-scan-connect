@@ -140,11 +140,11 @@ class RfidLookupService {
       }
 
       if (rfidTag.status === 'active') {
-        return { success: false, message: 'RFID is already activated' };
+        return { success: false, message: 'Credential is already active' };
       }
 
       if (!rfidTag.attendee_id) {
-        return { success: false, message: 'RFID is not assigned to any attendee' };
+        return { success: false, message: 'Credential is not assigned to any attendee' };
       }
 
       // Update RFID status
@@ -179,10 +179,10 @@ class RfidLookupService {
           extra_data: { activation_type: 'individual' }
         });
 
-      return { success: true, message: 'RFID activated successfully' };
+      return { success: true, message: 'Credential activated successfully' };
     } catch (error) {
       console.error('Error activating RFID:', error);
-      return { success: false, message: 'Failed to activate RFID' };
+      return { success: false, message: 'Failed to activate credential' };
     }
   }
 
@@ -201,7 +201,7 @@ class RfidLookupService {
       }
 
       if (rfidTag.status === 'deactivated') {
-        return { success: false, message: 'RFID is already deactivated' };
+        return { success: false, message: 'Credential is already deactivated' };
       }
 
       // Update RFID status
@@ -234,10 +234,10 @@ class RfidLookupService {
           });
       }
 
-      return { success: true, message: 'RFID deactivated successfully' };
+      return { success: true, message: 'Credential deactivated successfully' };
     } catch (error) {
       console.error('Error deactivating RFID:', error);
-      return { success: false, message: 'Failed to deactivate RFID' };
+      return { success: false, message: 'Failed to deactivate credential' };
     }
   }
 

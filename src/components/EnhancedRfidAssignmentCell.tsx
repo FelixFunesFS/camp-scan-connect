@@ -294,7 +294,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     } catch (error) {
       console.error('credential assignment error:', error);
-      toast.error("Assignment Failed - Failed to assign RFID. Please try again.");
+      toast.error("Assignment Failed - Failed to assign credential. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -447,7 +447,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`RFID Cleared: ${currentRfidUid} has been unassigned from ${attendeeName}`);
+      toast.success(`Credential cleared: ${currentRfidUid} has been unassigned from ${attendeeName}`);
 
       // Optimistic update first
       if (onOptimisticUpdate) {

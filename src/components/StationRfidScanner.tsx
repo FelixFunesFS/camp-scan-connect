@@ -162,7 +162,7 @@ export const StationRfidScanner = ({
             )}
             
             <div className="text-xs text-muted-foreground font-mono">
-              RFID: {lastScannedUid}
+              Code: {lastScannedUid}
             </div>
           </div>
         )}

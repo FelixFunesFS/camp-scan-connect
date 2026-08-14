@@ -175,7 +175,7 @@ export const RfidAssignmentCell = ({
       onAssignmentComplete();
     } catch (error) {
       console.error('credential assignment error:', error);
-      toast.error("Assignment Failed - Failed to assign RFID. Please try again.");
+      toast.error("Assignment Failed - Failed to assign credential. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -225,12 +225,12 @@ export const RfidAssignmentCell = ({
         console.error('Transaction logging error:', transactionError);
       }
 
-      toast.success(`RFID Cleared: UID ${currentRfidUid} has been cleared and is now unassigned`);
+      toast.success(`Credential cleared: UID ${currentRfidUid} has been cleared and is now unassigned`);
 
       onAssignmentComplete();
     } catch (error) {
       console.error('RFID deactivation error:', error);
-      toast.error("Clear Failed - Failed to clear RFID. Please try again.");
+      toast.error("Clear Failed - Failed to clear credential. Please try again.");
     } finally {
       setIsProcessing(false);
     }

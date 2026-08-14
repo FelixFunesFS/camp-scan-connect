@@ -26,9 +26,9 @@ interface StaffDeactivationPanelProps {
 }
 
 const DEACTIVATION_REASONS = [
-  { value: "lost", label: "Lost RFID" },
-  { value: "damaged", label: "Damaged RFID" },
-  { value: "replaced", label: "Replaced with New RFID" },
+  { value: "lost", label: "Lost credential" },
+  { value: "damaged", label: "Damaged credential" },
+  { value: "replaced", label: "Replaced with new credential" },
   { value: "checkout", label: "Event Checkout/Departure" },
   { value: "sunday_mass", label: "Sunday Mass Deactivation" },
   { value: "staff_request", label: "Staff Request" },
@@ -110,7 +110,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
         const attendee = await rfidLookupService.getRfidWithAttendee(uid);
         const toastMessage = attendee ? 
           `RFID Deactivated - ${attendee.first_name} ${attendee.last_name} deactivated` :
-          "RFID Deactivated - RFID deactivated successfully";
+          "RFID Deactivated - Credential deactivated successfully";
         toast.success(toastMessage);
         loadActiveRfids();
         loadRecentActivity();
@@ -118,7 +118,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
         toast.error(`Deactivation Failed - ${result.message}`);
       }
     } catch (error) {
-      toast.error("Error - Failed to deactivate RFID");
+      toast.error("Error - Failed to deactivate credential");
     } finally {
       setIsProcessing(false);
     }
@@ -139,7 +139,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Active RFIDs</p>
+                <p className="text-sm text-muted-foreground">Active credentials</p>
                 <p className="text-2xl font-bold text-blue-600">{activeRfids.length}</p>
               </div>
             </div>
@@ -208,12 +208,12 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
         autoTrigger={true}
       />
 
-      {/* Manual RFID Entry */}
+      {/* Manual code entry */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserMinus className="h-5 w-5" />
-            Manual RFID Entry
+            Manual code entry
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -270,7 +270,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
                         )}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {attendee.ticket_type} • RFID: {attendee.rfid_uid}
+                        {attendee.ticket_type} • Code: {attendee.rfid_uid}
                       </p>
                     </div>
                     <Button 
@@ -310,7 +310,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
                       {(activity.attendee as any)?.first_name} {(activity.attendee as any)?.last_name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      RFID: {activity.rfid_uid}
+                      Code: {activity.rfid_uid}
                     </p>
                     {activity.extra_data?.reason && (
                       <Badge variant="outline" className="text-xs mt-1">

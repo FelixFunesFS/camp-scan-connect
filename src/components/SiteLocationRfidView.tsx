@@ -72,7 +72,7 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
                 <TableHead>Phone</TableHead>
                 <TableHead>Arrival</TableHead>
                 <TableHead>Waiver</TableHead>
-                <TableHead>RFID Status</TableHead>
+                <TableHead>Credential Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

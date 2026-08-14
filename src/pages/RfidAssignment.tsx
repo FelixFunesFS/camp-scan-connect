@@ -605,7 +605,7 @@ export const RfidAssignment = () => {
       loadAttendees();
     } catch (error) {
       console.error('Bulk activation error:', error);
-      toast.error("Failed to activate RFIDs");
+      toast.error("Failed to activate credentials");
     } finally {
       setOperationState(prev => ({ ...prev, isActivating: false }));
     }
@@ -624,7 +624,7 @@ export const RfidAssignment = () => {
       'Arrival Day': attendee.arrival_day || '',
       'Site Location': attendee.site_location_assignment || '',
       'Code': attendee.rfid_uid || '',
-      'RFID Status': attendee.rfid_status || '',
+      'Credential Status': attendee.rfid_status || '',
       'Most Recent Activation Method': attendee.most_recent_activation_method 
         ? (attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff Assisted' : 'Self Activated')
         : 'Not Activated',

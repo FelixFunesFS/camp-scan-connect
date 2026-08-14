@@ -175,7 +175,7 @@ export function AttendeeDetailModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div>
-                      <span className="text-sm font-medium">RFID Status:</span>
+                      <span className="text-sm font-medium">Credential Status:</span>
                       <Badge variant={getRfidStatusVariant(attendee.rfid_status, attendee.rfid_uid)} className="ml-2">
                         {attendee.rfid_status || 'No RFID'}
                       </Badge>
@@ -403,7 +403,7 @@ export function AttendeeDetailModal({
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <div>
-                                <span className="text-sm font-medium">RFID Status:</span>
+                                <span className="text-sm font-medium">Credential Status:</span>
                                 <Badge variant={getRfidStatusVariant(selectedCompanion.rfid_status, selectedCompanion.rfid_uid)} className="ml-2">
                                   {selectedCompanion.rfid_status || 'No RFID'}
                                 </Badge>

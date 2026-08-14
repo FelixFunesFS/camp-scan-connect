@@ -150,7 +150,7 @@ export const MobileOnSiteCard: React.FC<OnSiteAttendeeCardProps> = ({ attendee }
           </div>
           
           <div className="text-sm text-muted-foreground font-mono">
-            RFID: {attendee.rfid_uid}
+            Code: {attendee.rfid_uid}
           </div>
         </div>
       </CardContent>
