@@ -65,6 +65,10 @@ export function UnifiedStationScanner({
   const handleRfidFound = async (uid: string) => {
     setError("");
     setIsLookingUp(true);
+    // A new code starts a fresh scan: clear the one-commit-per-scan guard
+    if (lastCommitRef.current && !lastCommitRef.current.key.startsWith(`${uid}:`)) {
+      lastCommitRef.current = null;
+    }
     
     try {
       // Find attendee by RFID
