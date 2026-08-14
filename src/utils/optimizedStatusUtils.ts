@@ -140,7 +140,11 @@ export async function getBulkOptimizedStatuses(attendeeIds: string[]): Promise<R
     // Process results efficiently
     const rfidMap = new Map<string, { uid: string; status: string }>();
     rfidData?.forEach(rfid => {
-      rfidMap.set(rfid.attendee_id, { uid: rfid.uid, status: rfid.status });
+      const existing = rfidMap.get(rfid.attendee_id);
+      // An active credential always wins over an assigned one
+      if (!existing || (existing.status !== 'active' && rfid.status === 'active')) {
+        rfidMap.set(rfid.attendee_id, { uid: rfid.uid, status: rfid.status });
+      }
     });
 
     const activationMap = new Map<string, string>();
