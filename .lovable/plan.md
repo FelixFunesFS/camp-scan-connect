@@ -1,33 +1,56 @@
-# Waiver receipt email — parked, with prep work
+# Scanner cleanup: generic wording, reliable badges, no double scans
 
-Emailing the receipt is on hold until a sender domain is in place. This plan keeps the work moving in two parts: what gets built now (no domain needed), and what stays queued until you're ready.
+Three fixes, all confirmed against the live 2026 data.
 
-## Current state
+## 1. Double scans (the urgent one)
 
-- Signing a waiver in-app produces a PDF receipt in the browser; the attendee can download it right then, and staff can re-download it from the Waivers panel.
-- Nothing is emailed, and no copy of the PDF is stored anywhere — if the attendee closes the dialog without downloading, the receipt is gone (it can be regenerated on demand from the signature record).
-- All 694 attendees for the active event have an email address on file, so no data gap blocks sending later.
+**What's happening:** every station renders its action panel twice — once on the page and once inside the full-screen camera overlay. Both copies listen for the same "scan happened" signal, so one scan fires the action twice.
 
-## Part 1 — Build now (no email domain required)
+The data confirms it: Jocelyn's record has 6 drinks logged in a 7-second window, and 3 headphone checkouts with no checkin in between. The headphone case is worse than a duplicate — both copies read "not checked out" before either write lands, so they both write *checkout* instead of toggling. That's why the status looks stuck.
 
-1. **Store a copy of each receipt.** On signing, generate the PDF and upload it to a private storage bucket, keyed by the signature record. Regenerating the same signature is idempotent — it overwrites rather than duplicates.
-2. **Serve it through a short-lived signed link.** Both the attendee's download button and the staff Waivers panel pull from stored copies, falling back to on-the-fly generation if a file is missing.
-3. **Queue the delivery intent.** Record on each signature whether a receipt copy was requested for the attendee's email, with a not-yet-sent state. Nothing sends; this is the backlog that gets flushed once email is live.
+**Fix:**
+- Render the action panel once. The overlay and the page share a single instance instead of mounting two.
+- Replace the global event broadcast with a direct call, so there is exactly one path from scan to action.
+- Add a per-scan guard: one scanned code produces one transaction until the scanner is reset or a different code is read. A re-scan of the same wristband inside a short window is ignored with a visible "already recorded" message rather than silently double-counting.
+- Make the toggle stations decide from a fresh read taken *inside* the write, so two rapid taps can never both resolve to "checkout".
 
-## Part 2 — Queued until a sender domain exists
+**Validation stays per scan:** each scan still looks the attendee up, checks the waiver and activation gate, and shows the result card. The change is that confirming a scan can only commit one transaction.
 
-1. Set up the sender domain (e.g. `notify.yourdomain.com`) and email infrastructure.
-2. Add a receipt email template matching the app's look: attendee name, event, signing timestamp, agreement version, and a link to the stored PDF. Attachments are not supported, so the link is the delivery mechanism.
-3. Send on signing, and offer a one-time backfill that sends receipts to everyone flagged in Part 1's backlog.
-4. Add a resend action in the Waivers panel for staff.
+## 2. Badges showing "Unassigned" when the camper is assigned
+
+Jocelyn's 2026 record is clean in the database: one wristband, status active, correctly scoped to the 2026 event. No duplicate 2026 registration. The wrong badge is a code problem, in two parts:
+
+- **Four different status calculators** exist across the app (assignment table, mobile card, group view, station screens), each with slightly different rules and different fallbacks. Views disagree because they aren't asking the same question.
+- **The bulk status lookup fails silently on big lists.** With ~680 attendees it packs every ID into one request, which the server rejects, and the error handler then labels *everyone* "Unassigned" — a wrong answer presented as fact.
+
+**Fix:**
+- One shared status function, used by every view. Rules stay as they are today: active wristband = Checked In, assigned wristband = Assigned, no wristband = Unassigned.
+- Chunk bulk lookups into batches so large lists succeed.
+- On a genuine lookup failure, show an "Unknown" state instead of falsely reporting "Unassigned", so staff never act on a fabricated status.
+- Seed badges from data already loaded with the row, so they render correctly even before the bulk lookup returns.
+
+## 3. Replace "RFID" wording with generic terms
+
+"RFID" appears in roughly 320 places in the UI. Campers may present a wristband, a printed badge or a phone QR code, so the language should not name one technology.
+
+Wording map:
+- "RFID Scanner" -> "Scanner"
+- "Scan RFID" / "Scan RFID tag" -> "Scan code"
+- "RFID UID" / "Enter RFID" -> "Code" / "Enter code"
+- "RFID not found" -> "Code not recognized"
+- "RFID assignment" -> "Credential assignment"
+- Wristband stays where staff are physically handling a wristband, since that is accurate at the assignment table.
+
+This is display text only. Database columns, internal names and file names stay as they are — renaming those adds risk with no visible benefit, and the app already stores a credential type per code.
 
 ## Technical notes
 
-- New private storage bucket for waiver receipts; access only via signed URLs generated server-side.
-- Receipt generation moves into a shared helper so the browser and any future server-side send produce an identical PDF.
-- Two columns on `waiver_signatures` track the delivery state (requested / sent timestamp) so Part 2 is a flush, not a rebuild.
-- No change to the waiver gate: signing still flips `waiver_signed` and unblocks activation regardless of email state.
+- Station scanner: single child instance, `onScan` callback instead of `window.dispatchEvent('autoTrigger')`, an in-flight ref plus last-committed-code ref to enforce one commit per scan.
+- Toggle stations (headphones, golf carts, walkies, fanny packs): resolve current state and write in one guarded step.
+- New shared `useCheckInStatus` / `getCheckInStatus` source of truth; the redundant copies in `statusUtils.ts` and `optimizedStatusUtils.ts` collapse into it.
+- Bulk queries chunk at ~100 IDs; failures surface as `unknown`, not `unassigned`.
+- Copy changes are confined to UI strings in components and pages.
 
-## Open question
+## Cleanup question
 
-If you'd rather not add storage plumbing yet either, I can stop after keeping the current download-only behavior and revisit the whole thing when the domain is ready — say the word and I'll trim this to nothing.
+Jocelyn's test records (6 drinks, 3 headphone checkouts, duplicate assignment rows) are still in the 2026 data. Want me to clear the test transactions as part of this, or leave them?
