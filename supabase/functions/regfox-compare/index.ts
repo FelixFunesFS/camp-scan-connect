@@ -53,10 +53,13 @@ Deno.serve(async (req) => {
 
     const regfoxBreakdown = emptyBreakdown();
     const regfoxIds = new Set<string>();
+    const regfoxNames = new Map<string, string>();
     for (const r of registrants) {
       try {
         const mapped = mapRegistrant(r, target.eventId, orderAccommodations);
-        regfoxIds.add(String(mapped.regfox_registration_id));
+        const id = String(mapped.regfox_registration_id);
+        regfoxIds.add(id);
+        regfoxNames.set(id, `${mapped.first_name ?? ''} ${mapped.last_name ?? ''}`.trim());
         bump(regfoxBreakdown, String(mapped.ticket_type));
       } catch {
         regfoxIds.add(String(r.id));
@@ -118,8 +121,7 @@ Deno.serve(async (req) => {
         discrepancies.push({
           type: 'missing_in_db',
           regfox_id: id,
-          // deno-lint-ignore no-explicit-any
-          attendee_name: `${(r as any).firstName ?? ''} ${(r as any).lastName ?? ''}`.trim(),
+          attendee_name: regfoxNames.get(id) || `RegFox #${id}`,
           details: 'Exists in RegFox but not in the database',
           impact: 'high',
         });
