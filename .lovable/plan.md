@@ -1,69 +1,72 @@
-# Workflow edge-case review + read-only data access
+# Connect Database to Google Sheets
 
-## What the live 2026 data shows
+## Goal
+Expose the Lovable Cloud database (attendees, transactions, waivers, etc.) to Google Sheets so workspace members can read the data for reporting, mail merges, and other tasks, without requiring a third-party automation tool like Make.
 
-- 694 attendees, **2 credentials issued**, 0 station transactions
-- 335 waivers signed / 359 unsigned
-- 22 phone numbers tied to more than one order
-- `staff` table is **empty** — nobody is a real staff user
-- Meal plans: 609 "none", 85 "standard"
+## What exists today
+- A `public-read-only` Edge Function is already deployed at `https://camp-scan-connect.lovable.app/functions/v1/public-read-only`.
+- It returns a read-only JSON feed of whitelisted tables (`attendees`, `rfid_tags`, `station_transactions`, `waiver_signatures`, `events`).
+- A `READONLY_API_KEY` secret controls access.
+- No Google Sheets connection exists in this workspace yet.
+- The Lovable Google Sheets connector (`google_sheets`) is available and supports gateway-backed read/write calls.
 
-## Blocking issues (before gates open)
+## What “directly” means here
+Google Sheets cannot connect to a database the same way a server does. The realistic options are:
 
-1. **Credentials not loaded.** Only 2 of 694 attendees have a wristband/barcode. Every station refuses service without one, so meals, drinks, gates and shirts are all blocked until a bulk assignment pass runs.
-2. **Staff login is not real.** The staff code check ignores the code entirely and returns the first admin, and the staff list is empty. Anyone who opens the app is effectively an admin.
-3. **Every table is world-open.** Current policies allow anonymous read *and write* on attendees — names, emails, phones, addresses, emergency contacts. Anyone with the app's public key can read or delete the roster. Must be restricted to signed-in staff.
+| Approach | How it works | Needs connector? | Best for |
+|---|---|---|---|
+| **A. Database pushes to Google Sheets** | Edge function or scheduled job pulls rows from the DB and writes them to a spreadsheet via the Lovable Google Sheets connector gateway. | Yes | Live/auto-updated sheets, no Make required. |
+| **B. Google Sheets pulls from the API** | Google Apps Script inside a spreadsheet calls the `public-read-only` endpoint and populates rows. | No | Simplest, no connector, runs on Google side. |
+| **C. Make/Zapier pulls from the API** | Already configured; Make calls `public-read-only` and writes to Google Sheets. | No | Low-code, visual workflows. |
 
-## Station / workflow bugs found
+## Recommended approach
+**Option A: Database pushes to Google Sheets via the Lovable connector.**
 
-4. **Meal double-serve window.** Meal history is filtered to "today in UTC" while meals are labelled by day (Fri Lunch, Sat Dinner). After 8pm ET the day flips, so an already-served meal can be served again, and earlier days read as unclaimed. Claims should be checked per meal for the whole event, not per calendar day.
-5. **Meal station is still in test mode.** Time windows are disabled and a "reset weekend meals" button is exposed to staff at the station.
-6. **Gate toggle can flip twice.** The duplicate-scan guard keys on the specific action, so an entry followed by a fast re-read records an exit — the person reads off-site while standing on site. The guard should cover the station for the window, not just the exact action.
-7. **Assignment still logs as an activation.** The older credential service (used by attendee detail and legacy assignment paths) writes an `activate` transaction when a band is merely assigned. Only the newer assignment cell was fixed, so check-in counts can inflate.
-8. **Duplicate credential rows show "Unassigned".** The lookup expects exactly one row; a replacement or lost-band case leaves both an `assigned` and an `active` row, the query errors, and the badge falls back to unassigned. It should pick the most relevant row instead of failing.
-9. **Multi-order phones.** 22 phone numbers map to more than one order, so self-activation by phone can surface strangers' names. The pick-from-list disambiguation still needs to cover this path.
-10. **Waiver load at the gate.** 359 unsigned means 359 in-line signings. Worth a pre-event text/email signing link plus the fast "sign now" step already on the check-in screen.
-11. **Year rollover.** Transaction, scan and credential inserts don't set the event; they rely on a database default hard-coded to 2026. Next year's data would silently land in this year's event. Inserts should carry the active event.
+Reasons:
+- No extra tools (Make) required after setup.
+- Runs from the Lovable side so the workspace controls credentials and schedules.
+- Keeps the `READONLY_API_KEY` separate; Google Sheets auth is handled through the connector.
+- Can be triggered manually from the app or on a schedule.
 
-## T-shirt station specifically
+## Implementation steps
 
-Data reads correctly now — orders parse, sizes classify, pickups store the scanned code. Remaining gaps:
+1. **Create a Google Sheets connection in Lovable**
+   - Use `standard_connectors--connect` with `connector_id: google_sheets`.
+   - Choose the workspace Google account that owns the target spreadsheet.
+   - Link it to the project. This adds the Google Sheets connector env vars.
 
-- Pickup requires an active credential, so shirts can't be handed out before check-in. Reasonable as policy, but the screen should say so instead of just showing a block.
-- No partial pickup: an order of 3 is all-or-nothing.
-- No staff note or size-swap override, so the log won't reconcile with the physical box count.
+2. **Create a target spreadsheet in Google Drive**
+   - One sheet per table: `Attendees`, `Transactions`, `Waivers`, etc.
+   - Share the spreadsheet with the same Google account used for the connector.
+   - Copy the spreadsheet ID from the URL.
 
-## Read-only / API access for another person or Make
+3. **Build a `sync-to-sheets` Edge Function**
+   - Server-side function that:
+     - Reads the requested table from the DB using the service-role client.
+     - Calls the Lovable connector gateway at `https://connector-gateway.lovable.dev/google_sheets/v4/spreadsheets/{spreadsheetId}/values/{range}:clear` and then `.../values/{range}?valueInputOption=USER_ENTERED` with `PUT`.
+   - Accepts `table`, `event_id`, `spreadsheet_id`, and `sheet_name` as parameters.
+   - Supports `attendees`, `station_transactions`, `waiver_signatures`, and `rfid_tags` initially.
+   - Returns a summary: rows written, spreadsheet URL, errors.
 
-- **Read-only viewer login** (best for a person): roles of `admin` / `staff` / `viewer`, sign-in required, viewers see reports only. Depends on fix #3 anyway.
-- **Read-only API endpoint for Make / automations** (best for a system): a server function serving JSON for attendees, check-ins and station activity, protected by an API key you generate in the project. No database credentials leave the app. Make calls the endpoint with `Authorization: Bearer <api-key>`.
-- **Scheduled export**: CSV drop on a schedule if they only want numbers.
+4. **Add a UI trigger in the Developer Dashboard**
+   - A “Sync to Google Sheets” button in the Debug Tools or Admin Requests tab.
+   - Lets staff choose the table and event year, then invokes the Edge Function.
+   - Shows the result and a link to the spreadsheet.
 
-Direct database credentials can't be handed out on this hosting, so it's one of the three above.
+5. **Optional: schedule the sync**
+   - Once the manual sync works, add a cron trigger or a scheduled Edge Function that runs every 15–60 minutes during the event.
+   - Start with manual-only to avoid overwriting accidental edits in Sheets.
 
-### How the API key works for Make
+## Security considerations
+- The Google Sheets connector uses the workspace/builder’s Google account, not each app user’s account. It is appropriate for workspace-owned reporting sheets.
+- The Edge Function must verify the caller is an authenticated staff member before syncing.
+- Keep the spreadsheet private to the organizing team; do not publish it publicly.
+- The `public-read-only` endpoint remains available for Make and other tools; the Google Sheets path does not expose the `READONLY_API_KEY`.
 
-1. Generate a random key inside the project secrets (no need to invent one manually).
-2. Create an edge function at `https://<project>.supabase.co/functions/v1/public-read-only` that accepts the key and returns a read-only JSON feed.
-3. In Make, add an HTTP module with the function URL and the key as a Bearer token.
-4. The endpoint can support date filtering (e.g. `?since=2026-08-14` or `?table=attendees`) so automations can poll for changes.
+## Alternative (fastest, no connector)
+If the connector setup is unnecessary, use **Google Apps Script** inside a spreadsheet to call the existing `public-read-only` endpoint. This avoids any new connector, credentials, or Lovable code changes. It is a good short-term option while the connector path is being built.
 
-### Important security note
-
-The existing `get-secrets` edge function returns the project's actual Supabase credentials to anyone who calls it. That should be removed or restricted before any public API is exposed.
-
-
-## Technical notes
-
-- Waiver + active-credential gating stays in `check_station_access` / `checkAttendeeReadiness`; none of the fixes change that contract.
-- Policy lockdown and staff auth must ship together or the app goes dark.
-- The meal fix is a query change: drop the `created_at >= today` filter and keep per-meal uniqueness.
-
-## Suggested order
-
-1. Staff auth + roles + policy lockdown (2, 3)
-2. Credential bulk load (1)
-3. Station correctness: meals (4, 5), gate (6), assignment logging (7), duplicate rows (8)
-4. Phone disambiguation + waiver push (9, 10)
-5. Read-only access for the other user
-6. Year-rollover hardening (11)
+## Open questions
+- Which tables should be synced to Google Sheets first? (attendees is the most likely starting point)
+- Should the sync be manual, scheduled, or both?
+- Should the Google Sheets spreadsheet be created by staff in their own Drive, or should the app create it via the Sheets API?
