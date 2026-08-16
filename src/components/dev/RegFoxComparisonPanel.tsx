@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
-import { regfoxService, RegFoxTotals, DatabaseTotals, TotalsComparison } from '@/services/regfoxService';
+import type { TotalsComparison } from '@/services/regfoxService';
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -33,189 +33,39 @@ export function RegFoxComparisonPanel() {
   const [discrepancies, setDiscrepancies] = useState<DiscrepancyItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
-  const [regfoxCredentials, setRegfoxCredentials] = useState<{ apiKey: string; formId: string } | null>(null);
 
-  useEffect(() => {
-    loadCredentialsAndCompare();
-  }, []);
-
-  const loadCredentialsAndCompare = async () => {
-    try {
-      // Get RegFox credentials from secrets
-      const { data: secrets } = await supabase.functions.invoke('get-secrets');
-      if (secrets?.REGFOX_API_KEY && secrets?.REGFOX_FORM_ID) {
-        setRegfoxCredentials({
-          apiKey: secrets.REGFOX_API_KEY,
-          formId: secrets.REGFOX_FORM_ID
-        });
-        await performComparison(secrets.REGFOX_API_KEY, secrets.REGFOX_FORM_ID);
-      } else {
-        toast.error('RegFox credentials not configured');
-      }
-    } catch (error) {
-      console.error('Error loading credentials:', error);
-      toast.error('Failed to load RegFox credentials');
-    }
-  };
-
-  const performComparison = async (apiKey?: string, formId?: string) => {
+  // The RegFox API key stays server-side: this panel only reads aggregated
+  // totals returned by the `regfox-compare` edge function.
+  const performComparison = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Use provided credentials or stored ones
-      const creds = regfoxCredentials || { apiKey: apiKey!, formId: formId! };
-      
-      // Get database totals
-      const dbTotals = await getDatabaseTotals();
-      
-      // Get RegFox totals
-      const regfoxTotals = await regfoxService.getRegFoxTotals(creds.apiKey, creds.formId);
-      
-      if (!regfoxTotals) {
-        toast.error('Failed to fetch RegFox data');
-        return;
-      }
+      const { data, error } = await supabase.functions.invoke('regfox-compare');
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Comparison failed');
 
-      // Calculate discrepancies
-      const totalDiff = dbTotals.total_attendees - regfoxTotals.total_attendees;
-      const ticketDiffs = {
-        dry_site: dbTotals.ticket_breakdown.dry_site - regfoxTotals.ticket_breakdown.dry_site,
-        glamping: dbTotals.ticket_breakdown.glamping - regfoxTotals.ticket_breakdown.glamping,
-        cabin: dbTotals.ticket_breakdown.cabin - regfoxTotals.ticket_breakdown.cabin,
-        rv_site: dbTotals.ticket_breakdown.rv_site - regfoxTotals.ticket_breakdown.rv_site
-      };
-
-      const comparisonData: TotalsComparison = {
-        database: dbTotals,
-        regfox: regfoxTotals,
-        discrepancies: {
-          total_difference: totalDiff,
-          ticket_differences: ticketDiffs
-        },
-        sync_needed: Math.abs(totalDiff) > 0 || Object.values(ticketDiffs).some(diff => Math.abs(diff) > 0)
-      };
-
+      const comparisonData = data.comparison as TotalsComparison;
       setComparison(comparisonData);
-      
-      // Analyze detailed discrepancies
-      await analyzeDetailedDiscrepancies(creds.apiKey, creds.formId);
-      
+      setDiscrepancies((data.discrepancy_list ?? []) as DiscrepancyItem[]);
       setLastSync(new Date().toISOString());
-      
+
       if (comparisonData.sync_needed) {
-        toast.warning(`Found ${Math.abs(totalDiff)} attendee difference between RegFox and database`);
+        toast.warning(
+          `Found ${Math.abs(comparisonData.discrepancies.total_difference)} attendee difference between RegFox and the database`
+        );
       } else {
         toast.success('RegFox and database are in sync');
       }
     } catch (error) {
       console.error('Error performing comparison:', error);
-      toast.error('Failed to compare RegFox data');
+      toast.error((error as Error).message || 'Failed to compare RegFox data');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const getDatabaseTotals = async (): Promise<DatabaseTotals> => {
-    const { data: attendees } = await supabase
-      .from('attendees')
-      .select('id, order_id, ticket_type, activated_at, registration_status')
-      .eq('registration_status', 'registered');
-
-    const { data: rfidCounts } = await supabase
-      .from('rfid_tags')
-      .select('attendee_id')
-      .not('attendee_id', 'is', null);
-
-    const { data: lastSyncData } = await supabase
-      .from('regfox_sync_log')
-      .select('sync_completed_at')
-      .eq('status', 'success')
-      .order('sync_completed_at', { ascending: false })
-      .limit(1);
-
-    const totalAttendees = attendees?.length || 0;
-    const uniqueOrders = new Set(attendees?.filter(a => a.order_id).map(a => a.order_id)).size;
-    const withOrderIds = attendees?.filter(a => a.order_id && a.order_id !== '').length || 0;
-    const activatedCount = attendees?.filter(a => a.activated_at).length || 0;
-    const withRfid = rfidCounts?.length || 0;
-
-    // Count by ticket type
-    const ticketBreakdown = {
-      dry_site: attendees?.filter(a => a.ticket_type === 'dry_site').length || 0,
-      glamping: attendees?.filter(a => a.ticket_type === 'glamping').length || 0,
-      cabin: attendees?.filter(a => a.ticket_type === 'cabin').length || 0,
-      rv_site: attendees?.filter(a => a.ticket_type === 'rv_site').length || 0
-    };
-
-    return {
-      total_attendees: totalAttendees,
-      unique_orders: uniqueOrders,
-      with_order_ids: withOrderIds,
-      ticket_breakdown: ticketBreakdown,
-      activated_count: activatedCount,
-      with_rfid: withRfid,
-      last_sync: lastSyncData?.[0]?.sync_completed_at || null
-    };
-  };
-
-  const analyzeDetailedDiscrepancies = async (apiKey: string, formId: string) => {
-    try {
-      // Get all RegFox registrants with more detailed data
-      const response = await fetch(`https://api.webconnex.com/v2/public/search/registrants?product=regfox.com&formId=${encodeURIComponent(formId)}&limit=2000&sort=desc`, {
-        headers: {
-          'apiKey': apiKey,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) return;
-
-      const regfoxData = await response.json();
-      const regfoxRegistrants = regfoxData.data || [];
-
-      // Get all database attendees
-      const { data: dbAttendees } = await supabase
-        .from('attendees')
-        .select('id, regfox_id, first_name, last_name, email, registration_status')
-        .eq('registration_status', 'registered');
-
-      const discrepancyList: DiscrepancyItem[] = [];
-      
-      // Find missing in database (exists in RegFox but not in DB)
-      for (const regfoxReg of regfoxRegistrants) {
-        const regfoxId = regfoxReg.id?.toString();
-        if (regfoxId && !dbAttendees?.some(db => db.regfox_id === regfoxId)) {
-          const firstName = regfoxReg.firstName || regfoxReg.first_name || '';
-          const lastName = regfoxReg.lastName || regfoxReg.last_name || '';
-          
-          discrepancyList.push({
-            type: 'missing_in_db',
-            regfox_id: regfoxId,
-            attendee_name: `${firstName} ${lastName}`.trim(),
-            details: `Exists in RegFox but not in database`,
-            impact: 'high'
-          });
-        }
-      }
-
-      // Find extra in database (exists in DB but not in RegFox)
-      const regfoxIds = new Set(regfoxRegistrants.map(r => r.id?.toString()).filter(Boolean));
-      for (const dbAttendee of dbAttendees || []) {
-        if (dbAttendee.regfox_id && !regfoxIds.has(dbAttendee.regfox_id)) {
-          discrepancyList.push({
-            type: 'extra_in_db',
-            regfox_id: dbAttendee.regfox_id,
-            attendee_name: `${dbAttendee.first_name} ${dbAttendee.last_name}`,
-            details: `Exists in database but not in RegFox`,
-            impact: 'medium'
-          });
-        }
-      }
-
-      setDiscrepancies(discrepancyList);
-    } catch (error) {
-      console.error('Error analyzing detailed discrepancies:', error);
-    }
-  };
+  useEffect(() => {
+    performComparison();
+  }, [performComparison]);
 
   const getComparisonIcon = (diff: number) => {
     if (diff > 0) return <TrendingUp className="h-4 w-4 text-red-500" />;
@@ -254,8 +104,8 @@ export function RegFoxComparisonPanel() {
         </div>
         <div className="flex gap-2">
           <Button 
-            onClick={() => regfoxCredentials && performComparison()} 
-            disabled={!regfoxCredentials || isLoading}
+            onClick={() => performComparison()} 
+            disabled={isLoading}
             variant="outline"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -279,7 +129,7 @@ export function RegFoxComparisonPanel() {
               <p className="text-muted-foreground mb-4">
                 Click "Refresh" to compare RegFox data with your database.
               </p>
-              <Button onClick={loadCredentialsAndCompare} disabled={isLoading}>
+              <Button onClick={() => performComparison()} disabled={isLoading}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Run Comparison
               </Button>
