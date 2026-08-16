@@ -33,13 +33,25 @@ Data reads correctly now — orders parse, sizes classify, pickups store the sca
 - No partial pickup: an order of 3 is all-or-nothing.
 - No staff note or size-swap override, so the log won't reconcile with the physical box count.
 
-## Read-only / API access for another person
+## Read-only / API access for another person or Make
 
 - **Read-only viewer login** (best for a person): roles of `admin` / `staff` / `viewer`, sign-in required, viewers see reports only. Depends on fix #3 anyway.
-- **Read-only API endpoint** (best for a system): a server function serving JSON for attendees, check-ins and station activity, protected by an API key you can issue and revoke. No database credentials leave the app.
+- **Read-only API endpoint for Make / automations** (best for a system): a server function serving JSON for attendees, check-ins and station activity, protected by an API key you generate in the project. No database credentials leave the app. Make calls the endpoint with `Authorization: Bearer <api-key>`.
 - **Scheduled export**: CSV drop on a schedule if they only want numbers.
 
 Direct database credentials can't be handed out on this hosting, so it's one of the three above.
+
+### How the API key works for Make
+
+1. Generate a random key inside the project secrets (no need to invent one manually).
+2. Create an edge function at `https://<project>.supabase.co/functions/v1/public-read-only` that accepts the key and returns a read-only JSON feed.
+3. In Make, add an HTTP module with the function URL and the key as a Bearer token.
+4. The endpoint can support date filtering (e.g. `?since=2026-08-14` or `?table=attendees`) so automations can poll for changes.
+
+### Important security note
+
+The existing `get-secrets` edge function returns the project's actual Supabase credentials to anyone who calls it. That should be removed or restricted before any public API is exposed.
+
 
 ## Technical notes
 
