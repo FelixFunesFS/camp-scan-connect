@@ -1,56 +1,57 @@
-# Scanner cleanup: generic wording, reliable badges, no double scans
+# Workflow edge-case review + read-only data access
 
-Three fixes, all confirmed against the live 2026 data.
+## What the live 2026 data shows
 
-## 1. Double scans (the urgent one)
+- 694 attendees, **2 credentials issued**, 0 station transactions
+- 335 waivers signed / 359 unsigned
+- 22 phone numbers tied to more than one order
+- `staff` table is **empty** — nobody is a real staff user
+- Meal plans: 609 "none", 85 "standard"
 
-**What's happening:** every station renders its action panel twice — once on the page and once inside the full-screen camera overlay. Both copies listen for the same "scan happened" signal, so one scan fires the action twice.
+## Blocking issues (before gates open)
 
-The data confirms it: Jocelyn's record has 6 drinks logged in a 7-second window, and 3 headphone checkouts with no checkin in between. The headphone case is worse than a duplicate — both copies read "not checked out" before either write lands, so they both write *checkout* instead of toggling. That's why the status looks stuck.
+1. **Credentials not loaded.** Only 2 of 694 attendees have a wristband/barcode. Every station refuses service without one, so meals, drinks, gates and shirts are all blocked until a bulk assignment pass runs.
+2. **Staff login is not real.** The staff code check ignores the code entirely and returns the first admin, and the staff list is empty. Anyone who opens the app is effectively an admin.
+3. **Every table is world-open.** Current policies allow anonymous read *and write* on attendees — names, emails, phones, addresses, emergency contacts. Anyone with the app's public key can read or delete the roster. Must be restricted to signed-in staff.
 
-**Fix:**
-- Render the action panel once. The overlay and the page share a single instance instead of mounting two.
-- Replace the global event broadcast with a direct call, so there is exactly one path from scan to action.
-- Add a per-scan guard: one scanned code produces one transaction until the scanner is reset or a different code is read. A re-scan of the same wristband inside a short window is ignored with a visible "already recorded" message rather than silently double-counting.
-- Make the toggle stations decide from a fresh read taken *inside* the write, so two rapid taps can never both resolve to "checkout".
+## Station / workflow bugs found
 
-**Validation stays per scan:** each scan still looks the attendee up, checks the waiver and activation gate, and shows the result card. The change is that confirming a scan can only commit one transaction.
+4. **Meal double-serve window.** Meal history is filtered to "today in UTC" while meals are labelled by day (Fri Lunch, Sat Dinner). After 8pm ET the day flips, so an already-served meal can be served again, and earlier days read as unclaimed. Claims should be checked per meal for the whole event, not per calendar day.
+5. **Meal station is still in test mode.** Time windows are disabled and a "reset weekend meals" button is exposed to staff at the station.
+6. **Gate toggle can flip twice.** The duplicate-scan guard keys on the specific action, so an entry followed by a fast re-read records an exit — the person reads off-site while standing on site. The guard should cover the station for the window, not just the exact action.
+7. **Assignment still logs as an activation.** The older credential service (used by attendee detail and legacy assignment paths) writes an `activate` transaction when a band is merely assigned. Only the newer assignment cell was fixed, so check-in counts can inflate.
+8. **Duplicate credential rows show "Unassigned".** The lookup expects exactly one row; a replacement or lost-band case leaves both an `assigned` and an `active` row, the query errors, and the badge falls back to unassigned. It should pick the most relevant row instead of failing.
+9. **Multi-order phones.** 22 phone numbers map to more than one order, so self-activation by phone can surface strangers' names. The pick-from-list disambiguation still needs to cover this path.
+10. **Waiver load at the gate.** 359 unsigned means 359 in-line signings. Worth a pre-event text/email signing link plus the fast "sign now" step already on the check-in screen.
+11. **Year rollover.** Transaction, scan and credential inserts don't set the event; they rely on a database default hard-coded to 2026. Next year's data would silently land in this year's event. Inserts should carry the active event.
 
-## 2. Badges showing "Unassigned" when the camper is assigned
+## T-shirt station specifically
 
-Jocelyn's 2026 record is clean in the database: one wristband, status active, correctly scoped to the 2026 event. No duplicate 2026 registration. The wrong badge is a code problem, in two parts:
+Data reads correctly now — orders parse, sizes classify, pickups store the scanned code. Remaining gaps:
 
-- **Four different status calculators** exist across the app (assignment table, mobile card, group view, station screens), each with slightly different rules and different fallbacks. Views disagree because they aren't asking the same question.
-- **The bulk status lookup fails silently on big lists.** With ~680 attendees it packs every ID into one request, which the server rejects, and the error handler then labels *everyone* "Unassigned" — a wrong answer presented as fact.
+- Pickup requires an active credential, so shirts can't be handed out before check-in. Reasonable as policy, but the screen should say so instead of just showing a block.
+- No partial pickup: an order of 3 is all-or-nothing.
+- No staff note or size-swap override, so the log won't reconcile with the physical box count.
 
-**Fix:**
-- One shared status function, used by every view. Rules stay as they are today: active wristband = Checked In, assigned wristband = Assigned, no wristband = Unassigned.
-- Chunk bulk lookups into batches so large lists succeed.
-- On a genuine lookup failure, show an "Unknown" state instead of falsely reporting "Unassigned", so staff never act on a fabricated status.
-- Seed badges from data already loaded with the row, so they render correctly even before the bulk lookup returns.
+## Read-only / API access for another person
 
-## 3. Replace "RFID" wording with generic terms
+- **Read-only viewer login** (best for a person): roles of `admin` / `staff` / `viewer`, sign-in required, viewers see reports only. Depends on fix #3 anyway.
+- **Read-only API endpoint** (best for a system): a server function serving JSON for attendees, check-ins and station activity, protected by an API key you can issue and revoke. No database credentials leave the app.
+- **Scheduled export**: CSV drop on a schedule if they only want numbers.
 
-"RFID" appears in roughly 320 places in the UI. Campers may present a wristband, a printed badge or a phone QR code, so the language should not name one technology.
-
-Wording map:
-- "RFID Scanner" -> "Scanner"
-- "Scan RFID" / "Scan RFID tag" -> "Scan code"
-- "RFID UID" / "Enter RFID" -> "Code" / "Enter code"
-- "RFID not found" -> "Code not recognized"
-- "RFID assignment" -> "Credential assignment"
-- Wristband stays where staff are physically handling a wristband, since that is accurate at the assignment table.
-
-This is display text only. Database columns, internal names and file names stay as they are — renaming those adds risk with no visible benefit, and the app already stores a credential type per code.
+Direct database credentials can't be handed out on this hosting, so it's one of the three above.
 
 ## Technical notes
 
-- Station scanner: single child instance, `onScan` callback instead of `window.dispatchEvent('autoTrigger')`, an in-flight ref plus last-committed-code ref to enforce one commit per scan.
-- Toggle stations (headphones, golf carts, walkies, fanny packs): resolve current state and write in one guarded step.
-- New shared `useCheckInStatus` / `getCheckInStatus` source of truth; the redundant copies in `statusUtils.ts` and `optimizedStatusUtils.ts` collapse into it.
-- Bulk queries chunk at ~100 IDs; failures surface as `unknown`, not `unassigned`.
-- Copy changes are confined to UI strings in components and pages.
+- Waiver + active-credential gating stays in `check_station_access` / `checkAttendeeReadiness`; none of the fixes change that contract.
+- Policy lockdown and staff auth must ship together or the app goes dark.
+- The meal fix is a query change: drop the `created_at >= today` filter and keep per-meal uniqueness.
 
-## Cleanup question
+## Suggested order
 
-Jocelyn's test records (6 drinks, 3 headphone checkouts, duplicate assignment rows) are still in the 2026 data. Want me to clear the test transactions as part of this, or leave them?
+1. Staff auth + roles + policy lockdown (2, 3)
+2. Credential bulk load (1)
+3. Station correctness: meals (4, 5), gate (6), assignment logging (7), duplicate rows (8)
+4. Phone disambiguation + waiver push (9, 10)
+5. Read-only access for the other user
+6. Year-rollover hardening (11)
