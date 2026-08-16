@@ -173,7 +173,7 @@ export function RegFoxComparisonPanel() {
               <CardContent>
                 <div className="text-2xl font-bold">{comparison.database.total_attendees}</div>
                 <p className="text-xs text-muted-foreground">
-                  {comparison.database.activated_count} activated • {comparison.database.with_rfid} with RFID
+                  {comparison.database.activated_count} activated • {comparison.database.with_rfid} with credentials
                 </p>
               </CardContent>
             </Card>
