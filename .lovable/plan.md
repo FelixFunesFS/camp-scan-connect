@@ -1,72 +1,77 @@
-# Connect Database to Google Sheets
+# Sync All Tables to Google Sheets (Native Connector)
 
 ## Goal
-Expose the Lovable Cloud database (attendees, transactions, waivers, etc.) to Google Sheets so workspace members can read the data for reporting, mail merges, and other tasks, without requiring a third-party automation tool like Make.
+Push every reportable table from the Lovable Cloud database into a single Google Sheets workbook using the native Google Sheets connector — one tab per table, read-only from the Sheets side, refreshed on demand and on a schedule.
 
 ## What exists today
-- A `public-read-only` Edge Function is already deployed at `https://camp-scan-connect.lovable.app/functions/v1/public-read-only`.
-- It returns a read-only JSON feed of whitelisted tables (`attendees`, `rfid_tags`, `station_transactions`, `waiver_signatures`, `events`).
-- A `READONLY_API_KEY` secret controls access.
-- No Google Sheets connection exists in this workspace yet.
-- The Lovable Google Sheets connector (`google_sheets`) is available and supports gateway-backed read/write calls.
+- Lovable Cloud backend holds `attendees`, `rfid_tags`, `station_transactions`, `waiver_signatures`, `scans`, `staff_assistance_requests`, `regfox_sync_log`, `admin_tasks`, and `events`.
+- A `public-read-only` Edge Function already exposes a whitelisted subset over HTTP with an API key (used by Make).
+- No Google Sheets connection exists in this workspace yet; the `google_sheets` connector is available and gateway-backed.
 
-## What “directly” means here
-Google Sheets cannot connect to a database the same way a server does. The realistic options are:
+## Approach
+The database pushes to Sheets. An Edge Function reads each table with the service-role client and writes the rows into a dedicated tab in one workbook through the connector gateway. Google Sheets never holds database credentials.
 
-| Approach | How it works | Needs connector? | Best for |
+```text
+Lovable Cloud DB  ->  sync-to-sheets Edge Function  ->  Connector Gateway  ->  Google Sheets workbook
+                                                                              Attendees / Credentials /
+                                                                              Transactions / Waivers /
+                                                                              Scans / Assistance /
+                                                                              Sync Log / Tasks / Events
+```
+
+## Tables and tabs
+
+| Tab | Source table | Event-scoped | Notes |
 |---|---|---|---|
-| **A. Database pushes to Google Sheets** | Edge function or scheduled job pulls rows from the DB and writes them to a spreadsheet via the Lovable Google Sheets connector gateway. | Yes | Live/auto-updated sheets, no Make required. |
-| **B. Google Sheets pulls from the API** | Google Apps Script inside a spreadsheet calls the `public-read-only` endpoint and populates rows. | No | Simplest, no connector, runs on Google side. |
-| **C. Make/Zapier pulls from the API** | Already configured; Make calls `public-read-only` and writes to Google Sheets. | No | Low-code, visual workflows. |
+| Attendees | `attendees` | yes | Core roster; largest table (~700 rows/year) |
+| Credentials | `rfid_tags` | yes | Wristband/barcode assignment and status |
+| Transactions | `station_transactions` | yes | Every station scan; grows fastest |
+| Waivers | `waiver_signatures` | yes | In-app signatures only |
+| Scans | `scans` | yes | Raw allow/deny scan log |
+| Assistance | `staff_assistance_requests` | yes | Staff help queue |
+| SyncLog | `regfox_sync_log` | yes | RegFox sync history |
+| Tasks | `admin_tasks` | no | Admin/ops task list |
+| Events | `events` | no | Year lookup table |
 
-## Recommended approach
-**Option A: Database pushes to Google Sheets via the Lovable connector.**
-
-Reasons:
-- No extra tools (Make) required after setup.
-- Runs from the Lovable side so the workspace controls credentials and schedules.
-- Keeps the `READONLY_API_KEY` separate; Google Sheets auth is handled through the connector.
-- Can be triggered manually from the app or on a schedule.
+Each tab is fully replaced on every sync (clear then write), so the sheet is always an exact mirror rather than an append-only log. Columns are explicit per table — no `SELECT *` — so a schema change never silently shifts columns.
 
 ## Implementation steps
 
-1. **Create a Google Sheets connection in Lovable**
-   - Use `standard_connectors--connect` with `connector_id: google_sheets`.
-   - Choose the workspace Google account that owns the target spreadsheet.
-   - Link it to the project. This adds the Google Sheets connector env vars.
+1. **Link the Google Sheets connector**
+   - Connect `google_sheets` and link it to this project so the gateway credentials are available server-side.
 
-2. **Create a target spreadsheet in Google Drive**
-   - One sheet per table: `Attendees`, `Transactions`, `Waivers`, etc.
-   - Share the spreadsheet with the same Google account used for the connector.
-   - Copy the spreadsheet ID from the URL.
+2. **Choose or create the workbook**
+   - Staff create one spreadsheet in the connected Google account's Drive and share the ID.
+   - The function creates any missing tabs automatically via `batchUpdate` `addSheet`.
+   - The spreadsheet ID is stored as a backend secret (`SHEETS_WORKBOOK_ID`) rather than passed from the browser.
 
-3. **Build a `sync-to-sheets` Edge Function**
-   - Server-side function that:
-     - Reads the requested table from the DB using the service-role client.
-     - Calls the Lovable connector gateway at `https://connector-gateway.lovable.dev/google_sheets/v4/spreadsheets/{spreadsheetId}/values/{range}:clear` and then `.../values/{range}?valueInputOption=USER_ENTERED` with `PUT`.
-   - Accepts `table`, `event_id`, `spreadsheet_id`, and `sheet_name` as parameters.
-   - Supports `attendees`, `station_transactions`, `waiver_signatures`, and `rfid_tags` initially.
-   - Returns a summary: rows written, spreadsheet URL, errors.
+3. **Build the `sync-to-sheets` Edge Function**
+   - Verifies the caller is an authenticated staff user before doing anything.
+   - Accepts optional `tables` (defaults to all) and `event_id` (defaults to the active event).
+   - For each table: page through rows in batches of 1000, map to a fixed column list, flatten JSON columns to strings, format timestamps in Eastern Time.
+   - Ensures the tab exists, clears it, then writes header + rows with a single `values` update.
+   - Writes a `_Meta` tab recording last sync time, event, per-table row counts, and any errors.
+   - Surfaces the gateway's status and body verbatim on failure instead of a generic 500.
 
-4. **Add a UI trigger in the Developer Dashboard**
-   - A “Sync to Google Sheets” button in the Debug Tools or Admin Requests tab.
-   - Lets staff choose the table and event year, then invokes the Edge Function.
-   - Shows the result and a link to the spreadsheet.
+4. **Add a Sync panel in the Developer Dashboard**
+   - New card under Debug Tools: table checkboxes (all selected by default), event-year selector, and a "Sync now" button.
+   - Shows per-table row counts, duration, last-sync timestamp, and a link to the workbook.
+   - Disables the button while a sync is running to prevent overlapping writes.
 
-5. **Optional: schedule the sync**
-   - Once the manual sync works, add a cron trigger or a scheduled Edge Function that runs every 15–60 minutes during the event.
-   - Start with manual-only to avoid overwriting accidental edits in Sheets.
+5. **Schedule the sync**
+   - Once manual runs are verified, add a scheduled trigger: hourly outside the event, every 15 minutes during event dates.
+   - Sync is idempotent (full replace), so a missed or repeated run is harmless.
 
-## Security considerations
-- The Google Sheets connector uses the workspace/builder’s Google account, not each app user’s account. It is appropriate for workspace-owned reporting sheets.
-- The Edge Function must verify the caller is an authenticated staff member before syncing.
-- Keep the spreadsheet private to the organizing team; do not publish it publicly.
-- The `public-read-only` endpoint remains available for Make and other tools; the Google Sheets path does not expose the `READONLY_API_KEY`.
+## Guardrails
+- Sheets has a 10 million cell limit per workbook. Transactions and scans are the only tables that could approach it; the function caps each tab at a configurable row limit (default 50,000, newest first) and notes truncation in `_Meta`.
+- The workbook is a mirror: edits made in Sheets are overwritten on the next sync. Any analysis should live in a separate workbook that references this one.
+- No PII is added beyond what the tables already contain; the workbook stays private to the organizing team.
+- The existing `public-read-only` endpoint and its Make integration are untouched.
 
-## Alternative (fastest, no connector)
-If the connector setup is unnecessary, use **Google Apps Script** inside a spreadsheet to call the existing `public-read-only` endpoint. This avoids any new connector, credentials, or Lovable code changes. It is a good short-term option while the connector path is being built.
-
-## Open questions
-- Which tables should be synced to Google Sheets first? (attendees is the most likely starting point)
-- Should the sync be manual, scheduled, or both?
-- Should the Google Sheets spreadsheet be created by staff in their own Drive, or should the app create it via the Sheets API?
+## Technical details
+- Gateway base: `https://connector-gateway.lovable.dev/google_sheets/v4`
+- Write: `PUT /spreadsheets/{id}/values/{Tab}!A1?valueInputOption=RAW`
+- Clear: `POST /spreadsheets/{id}/values/{Tab}!A:ZZ:clear`
+- Tab creation: `POST /spreadsheets/{id}:batchUpdate` with `addSheet`
+- Range strings are not URL-encoded (the `!` and `:` must stay literal).
+- Auth headers are `Authorization: Bearer <LOVABLE_API_KEY>` plus the connector key — server-side only.
