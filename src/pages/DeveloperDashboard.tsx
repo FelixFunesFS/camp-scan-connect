@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare, Shield, AlertTriangle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PostProductionAnalysis } from "@/components/dev/PostProductionAnalysis";
+import { SheetsSyncPanel } from "@/components/dev/SheetsSyncPanel";
 
 const DeveloperDashboard = () => {
   const navigate = useNavigate();
@@ -160,6 +161,7 @@ const DeveloperDashboard = () => {
           </TabsContent>
 
           <TabsContent value="debug" className="space-y-6">
+            <SheetsSyncPanel />
             <DebugTools />
           </TabsContent>
 

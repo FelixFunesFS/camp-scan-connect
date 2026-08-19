@@ -39,7 +39,7 @@ type SyncResponse = {
 };
 
 export const SheetsSyncPanel = () => {
-  const { currentEventId } = (useEvent?.() ?? {}) as { currentEventId?: string };
+  const { eventId, eventYear } = useEvent();
   const [selected, setSelected] = useState<string[]>([...TABS]);
   const [running, setRunning] = useState(false);
   const [response, setResponse] = useState<SyncResponse | null>(null);
@@ -61,7 +61,7 @@ export const SheetsSyncPanel = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("sync-to-sheets", {
-        body: { tables: selected, event_id: currentEventId ?? undefined },
+        body: { tables: selected, event_id: eventId ?? undefined },
       });
 
       if (error) {
@@ -100,7 +100,7 @@ export const SheetsSyncPanel = () => {
               Google Sheets Mirror
             </CardTitle>
             <CardDescription>
-              Replace each tab in the connected workbook with the current database contents.
+              Replace each tab in the connected workbook with the current {eventYear} database contents.
             </CardDescription>
           </div>
           {response?.spreadsheet_url && (
