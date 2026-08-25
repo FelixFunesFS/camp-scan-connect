@@ -1,77 +1,42 @@
-# Sync All Tables to Google Sheets (Native Connector)
+# Itemized Client Invoice — Work Log, Jun 24 – Aug 24, 2026
 
 ## Goal
-Push every reportable table from the Lovable Cloud database into a single Google Sheets workbook using the native Google Sheets connector — one tab per table, read-only from the Sheets side, refreshed on demand and on a schedule.
+Produce an Excel invoice workbook for MKQ Consulting LLC itemizing the development work delivered on the Melanated Campout event platform during the last two months, grouped by feature area, with pricing columns left blank for you to fill in.
 
-## What exists today
-- Lovable Cloud backend holds `attendees`, `rfid_tags`, `station_transactions`, `waiver_signatures`, `scans`, `staff_assistance_requests`, `regfox_sync_log`, `admin_tasks`, and `events`.
-- A `public-read-only` Edge Function already exposes a whitelisted subset over HTTP with an API key (used by Make).
-- No Google Sheets connection exists in this workspace yet; the `google_sheets` connector is available and gateway-backed.
+## Source of truth
+Line items are built from the actual project chat log and the archived plan documents. The billing window starts at the 2026 data review request (Jul 17, 2026) and runs through today. Before writing the workbook I will walk the full message range for the period so every line item maps to a real request and delivery, rather than working from memory.
 
-## Approach
-The database pushes to Sheets. An Edge Function reads each table with the service-role client and writes the rows into a dedicated tab in one workbook through the connector gateway. Google Sheets never holds database credentials.
+## Feature areas (line-item groups)
 
-```text
-Lovable Cloud DB  ->  sync-to-sheets Edge Function  ->  Connector Gateway  ->  Google Sheets workbook
-                                                                              Attendees / Credentials /
-                                                                              Transactions / Waivers /
-                                                                              Scans / Assistance /
-                                                                              Sync Log / Tasks / Events
-```
+1. **2026 Event Rollover & Multi-Year Architecture** — events table, active-event scoping, admin year switcher, de-yearing hard-coded 2025 strings/dates, archival of 2025 data.
+2. **RegFox Integration (2026)** — form 982600 binding, sync rebuild, group-order inheritance, reconcile/compare/cleanup functions, sync history and monitoring.
+3. **Credential Activation Engine** — phone-number lookup and activation, order/group activation, staff-assisted vs self-activated tracking, station access checks, transfer and edge-case handling.
+4. **Liability Waiver System** — waiver_signatures table and trigger, in-app typed-signature dialog, waiver gate blocking activation, waiver status panel in the Staff Hub, branded PDF receipts.
+5. **Scanning Platform (Barcode / QR / RFID)** — camera-based scanning, scan-focus return behavior, double-scan prevention, generic credential terminology across the app.
+6. **Station Operations** — T-shirt, drinks, meals, headphones, equipment, gate; data corrections, badge/assignment accuracy, transaction logging.
+7. **Reporting & Analysis** — RFID assignment table enhancements, post-production analysis, check-in and arrivals reporting, event debrief page and priority framework.
+8. **Data API & Automation** — read-only public API endpoint with API key for Make.com, secure secret handling, removal of insecure endpoints.
+9. **Google Sheets Database Mirror** — connector setup, sync-to-sheets function mirroring 9 tables with a metadata tab, Developer Dashboard sync panel.
+10. **Performance, Security & Stability** — render-loop and crash fixes, query chunking, RLS/permission review, pagination and refresh behavior.
 
-## Tables and tabs
+## Workbook structure
 
-| Tab | Source table | Event-scoped | Notes |
-|---|---|---|---|
-| Attendees | `attendees` | yes | Core roster; largest table (~700 rows/year) |
-| Credentials | `rfid_tags` | yes | Wristband/barcode assignment and status |
-| Transactions | `station_transactions` | yes | Every station scan; grows fastest |
-| Waivers | `waiver_signatures` | yes | In-app signatures only |
-| Scans | `scans` | yes | Raw allow/deny scan log |
-| Assistance | `staff_assistance_requests` | yes | Staff help queue |
-| SyncLog | `regfox_sync_log` | yes | RegFox sync history |
-| Tasks | `admin_tasks` | no | Admin/ops task list |
-| Events | `events` | no | Year lookup table |
+**Sheet 1 — Invoice**
+Header block: MKQ Consulting LLC, client, invoice number, invoice date (Aug 24, 2026), billing period (Jun 24 – Aug 24, 2026).
+Line-item table, grouped by feature area with subtotal rows:
 
-Each tab is fully replaced on every sync (clear then write), so the sheet is always an exact mirror rather than an append-only log. Columns are explicit per table — no `SELECT *` — so a schema change never silently shifts columns.
+| # | Feature Area | Work Item | Description | Date(s) | Qty/Hours | Rate | Amount |
 
-## Implementation steps
+Qty, Rate and Amount are left blank; Amount carries a `=Qty*Rate` formula so totals populate as soon as you fill in numbers. Subtotal, total, and an optional discount/deposit row use live SUM formulas.
 
-1. **Link the Google Sheets connector**
-   - Connect `google_sheets` and link it to this project so the gateway credentials are available server-side.
+**Sheet 2 — Detailed Work Log**
+Chronological record of every request and delivery in the period (date, area, request, what was delivered, artifacts touched). This is the backup document if the client questions a line item.
 
-2. **Choose or create the workbook**
-   - Staff create one spreadsheet in the connected Google account's Drive and share the ID.
-   - The function creates any missing tabs automatically via `batchUpdate` `addSheet`.
-   - The spreadsheet ID is stored as a backend secret (`SHEETS_WORKBOOK_ID`) rather than passed from the browser.
+**Sheet 3 — Summary**
+Counts and blank hour/amount rollups per feature area, so the client sees a one-page picture.
 
-3. **Build the `sync-to-sheets` Edge Function**
-   - Verifies the caller is an authenticated staff user before doing anything.
-   - Accepts optional `tables` (defaults to all) and `event_id` (defaults to the active event).
-   - For each table: page through rows in batches of 1000, map to a fixed column list, flatten JSON columns to strings, format timestamps in Eastern Time.
-   - Ensures the tab exists, clears it, then writes header + rows with a single `values` update.
-   - Writes a `_Meta` tab recording last sync time, event, per-table row counts, and any errors.
-   - Surfaces the gateway's status and body verbatim on failure instead of a generic 500.
+## Formatting
+Arial throughout, blue text for the input cells you fill in, black for formulas, currency as `$#,##0.00`, zeros shown as `-`, frozen header rows, column widths sized for printing, and no formula errors on delivery.
 
-4. **Add a Sync panel in the Developer Dashboard**
-   - New card under Debug Tools: table checkboxes (all selected by default), event-year selector, and a "Sync now" button.
-   - Shows per-table row counts, duration, last-sync timestamp, and a link to the workbook.
-   - Disables the button while a sync is running to prevent overlapping writes.
-
-5. **Schedule the sync**
-   - Once manual runs are verified, add a scheduled trigger: hourly outside the event, every 15 minutes during event dates.
-   - Sync is idempotent (full replace), so a missed or repeated run is harmless.
-
-## Guardrails
-- Sheets has a 10 million cell limit per workbook. Transactions and scans are the only tables that could approach it; the function caps each tab at a configurable row limit (default 50,000, newest first) and notes truncation in `_Meta`.
-- The workbook is a mirror: edits made in Sheets are overwritten on the next sync. Any analysis should live in a separate workbook that references this one.
-- No PII is added beyond what the tables already contain; the workbook stays private to the organizing team.
-- The existing `public-read-only` endpoint and its Make integration are untouched.
-
-## Technical details
-- Gateway base: `https://connector-gateway.lovable.dev/google_sheets/v4`
-- Write: `PUT /spreadsheets/{id}/values/{Tab}!A1?valueInputOption=RAW`
-- Clear: `POST /spreadsheets/{id}/values/{Tab}!A:ZZ:clear`
-- Tab creation: `POST /spreadsheets/{id}:batchUpdate` with `addSheet`
-- Range strings are not URL-encoded (the `!` and `:` must stay literal).
-- Auth headers are `Authorization: Bearer <LOVABLE_API_KEY>` plus the connector key — server-side only.
+## Delivery
+The workbook is written to the documents area for download; it is not added to the app.
