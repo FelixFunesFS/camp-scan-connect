@@ -6,16 +6,22 @@ import { Separator } from "@/components/ui/separator";
 import { useScanFocus } from "@/hooks/useScanFocus";
 import { normalizeCredential, inferCredentialType } from "@/lib/credentialFormat";
 import { lookupCredential, type CredentialLookup } from "@/lib/credentialLookup";
-import { ScanBarcode, CheckCircle2, XCircle, AlertTriangle, ArrowLeft } from "lucide-react";
+import { ScanBarcode, CheckCircle2, XCircle, AlertTriangle, ArrowLeft, Camera as CameraIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { InlineCameraScanner } from "@/components/InlineCameraScanner";
+import { LensScanner } from "@/components/LensScanner";
+
+type ScanSource = "camera" | "reader";
 
 interface ScanEntry {
   raw: string;
   normalized: string;
   timestamp: Date;
   result: CredentialLookup | null;
+  source: ScanSource;
 }
+
 
 /** Renders a scanned string with invisible characters made visible. */
 function visualize(raw: string): string {
