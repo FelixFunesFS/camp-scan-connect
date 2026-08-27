@@ -395,23 +395,35 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
                                 )}
                               </div>
                               {record ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="shrink-0"
-                                  onClick={() =>
-                                    downloadWaiverReceipt({
-                                      attendeeName: name,
-                                      typedName: record.typed_name,
-                                      signedAt: record.signed_at,
-                                      agreementVersion: record.agreement_version,
-                                      nameMatch: record.name_match,
-                                    })
-                                  }
-                                >
-                                  <FileDown className="h-4 w-4 mr-2" />
-                                  PDF
-                                </Button>
+                                <div className="flex gap-2 shrink-0">
+                                  {record.receipt_path && (
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => openStoredCopy(a.id, record.receipt_path)}
+                                    >
+                                      <FileDown className="h-4 w-4 mr-2" />
+                                      Stored copy
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      downloadWaiverReceipt({
+                                        attendeeName: name,
+                                        typedName: record.typed_name,
+                                        signedAt: record.signed_at,
+                                        agreementVersion: record.agreement_version,
+                                        nameMatch: record.name_match,
+                                      })
+                                    }
+                                  >
+                                    <FileDown className="h-4 w-4 mr-2" />
+                                    PDF
+                                  </Button>
+                                </div>
+
                               ) : (
                                 <Badge variant="outline" className="shrink-0">
                                   Registration
