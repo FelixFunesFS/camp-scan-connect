@@ -19,13 +19,13 @@ export interface WaiverReceiptInput {
 const MARGIN = 48;
 const LINE = 14;
 
-/** Builds the signed-waiver receipt as a PDF the attendee can keep. */
-export function buildWaiverReceipt(input: WaiverReceiptInput): jsPDF {
-  const doc = new jsPDF({ unit: "pt", format: "letter" });
+/** Renders one signed-waiver receipt onto an existing document. */
+function renderReceipt(doc: jsPDF, input: WaiverReceiptInput) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const width = pageWidth - MARGIN * 2;
   let y = MARGIN;
+
 
   const ensureRoom = (needed: number) => {
     if (y + needed > pageHeight - MARGIN) {
