@@ -1,3 +1,4 @@
+import { normalizeCredential } from '@/lib/credentialFormat';
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,7 +108,7 @@ export const RfidScanner = ({
             attendee:attendees(first_name, last_name, ticket_type)
           `)
         .eq('event_id', getCurrentEventId())
-          .eq('uid', scannedUid)
+          .eq('uid', normalizeCredential(scannedUid))
           .in('status', ['active', 'assigned'])
           .single();
 

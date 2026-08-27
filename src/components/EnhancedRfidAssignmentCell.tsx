@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRfidCaptureContext } from "@/contexts/RfidCaptureContext";
 import { CameraBraceletScanner } from "@/components/CameraBraceletScanner";
-import { inferCredentialType } from "@/lib/credentialFormat";
+import { inferCredentialType, normalizeCredential } from "@/lib/credentialFormat";
 
 interface EnhancedRfidAssignmentCellProps {
   attendeeId: string;
@@ -94,7 +94,7 @@ export const EnhancedRfidAssignmentCell = ({
       if (e.target === inputRef.current && !isEditing) {
         switch (e.key) {
           case 'Enter':
-            if (uid.trim() && !validationError && !isProcessing) {
+            if (normalizeCredential(uid) && !validationError && !isProcessing) {
               e.preventDefault();
               handleAssignRfid();
             }
@@ -113,7 +113,7 @@ export const EnhancedRfidAssignmentCell = ({
       } else if (e.target === editInputRef.current && isEditing) {
         switch (e.key) {
           case 'Enter':
-            if (editValue.trim() && !validationError && !isProcessing) {
+            if (normalizeCredential(editValue) && !validationError && !isProcessing) {
               e.preventDefault();
               handleSaveEdit();
             }
@@ -132,13 +132,13 @@ export const EnhancedRfidAssignmentCell = ({
 
   // Real-time validation with debouncing for assignment input
   useEffect(() => {
-    if (!uid.trim() || isEditing) {
+    if (!normalizeCredential(uid) || isEditing) {
       setValidationError("");
       return;
     }
 
     const validateTimeout = setTimeout(async () => {
-      const result = await validateRfidUid(uid.trim());
+      const result = await validateRfidUid(normalizeCredential(uid));
     }, 300); // Debounce validation
 
     return () => clearTimeout(validateTimeout);
@@ -146,12 +146,12 @@ export const EnhancedRfidAssignmentCell = ({
 
   // Real-time validation for edit input
   useEffect(() => {
-    if (!editValue.trim() || !isEditing) {
+    if (!normalizeCredential(editValue) || !isEditing) {
       return;
     }
 
     const validateTimeout = setTimeout(async () => {
-      const result = await validateRfidUid(editValue.trim(), true);
+      const result = await validateRfidUid(normalizeCredential(editValue), true);
     }, 300); // Debounce validation
 
     return () => clearTimeout(validateTimeout);
@@ -171,7 +171,7 @@ export const EnhancedRfidAssignmentCell = ({
         .from('rfid_tags')
         .select('attendee_id, status, issued_at, attendee:attendees(first_name, last_name)')
         .eq('event_id', getCurrentEventId())
-        .eq('uid', rfidUid)
+        .eq('uid', normalizeCredential(rfidUid))
         .in('status', ['assigned', 'active'])
         .single();
 
@@ -194,13 +194,13 @@ export const EnhancedRfidAssignmentCell = ({
   };
 
   const handleAssignRfid = async () => {
-    if (!uid.trim() || validationError || isProcessing) return;
+    if (!normalizeCredential(uid) || validationError || isProcessing) return;
 
     setIsProcessing(true);
     
     try {
       // Validate one more time before assignment to prevent duplicates
-      const validationResult = await validateRfidUid(uid.trim());
+      const validationResult = await validateRfidUid(normalizeCredential(uid));
       if (!validationResult.isValid) {
         toast.error("Assignment blocked - this wristband is already assigned to another attendee.");
         return;
@@ -232,7 +232,7 @@ export const EnhancedRfidAssignmentCell = ({
         .from('rfid_tags')
         .select('uid, status, attendee_id')
         .eq('event_id', getCurrentEventId())
-        .eq('uid', uid.trim())
+        .eq('uid', normalizeCredential(uid))
         .single();
 
       if (tagExists && tagExists.attendee_id && tagExists.attendee_id !== attendeeId) {
@@ -246,7 +246,7 @@ export const EnhancedRfidAssignmentCell = ({
         await supabase
           .from('rfid_tags')
           .insert({
-            uid: uid.trim(),
+            uid: normalizeCredential(uid),
             attendee_id: attendeeId,
             status: 'assigned',
             issued_at: new Date().toISOString(),
@@ -264,7 +264,7 @@ export const EnhancedRfidAssignmentCell = ({
             deactivated_at: null,
             reason: null
           })
-          .eq('uid', uid.trim())
+          .eq('uid', normalizeCredential(uid))
           .in('status', ['unissued', 'deactivated', 'replaced']);
       }
 
@@ -273,7 +273,7 @@ export const EnhancedRfidAssignmentCell = ({
         .from('station_transactions')
         .insert({
           attendee_id: attendeeId,
-          rfid_uid: uid.trim(),
+          rfid_uid: normalizeCredential(uid),
           station_type: 'rfid_assignment',
           transaction_type: 'rfid_assign' as any,
           event_id: getCurrentEventId(),
@@ -284,11 +284,11 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`Assigned Successfully: ${uid.trim()} → ${attendeeName}`);
+      toast.success(`Assigned Successfully: ${normalizeCredential(uid)} → ${attendeeName}`);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
-        onOptimisticUpdate(attendeeId, uid.trim(), 'assigned');
+        onOptimisticUpdate(attendeeId, normalizeCredential(uid), 'assigned');
       }
 
       setUid("");
@@ -320,20 +320,20 @@ export const EnhancedRfidAssignmentCell = ({
   };
 
   const handleSaveEdit = async () => {
-    if (!editValue.trim() || validationError || isProcessing) return;
+    if (!normalizeCredential(editValue) || validationError || isProcessing) return;
 
     setIsProcessing(true);
     
     try {
       // Validate the new UID
-      const validationResult = await validateRfidUid(editValue.trim(), true);
+      const validationResult = await validateRfidUid(normalizeCredential(editValue), true);
       if (!validationResult.isValid) {
         toast.error("Edit blocked - this wristband is already assigned to another attendee.");
         return;
       }
 
       // Clear the old credential assignment
-      if (currentRfidUid && currentRfidUid !== editValue.trim()) {
+      if (currentRfidUid && currentRfidUid !== normalizeCredential(editValue)) {
         await supabase
           .from('rfid_tags')
           .update({
@@ -350,7 +350,7 @@ export const EnhancedRfidAssignmentCell = ({
         .from('rfid_tags')
         .select('uid, status')
         .eq('event_id', getCurrentEventId())
-        .eq('uid', editValue.trim())
+        .eq('uid', normalizeCredential(editValue))
         .single();
 
       if (!tagExists) {
@@ -358,7 +358,7 @@ export const EnhancedRfidAssignmentCell = ({
         await supabase
           .from('rfid_tags')
           .insert({
-            uid: editValue.trim(),
+            uid: normalizeCredential(editValue),
             attendee_id: attendeeId,
             status: 'assigned',
             issued_at: new Date().toISOString(),
@@ -375,7 +375,7 @@ export const EnhancedRfidAssignmentCell = ({
             deactivated_at: null,
             reason: null
           })
-          .eq('uid', editValue.trim());
+          .eq('uid', normalizeCredential(editValue));
       }
 
       // Log the edit transaction
@@ -383,7 +383,7 @@ export const EnhancedRfidAssignmentCell = ({
         .from('station_transactions')
         .insert({
           attendee_id: attendeeId,
-          rfid_uid: editValue.trim(),
+          rfid_uid: normalizeCredential(editValue),
           station_type: 'rfid_assignment',
           transaction_type: 'rfid_assign' as any,
           event_id: getCurrentEventId(),
@@ -395,11 +395,11 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`Wristband updated: ${editValue.trim()} → ${attendeeName}`);
+      toast.success(`Wristband updated: ${normalizeCredential(editValue)} → ${attendeeName}`);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
-        onOptimisticUpdate(attendeeId, editValue.trim(), 'assigned');
+        onOptimisticUpdate(attendeeId, normalizeCredential(editValue), 'assigned');
       }
 
       setIsEditing(false);
@@ -523,7 +523,7 @@ export const EnhancedRfidAssignmentCell = ({
         .from('rfid_tags')
         .select('uid, status, attendee_id')
         .eq('event_id', getCurrentEventId())
-        .eq('uid', newUid)
+        .eq('uid', normalizeCredential(newUid))
         .single();
 
       if (tagExists?.attendee_id && tagExists.attendee_id !== attendeeId) {
@@ -556,7 +556,7 @@ export const EnhancedRfidAssignmentCell = ({
         await supabase
           .from('rfid_tags')
           .update(newTagFields)
-          .eq('uid', newUid);
+          .eq('uid', normalizeCredential(newUid));
       }
 
       // 3. Keep attendee check-in state in sync when activation carries over
@@ -739,7 +739,7 @@ export const EnhancedRfidAssignmentCell = ({
               variant="outline"
               size="sm"
               onClick={handleSaveEdit}
-              disabled={!editValue.trim() || !!validationError || isProcessing || isValidating}
+              disabled={!normalizeCredential(editValue) || !!validationError || isProcessing || isValidating}
               className="h-8 px-3"
               title="Save changes"
             >
@@ -865,7 +865,7 @@ export const EnhancedRfidAssignmentCell = ({
         variant="outline"
         size="sm"
         onClick={handleAssignRfid}
-        disabled={!uid.trim() || !!validationError || isProcessing || isValidating}
+        disabled={!normalizeCredential(uid) || !!validationError || isProcessing || isValidating}
         className="h-8 px-3 mt-7"
       >
         {isProcessing ? (

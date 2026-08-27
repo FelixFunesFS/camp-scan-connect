@@ -1,3 +1,4 @@
+import { normalizeCredential } from '@/lib/credentialFormat';
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -100,7 +101,7 @@ class RfidLookupService {
           )
         `)
         .eq('event_id', getCurrentEventId())
-        .eq('uid', uid.trim())
+        .eq('uid', normalizeCredential(uid))
         .single();
 
       if (error || !data?.attendee) return null;
@@ -132,7 +133,7 @@ class RfidLookupService {
         .from('rfid_tags')
         .select('attendee_id, status')
         .eq('event_id', getCurrentEventId())
-        .eq('uid', uid.trim())
+        .eq('uid', normalizeCredential(uid))
         .single();
 
       if (rfidError || !rfidTag) {
@@ -155,7 +156,7 @@ class RfidLookupService {
           activated_at: new Date().toISOString(),
           activation_method: 'staff_assisted'
         })
-        .eq('uid', uid.trim());
+        .eq('uid', normalizeCredential(uid));
 
       if (updateError) throw updateError;
 
@@ -170,7 +171,7 @@ class RfidLookupService {
         .from('station_transactions')
         .insert({
           attendee_id: rfidTag.attendee_id,
-          rfid_uid: uid.trim(),
+          rfid_uid: normalizeCredential(uid),
           station_type: 'activation',
           transaction_type: 'activate',
           activation_method: 'staff_assisted',
@@ -193,7 +194,7 @@ class RfidLookupService {
         .from('rfid_tags')
         .select('attendee_id, status')
         .eq('event_id', getCurrentEventId())
-        .eq('uid', uid.trim())
+        .eq('uid', normalizeCredential(uid))
         .single();
 
       if (rfidError || !rfidTag) {
@@ -212,7 +213,7 @@ class RfidLookupService {
           deactivated_at: new Date().toISOString(),
           reason: reason
         })
-        .eq('uid', uid.trim());
+        .eq('uid', normalizeCredential(uid));
 
       if (updateError) throw updateError;
 
@@ -222,7 +223,7 @@ class RfidLookupService {
           .from('station_transactions')
           .insert({
             attendee_id: rfidTag.attendee_id,
-            rfid_uid: uid.trim(),
+            rfid_uid: normalizeCredential(uid),
             station_type: 'activation',
             transaction_type: 'deactivate',
             staff_id: staffId,
