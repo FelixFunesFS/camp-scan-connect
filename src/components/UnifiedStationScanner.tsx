@@ -18,6 +18,7 @@ import { EnhancedActivationService } from "@/services/enhancedActivationService"
 import { LensScanner } from "@/components/LensScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
+import { normalizeCredential } from "@/lib/credentialFormat";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
