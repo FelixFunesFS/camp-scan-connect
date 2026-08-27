@@ -45,14 +45,14 @@ export function MobileActivationPreview({
   const waiverBlocked = all.filter((a: any) => a.blocked_reason === 'waiver_required');
   const needsRfid = all.filter((a: any) => a.blocked_reason === 'needs_rfid');
 
-  const allCheckedIn = useMemo(
-    () => all.length > 0 && eligibleIds.length === 0 && all.every((a: any) => a.is_active || a.activated_at),
-    [all, eligibleIds]
-  );
-
   const eligibleIds = useMemo(
     () => all.filter(isSelectable).map(attendeeId),
     [all]
+  );
+
+  const allCheckedIn = useMemo(
+    () => all.length > 0 && eligibleIds.length === 0 && all.every((a: any) => a.is_active || a.activated_at),
+    [all, eligibleIds]
   );
 
   // Same person listed twice on one phone number — staff must pick deliberately.
