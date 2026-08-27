@@ -87,10 +87,11 @@ export function UnifiedStationScanner({
         setAutoTriggered(false);
         
       } else {
-        setError("credential not found or not assigned to an attendee");
+        setError(await describeUnknownCredential(uid));
         setSelectedRfid(null);
         setAttendeeReadiness(null);
       }
+
     } catch (error) {
       console.error("Error looking up wristband:", error);
       setError("Failed to look up wristband. Please try again.");
