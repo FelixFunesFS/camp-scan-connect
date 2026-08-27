@@ -52,6 +52,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileRfidControls } from "@/components/MobileRfidControls";
 import { MobileAttendeeList } from "@/components/MobileAttendeeList";
+import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 
 export interface AttendeeData {
   id: string;
@@ -709,6 +710,7 @@ export const RfidAssignment = () => {
       <div className="container mx-auto p-4">
         <RfidCaptureProvider enabled={uiState.hasRfidInputFocused}>
           <div className="space-y-4">
+            <OfflineQueueBadge />
             {/* FAQ Toggle */}
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold">Credential Assignment</h1>
@@ -911,6 +913,7 @@ export const RfidAssignment = () => {
     <div className="container mx-auto p-6">
       <RfidCaptureProvider enabled={uiState.hasRfidInputFocused}>
         <div className="space-y-6">
+          <OfflineQueueBadge />
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Credential Assignment</h1>
             <Button 

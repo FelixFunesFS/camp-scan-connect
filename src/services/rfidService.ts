@@ -365,7 +365,7 @@ class RfidService {
       if (!hasAssignment) {
         return {
           isReady: false,
-          message: "No RFID assigned to this attendee",
+          message: "No wristband assigned to this attendee",
           hasAssignment: false,
           hasActivation: false
         };
@@ -387,7 +387,7 @@ class RfidService {
       if (!hasActivation) {
         return {
           isReady: false,
-          message: "RFID assigned but not activated - activation required for station services",
+          message: "Wristband assigned but not activated - activation required for station services",
           hasAssignment: true,
           hasActivation: false
         };

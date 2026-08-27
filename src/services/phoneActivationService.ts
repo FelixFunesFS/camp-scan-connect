@@ -198,7 +198,7 @@ export class PhoneActivationService {
 
       if (error) {
         console.error('Error activating remaining RFIDs:', error);
-        throw new Error(`Failed to activate remaining RFIDs: ${error.message}`);
+        throw new Error(`Failed to activate remaining wristbands: ${error.message}`);
       }
 
       return data.length > 0 ? (data[0] as any) : null;
