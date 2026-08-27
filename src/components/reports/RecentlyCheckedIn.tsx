@@ -165,7 +165,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <Select value={timeFilter} onValueChange={setTimeFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue />
