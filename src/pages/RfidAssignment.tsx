@@ -841,10 +841,11 @@ export const RfidAssignment = () => {
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge variant={enhancedStatus.variant}>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <Badge variant={enhancedStatus.variant} className="whitespace-nowrap">
                           {enhancedStatus.icon} {enhancedStatus.label}
                         </Badge>
+
                         <Button
                           variant="outline"
                           size="sm"
