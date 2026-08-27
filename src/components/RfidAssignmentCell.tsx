@@ -153,6 +153,7 @@ export const RfidAssignmentCell = ({
             attendee_id: attendeeId,
             status: 'assigned',
             issued_at: new Date().toISOString(),
+            event_id: getCurrentEventId(),
             credential_type: inferCredentialType(uid)
           });
       } else {
@@ -216,6 +217,7 @@ export const RfidAssignmentCell = ({
           station_type: 'activation',
           transaction_type: 'deactivate',
           current_status: 'inactive',
+          event_id: getCurrentEventId(),
           extra_data: {
             deactivation_method: 'manual'
           }

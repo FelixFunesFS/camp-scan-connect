@@ -628,7 +628,7 @@ export function StaffActivationHub() {
       // Use the phone activation service
       const { data, error } = await supabase.rpc('activate_remaining_rfids_by_phone', {
         p_phone: phoneNumber,
-        p_activation_method: 'staff_remaining'
+        p_activation_method: 'staff_assisted'
       });
 
       if (error) throw error;

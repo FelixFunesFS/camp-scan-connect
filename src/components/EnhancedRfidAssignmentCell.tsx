@@ -271,8 +271,9 @@ export const EnhancedRfidAssignmentCell = ({
           rfid_uid: uid.trim(),
           station_type: 'rfid_assignment',
           transaction_type: 'rfid_assign' as any,
-          activation_method: 'pre_assignment',
+          event_id: getCurrentEventId(),
           extra_data: {
+            assignment_context: 'pre_assignment',
             assignment_source: 'assignment_station',
             previous_rfid: existingRfid?.uid || null
           }
@@ -380,8 +381,9 @@ export const EnhancedRfidAssignmentCell = ({
           rfid_uid: editValue.trim(),
           station_type: 'rfid_assignment',
           transaction_type: 'rfid_assign' as any,
-          activation_method: 'edit_assignment',
+          event_id: getCurrentEventId(),
           extra_data: {
+            assignment_context: 'edit_assignment',
             assignment_source: 'assignment_station_edit',
             previous_rfid: currentRfidUid || null,
             edit_action: true
@@ -442,6 +444,7 @@ export const EnhancedRfidAssignmentCell = ({
           station_type: 'activation',
           transaction_type: 'deactivate',
           current_status: 'inactive',
+          event_id: getCurrentEventId(),
           extra_data: {
             deactivation_method: 'assignment_station_clear'
           }
