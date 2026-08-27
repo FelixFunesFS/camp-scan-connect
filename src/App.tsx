@@ -23,6 +23,7 @@ import AttendeeDetail from "./pages/AttendeeDetail";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
 import Reports from "./pages/Reports";
 import EventDebrief from "./pages/EventDebrief";
+import ScanTester from "./pages/ScanTester";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/reports" element={<Reports />} />
             <Route path="/debrief" element={<EventDebrief />} />
             <Route path="/dev" element={<DeveloperDashboard />} />
+            <Route path="/scan-test" element={<ScanTester />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

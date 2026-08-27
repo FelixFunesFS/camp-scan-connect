@@ -11,7 +11,7 @@ import { DebugTools } from "@/components/dev/DebugTools";
 import { ProductionReadiness } from "@/components/dev/ProductionReadiness";
 import AdminRequestManager from "@/components/dev/AdminRequestManager";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare, Shield, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare, Shield, AlertTriangle, ScanBarcode } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PostProductionAnalysis } from "@/components/dev/PostProductionAnalysis";
 import { SheetsSyncPanel } from "@/components/dev/SheetsSyncPanel";
@@ -46,6 +46,10 @@ const DeveloperDashboard = () => {
             </div>
             <div className="flex flex-wrap items-center gap-3">
             <EventYearSwitcher />
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/scan-test")}>
+              <ScanBarcode className="h-4 w-4" />
+              Scan Tester
+            </Button>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge variant="outline" className="gap-1">
