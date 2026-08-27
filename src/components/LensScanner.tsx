@@ -60,16 +60,6 @@ export const LensScanner: React.FC<LensScannerProps> = ({
   errorMessage,
   children,
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const controlsRef = useRef<{ stop: () => void } | null>(null);
-  const lastReadRef = useRef<{ code: string; at: number } | null>(null);
-
-  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [torchOn, setTorchOn] = useState(false);
-  const [torchSupported, setTorchSupported] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
-  const [cameraError, setCameraError] = useState('');
   const [readError, setReadError] = useState('');
   const [flash, setFlash] = useState<'hit' | 'miss' | null>(null);
   const [showManual, setShowManual] = useState(false);
@@ -83,112 +73,31 @@ export const LensScanner: React.FC<LensScannerProps> = ({
     setTimeout(() => setFlash(null), 320);
   }, []);
 
-  const handleDetected = useCallback(
-    (raw: string) => {
-      const code = normalizeCredential(raw);
-      if (!code) return;
-
-      const previous = lastReadRef.current;
-      if (previous && previous.code === code && Date.now() - previous.at < DUPLICATE_WINDOW_MS) {
-        return;
-      }
-      lastReadRef.current = { code, at: Date.now() };
-
-      if (!isValidCredentialFormat(code)) {
-        setReadError(`Read "${code}" but it is not a valid credential code.`);
-        pulse('miss');
-        return;
-      }
-
+  const {
+    videoRef,
+    torchOn,
+    torchSupported,
+    toggleTorch,
+    switchCamera,
+    isStarting,
+    cameraError,
+  } = useBarcodeCamera({
+    active: isOpen,
+    onScan: (code) => {
       setReadError('');
       pulse('hit');
       onScan(code);
     },
-    [onScan, pulse]
-  );
+    onInvalidRead: (code) => {
+      setReadError(`Read "${code}" but it is not a valid credential code.`);
+      pulse('miss');
+    },
+  });
 
-  const stopCamera = useCallback(() => {
-    controlsRef.current?.stop();
-    controlsRef.current = null;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setTorchOn(false);
-    setTorchSupported(false);
-  }, []);
-
-  // Start / restart continuous decoding whenever the overlay or camera changes.
+  // Offer manual entry as soon as the camera cannot be used.
   useEffect(() => {
-    if (!isOpen) return;
-
-    let cancelled = false;
-    setIsStarting(true);
-    setCameraError('');
-
-    const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, LENS_SUPPORTED_FORMATS);
-    hints.set(DecodeHintType.TRY_HARDER, true);
-    const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 120 });
-
-    const start = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-
-        const track = stream.getVideoTracks()[0];
-        const capabilities = (track?.getCapabilities?.() ?? {}) as MediaTrackCapabilities & {
-          torch?: boolean;
-        };
-        setTorchSupported(Boolean(capabilities.torch));
-
-        if (!videoRef.current) return;
-        const controls = await reader.decodeFromStream(
-          stream,
-          videoRef.current,
-          (result: Result | undefined) => {
-            if (result) handleDetected(result.getText());
-          }
-        );
-        if (cancelled) {
-          controls.stop();
-          return;
-        }
-        controlsRef.current = controls;
-      } catch (err) {
-        console.error('Lens scanner error:', err);
-        if (!cancelled) {
-          setCameraError(
-            'Camera unavailable. Allow camera access for this site in your browser settings, then reopen the scanner.'
-          );
-          setShowManual(true);
-        }
-      } finally {
-        if (!cancelled) setIsStarting(false);
-      }
-    };
-
-    start();
-
-    return () => {
-      cancelled = true;
-      stopCamera();
-    };
-  }, [isOpen, facingMode, handleDetected, stopCamera]);
-
-  // Release the camera when the tab is hidden so it never stays hot.
-  useEffect(() => {
-    if (!isOpen) return;
-    const onHide = () => {
-      if (document.visibilityState === 'hidden') stopCamera();
-    };
-    document.addEventListener('visibilitychange', onHide);
-    return () => document.removeEventListener('visibilitychange', onHide);
-  }, [isOpen, stopCamera]);
+    if (cameraError) setShowManual(true);
+  }, [cameraError]);
 
   // Escape closes the overlay.
   useEffect(() => {
@@ -200,19 +109,6 @@ export const LensScanner: React.FC<LensScannerProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
-  const toggleTorch = async () => {
-    const track = streamRef.current?.getVideoTracks()[0];
-    if (!track) return;
-    try {
-      await track.applyConstraints({
-        advanced: [{ torch: !torchOn }],
-      } as unknown as MediaTrackConstraints);
-      setTorchOn((on) => !on);
-    } catch (err) {
-      console.error('Torch toggle failed:', err);
-      setTorchSupported(false);
-    }
-  };
 
   const submitManual = () => {
     const code = normalizeCredential(manualCode);
