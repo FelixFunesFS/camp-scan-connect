@@ -11,7 +11,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { FileSignature, ChevronDown, Download, Search, CheckCircle2, AlertTriangle, Users, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
-import { downloadWaiverReceipt } from "@/lib/waiverReceipt";
+import { downloadWaiverArchive, downloadWaiverReceipt } from "@/lib/waiverReceipt";
+import { getWaiverReceiptUrl } from "@/services/waiverStorageService";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -29,6 +30,7 @@ interface SignatureRecord {
   agreement_version: string;
   name_match: boolean | null;
   signed_at: string;
+  receipt_path: string | null;
 }
 
 interface WaiverStatusPanelProps {
@@ -68,7 +70,7 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
 
       const { data: signatureRows } = await supabase
         .from("waiver_signatures")
-        .select("attendee_id, typed_name, agreement_version, name_match, signed_at")
+        .select("attendee_id, typed_name, agreement_version, name_match, signed_at, receipt_path")
         .eq("event_id", eventId);
 
       setAttendees(
@@ -90,6 +92,7 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
               agreement_version: s.agreement_version,
               name_match: s.name_match,
               signed_at: s.signed_at,
+              receipt_path: s.receipt_path ?? null,
             },
           ])
         )
@@ -147,6 +150,38 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
       )
       .slice(0, 25);
   }, [signed, recordSearch]);
+
+  /** Opens the PDF copy stored in the backend at signing time. */
+  const openStoredCopy = async (attendeeId: string, path: string | null) => {
+    if (!path) {
+      toast.info("No stored copy for this signature — use PDF to regenerate it.");
+      return;
+    }
+    const url = await getWaiverReceiptUrl(path);
+    if (!url) {
+      toast.error("Could not open the stored waiver copy.");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  /** One combined PDF with every in-app signature for this event. */
+  const downloadAllSigned = () => {
+    const nameById = new Map(attendees.map((a) => [a.id, `${a.first_name} ${a.last_name}`]));
+    const records = Array.from(signatures.entries()).map(([attendeeId, record]) => ({
+      attendeeName: nameById.get(attendeeId) || record.typed_name,
+      typedName: record.typed_name,
+      signedAt: record.signed_at,
+      agreementVersion: record.agreement_version,
+      nameMatch: record.name_match,
+    }));
+    if (!records.length) {
+      toast.info("No in-app signatures captured yet.");
+      return;
+    }
+    downloadWaiverArchive(records);
+    toast.success(`Downloaded ${records.length} signed waivers`);
+  };
 
   const exportUnsigned = () => {
     if (!unsigned.length) {
@@ -256,6 +291,10 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
                     <Download className="h-4 w-4 mr-2" />
                     Export CSV
                   </Button>
+                  <Button variant="outline" onClick={downloadAllSigned}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    All signed PDFs
+                  </Button>
                 </div>
 
                 {/* Unsigned queue */}
@@ -356,23 +395,35 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
                                 )}
                               </div>
                               {record ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="shrink-0"
-                                  onClick={() =>
-                                    downloadWaiverReceipt({
-                                      attendeeName: name,
-                                      typedName: record.typed_name,
-                                      signedAt: record.signed_at,
-                                      agreementVersion: record.agreement_version,
-                                      nameMatch: record.name_match,
-                                    })
-                                  }
-                                >
-                                  <FileDown className="h-4 w-4 mr-2" />
-                                  PDF
-                                </Button>
+                                <div className="flex gap-2 shrink-0">
+                                  {record.receipt_path && (
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => openStoredCopy(a.id, record.receipt_path)}
+                                    >
+                                      <FileDown className="h-4 w-4 mr-2" />
+                                      Stored copy
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      downloadWaiverReceipt({
+                                        attendeeName: name,
+                                        typedName: record.typed_name,
+                                        signedAt: record.signed_at,
+                                        agreementVersion: record.agreement_version,
+                                        nameMatch: record.name_match,
+                                      })
+                                    }
+                                  >
+                                    <FileDown className="h-4 w-4 mr-2" />
+                                    PDF
+                                  </Button>
+                                </div>
+
                               ) : (
                                 <Badge variant="outline" className="shrink-0">
                                   Registration
@@ -398,6 +449,8 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
           attendeeId={signing.id}
           attendeeName={`${signing.first_name} ${signing.last_name}`}
           eventId={getCurrentEventId()}
+          signedBySelf={false}
+          witnessedBy="Staff device"
           onSigned={() => {
             load(true);
           }}

@@ -158,10 +158,15 @@ export function MobileActivationPreview({
       {/* Action Buttons */}
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/50 p-4 -m-4 mt-6">
         <div className="space-y-3">
+          {waiverBlocked.length > 0 && (
+            <p className="text-xs text-center text-muted-foreground">
+              {waiverBlocked.length} {waiverBlocked.length === 1 ? "person still needs" : "people still need"} to sign the waiver before check-in.
+            </p>
+          )}
           {/* Primary Action: Check-In Entire Order */}
           <Button
             onClick={onActivateEntireOrder}
-            disabled={isProcessing || eligibleCount === 0}
+            disabled={isProcessing || eligibleCount === 0 || waiverBlocked.length > 0}
             size="lg"
             className="w-full h-12 text-base font-medium"
           >
@@ -169,6 +174,11 @@ export function MobileActivationPreview({
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 Checking in...
+              </div>
+            ) : waiverBlocked.length > 0 ? (
+              <div className="flex items-center gap-2">
+                <FileSignature className="h-5 w-5" />
+                Sign waiver to continue
               </div>
             ) : eligibleCount === 0 ? (
               <div className="flex items-center gap-2">
@@ -182,6 +192,7 @@ export function MobileActivationPreview({
               </div>
             )}
           </Button>
+
 
           {/* Back Button */}
           <Button

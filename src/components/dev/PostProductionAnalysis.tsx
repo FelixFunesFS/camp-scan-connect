@@ -213,7 +213,7 @@ export function PostProductionAnalysis() {
           <CardContent>
             <div className="text-2xl font-bold">{systemMetrics.dataIntegrityScore.toFixed(1)}%</div>
             <div className="text-xs text-muted-foreground">
-              RFID Capture Rate
+              Credential Capture Rate
             </div>
           </CardContent>
         </Card>
@@ -266,7 +266,7 @@ export function PostProductionAnalysis() {
 
       <Tabs defaultValue="rfid-analysis" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="rfid-analysis">RFID Analysis</TabsTrigger>
+          <TabsTrigger value="rfid-analysis">Credential Analysis</TabsTrigger>
           <TabsTrigger value="station-performance">Station Performance</TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
@@ -274,7 +274,7 @@ export function PostProductionAnalysis() {
         <TabsContent value="rfid-analysis" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>RFID Scanning Audit</CardTitle>
+              <CardTitle>Credential Scanning Audit</CardTitle>
               <CardDescription>
                 Analysis of Code capture across all station transactions
               </CardDescription>
@@ -358,11 +358,11 @@ export function PostProductionAnalysis() {
                       </div>
                       <div>
                         <div className="text-lg font-semibold text-green-600">{data.withRfid}</div>
-                        <div className="text-sm text-muted-foreground">With RFID</div>
+                        <div className="text-sm text-muted-foreground">With credential</div>
                       </div>
                       <div>
                         <div className="text-lg font-semibold text-red-600">{data.withoutRfid}</div>
-                        <div className="text-sm text-muted-foreground">Missing RFID</div>
+                        <div className="text-sm text-muted-foreground">Missing credential</div>
                       </div>
                       <div>
                         <div className="text-lg font-semibold">{data.captureRate.toFixed(1)}%</div>

@@ -58,10 +58,10 @@ export function StaffGuideHub() {
       id: 'activation',
       name: 'Activation Station',
       icon: <Zap className="h-5 w-5" />,
-      description: 'Primary check-in point for attendee RFID activation',
+      description: 'Primary check-in point for attendee wristband activation',
       keyProcedures: [
         'Phone number verification and activation',
-        'RFID bracelet assignment and testing',
+        'Wristband assignment and testing',
         'Waiver compliance validation',
         'Group vs individual processing decisions'
       ],
@@ -71,7 +71,7 @@ export function StaffGuideHub() {
           solution: 'Search by email or full name. Check phone format: (555) 123-4567'
         },
         {
-          problem: 'RFID not scanning',
+          problem: 'Wristband not scanning',
           solution: 'Try different reader angle. Check for damage. Use backup manual entry'
         },
         {
@@ -85,7 +85,7 @@ export function StaffGuideHub() {
           steps: [
             'Verify attendee identity with photo ID',
             'Record phone and email manually',
-            'Assign RFID and note manual override',
+            'Assign a wristband and note manual override',
             'Create follow-up task for data sync'
           ]
         }
@@ -97,7 +97,7 @@ export function StaffGuideHub() {
       icon: <Utensils className="h-5 w-5" />,
       description: 'Track meal distributions and dietary restrictions',
       keyProcedures: [
-        'Scan RFID for meal validation',
+        'Scan wristband for meal validation',
         'Check daily meal allowances',
         'Handle dietary restriction requests',
         'Process veteran priority service'
@@ -116,7 +116,7 @@ export function StaffGuideHub() {
         {
           action: 'Quick Meal Distribution',
           steps: [
-            'Scan attendee RFID bracelet',
+            'Scan attendee wristband',
             'Select meal type (breakfast/lunch/dinner)',
             'Confirm dietary requirements',
             'Complete transaction'
@@ -149,7 +149,7 @@ export function StaffGuideHub() {
         {
           action: 'Quick Drink Service',
           steps: [
-            'Scan RFID bracelet',
+            'Scan wristband',
             'Select drink type',
             'Verify age for alcohol (if applicable)',
             'Complete transaction'
@@ -182,7 +182,7 @@ export function StaffGuideHub() {
         {
           action: 'Equipment Checkout',
           steps: [
-            'Scan attendee RFID',
+            'Scan attendee wristband',
             'Select equipment type',
             'Inspect equipment condition',
             'Complete checkout transaction'
@@ -191,7 +191,7 @@ export function StaffGuideHub() {
         {
           action: 'Equipment Return',
           steps: [
-            'Scan attendee RFID',
+            'Scan attendee wristband',
             'Inspect returned equipment',
             'Sanitize if required',
             'Complete return transaction'
@@ -205,14 +205,14 @@ export function StaffGuideHub() {
       icon: <DoorOpen className="h-5 w-5" />,
       description: 'Entry/exit access control and security',
       keyProcedures: [
-        'RFID validation for entry/exit',
+        'Wristband validation for entry/exit',
         'Guest pass verification',
         'Re-entry tracking',
         'Security incident reporting'
       ],
       commonIssues: [
         {
-          problem: 'RFID not recognized',
+          problem: 'Wristband not recognized',
           solution: 'Verify activation status. Check for technical issues. Use manual entry if needed'
         },
         {
@@ -257,7 +257,7 @@ export function StaffGuideHub() {
       steps: [
         'Switch to backup scanner immediately',
         'Test backup scanner functionality',
-        'If no backup available, use manual RFID entry',
+        'If no backup available, use manual code entry',
         'Record hardware failure in incident log',
         'Contact technical support for repair',
         'Document all manual transactions for later sync'
@@ -569,7 +569,7 @@ export function StaffGuideHub() {
                       <Badge variant="secondary">30 min</Badge>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span>RFID Technology Basics</span>
+                      <span>Wristband Technology Basics</span>
                       <Badge variant="secondary">15 min</Badge>
                     </div>
                     <div className="flex items-center justify-between text-sm">

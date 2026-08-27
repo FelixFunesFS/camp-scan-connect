@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { EventProvider } from "./contexts/EventContext";
 import Index from "./pages/Index";
@@ -37,7 +37,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             
             <Route path="/activation" element={<ActivationStation />} />
-            <Route path="/rfid-assignment" element={<RfidAssignment />} />
+            <Route path="/assignment" element={<RfidAssignment />} />
+            {/* Legacy path — keep working for printed links and bookmarks */}
+            <Route path="/rfid-assignment" element={<Navigate to="/assignment" replace />} />
             <Route path="/staff-hub" element={<StaffActivationHub />} />
             <Route path="/meal-station" element={<MealStation />} />
             <Route path="/drinks-station" element={<DrinksStation />} />

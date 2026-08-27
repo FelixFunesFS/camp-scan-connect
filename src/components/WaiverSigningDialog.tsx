@@ -24,6 +24,9 @@ interface WaiverSigningDialogProps {
   attendeeId: string;
   attendeeName: string;
   eventId?: string | null;
+  /** Set false when staff capture the signature with the attendee present. */
+  signedBySelf?: boolean;
+  witnessedBy?: string | null;
   onSigned: () => void;
 }
 
@@ -33,6 +36,8 @@ export function WaiverSigningDialog({
   attendeeId,
   attendeeName,
   eventId,
+  signedBySelf = true,
+  witnessedBy = null,
   onSigned,
 }: WaiverSigningDialogProps) {
   const [scrolledToEnd, setScrolledToEnd] = useState(false);
@@ -72,6 +77,8 @@ export function WaiverSigningDialog({
         eventId,
         typedName,
         registeredName: attendeeName,
+        signedBySelf,
+        witnessedBy,
       });
       toast.success(`Waiver signed for ${attendeeName}`);
       setReceipt({ typedName: typedName.trim(), signedAt: new Date().toISOString() });
