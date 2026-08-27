@@ -803,7 +803,7 @@ export const RfidAssignment = () => {
                     <span className="text-sm text-muted-foreground">{Math.round(progressData.progressPercent)}%</span>
                   </div>
                   <Progress value={progressData.progressPercent} className="h-2" />
-                  <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
                     <span>🟢 {progressData.checkedInCount} Checked In</span>
                     <span>🟡 {progressData.assignedCount} Assigned</span>
                     <span>🔴 {progressData.unassignedCount} Unassigned</span>
