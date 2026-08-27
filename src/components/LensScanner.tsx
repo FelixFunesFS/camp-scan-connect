@@ -1,6 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/browser';
-import { BarcodeFormat, DecodeHintType, type Result } from '@zxing/library';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Camera,
   Flashlight,
@@ -14,23 +12,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { isValidCredentialFormat, normalizeCredential } from '@/lib/credentialFormat';
+import { useBarcodeCamera, CAMERA_SUPPORTED_FORMATS } from '@/hooks/useBarcodeCamera';
 
 /** Formats printed on wristbands, badges and confirmation emails. */
-export const LENS_SUPPORTED_FORMATS = [
-  BarcodeFormat.QR_CODE,
-  BarcodeFormat.CODE_128,
-  BarcodeFormat.CODE_39,
-  BarcodeFormat.EAN_13,
-  BarcodeFormat.EAN_8,
-  BarcodeFormat.UPC_A,
-  BarcodeFormat.UPC_E,
-  BarcodeFormat.ITF,
-  BarcodeFormat.DATA_MATRIX,
-  BarcodeFormat.PDF_417,
-];
+export const LENS_SUPPORTED_FORMATS = CAMERA_SUPPORTED_FORMATS;
 
-/** Ignore repeat reads of the same code inside this window. */
-const DUPLICATE_WINDOW_MS = 2500;
 
 interface LensScannerProps {
   isOpen: boolean;
