@@ -75,13 +75,14 @@ export default function ActivationStation() {
     }
   };
 
-  const handleActivateEntireOrder = async () => {
-    if (!lookupResult) return;
+  const handleActivateSelected = async (attendeeIds: string[]) => {
+    if (!lookupResult || attendeeIds.length === 0) return;
 
     setIsProcessing(true);
     try {
-      const result = await PhoneActivationService.activateEntireOrderByPhone(
+      const result = await PhoneActivationService.activateSelectedByPhone(
         phoneNumber,
+        attendeeIds,
         'self_activated'
       );
 
@@ -92,7 +93,7 @@ export default function ActivationStation() {
         }
         (result.warnings ?? []).forEach((w) => toast.warning(w));
         if (result.activated_count === 0 && (result.warnings?.length ?? 0) === 0) {
-          toast.info("Everyone on this order was already checked in");
+          toast.info("Everyone selected was already checked in");
         }
         setShowPreview(false);
         setLookupResult(null);
@@ -207,7 +208,7 @@ export default function ActivationStation() {
                           phoneNumber={phoneNumber}
                           lookupResult={lookupResult}
                           isProcessing={isProcessing}
-                          onActivateEntireOrder={handleActivateEntireOrder}
+                          onActivateSelected={handleActivateSelected}
                           onBack={() => setShowPreview(false)}
                           onSignWaiver={(attendee) =>
                             setWaiverAttendee({
