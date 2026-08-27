@@ -50,6 +50,11 @@ export function MobileActivationPreview({
     [all]
   );
 
+  const allCheckedIn = useMemo(
+    () => all.length > 0 && eligibleIds.length === 0 && all.every((a: any) => a.is_active || a.activated_at),
+    [all, eligibleIds]
+  );
+
   // Same person listed twice on one phone number — staff must pick deliberately.
   const duplicateNames = useMemo(() => {
     const counts = new Map<string, number>();
@@ -119,9 +124,10 @@ export function MobileActivationPreview({
                 <Badge variant="outline" className="text-xs">
                   {lookupResult.has_group_order ? 'Group Order' : 'Individual Registration'}
                 </Badge>
-                {lookupResult.order_id && (
-                  <Badge variant="secondary" className="text-xs font-mono">
-                    #{lookupResult.order_id}
+                {allCheckedIn && (
+                  <Badge variant="default" className="text-xs bg-success text-success-foreground">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Checked In
                   </Badge>
                 )}
               </div>
@@ -262,7 +268,7 @@ export function MobileActivationPreview({
             ) : selectedCount === 0 ? (
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
-                Nothing to check in
+                {allCheckedIn ? "Already checked in" : "Nothing to check in"}
               </div>
             ) : (
               <div className="flex items-center gap-2">
