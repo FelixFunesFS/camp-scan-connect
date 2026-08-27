@@ -119,8 +119,8 @@ export const CheckInOverview = ({ refreshTrigger }: CheckInOverviewProps = {}) =
           .eq('transaction_type', 'activate')
           .not('activation_method', 'is', null);
 
-        const selfActivated = activationData?.filter(a => a.activation_method === 'self').length || 0;
-        const staffAssisted = activationData?.filter(a => a.activation_method === 'staff').length || 0;
+        const selfActivated = activationData?.filter(a => a.activation_method === 'self_activated').length || 0;
+        const staffAssisted = activationData?.filter(a => a.activation_method === 'staff_assisted').length || 0;
 
         // Arrival day breakdown, derived from the event start date
         const thursdayAttendees = allAttendees.filter(a => a.early_access === true || a.arrival_window === 'early');
