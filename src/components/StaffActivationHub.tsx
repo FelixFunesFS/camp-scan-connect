@@ -45,6 +45,7 @@ import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { NotificationState } from "@/types/attendee";
 import { StaffAssistanceNotifications } from "@/components/StaffAssistanceNotifications";
+import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { WaiverStatusPanel } from "@/components/WaiverStatusPanel";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
