@@ -159,6 +159,18 @@ export function MobileActivationPreview({
         </Alert>
       )}
 
+      {duplicateNames.length > 0 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <span className="font-medium">Duplicate registration:</span>{' '}
+            {duplicateNames.join(', ')} appears more than once on this phone number. Check the order
+            number and wristband status on each card before checking someone in.
+          </AlertDescription>
+        </Alert>
+      )}
+
+
       {/* Select-all shortcut for group orders */}
       {eligibleIds.length > 1 && (
         <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
