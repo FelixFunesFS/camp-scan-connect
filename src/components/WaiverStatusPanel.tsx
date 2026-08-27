@@ -11,7 +11,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { FileSignature, ChevronDown, Download, Search, CheckCircle2, AlertTriangle, Users, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
-import { downloadWaiverReceipt } from "@/lib/waiverReceipt";
+import { downloadWaiverArchive, downloadWaiverReceipt } from "@/lib/waiverReceipt";
+import { getWaiverReceiptUrl } from "@/services/waiverStorageService";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -29,6 +30,7 @@ interface SignatureRecord {
   agreement_version: string;
   name_match: boolean | null;
   signed_at: string;
+  receipt_path: string | null;
 }
 
 interface WaiverStatusPanelProps {
@@ -68,7 +70,7 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
 
       const { data: signatureRows } = await supabase
         .from("waiver_signatures")
-        .select("attendee_id, typed_name, agreement_version, name_match, signed_at")
+        .select("attendee_id, typed_name, agreement_version, name_match, signed_at, receipt_path")
         .eq("event_id", eventId);
 
       setAttendees(
@@ -90,6 +92,7 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
               agreement_version: s.agreement_version,
               name_match: s.name_match,
               signed_at: s.signed_at,
+              receipt_path: s.receipt_path ?? null,
             },
           ])
         )
