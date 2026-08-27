@@ -240,6 +240,10 @@ const ScanTester = () => {
                     <span className="text-xs text-muted-foreground w-20 shrink-0">
                       {entry.timestamp.toLocaleTimeString()}
                     </span>
+                    <Badge variant="outline" className="shrink-0 text-[10px] capitalize">
+                      {entry.source}
+                    </Badge>
+
                     <span className="break-all flex-1">{visualize(entry.raw)}</span>
                     <span className="text-xs text-muted-foreground shrink-0">{entry.raw.length}ch</span>
                     {entry.raw !== entry.normalized && (
