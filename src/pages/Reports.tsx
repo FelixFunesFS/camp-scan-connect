@@ -36,6 +36,7 @@ import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
 import { GateAccessReport } from "@/components/reports/GateAccessReport";
 import { CheckInStatusAndOnSite } from "@/components/reports/CheckInStatusAndOnSite";
 import { ArrivalsBreakdown } from "@/components/reports/ArrivalsBreakdown";
+import { EventYearSwitcher, ArchivedYearBanner } from "@/components/EventYearSwitcher";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";

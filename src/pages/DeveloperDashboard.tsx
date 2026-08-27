@@ -15,6 +15,7 @@ import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare, Shield, A
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PostProductionAnalysis } from "@/components/dev/PostProductionAnalysis";
 import { SheetsSyncPanel } from "@/components/dev/SheetsSyncPanel";
+import { EventYearSwitcher, ArchivedYearBanner } from "@/components/EventYearSwitcher";
 
 const DeveloperDashboard = () => {
   const navigate = useNavigate();
@@ -43,6 +44,8 @@ const DeveloperDashboard = () => {
                 </p>
               </div>
             </div>
+            <div className="flex flex-wrap items-center gap-3">
+            <EventYearSwitcher />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge variant="outline" className="gap-1">
@@ -54,7 +57,9 @@ const DeveloperDashboard = () => {
                 <p>Real-time data updates - No need to refresh pages</p>
               </TooltipContent>
             </Tooltip>
+            </div>
           </div>
+          <div className="mt-3"><ArchivedYearBanner /></div>
         </div>
       </div>
 
