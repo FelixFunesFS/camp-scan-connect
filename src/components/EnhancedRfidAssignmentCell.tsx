@@ -867,7 +867,7 @@ export const EnhancedRfidAssignmentCell = ({
         size="sm"
         onClick={handleAssignRfid}
         disabled={!normalizeCredential(uid) || !!validationError || isProcessing || isValidating}
-        className="h-8 px-3 mt-7"
+        className="h-10 shrink-0 px-3 mt-[38px] sm:h-8"
       >
         {isProcessing ? (
           <Loader2 className="h-3 w-3 animate-spin" />
