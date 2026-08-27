@@ -108,6 +108,55 @@ export class StationTransactionService {
 
     return { synced, remaining: getQueuedScans().length };
   }
+
+  static async getDailyCount(
+    attendeeId: string,
+    stationType: StationType,
+    transactionTypes?: TransactionType[]
+  ): Promise<number> {
+    let query = supabase
+      .from("station_transactions")
+      .select("*")
+      .eq('event_id', getCurrentEventId())
+      .eq("attendee_id", attendeeId)
+      .eq("station_type", stationType)
+      .gte("created_at", new Date().toISOString().split('T')[0]);
+
+    if (transactionTypes) {
+      query = query.in("transaction_type", transactionTypes as any);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error loading transaction count:", error);
+      return 0;
+    }
+
+    return data.length;
+  }
+
+  static async getLatestStatus(
+    attendeeId: string,
+    stationType: StationType,
+    statusField: string = 'current_status'
+  ): Promise<string | null> {
+    const { data, error } = await supabase
+      .from("station_transactions")
+      .select("*")
+      .eq('event_id', getCurrentEventId())
+      .eq("attendee_id", attendeeId)
+      .eq("station_type", stationType)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error("Error loading latest status:", error);
+      return null;
+    }
+
+    return data.length > 0 ? data[0][statusField] || data[0].transaction_type : null;
+  }
 }
 
 // Auto-flush when connectivity returns, plus a periodic retry while the app is open.
