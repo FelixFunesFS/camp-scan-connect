@@ -818,11 +818,12 @@ export const RfidAssignment = () => {
                 const enhancedStatus = enhancedStatuses[attendee.id] || getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status);
                 return (
                   <Card key={attendee.id} className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{attendee.first_name} {attendee.last_name}</h3>
-                        <p className="text-sm text-muted-foreground">{attendee.phone}</p>
-                        <p className="text-sm text-muted-foreground">{attendee.order_id}</p>
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{attendee.first_name} {attendee.last_name}</h3>
+                        <p className="text-sm text-muted-foreground truncate">{attendee.phone}</p>
+                        <p className="text-sm text-muted-foreground truncate">{attendee.order_id}</p>
+
                         {attendee.most_recent_activation_method && (
                           <div className="mt-2">
                             <Badge variant={attendee.most_recent_activation_method === 'staff_assisted' ? 'default' : 'secondary'} className="text-xs">
