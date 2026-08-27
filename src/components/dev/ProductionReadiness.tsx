@@ -247,7 +247,7 @@ export function ProductionReadiness() {
       </div>
 
       <Tabs defaultValue="health" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="scroll-tabs h-auto gap-1 p-1 lg:grid lg:w-full lg:grid-cols-8">
           <TabsTrigger value="health">System Health</TabsTrigger>
           <TabsTrigger value="tests">Edge Case Tests</TabsTrigger>
           <TabsTrigger value="cleanup">Database Cleanup</TabsTrigger>

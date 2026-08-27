@@ -265,7 +265,7 @@ export function PostProductionAnalysis() {
       </div>
 
       <Tabs defaultValue="rfid-analysis" className="space-y-6">
-        <TabsList>
+        <TabsList className="scroll-tabs h-auto gap-1 p-1">
           <TabsTrigger value="rfid-analysis">Credential Analysis</TabsTrigger>
           <TabsTrigger value="station-performance">Station Performance</TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>

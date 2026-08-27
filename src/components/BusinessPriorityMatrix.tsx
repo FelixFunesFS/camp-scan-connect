@@ -337,7 +337,7 @@ export function BusinessPriorityMatrix() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeView} onValueChange={(value) => setActiveView(value as any)}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
           <TabsTrigger value="matrix">Priority Matrix</TabsTrigger>
           <TabsTrigger value="roi">ROI Analysis</TabsTrigger>
           <TabsTrigger value="roadmap">Implementation Roadmap</TabsTrigger>
