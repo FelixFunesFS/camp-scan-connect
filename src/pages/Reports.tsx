@@ -273,8 +273,14 @@ const Reports = () => {
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
       <div className="max-w-7xl mx-auto">
+        {/* Year scope — admin only */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <EventYearSwitcher />
+        </div>
+        <ArchivedYearBanner />
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 mt-4">
+
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
