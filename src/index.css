@@ -145,9 +145,45 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html,
+  body {
+    /* Never allow a stray wide element to scroll the whole page sideways */
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Long unbreakable values (emails, codes, order IDs, URLs) must wrap, not overflow */
+  p,
+  span,
+  td,
+  th,
+  li,
+  dd,
+  dt,
+  h1,
+  h2,
+  h3,
+  h4 {
+    overflow-wrap: anywhere;
+  }
+
+  /* iOS zooms the viewport when a focused input is under 16px */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
   
   /* Mobile-first responsive utilities */
   .mobile-container {
