@@ -1,4 +1,4 @@
-import { getCurrentEventId } from "@/lib/eventRuntime";
+import { requireCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CheckInStatus {
