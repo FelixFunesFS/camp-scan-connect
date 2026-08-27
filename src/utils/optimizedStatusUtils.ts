@@ -102,69 +102,39 @@ export async function getBulkOptimizedStatuses(attendeeIds: string[]): Promise<R
   }
 
   try {
-    const eventId = getCurrentEventId();
+    const eventId = requireCurrentEventId();
     const batches = chunk(uncachedIds, ID_CHUNK_SIZE);
 
-    // Chunked queries keep the request URL short enough for large attendee lists
-    const [transactionBatches, rfidBatches] = await Promise.all([
-      Promise.all(
+    // One shared server-side definition of "has a wristband" / "checked in",
+    // so every screen (assignment, check-in preview, staff hub, reports) agrees.
+    const rows = (
+      await Promise.all(
         batches.map(async (ids) => {
-          const { data, error } = await supabase
-            .from('station_transactions')
-            .select('attendee_id, transaction_type, created_at')
-            .eq('event_id', eventId)
-            .in('attendee_id', ids)
-            .eq('station_type', 'activation')
-            .order('created_at', { ascending: false });
+          const { data, error } = await supabase.rpc('attendee_status_for_event', {
+            p_attendee_ids: ids,
+            p_event_id: eventId,
+          });
           if (error) throw error;
           return data ?? [];
         })
-      ),
-      Promise.all(
-        batches.map(async (ids) => {
-          const { data, error } = await supabase
-            .from('rfid_tags')
-            .select('attendee_id, uid, status')
-            .eq('event_id', eventId)
-            .in('attendee_id', ids)
-            .in('status', ['assigned', 'active']);
-          if (error) throw error;
-          return data ?? [];
-        })
-      ),
-    ]);
+      )
+    ).flat();
 
-    const transactions = transactionBatches.flat();
-    const rfidData = rfidBatches.flat();
+    const statusMap = new Map<string, any>();
+    rows.forEach((row: any) => statusMap.set(row.attendee_id, row));
 
-    // Process results efficiently
-    const rfidMap = new Map<string, { uid: string; status: string }>();
-    rfidData?.forEach(rfid => {
-      const existing = rfidMap.get(rfid.attendee_id);
-      // An active credential always wins over an assigned one
-      if (!existing || (existing.status !== 'active' && rfid.status === 'active')) {
-        rfidMap.set(rfid.attendee_id, { uid: rfid.uid, status: rfid.status });
-      }
-    });
-
-    const activationMap = new Map<string, string>();
-    transactions?.forEach(tx => {
-      if (!activationMap.has(tx.attendee_id) && tx.transaction_type === 'activate') {
-        activationMap.set(tx.attendee_id, tx.created_at);
-      }
-    });
-
-    // Calculate statuses for uncached IDs
     for (const attendeeId of uncachedIds) {
-      const rfid = rfidMap.get(attendeeId);
-      const activatedAt = activationMap.get(attendeeId);
-      
-      const status = getCheckInStatus(rfid?.uid || null, activatedAt || null, rfid?.status);
-      
-      // Cache the result
+      const row = statusMap.get(attendeeId);
+      const status = getCheckInStatus(
+        row?.credential_uid ?? null,
+        row?.is_checked_in ? row?.checked_in_at ?? new Date().toISOString() : null,
+        row?.credential_status
+      );
+
       statusCache.set(attendeeId, { status, timestamp: now });
       results[attendeeId] = status;
     }
+
 
   } catch (error) {
     console.error('Error in getBulkOptimizedStatuses:', error);
