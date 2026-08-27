@@ -44,7 +44,7 @@ const DeveloperDashboard = () => {
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:w-auto">
             <EventYearSwitcher />
             <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/scan-test")}>
               <ScanBarcode className="h-4 w-4" />
