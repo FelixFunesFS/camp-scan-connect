@@ -246,6 +246,7 @@ export const EnhancedRfidAssignmentCell = ({
             attendee_id: attendeeId,
             status: 'assigned',
             issued_at: new Date().toISOString(),
+            event_id: getCurrentEventId(),
             credential_type: inferCredentialType(uid)
           });
       } else {
