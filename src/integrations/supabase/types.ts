@@ -596,6 +596,7 @@ export type Database = {
           event_id: string | null
           id: string
           name_match: boolean | null
+          receipt_path: string | null
           signed_at: string
           signed_by_self: boolean
           typed_name: string
@@ -610,6 +611,7 @@ export type Database = {
           event_id?: string | null
           id?: string
           name_match?: boolean | null
+          receipt_path?: string | null
           signed_at?: string
           signed_by_self?: boolean
           typed_name: string
@@ -624,6 +626,7 @@ export type Database = {
           event_id?: string | null
           id?: string
           name_match?: boolean | null
+          receipt_path?: string | null
           signed_at?: string
           signed_by_self?: boolean
           typed_name?: string
