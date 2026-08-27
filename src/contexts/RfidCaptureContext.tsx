@@ -3,6 +3,7 @@ import {
   ANY_CREDENTIAL_MAX_LENGTH,
   ANY_CREDENTIAL_MIN_LENGTH,
   isValidCredentialFormat,
+  normalizeCredential,
   type CredentialType,
 } from '@/lib/credentialFormat';
 
@@ -46,7 +47,8 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
     registeredInputsRef.current.delete(element);
   }, []);
 
-  const triggerCapture = useCallback((uid: string, targetElement?: HTMLInputElement) => {
+  const triggerCapture = useCallback((rawUid: string, targetElement?: HTMLInputElement) => {
+    const uid = normalizeCredential(rawUid);
     if (targetElement && registeredInputsRef.current.has(targetElement)) {
       const onCapture = registeredInputsRef.current.get(targetElement);
       if (onCapture) {
@@ -97,7 +99,7 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
       if (event.key === 'Enter') {
         if (inputBuffer.length >= minLength && isValidRfidFormat(inputBuffer.trim())) {
           event.preventDefault();
-          onCapture(inputBuffer.trim());
+          onCapture(normalizeCredential(inputBuffer));
         }
         inputBuffer = '';
         return;
@@ -112,7 +114,7 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
           // Ultra-fast timeout for rapid assignment workflow
           timeout = setTimeout(() => {
             if (inputBuffer.length >= minLength && isValidRfidFormat(inputBuffer.trim())) {
-              onCapture(inputBuffer.trim());
+              onCapture(normalizeCredential(inputBuffer));
               inputBuffer = '';
             }
           }, debounceMs); // Optimized for USB reader workflow
@@ -121,7 +123,7 @@ export const RfidCaptureProvider: React.FC<RfidCaptureProviderProps> = ({
         // Auto-trigger if buffer gets very long (some readers don't send Enter)
         if (inputBuffer.length > ANY_CREDENTIAL_MAX_LENGTH) {
           if (isValidRfidFormat(inputBuffer.trim())) {
-            onCapture(inputBuffer.trim());
+            onCapture(normalizeCredential(inputBuffer));
           }
           inputBuffer = '';
           return;

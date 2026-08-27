@@ -1,3 +1,4 @@
+import { normalizeCredential } from '@/lib/credentialFormat';
 /**
  * Get badge variant for RFID status
  */
@@ -93,7 +94,7 @@ export async function getEnhancedCheckInStatus(attendeeId: string, rfidUid: stri
       .from('rfid_tags')
       .select('status')
         .eq('event_id', getCurrentEventId())
-      .eq('uid', rfidUid)
+      .eq('uid', normalizeCredential(rfidUid))
       .in('status', ['assigned', 'active'])
       .maybeSingle();
 

@@ -1,6 +1,7 @@
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
-import { inferCredentialType } from "@/lib/credentialFormat";
+import { inferCredentialType, normalizeCredential } from "@/lib/credentialFormat";
+import { resolveCredential } from "@/lib/credentialLookup";
 
 export interface RfidTag {
   uid: string;
@@ -29,7 +30,14 @@ class RfidService {
   // Find attendee by Code
   async findAttendeeByRfid(uid: string): Promise<RfidTag | null> {
     try {
-      const { data, error } = await supabase
+      // One resolver for every scan: case/whitespace-insensitive and scoped to
+      // the event the server considers active.
+      const resolved = await resolveCredential(uid);
+      if (!resolved || !resolved.attendee_id) return null;
+      if (resolved.wrong_event) return null;
+      if (!['assigned', 'active'].includes(resolved.status)) return null;
+
+      const { data: tag } = await supabase
         .from('rfid_tags')
         .select(`
           uid,
@@ -47,17 +55,10 @@ class RfidService {
             phone
           )
         `)
-        .eq('event_id', getCurrentEventId())
-        .eq('uid', uid)
-        .in('status', ['assigned', 'active'])
-        .single();
+        .eq('uid', resolved.uid)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error finding attendee by RFID:', error);
-        return null;
-      }
-
-      return data;
+      return (tag as RfidTag) ?? null;
     } catch (error) {
       console.error('Error in findAttendeeByRfid:', error);
       return null;
@@ -75,7 +76,7 @@ class RfidService {
           attendee:attendees(first_name, last_name)
         `)
         .eq('event_id', getCurrentEventId())
-        .eq('uid', uid.trim())
+        .eq('uid', normalizeCredential(uid))
         .single();
 
       if (existingTag && existingTag.attendee_id && existingTag.attendee_id !== excludeAttendeeId) {
@@ -126,7 +127,7 @@ class RfidService {
         .from('rfid_tags')
         .select('uid')
         .eq('event_id', getCurrentEventId())
-        .eq('uid', uid.trim())
+        .eq('uid', normalizeCredential(uid))
         .single();
 
       if (!tagExists) {
@@ -134,7 +135,7 @@ class RfidService {
         const { data, error } = await supabase
           .from('rfid_tags')
           .insert({
-            uid: uid.trim(),
+            uid: normalizeCredential(uid),
             attendee_id: attendeeId,
         status: 'assigned',
             issued_at: new Date().toISOString(),
@@ -155,7 +156,7 @@ class RfidService {
             deactivated_at: null,
             reason: null
           })
-          .eq('uid', uid.trim())
+          .eq('uid', normalizeCredential(uid))
           .select()
           .single();
 
@@ -167,7 +168,7 @@ class RfidService {
         .from('station_transactions')
         .insert({
           attendee_id: attendeeId,
-          rfid_uid: uid.trim(),
+          rfid_uid: normalizeCredential(uid),
           station_type: 'activation',
           transaction_type: 'activate',
           current_status: 'active',
@@ -201,7 +202,7 @@ class RfidService {
         .from('rfid_tags')
         .select('attendee_id')
         .eq('event_id', getCurrentEventId())
-        .eq('uid', uid)
+        .eq('uid', normalizeCredential(uid))
         .single();
 
       if (!rfidTag) {
@@ -216,7 +217,7 @@ class RfidService {
           deactivated_at: new Date().toISOString(),
           reason: reason
         })
-        .eq('uid', uid);
+        .eq('uid', normalizeCredential(uid));
 
       // Log deactivation transaction
       if (rfidTag.attendee_id) {
@@ -224,7 +225,7 @@ class RfidService {
           .from('station_transactions')
           .insert({
             attendee_id: rfidTag.attendee_id,
-            rfid_uid: uid,
+            rfid_uid: normalizeCredential(uid),
             station_type: 'activation',
             transaction_type: 'deactivate',
             current_status: 'inactive',

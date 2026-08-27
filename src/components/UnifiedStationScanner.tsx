@@ -18,6 +18,7 @@ import { EnhancedActivationService } from "@/services/enhancedActivationService"
 import { LensScanner } from "@/components/LensScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
+import { normalizeCredential } from "@/lib/credentialFormat";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -64,7 +65,9 @@ export function UnifiedStationScanner({
   const lastCommitRef = useRef<{ key: string; at: number } | null>(null);
   const COMMIT_WINDOW_MS = 4000;
 
-  const handleRfidFound = async (uid: string) => {
+  const handleRfidFound = async (rawUid: string) => {
+    const uid = normalizeCredential(rawUid);
+    if (!uid) return;
     setError("");
     setIsLookingUp(true);
     // A new code starts a fresh scan: clear the one-commit-per-scan guard

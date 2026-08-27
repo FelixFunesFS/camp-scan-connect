@@ -74,5 +74,10 @@ export const inferCredentialType = (raw: string): CredentialType => {
   return 'barcode';
 };
 
-/** Normalizes a payload before it is stored or looked up. */
-export const normalizeCredential = (raw: string): string => (raw ?? '').trim();
+/**
+ * Normalizes a payload before it is stored or looked up.
+ * Codes are case-insensitive: always compare and store the upper-case form so
+ * a reader that emits lower case still matches the assigned band.
+ */
+export const normalizeCredential = (raw: string): string =>
+  (raw ?? '').trim().toUpperCase();

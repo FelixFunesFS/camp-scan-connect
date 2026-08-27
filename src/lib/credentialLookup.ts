@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentEventId } from "@/lib/eventRuntime";
+import { normalizeCredential } from "@/lib/credentialFormat";
 
 export interface CredentialLookup {
   found: boolean;
@@ -16,8 +16,9 @@ export interface CredentialLookup {
 /** Identify a scanned code anywhere in the system (any year). */
 export async function lookupCredential(uid: string): Promise<CredentialLookup | null> {
   const { data, error } = await supabase.rpc("credential_lookup", {
-    p_uid: uid,
-    p_event_id: getCurrentEventId(),
+    p_uid: normalizeCredential(uid),
+    // Always the server-side active event: a stale browser must not scope a scan to a past year.
+    p_event_id: null,
   });
   if (error) {
     console.error("Credential lookup failed:", error);
@@ -54,4 +55,39 @@ export async function describeUnknownCredential(uid: string): Promise<string> {
   }
 
   return `Code ${uid} isn't usable right now (${result.credential_status ?? "unknown status"}).`;
+}
+
+export interface ResolvedCredential {
+  uid: string;
+  attendee_id: string | null;
+  status: string;
+  attendee_name: string | null;
+  waiver_signed: boolean;
+  is_checked_in: boolean;
+  wrong_event: boolean;
+  event_year: number | null;
+}
+
+/**
+ * Single source of truth for "what did this scan hit?".
+ * Case- and whitespace-insensitive, scoped to the event the server considers
+ * active, and it reports prior-year / retired bands instead of "not found".
+ */
+export async function resolveCredential(raw: string): Promise<ResolvedCredential | null> {
+  const uid = normalizeCredential(raw);
+  if (!uid) return null;
+
+  const result = await lookupCredential(uid);
+  if (!result || !result.found || !result.credential_uid) return null;
+
+  return {
+    uid: result.credential_uid,
+    attendee_id: result.attendee_id,
+    status: result.credential_status ?? 'unknown',
+    attendee_name: result.attendee_name,
+    waiver_signed: result.waiver_signed,
+    is_checked_in: result.is_checked_in,
+    wrong_event: result.wrong_event,
+    event_year: result.event_year,
+  };
 }
