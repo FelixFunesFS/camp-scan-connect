@@ -179,7 +179,7 @@ export function UnifiedStationScanner({
         staff_notes: notes,
         attendee_name: `${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`,
         original_error: error || attendeeReadiness?.message,
-        activation_method: 'staff_override'
+        activation_method: 'staff_assisted'
       });
       
       toast.success("Staff override recorded successfully");
