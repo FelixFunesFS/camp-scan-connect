@@ -10,6 +10,7 @@ import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
 import { getStandardTimeBoundaries } from "@/utils/etTimezone";
 import { SiteLocationBadge } from "@/components/shared/SiteLocationBadge";
+import { MobileAttendeeCard } from "./MobileTableCard";
 
 interface AttendeeStatus {
   id: string;
