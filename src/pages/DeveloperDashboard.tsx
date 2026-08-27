@@ -36,7 +36,7 @@ const DeveloperDashboard = () => {
                 <ArrowLeft className="h-4 w-4" />
                 Back to Dashboard
               </Button>
-              <Separator orientation="vertical" className="h-6" />
+              <Separator orientation="vertical" className="hidden h-6 sm:block" />
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-bold leading-tight">Developer Dashboard</h1>
                 <p className="text-sm text-muted-foreground">
