@@ -180,7 +180,14 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
               {filteredRecent.length} of {recentCheckIns.length} check-ins (ET timezone)
             </div>
           </div>
-          <div className="border rounded-lg max-h-[500px] overflow-y-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3 max-h-[500px] overflow-y-auto">
+            {filteredRecent.slice(0, 50).map((attendee) => (
+              <MobileAttendeeCard key={attendee.id} attendee={attendee} />
+            ))}
+          </div>
+          <div className="hidden md:block border rounded-lg max-h-[500px] overflow-y-auto">
+
             <Table>
               <TableHeader className="sticky top-0 bg-background">
                 <TableRow>
