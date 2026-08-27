@@ -811,9 +811,10 @@ export const EnhancedRfidAssignmentCell = ({
 
   // Show assignment input for unassigned attendees
   return (
-    <div className="flex items-start gap-2 w-full sm:min-w-[250px]">
-      <div className="flex-1">
-        <div className="flex gap-1 mb-2">
+    <div className="flex w-full items-start gap-2 sm:min-w-[250px]">
+      <div className="min-w-0 flex-1">
+        <div className="badge-row mb-2">
+
           <Button
             variant={scannerMode === 'usb' ? "default" : "outline"}
             size="sm"
