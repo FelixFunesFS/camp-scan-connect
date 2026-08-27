@@ -91,7 +91,22 @@ function renderReceipt(doc: jsPDF, input: WaiverReceiptInput) {
   });
 
   write(ESIGN_NOTICE, { size: 8, gap: 0 });
+}
 
+/** Builds the signed-waiver receipt as a PDF the attendee can keep. */
+export function buildWaiverReceipt(input: WaiverReceiptInput): jsPDF {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  renderReceipt(doc, input);
+  return doc;
+}
+
+/** Builds one PDF containing every supplied signature record, one per page. */
+export function buildWaiverArchive(inputs: WaiverReceiptInput[]): jsPDF {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  inputs.forEach((input, index) => {
+    if (index > 0) doc.addPage();
+    renderReceipt(doc, input);
+  });
   return doc;
 }
 
@@ -104,3 +119,10 @@ export function downloadWaiverReceipt(input: WaiverReceiptInput) {
   const date = new Date(input.signedAt).toISOString().slice(0, 10);
   doc.save(`waiver-${slug(input.attendeeName)}-${date}.pdf`);
 }
+
+/** Downloads every signature record as a single combined PDF. */
+export function downloadWaiverArchive(inputs: WaiverReceiptInput[]) {
+  const doc = buildWaiverArchive(inputs);
+  doc.save(`signed-waivers-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
