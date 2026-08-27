@@ -1,55 +1,55 @@
-# On-Site Waiver: Sign, Then Activate
+# On-Site Waiver Gate + "Assignment" URL Rename
 
-## How to think about it
+## How to think about the waiver
 
-The waiver is a **gate**, not a side task. Nobody's wristband turns on until their name is on a signed record. Three separate concerns, kept separate so one failing never blocks check-in:
+The waiver is a **gate**, not a side task. Nobody's wristband activates until their name is on a signed record. Two concerns, kept separate so one failing never blocks the check-in line:
 
 1. **Consent capture** (blocking) — typed name saved to the database before activation runs.
-2. **Proof of record** (non-blocking) — a PDF receipt stored in the backend so you always have the signed document.
-3. **Notification** (non-blocking, optional) — a copy emailed to melanatedcampout@gmail.com.
+2. **Proof of record** (non-blocking) — a PDF copy stored in the backend, downloadable any time.
 
-Email must never be able to stop a line at the gate. Storage-first, email second.
+No emailing for now. Storage is the system of record; the Google Sheets mirror already carries the `waiver_signatures` table if you want a spreadsheet view.
 
-## What exists today
-
+### What already exists
 - `waiver_signatures` table with a trigger that flips `attendees.waiver_signed` on insert.
 - `WaiverSigningDialog` (typed-name signing) and `waiverService.signWaiver`.
-- Activation preview already flags people as `waiver_required` and shows a "Sign Waiver" button.
-- `buildWaiverReceipt` generates the branded PDF (currently only downloadable client-side).
+- Activation blocks unsigned attendees with `blocked_reason = 'waiver_required'`; the preview already shows a "Sign Waiver" button.
+- `buildWaiverReceipt` builds the branded PDF, but it's only downloadable client-side and never saved.
 
-Gaps: after signing, the attendee must re-run the lookup; the PDF is never persisted; nothing is emailed.
+### Changes
 
-## Changes
+**1. Sign-then-activate in one flow**
+- On the self check-in preview, unsigned people appear as a stacked "Sign for each person" list.
+- Signing updates that person in place (green check) — no re-lookup, no page reset.
+- "Activate" stays disabled until everyone in the order is signed, then activates the whole order in the same session.
+- Same behaviour in the staff hub, so staff can sign on a tablet with the person present (records `signed_by_self = false`, staff name in `witnessed_by`).
 
-### 1. Sign-then-activate in one flow
-- On the self check-in preview, when anyone in the order is waiver-blocked, show a stacked "Sign for each person" list.
-- Signing a person updates their row in place (green check), no page reset, no re-lookup.
-- The "Activate" button stays disabled until every person in the order is signed, then activates the whole order in the same session.
-- Same behaviour for the staff hub, so staff can sign on a tablet on behalf of a person present (records `signed_by_self = false` and the staff name in `witnessed_by`).
-
-### 2. Store the signed waiver
-- Create a private storage bucket `waivers`.
-- After the signature row is inserted, generate the PDF and upload it to `waivers/{event_id}/{attendee_id}.pdf`.
-- Store the path on the signature row (`receipt_path` column) so any staff view can open a signed copy on demand.
+**2. Store the signed waiver**
+- New private storage bucket `waivers`.
+- After the signature row inserts, generate the PDF and upload to `waivers/{event_id}/{attendee_id}.pdf`; save the path on the signature row.
 - Upload failure logs a warning and never blocks activation.
+- `WaiverStatusPanel` gets a "View signed waiver" link per person and a bulk download for the event.
 
-### 3. Email a copy to melanatedcampout@gmail.com
-- Requires an email sender domain. You already own melanatedcampout.com, so set up a sender subdomain (e.g. `notify.melanatedcampout.com`) — that is a DNS step you complete in the setup dialog.
-- Once verified: an app email fires per signature to melanatedcampout@gmail.com with attendee name, typed name, timestamp, event, and a signed link to the stored PDF (attachments aren't supported, links are).
-- Sent from an edge function, fire-and-forget, so it never delays the gate.
-- If you prefer not to set up a domain, skip this step: the Google Sheets mirror already carries the `waiver_signatures` table, and stored PDFs are downloadable from the staff panel.
+## URL rename: /rfid-assignment → /assignment
 
-### 4. Staff visibility
-- `WaiverStatusPanel` gets a "View signed waiver" link per signed attendee and a bulk "Download all signed PDFs" action for the event.
+`/rfid-assignment` is the only route with RFID in the path. Change it to `/assignment`, keep a redirect from the old path so existing bookmarks and printed staff links keep working, and update the two internal links (sidebar, home dashboard tile).
+
+## Remaining RFID references
+
+Three tiers — only the first is user-facing and worth changing now:
+
+1. **Staff/attendee-facing text still saying RFID** — Developer Dashboard tab copy, Production Readiness cards, Abandoned Records manager, Staff Guide "RFID Technology Basics", RFID Management Panel, mock-generation toasts. Reword to "wristband" / "code" to match the pass already done on stations and scanners.
+2. **Event Debrief page** — keeps the RFID wording deliberately (it's a retrospective about the RFID system itself). Leave as is.
+3. **Code internals** — file names (`RfidAssignment.tsx`), component names, hooks, service names, and the `rfid_tags` / `rfid_uid` database columns. Leave untouched: renaming them is high-risk churn with zero user benefit, and the database columns are wired into edge functions, the Sheets mirror, and the read-only API.
 
 ## Technical notes
 
-- New migration: `receipt_path text` on `waiver_signatures`; storage bucket `waivers` (private) with policies allowing authenticated read/insert.
-- PDF generation moves behind a small helper that both downloads and uploads, reusing `buildWaiverReceipt`.
-- Email path uses the standard app-email infrastructure (queue + `send-transactional-email`) with an idempotency key of `waiver-{signature_id}` so retries don't duplicate.
+- Migration: `receipt_path text` on `waiver_signatures`; private `waivers` bucket with policies for authenticated read/insert.
+- A shared helper wraps `buildWaiverReceipt` for both download and upload.
+- Route redirect handled with a `<Navigate replace>` route on the old path.
 
 ## Order of work
 
-1. Sign-then-activate flow (unblocks the gate) — no dependencies.
-2. Storage bucket + PDF persistence.
-3. Email domain setup, then the notification email.
+1. Sign-then-activate flow.
+2. Bucket + PDF persistence + staff download links.
+3. URL rename and redirect.
+4. Wording cleanup on the remaining dev/staff panels.
