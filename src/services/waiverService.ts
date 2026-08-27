@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { WAIVER_VERSION } from "@/lib/waiverContent";
+import { storeWaiverReceipt } from "@/services/waiverStorageService";
 
 const normalizeName = (value: string) =>
   value.toLowerCase().replace(/[^a-z]/g, "");
@@ -9,6 +10,9 @@ export interface SignWaiverInput {
   eventId?: string | null;
   typedName: string;
   registeredName: string;
+  /** False when a staff member captures the signature with the attendee present. */
+  signedBySelf?: boolean;
+  witnessedBy?: string | null;
 }
 
 export const waiverService = {
@@ -16,11 +20,20 @@ export const waiverService = {
     return normalizeName(typedName) === normalizeName(registeredName);
   },
 
-  async signWaiver({ attendeeId, eventId, typedName, registeredName }: SignWaiverInput) {
+  async signWaiver({
+    attendeeId,
+    eventId,
+    typedName,
+    registeredName,
+    signedBySelf = true,
+    witnessedBy = null,
+  }: SignWaiverInput) {
     const trimmed = typedName.trim();
     if (trimmed.length < 3 || trimmed.length > 120) {
       throw new Error("Please type your full legal name.");
     }
+
+    const nameMatch = this.namesMatch(trimmed, registeredName);
 
     const { data, error } = await supabase
       .from("waiver_signatures")
@@ -29,8 +42,9 @@ export const waiverService = {
         event_id: eventId ?? null,
         typed_name: trimmed,
         agreement_version: WAIVER_VERSION,
-        signed_by_self: true,
-        name_match: this.namesMatch(trimmed, registeredName),
+        signed_by_self: signedBySelf,
+        witnessed_by: witnessedBy,
+        name_match: nameMatch,
         user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 400) : null,
       })
       .select()
@@ -42,6 +56,19 @@ export const waiverService = {
       throw new Error(error.message);
     }
 
+    // Store the signed copy. Deliberately awaited but never fatal.
+    await storeWaiverReceipt({
+      signatureId: data?.id,
+      attendeeId,
+      eventId: eventId ?? data?.event_id ?? null,
+      attendeeName: registeredName,
+      typedName: trimmed,
+      signedAt: data?.signed_at ?? new Date().toISOString(),
+      agreementVersion: data?.agreement_version ?? WAIVER_VERSION,
+      nameMatch,
+    });
+
     return data;
   },
 };
+
