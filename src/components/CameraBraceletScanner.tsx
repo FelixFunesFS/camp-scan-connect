@@ -1,15 +1,10 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/browser';
-import {
-  BarcodeFormat,
-  DecodeHintType,
-  type Result,
-} from '@zxing/library';
+import React, { useEffect, useState } from 'react';
 import { Camera, Flashlight, FlashlightOff, Keyboard, RotateCcw, ScanLine, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { useBarcodeCamera } from '@/hooks/useBarcodeCamera';
 import {
   inferCredentialType,
   isValidCredentialFormat,
@@ -23,152 +18,45 @@ interface CameraBraceletScannerProps {
   onScan: (code: string) => void;
 }
 
-/** Formats printed on wristbands, badges and confirmation emails. */
-const SUPPORTED_FORMATS = [
-  BarcodeFormat.QR_CODE,
-  BarcodeFormat.CODE_128,
-  BarcodeFormat.CODE_39,
-  BarcodeFormat.EAN_13,
-  BarcodeFormat.EAN_8,
-  BarcodeFormat.UPC_A,
-  BarcodeFormat.UPC_E,
-  BarcodeFormat.ITF,
-  BarcodeFormat.DATA_MATRIX,
-  BarcodeFormat.PDF_417,
-];
-
-/** Ignore repeat reads of the same code inside this window. */
-const DUPLICATE_WINDOW_MS = 2500;
 
 export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
   isOpen,
   onClose,
   onScan,
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const controlsRef = useRef<{ stop: () => void } | null>(null);
-  const lastReadRef = useRef<{ code: string; at: number } | null>(null);
-
-  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [torchOn, setTorchOn] = useState(false);
-  const [torchSupported, setTorchSupported] = useState(false);
   const [lastResult, setLastResult] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const [isStarting, setIsStarting] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [showManual, setShowManual] = useState(false);
 
-  const handleDetected = useCallback(
-    (raw: string) => {
-      const code = normalizeCredential(raw);
-      if (!code) return;
-
-      // Suppress duplicate frames of the same credential.
-      const previous = lastReadRef.current;
-      if (previous && previous.code === code && Date.now() - previous.at < DUPLICATE_WINDOW_MS) {
-        return;
-      }
-      lastReadRef.current = { code, at: Date.now() };
-
-      if (!isValidCredentialFormat(code)) {
-        setError(`Read "${code}" but it is not a valid credential code.`);
-        return;
-      }
-
+  const {
+    videoRef,
+    torchOn,
+    torchSupported,
+    toggleTorch,
+    switchCamera,
+    isStarting,
+    cameraError,
+  } = useBarcodeCamera({
+    active: isOpen,
+    onScan: (code) => {
       setError('');
       setLastResult(code);
       onScan(code);
     },
-    [onScan]
-  );
+    onInvalidRead: (code) => {
+      setError(`Read "${code}" but it is not a valid credential code.`);
+    },
+  });
 
-  const stopCamera = useCallback(() => {
-    controlsRef.current?.stop();
-    controlsRef.current = null;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setTorchOn(false);
-    setTorchSupported(false);
-  }, []);
-
-  // Start / restart continuous decoding whenever the dialog or camera changes.
+  // Fall back to manual entry as soon as the camera cannot be used.
   useEffect(() => {
-    if (!isOpen) return;
-
-    let cancelled = false;
-    setIsStarting(true);
-    setError('');
-
-    const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, SUPPORTED_FORMATS);
-    hints.set(DecodeHintType.TRY_HARDER, true);
-    const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 120 });
-
-    const start = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-
-        const track = stream.getVideoTracks()[0];
-        const capabilities = (track?.getCapabilities?.() ?? {}) as MediaTrackCapabilities & {
-          torch?: boolean;
-        };
-        setTorchSupported(Boolean(capabilities.torch));
-
-        if (!videoRef.current) return;
-        const controls = await reader.decodeFromStream(
-          stream,
-          videoRef.current,
-          (result: Result | undefined) => {
-            if (result) handleDetected(result.getText());
-          }
-        );
-        if (cancelled) {
-          controls.stop();
-          return;
-        }
-        controlsRef.current = controls;
-      } catch (err) {
-        console.error('Camera scanner error:', err);
-        if (!cancelled) {
-          setError(
-            'Camera unavailable. Allow camera access in your browser, or enter the code manually.'
-          );
-          setShowManual(true);
-        }
-      } finally {
-        if (!cancelled) setIsStarting(false);
-      }
-    };
-
-    start();
-
-    return () => {
-      cancelled = true;
-      stopCamera();
-    };
-  }, [isOpen, facingMode, handleDetected, stopCamera]);
-
-  const toggleTorch = async () => {
-    const track = streamRef.current?.getVideoTracks()[0];
-    if (!track) return;
-    try {
-      await track.applyConstraints({
-        advanced: [{ torch: !torchOn }],
-      } as unknown as MediaTrackConstraints);
-      setTorchOn((on) => !on);
-    } catch (err) {
-      console.error('Torch toggle failed:', err);
-      setTorchSupported(false);
+    if (cameraError) {
+      setError(cameraError);
+      setShowManual(true);
     }
-  };
+  }, [cameraError]);
+
 
   const submitManual = () => {
     const code = normalizeCredential(manualCode);
@@ -229,7 +117,7 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
             <Button
               size="icon"
               variant="secondary"
-              onClick={() => setFacingMode((m) => (m === 'environment' ? 'user' : 'environment'))}
+              onClick={switchCamera}
               aria-label="Switch camera"
             >
               <RotateCcw className="h-4 w-4" />

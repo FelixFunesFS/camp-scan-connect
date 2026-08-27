@@ -6,16 +6,22 @@ import { Separator } from "@/components/ui/separator";
 import { useScanFocus } from "@/hooks/useScanFocus";
 import { normalizeCredential, inferCredentialType } from "@/lib/credentialFormat";
 import { lookupCredential, type CredentialLookup } from "@/lib/credentialLookup";
-import { ScanBarcode, CheckCircle2, XCircle, AlertTriangle, ArrowLeft } from "lucide-react";
+import { ScanBarcode, CheckCircle2, XCircle, AlertTriangle, ArrowLeft, Camera as CameraIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { InlineCameraScanner } from "@/components/InlineCameraScanner";
+import { LensScanner } from "@/components/LensScanner";
+
+type ScanSource = "camera" | "reader";
 
 interface ScanEntry {
   raw: string;
   normalized: string;
   timestamp: Date;
   result: CredentialLookup | null;
+  source: ScanSource;
 }
+
 
 /** Renders a scanned string with invisible characters made visible. */
 function visualize(raw: string): string {
@@ -48,18 +54,20 @@ const ScanTester = () => {
   const [value, setValue] = useState("");
   const [current, setCurrent] = useState<ScanEntry | null>(null);
   const [history, setHistory] = useState<ScanEntry[]>([]);
+  const [lensOpen, setLensOpen] = useState(false);
   const { inputRef, isFocused, focusProps } = useScanFocus([current]);
 
-  const handleScan = async (raw: string) => {
+  const handleScan = async (raw: string, source: ScanSource = "reader") => {
     const normalized = normalizeCredential(raw);
     let result: CredentialLookup | null = null;
     if (normalized) {
       result = await lookupCredential(normalized);
     }
-    const entry: ScanEntry = { raw, normalized, timestamp: new Date(), result };
+    const entry: ScanEntry = { raw, normalized, timestamp: new Date(), result, source };
     setCurrent(entry);
     setHistory((h) => [entry, ...h].slice(0, 20));
   };
+
 
   const mismatch = current ? current.raw !== current.normalized : false;
 
@@ -82,46 +90,77 @@ const ScanTester = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Raw Capture</CardTitle>
-            <CardDescription>
-              Aim the scanner and pull the trigger. The field stays focused automatically.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input
-              ref={inputRef}
-              {...focusProps}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (value) {
-                    handleScan(value);
-                    setValue("");
+        <div className="grid gap-6 lg:grid-cols-2 items-start">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CameraIcon className="h-5 w-5" />
+                Camera Scan
+              </CardTitle>
+              <CardDescription>
+                Use this device's camera. Results appear below without leaving the page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <InlineCameraScanner
+                acceptAnyPayload
+                onScan={(raw) => handleScan(raw, "camera")}
+                onExpand={() => setLensOpen(true)}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Raw Capture (Reader)</CardTitle>
+              <CardDescription>
+                Aim a USB/Bluetooth reader and pull the trigger. The field stays focused automatically.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Input
+                ref={inputRef}
+                {...focusProps}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (value) {
+                      handleScan(value, "reader");
+                      setValue("");
+                    }
                   }
-                }
-              }}
-              placeholder="Scan a barcode or wristband…"
-              className="font-mono text-lg"
-              autoFocus
-            />
-            <div className="flex items-center gap-2">
-              <div className={`h-2 w-2 rounded-full ${isFocused ? "bg-green-500 animate-pulse" : "bg-destructive"}`} />
-              <span className="text-xs text-muted-foreground">
-                {isFocused ? "Scanner armed — field focused" : "Field not focused — click it before scanning"}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+                }}
+                placeholder="Scan a barcode or wristband…"
+                className="font-mono text-lg"
+                autoFocus
+              />
+              <div className="flex items-center gap-2">
+                <div className={`h-2 w-2 rounded-full ${isFocused ? "bg-green-500 animate-pulse" : "bg-destructive"}`} />
+                <span className="text-xs text-muted-foreground">
+                  {isFocused ? "Scanner armed — field focused" : "Field not focused — click it before scanning"}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <LensScanner
+          isOpen={lensOpen}
+          onClose={() => setLensOpen(false)}
+          onScan={(code) => handleScan(code, "camera")}
+          title="Scan tester"
+        />
+
 
         {current && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Last Scan
+                <Badge variant="secondary" className="capitalize">{current.source}</Badge>
+
                 {mismatch && (
                   <Badge variant="destructive" className="gap-1">
                     <AlertTriangle className="h-3 w-3" />
@@ -201,6 +240,10 @@ const ScanTester = () => {
                     <span className="text-xs text-muted-foreground w-20 shrink-0">
                       {entry.timestamp.toLocaleTimeString()}
                     </span>
+                    <Badge variant="outline" className="shrink-0 text-[10px] capitalize">
+                      {entry.source}
+                    </Badge>
+
                     <span className="break-all flex-1">{visualize(entry.raw)}</span>
                     <span className="text-xs text-muted-foreground shrink-0">{entry.raw.length}ch</span>
                     {entry.raw !== entry.normalized && (
