@@ -190,6 +190,7 @@ export default function EquipmentTracker({
             ))}
           </TableBody>
         </Table>
+        </>
       )}
     </div>
   );
