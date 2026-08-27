@@ -318,6 +318,10 @@ All colors MUST be HSL.
     -webkit-overflow-scrolling: touch;
   }
 
+  .scroll-tabs > * {
+    @apply shrink-0 whitespace-nowrap;
+  }
+
   .scroll-tabs::-webkit-scrollbar {
     display: none;
   }
