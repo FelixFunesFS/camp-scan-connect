@@ -614,7 +614,7 @@ export const RfidAssignment = () => {
       const { data, error } = await supabase.rpc('bulk_activate_assigned_rfids');
       if (error) throw error;
       
-      toast.success(`Activated ${data?.[0]?.total_activated || 0} RFIDs successfully`);
+      toast.success(`Activated ${data?.[0]?.total_activated || 0} wristbands successfully`);
       // Invalidate cache and reload
       dataCache.clear();
       loadAttendees();

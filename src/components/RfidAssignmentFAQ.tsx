@@ -215,15 +215,15 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>• Check USB connection and power</li>
                     <li>• Try scanning into notepad first</li>
-                    <li>• Ensure cursor is in RFID field (blue highlight)</li>
+                    <li>• Ensure cursor is in the wristband field (blue highlight)</li>
                     <li>• Restart browser if scanner was recently connected</li>
                   </ul>
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Duplicate RFID Error:</h4>
+                  <h4 className="font-medium text-sm">Duplicate wristband error:</h4>
                   <p className="text-sm text-muted-foreground">
-                    If you see "RFID already assigned," the tag is already in use. Check the error message 
+                    If you see "Wristband already assigned," the tag is already in use. Check the error message 
                     for details about who has it assigned.
                   </p>
                 </div>

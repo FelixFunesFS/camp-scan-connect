@@ -132,7 +132,7 @@ export const RfidManagementPanel: React.FC = () => {
 
     } catch (error) {
       console.error('Error during bulk activation:', error);
-      toast.error(`Error - ${error.message || "Failed to bulk activate RFIDs"}`);
+      toast.error(`Error - ${error.message || "Failed to bulk activate wristbands"}`);
     } finally {
       setIsBulkActivating(false);
     }
@@ -182,7 +182,7 @@ export const RfidManagementPanel: React.FC = () => {
 
     } catch (error) {
       console.error('Error loading stats:', error);
-      toast.error("Error - Failed to load RFID statistics");
+      toast.error("Error - Failed to load wristband statistics");
     }
   };
 
@@ -225,7 +225,7 @@ export const RfidManagementPanel: React.FC = () => {
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-center gap-2">
                   <Tag className="h-5 w-5 text-yellow-600" />
-                  <span className="font-semibold text-yellow-900">Assigned RFIDs</span>
+                  <span className="font-semibold text-yellow-900">Assigned wristbands</span>
                 </div>
                 <p className="text-2xl font-bold text-yellow-700">{stats.assigned_attendees}</p>
               </div>

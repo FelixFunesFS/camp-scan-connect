@@ -91,8 +91,8 @@ export function UnifiedStationScanner({
         setAttendeeReadiness(null);
       }
     } catch (error) {
-      console.error("Error looking up RFID:", error);
-      setError("Failed to lookup RFID. Please try again.");
+      console.error("Error looking up wristband:", error);
+      setError("Failed to look up wristband. Please try again.");
       setSelectedRfid(null);
       setAttendeeReadiness(null);
     } finally {

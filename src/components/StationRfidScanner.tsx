@@ -50,7 +50,7 @@ export const StationRfidScanner = ({
       const rfidData = await rfidService.findAttendeeByRfid(uid);
       
       if (!rfidData || !rfidData.attendee) {
-        setError(`RFID ${uid} not found or not assigned to any attendee`);
+        setError(`Wristband ${uid} not found or not assigned to any attendee`);
         setAttendeeInfo(null);
         return;
       }

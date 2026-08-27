@@ -32,7 +32,7 @@ const Index = () => {
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             {selectedEvent?.name ?? "Melanated Campout"}
           </h1>
-          <p className="text-xl text-muted-foreground mb-6">RFID Management System</p>
+          <p className="text-xl text-muted-foreground mb-6">Wristband Management System</p>
           <Badge variant="secondary" className="text-sm px-4 py-2">
             Veterans Campground, Cordele, GA{dateRange ? ` • ${dateRange}` : ""}
           </Badge>

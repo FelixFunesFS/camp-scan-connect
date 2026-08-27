@@ -198,7 +198,7 @@ export const EnhancedRfidAssignmentCell = ({
       // Validate one more time before assignment to prevent duplicates
       const validationResult = await validateRfidUid(uid.trim());
       if (!validationResult.isValid) {
-        toast.error("Assignment Blocked - RFID is already assigned to another attendee.");
+        toast.error("Assignment blocked - this wristband is already assigned to another attendee.");
         return;
       }
 
@@ -233,7 +233,7 @@ export const EnhancedRfidAssignmentCell = ({
 
       if (tagExists && tagExists.attendee_id && tagExists.attendee_id !== attendeeId) {
         // This should not happen due to validation, but double-check for safety
-        toast.error("Assignment Blocked - RFID is assigned to another attendee.");
+        toast.error("Assignment blocked - this wristband is assigned to another attendee.");
         return;
       }
 
@@ -324,7 +324,7 @@ export const EnhancedRfidAssignmentCell = ({
       // Validate the new UID
       const validationResult = await validateRfidUid(editValue.trim(), true);
       if (!validationResult.isValid) {
-        toast.error("Edit Blocked - RFID is already assigned to another attendee.");
+        toast.error("Edit blocked - this wristband is already assigned to another attendee.");
         return;
       }
 
@@ -391,7 +391,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`RFID Updated Successfully: ${editValue.trim()} → ${attendeeName}`);
+      toast.success(`Wristband updated: ${editValue.trim()} → ${attendeeName}`);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
@@ -610,7 +610,7 @@ export const EnhancedRfidAssignmentCell = ({
           type="text"
           value={uid}
           onChange={(e) => setUid(e.target.value)}
-          placeholder={scannerMode === 'usb' ? "Scan RFID or enter UID" : "Enter UID or use camera"}
+          placeholder={scannerMode === 'usb' ? "Scan wristband or enter code" : "Enter UID or use camera"}
           className={`font-mono text-sm rfid-input ${validationError ? 'border-destructive' : ''}`}
           disabled={isProcessing}
           data-rfid-input="true"

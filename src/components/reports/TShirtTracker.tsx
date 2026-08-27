@@ -190,7 +190,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
                       <TableHead>Phone</TableHead>
                       <TableHead>Size</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>RFID</TableHead>
+                      <TableHead>Wristband</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
