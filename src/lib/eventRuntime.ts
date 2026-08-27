@@ -26,6 +26,22 @@ export const getCurrentEvent = (): EventRecord | null => currentEvent;
 
 export const getCurrentEventId = (): string | null => currentEvent?.id ?? null;
 
+/**
+ * Same as getCurrentEventId but refuses to run a query with no event resolved.
+ * Filtering on a null event silently returns zero rows, which used to surface
+ * as "not assigned / not checked in" for people who were in fact checked in.
+ */
+export const requireCurrentEventId = (): string => {
+  const id = currentEvent?.id;
+  if (!id) {
+    const message = "No event resolved yet — refusing to run an unscoped query";
+    console.error(message);
+    throw new Error(message);
+  }
+  return id;
+};
+
+
 export const getCurrentEventYear = (): number => currentEvent?.year ?? new Date().getFullYear();
 
 /** Event start as a Date. Falls back to Jan 1 of the event year. */
