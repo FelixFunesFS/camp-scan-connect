@@ -6,7 +6,7 @@ export class StationTransactionService {
   static async recordTransaction(transaction: StationTransaction) {
     const { error } = await supabase
       .from("station_transactions")
-      .insert(transaction as any);
+      .insert({ event_id: getCurrentEventId(), ...transaction } as any);
 
     if (error) {
       throw new Error(`Failed to record transaction: ${error.message}`);
