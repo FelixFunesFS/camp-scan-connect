@@ -1066,6 +1066,8 @@ export function StaffActivationHub() {
           </div>
         </div>
 
+        <OfflineQueueBadge />
+
         {/* Staff Assistance Queue */}
         <StaffAssistanceNotifications />
 
