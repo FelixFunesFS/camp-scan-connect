@@ -709,6 +709,7 @@ export const RfidAssignment = () => {
       <div className="container mx-auto p-4">
         <RfidCaptureProvider enabled={uiState.hasRfidInputFocused}>
           <div className="space-y-4">
+            <OfflineQueueBadge />
             {/* FAQ Toggle */}
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold">Credential Assignment</h1>
