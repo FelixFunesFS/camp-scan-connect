@@ -3,6 +3,7 @@ import {
   ANY_CREDENTIAL_MAX_LENGTH,
   ANY_CREDENTIAL_MIN_LENGTH,
   isValidCredentialFormat,
+  normalizeCredential,
   type CredentialType,
 } from '@/lib/credentialFormat';
 
@@ -31,13 +32,14 @@ export const useRfidCapture = ({
     [credentialType]
   );
 
-  const handleCapture = useCallback((uid: string) => {
+  const handleCapture = useCallback((raw: string) => {
+    const uid = normalizeCredential(raw);
     // Validate credential format before processing
     if (!isValidRfidFormat(uid)) {
       console.warn('Rejected invalid credential format:', uid);
       return;
     }
-    
+
     setCapturedUid(uid);
     setIsCapturing(true);
     onCapture(uid);
