@@ -52,6 +52,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileRfidControls } from "@/components/MobileRfidControls";
 import { MobileAttendeeList } from "@/components/MobileAttendeeList";
+import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 
 export interface AttendeeData {
   id: string;
