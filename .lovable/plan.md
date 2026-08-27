@@ -1,31 +1,40 @@
-# Is a scan running multiple times per event?
+# Fix: scanned band not found at stations (Jocelyn Mccants)
 
-## What the data says
+## What the database actually shows
 
-`station_transactions` currently holds exactly **1 row** (an activation, 21:25 UTC today) and no attendee has two rows of the same type in the same minute. So there is no evidence of duplicate writes in live data — but there is also almost no live data yet, so the data cannot confirm the fix either.
+Jocelyn Mccants has one 2026 record (`7308680d…`) with:
+- credential `QX6-AR4B`, `credential_type = barcode`, status **active**
+- waiver signed, `checked_in_at` and `activated_at` = 2026-08-27 21:25 UTC
 
-## What the code says
+So in the current event she is assigned **and** activated. There are also two older "Jocelyn/jocelyn mccants" rows, but both belong to the archived 2025 event, so they are not what stations read.
 
-Three guard layers exist today:
+## Why the scan did not pick her up
 
-1. **Commit guard** (`UnifiedStationScanner.executeAction`): an `inFlightRef` plus a `lastCommitRef` keyed by `uid:station:transactionType` with a 4s window. A second commit inside that window is refused with "Already recorded for this scan".
-2. **Auto-trigger guard**: `autoTriggered` state so the `autoTrigger` window event is dispatched once per scan.
-3. **Database idempotency**: unique `client_scan_id` on `station_transactions`, so an offline-queue retry cannot double-write.
+The station scan path (`rfidService.findAttendeeByRfid`) does an exact, case-sensitive match:
 
-Two places can still emit the same physical scan twice (they would be caught by guard 1 as "Already recorded", but they cause noisy UI and can slip past the 4s window):
+```
+.eq('event_id', getCurrentEventId())
+.eq('uid', uid)              // raw value from the reader, no trim/uppercase
+.in('status', ['assigned','active'])
+.single()
+```
 
-- **Two keyboard listeners**: `RfidCaptureContext` and `useRfidCapture` both attach a global `keypress` listener and both fire `onCapture`. Any screen that mounts both gets two lookups from one swipe.
-- **Buffer flush races in `useRfidCapture`**: the 100ms idle timeout, the Enter key, and the max-length overflow can each flush the same buffer, and no dedupe exists at the capture level.
-- **Global `window` auto-trigger event**: it is dispatched on `window`, so if two station components were ever mounted at once (e.g. a station page plus the scanner inside `StaffActivationHub`), both handlers would run for one scan.
+The server-side `credential_lookup` RPC does `upper(trim(uid))` — and it finds her from `qx6-ar4b` — while the station query does not. Anything the reader emits with different case, a leading/trailing space, or an invisible suffix character misses the row and the station reports "not found". The RPC is currently only used to build the *error message*, never to resolve the scan, so the two paths can disagree — which is exactly the symptom you saw.
+
+Secondary contributors to check in the same pass:
+- `.single()` throws (and returns null) if a camper somehow has two rows in `assigned`/`active`, producing the same "not found".
+- `getCurrentEventId()` on the client vs the server's active event — if the client value is stale the query is scoped to the wrong year.
+- The registration view's "assigned, not checked in" reading is consistent with her state *before* 21:25 activation; a stale cached list would keep showing it after. Refresh-on-focus needs confirming rather than assuming a bug.
 
 ## Plan
 
-1. Add a shared capture-level dedupe: ignore an identical code re-captured within ~1.5s, applied inside `RfidCaptureContext` and `useRfidCapture` so it covers every entry path (keyboard wedge, camera, manual).
-2. Make `useRfidCapture` defer to `RfidCaptureContext` when the context is present, so only one keyboard listener is ever active.
-3. Replace the global `window` `autoTrigger` event with a scoped callback passed through `StationActionProps`, so only the mounted station child can react.
-4. Extend the `lastCommitRef` window from 4s to cover a full scan session: clear it only on reset or on a different code, rather than expiring by time.
-5. Verify end to end on Drinks (quick/auto mode) and Meals (confirm mode): one physical scan → exactly one row, confirmed by querying `station_transactions` after each test scan.
+1. **One resolver for every scan.** Replace `findAttendeeByRfid`'s hand-rolled query with a call to the `credential_lookup` RPC (case/whitespace-normalised, event-aware, reports `wrong_event` and retired statuses), then hydrate attendee details from the returned `attendee_id`. Every station, the assignment page, and the staff hub go through this one function.
+2. **Normalise at capture.** Trim and uppercase in `normalizeCredential`, and apply it in the keyboard-wedge capture, the camera scanner, and manual entry so the same string is used for lookup and for storage.
+3. **Normalise at write.** Uppercase/trim the uid when assigning a band so no mixed-case rows can be created going forward; add a one-off data pass to uppercase existing `rfid_tags.uid` values.
+4. **Remove the `.single()` trap.** Use `maybeSingle()` with deterministic ordering (`active` first, newest `issued_at`) so a duplicate assignment degrades to "most recent band" instead of "not found", and surface a staff-visible duplicate warning.
+5. **Trust the server for the event scope.** Stations resolve the event from `current_event_id()` via the RPC rather than the client's cached id, so a stale browser can no longer scope a scan to 2025.
+6. **Verify end to end.** Scan `QX6-AR4B` (and lower-case / padded variants) at Meals and Headphones, confirm Jocelyn resolves and exactly one `station_transactions` row is written per scan, then repeat on Main Gate, Drinks, T-shirts and the equipment stations.
 
 ## Technical notes
 
-Files touched: `src/contexts/RfidCaptureContext.tsx`, `src/hooks/useRfidCapture.ts`, `src/components/UnifiedStationScanner.tsx`, and the six station pages that listen for `autoTrigger` (`DrinksStation`, `MainGateStation`, `HeadphonesStation`, `GolfCartsStation`, `WalkieTalkiesStation`, `FannyPacksStation`) plus `StaffDeactivationPanel` and `StaffActivationHub`. No schema change — the `client_scan_id` unique index already handles the database side.
+Files: `src/services/rfidService.ts` (resolver), `src/lib/credentialLookup.ts` (add a `resolveCredential` that returns the full tag + attendee), `src/lib/credentialFormat.ts` (`normalizeCredential` uppercases), `src/contexts/RfidCaptureContext.tsx` and `src/hooks/useRfidCapture.ts` (normalise on capture), `src/components/UnifiedStationScanner.tsx`, `src/components/LensScanner.tsx`, `src/pages/RfidAssignment.tsx` / `src/components/EnhancedRfidAssignmentCell.tsx` (normalise on assign). One small migration to uppercase existing uids; no schema change.
