@@ -240,7 +240,7 @@ export const LensScanner: React.FC<LensScannerProps> = ({
           <Button
             size="icon"
             variant="secondary"
-            onClick={() => setFacingMode((m) => (m === 'environment' ? 'user' : 'environment'))}
+            onClick={switchCamera}
             aria-label="Switch camera"
           >
             <RefreshCw className="h-4 w-4" />
