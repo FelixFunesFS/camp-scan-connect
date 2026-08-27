@@ -117,7 +117,7 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
             <Button
               size="icon"
               variant="secondary"
-              onClick={() => setFacingMode((m) => (m === 'environment' ? 'user' : 'environment'))}
+              onClick={switchCamera}
               aria-label="Switch camera"
             >
               <RotateCcw className="h-4 w-4" />
