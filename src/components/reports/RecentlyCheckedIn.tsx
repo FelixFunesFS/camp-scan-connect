@@ -10,6 +10,7 @@ import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
 import { getStandardTimeBoundaries } from "@/utils/etTimezone";
 import { SiteLocationBadge } from "@/components/shared/SiteLocationBadge";
+import { MobileAttendeeCard } from "./MobileTableCard";
 
 interface AttendeeStatus {
   id: string;
@@ -165,9 +166,9 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -180,7 +181,14 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
               {filteredRecent.length} of {recentCheckIns.length} check-ins (ET timezone)
             </div>
           </div>
-          <div className="border rounded-lg max-h-[500px] overflow-y-auto">
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3 max-h-[500px] overflow-y-auto">
+            {filteredRecent.slice(0, 50).map((attendee) => (
+              <MobileAttendeeCard key={attendee.id} attendee={attendee} />
+            ))}
+          </div>
+          <div className="hidden md:block border rounded-lg max-h-[500px] overflow-y-auto">
+
             <Table>
               <TableHeader className="sticky top-0 bg-background">
                 <TableRow>

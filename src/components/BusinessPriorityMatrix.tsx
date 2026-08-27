@@ -288,7 +288,7 @@ export function BusinessPriorityMatrix() {
       </Card>
 
       {/* Summary Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -337,7 +337,7 @@ export function BusinessPriorityMatrix() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeView} onValueChange={(value) => setActiveView(value as any)}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
           <TabsTrigger value="matrix">Priority Matrix</TabsTrigger>
           <TabsTrigger value="roi">ROI Analysis</TabsTrigger>
           <TabsTrigger value="roadmap">Implementation Roadmap</TabsTrigger>

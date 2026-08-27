@@ -803,7 +803,7 @@ export const RfidAssignment = () => {
                     <span className="text-sm text-muted-foreground">{Math.round(progressData.progressPercent)}%</span>
                   </div>
                   <Progress value={progressData.progressPercent} className="h-2" />
-                  <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
                     <span>🟢 {progressData.checkedInCount} Checked In</span>
                     <span>🟡 {progressData.assignedCount} Assigned</span>
                     <span>🔴 {progressData.unassignedCount} Unassigned</span>
@@ -818,11 +818,12 @@ export const RfidAssignment = () => {
                 const enhancedStatus = enhancedStatuses[attendee.id] || getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status);
                 return (
                   <Card key={attendee.id} className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-medium">{attendee.first_name} {attendee.last_name}</h3>
-                        <p className="text-sm text-muted-foreground">{attendee.phone}</p>
-                        <p className="text-sm text-muted-foreground">{attendee.order_id}</p>
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{attendee.first_name} {attendee.last_name}</h3>
+                        <p className="text-sm text-muted-foreground truncate">{attendee.phone}</p>
+                        <p className="text-sm text-muted-foreground truncate">{attendee.order_id}</p>
+
                         {attendee.most_recent_activation_method && (
                           <div className="mt-2">
                             <Badge variant={attendee.most_recent_activation_method === 'staff_assisted' ? 'default' : 'secondary'} className="text-xs">
@@ -840,10 +841,11 @@ export const RfidAssignment = () => {
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge variant={enhancedStatus.variant}>
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <Badge variant={enhancedStatus.variant} className="whitespace-nowrap">
                           {enhancedStatus.icon} {enhancedStatus.label}
                         </Badge>
+
                         <Button
                           variant="outline"
                           size="sm"
@@ -952,7 +954,7 @@ export const RfidAssignment = () => {
                   <span className="font-medium">{Math.round(progressData.progressPercent)}%</span>
                 </div>
                 <Progress value={progressData.progressPercent} className="h-2" />
-                <div className="grid grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-sm">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">{progressData.checkedInCount}</div>
                     <div className="text-muted-foreground">Checked In</div>
@@ -1010,7 +1012,7 @@ export const RfidAssignment = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input

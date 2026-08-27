@@ -133,7 +133,7 @@ export default function ActivationStation() {
         </div>
 
         <Tabs defaultValue="activate" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-3 h-auto gap-1 p-1">
             <TabsTrigger value="activate" className="flex items-center gap-1">
               <Smartphone className="h-4 w-4" />
               <span className="hidden sm:inline">Check-In</span>

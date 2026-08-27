@@ -202,7 +202,7 @@ export function PostProductionAnalysis() {
       )}
 
       {/* System Health Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -265,7 +265,7 @@ export function PostProductionAnalysis() {
       </div>
 
       <Tabs defaultValue="rfid-analysis" className="space-y-6">
-        <TabsList>
+        <TabsList className="scroll-tabs h-auto gap-1 p-1">
           <TabsTrigger value="rfid-analysis">Credential Analysis</TabsTrigger>
           <TabsTrigger value="station-performance">Station Performance</TabsTrigger>
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
@@ -351,7 +351,7 @@ export function PostProductionAnalysis() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-4 gap-4 text-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center">
                       <div>
                         <div className="text-lg font-semibold">{data.total}</div>
                         <div className="text-sm text-muted-foreground">Total Transactions</div>

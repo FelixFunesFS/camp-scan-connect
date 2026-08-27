@@ -329,7 +329,7 @@ export function StaffGuideHub() {
       </div>
 
       <Tabs defaultValue="stations" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1 p-1">
           <TabsTrigger value="stations">Station Operations</TabsTrigger>
           <TabsTrigger value="emergency">Emergency Procedures</TabsTrigger>
           <TabsTrigger value="admin">Admin Operations</TabsTrigger>

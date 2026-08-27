@@ -25,8 +25,8 @@ const DeveloperDashboard = () => {
       <div className="min-h-screen bg-background">
       <div className="border-b">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
               <Button
                 variant="ghost"
                 size="sm"
@@ -36,15 +36,15 @@ const DeveloperDashboard = () => {
                 <ArrowLeft className="h-4 w-4" />
                 Back to Dashboard
               </Button>
-              <Separator orientation="vertical" className="h-6" />
-              <div>
-                <h1 className="text-2xl font-bold">Developer Dashboard</h1>
+              <Separator orientation="vertical" className="hidden h-6 sm:block" />
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold leading-tight">Developer Dashboard</h1>
                 <p className="text-sm text-muted-foreground">
                   Webhook & API Sync Monitoring
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:w-auto">
             <EventYearSwitcher />
             <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/scan-test")}>
               <ScanBarcode className="h-4 w-4" />
@@ -69,7 +69,7 @@ const DeveloperDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="timeline" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="scroll-tabs h-auto gap-1 p-1 lg:grid lg:w-full lg:grid-cols-7">
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="timeline" className="gap-2">

@@ -275,7 +275,7 @@ const Reports = () => {
       <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Year scope — admin only */}
-        <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="mb-4 flex w-full min-w-0 flex-wrap items-center gap-3">
           <EventYearSwitcher />
         </div>
         <ArchivedYearBanner />

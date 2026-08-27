@@ -14,10 +14,11 @@ export function EventYearSwitcher() {
   if (isLoading || events.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
       <CalendarRange className="h-4 w-4 text-muted-foreground shrink-0" />
       <Select value={selectedEvent?.id ?? undefined} onValueChange={selectEvent}>
-        <SelectTrigger className="h-9 w-[220px] max-w-[60vw]">
+        <SelectTrigger className="h-9 w-full min-w-0 flex-1 sm:w-[220px] sm:flex-none">
+
           <SelectValue placeholder="Select event" />
         </SelectTrigger>
         <SelectContent>

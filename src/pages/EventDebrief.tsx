@@ -246,7 +246,7 @@ export default function EventDebrief() {
       </div>
 
       {/* Executive Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -298,7 +298,7 @@ export default function EventDebrief() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start overflow-x-auto">
+        <TabsList className="scroll-tabs h-auto gap-1 p-1">
           <TabsTrigger value="summary">Executive Summary</TabsTrigger>
           <TabsTrigger value="goals">Goals vs. Outcomes</TabsTrigger>
           <TabsTrigger value="successes">What Worked</TabsTrigger>

@@ -145,9 +145,45 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html,
+  body {
+    /* Never allow a stray wide element to scroll the whole page sideways */
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Long unbreakable values (emails, codes, order IDs, URLs) must wrap, not overflow */
+  p,
+  span,
+  td,
+  th,
+  li,
+  dd,
+  dt,
+  h1,
+  h2,
+  h3,
+  h4 {
+    overflow-wrap: anywhere;
+  }
+
+  /* iOS zooms the viewport when a focused input is under 16px */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
   
   /* Mobile-first responsive utilities */
   .mobile-container {
@@ -242,4 +278,52 @@ All colors MUST be HSL.
          bg-card border rounded-full p-3 shadow-lg z-50 
          transition-all duration-200 ease-out;
 }
+
+  /* iOS notch / Android gesture-bar safe areas for fixed and sticky bars */
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .mobile-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Badges wrap onto new lines instead of pushing text out of the card */
+  .badge-row {
+    @apply flex flex-wrap items-center gap-1.5 min-w-0;
+  }
+
+  .badge-row > * {
+    @apply shrink-0 max-w-full;
+  }
+
+  /* Titles shorten before they shove siblings off-screen */
+  .truncate-title {
+    @apply min-w-0 truncate;
+  }
+
+  /* Horizontally scrollable tab strips on phones */
+  .scroll-tabs {
+    @apply flex w-full items-center justify-start overflow-x-auto whitespace-nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scroll-tabs > * {
+    @apply shrink-0 whitespace-nowrap;
+  }
+
+  .scroll-tabs::-webkit-scrollbar {
+    display: none;
+  }
 }
+
