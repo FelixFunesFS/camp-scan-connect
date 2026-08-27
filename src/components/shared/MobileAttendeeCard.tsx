@@ -143,7 +143,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
 
   return (
     <Card className={`mobile-card transition-all duration-200 hover:shadow-md ${className}`} style={backgroundColor ? { backgroundColor } : undefined}>
-      <CardContent className="mobile-card">
+      <CardContent className="p-3 sm:p-4">
         <div className="space-y-3">
           {/* Notification Banner */}
           {showNotification && notificationMessage && (
@@ -169,16 +169,16 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <h3 className="mobile-title truncate">{displayName || 'Unknown'}</h3>
+                <h3 className="mobile-title truncate-title">{displayName || 'Unknown'}</h3>
               </div>
               
               {/* Status and Info Badges */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="badge-row">
                   {getTypeIndicator()}
                   {getRfidStatusBadge()}
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="badge-row">
                   {getTicketTypeBadge()}
                   {getVeteranBadge()}
                   {getMealPlanBadge()}

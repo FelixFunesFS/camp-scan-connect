@@ -85,7 +85,7 @@ export const MobileAttendeeCard: React.FC<AttendeeCardProps> = ({ attendee }) =>
           </div>
 
           {/* Details Row */}
-          <div className="flex flex-wrap gap-2">
+          <div className="badge-row">
             {attendee.ticketType && (
               <Badge variant="secondary" className="text-xs">
                 {attendee.ticketType}

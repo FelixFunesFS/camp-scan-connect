@@ -651,7 +651,7 @@ export const EnhancedRfidAssignmentCell = ({
   if (currentRfidUid && (currentRfidStatus === 'active' || currentRfidStatus === 'assigned')) {
     if (isReplacing) {
       return (
-        <div className="space-y-2 min-w-[300px] p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+        <div className="space-y-2 w-full sm:min-w-[300px] p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
           <label className="text-sm font-medium text-red-900 dark:text-red-100">
             Replace lost band <span className="font-mono">{currentRfidUid}</span>:
           </label>
@@ -705,7 +705,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     if (isEditing) {
       return (
-        <div className="flex items-start gap-2 min-w-[280px]">
+        <div className="flex items-start gap-2 w-full sm:min-w-[280px]">
           <div className="flex-1">
             <Input
               ref={editInputRef}
@@ -765,7 +765,7 @@ export const EnhancedRfidAssignmentCell = ({
     }
 
     return (
-      <div className="flex items-center gap-2 min-w-[280px]">
+      <div className="flex items-center gap-2 w-full sm:min-w-[280px]">
         <div className="flex flex-col flex-1">
           <span className="font-mono text-sm font-medium">{currentRfidUid}</span>
         </div>
@@ -811,7 +811,7 @@ export const EnhancedRfidAssignmentCell = ({
 
   // Show assignment input for unassigned attendees
   return (
-    <div className="flex items-start gap-2 min-w-[250px]">
+    <div className="flex items-start gap-2 w-full sm:min-w-[250px]">
       <div className="flex-1">
         <div className="flex gap-1 mb-2">
           <Button
@@ -846,7 +846,7 @@ export const EnhancedRfidAssignmentCell = ({
           data-attendee-id={attendeeId}
         />
         {(validationError || isValidating) && (
-          <div className="flex items-center gap-1 mt-1 text-xs max-w-[300px]">
+          <div className="flex items-center gap-1 mt-1 text-xs max-w-full sm:max-w-[300px]">
             {isValidating ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
