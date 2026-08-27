@@ -57,7 +57,7 @@ const Index = () => {
               <div className="grid md:grid-cols-2 gap-4 mb-6">
                 <div 
                   className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
-                  onClick={() => navigate("/rfid-assignment")}
+                  onClick={() => navigate("/assignment")}
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <Key className="h-5 w-5 text-primary" />
