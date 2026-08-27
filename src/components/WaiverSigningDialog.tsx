@@ -77,6 +77,8 @@ export function WaiverSigningDialog({
         eventId,
         typedName,
         registeredName: attendeeName,
+        signedBySelf,
+        witnessedBy,
       });
       toast.success(`Waiver signed for ${attendeeName}`);
       setReceipt({ typedName: typedName.trim(), signedAt: new Date().toISOString() });
