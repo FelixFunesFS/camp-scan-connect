@@ -530,8 +530,8 @@ export const EnhancedRfidAssignmentCell = ({
         return;
       }
 
-      const newStatus = wasActive ? 'active' : 'assigned';
-      const newTagFields = {
+      const newStatus: 'active' | 'assigned' = wasActive ? 'active' : 'assigned';
+      const newTagFields: Database['public']['Tables']['rfid_tags']['Update'] = {
         attendee_id: attendeeId,
         status: newStatus,
         issued_at: now,
@@ -550,7 +550,7 @@ export const EnhancedRfidAssignmentCell = ({
             event_id: getCurrentEventId(),
             credential_type: inferCredentialType(newUid),
             ...newTagFields
-          });
+          } as any);
       } else {
         await supabase
           .from('rfid_tags')
