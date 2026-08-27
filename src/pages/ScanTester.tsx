@@ -54,18 +54,20 @@ const ScanTester = () => {
   const [value, setValue] = useState("");
   const [current, setCurrent] = useState<ScanEntry | null>(null);
   const [history, setHistory] = useState<ScanEntry[]>([]);
+  const [lensOpen, setLensOpen] = useState(false);
   const { inputRef, isFocused, focusProps } = useScanFocus([current]);
 
-  const handleScan = async (raw: string) => {
+  const handleScan = async (raw: string, source: ScanSource = "reader") => {
     const normalized = normalizeCredential(raw);
     let result: CredentialLookup | null = null;
     if (normalized) {
       result = await lookupCredential(normalized);
     }
-    const entry: ScanEntry = { raw, normalized, timestamp: new Date(), result };
+    const entry: ScanEntry = { raw, normalized, timestamp: new Date(), result, source };
     setCurrent(entry);
     setHistory((h) => [entry, ...h].slice(0, 20));
   };
+
 
   const mismatch = current ? current.raw !== current.normalized : false;
 
