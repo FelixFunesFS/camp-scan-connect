@@ -96,7 +96,44 @@ export default function EquipmentTracker({
           </div>
         </div>
       ) : (
-        <Table>
+        <>
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-3">
+          {checkouts.map((checkout, index) => (
+            <div
+              key={`m-${checkout.attendeeId}-${index}`}
+              className={`rounded-lg border p-3 space-y-2 ${isProlongedCheckout(checkout.duration) ? "bg-warning/5 border-warning/30" : ""}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {isProlongedCheckout(checkout.duration) && (
+                    <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+                  )}
+                  <span className="font-medium truncate">{checkout.attendeeName}</span>
+                </div>
+                <Badge
+                  variant={isProlongedCheckout(checkout.duration) ? "destructive" : getTimeBasedVariant(checkout.checkoutTime)}
+                  className="text-xs shrink-0"
+                >
+                  {formatUsageTime(checkout.duration)}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Phone className="h-3 w-3 shrink-0" />
+                <span>{checkout.attendeePhone ? formatPhoneNumber(checkout.attendeePhone) : 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-3 w-3 shrink-0" />
+                <span>{formatStandardDateTime(checkout.checkoutTime)}</span>
+              </div>
+              <code className="inline-block text-xs bg-muted px-2 py-1 rounded">
+                {checkout.rfidUid || 'N/A'}
+              </code>
+            </div>
+          ))}
+        </div>
+        <Table className="hidden md:table">
+
           <TableHeader>
             <TableRow>
               <TableHead>Attendee</TableHead>
