@@ -69,7 +69,7 @@ const DeveloperDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="timeline" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="scroll-tabs h-auto gap-1 p-1 lg:grid lg:w-full lg:grid-cols-7">
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="timeline" className="gap-2">

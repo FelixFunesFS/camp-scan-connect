@@ -298,7 +298,7 @@ export default function EventDebrief() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start overflow-x-auto">
+        <TabsList className="scroll-tabs h-auto gap-1 p-1">
           <TabsTrigger value="summary">Executive Summary</TabsTrigger>
           <TabsTrigger value="goals">Goals vs. Outcomes</TabsTrigger>
           <TabsTrigger value="successes">What Worked</TabsTrigger>
