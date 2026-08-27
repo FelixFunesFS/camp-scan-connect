@@ -17,6 +17,7 @@ import { GroupActivationResult } from "@/services/phoneActivationService";
 import { EnhancedActivationService } from "@/services/enhancedActivationService";
 import { LensScanner } from "@/components/LensScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
+import { describeUnknownCredential } from "@/lib/credentialLookup";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
