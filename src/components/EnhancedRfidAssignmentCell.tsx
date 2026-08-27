@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, AlertCircle, Loader2, Edit3, Save, XCircle, Camera, Usb } from "lucide-react";
+import { Check, X, AlertCircle, Loader2, Edit3, Save, XCircle, Camera, Usb, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRfidCaptureContext } from "@/contexts/RfidCaptureContext";
@@ -648,6 +648,60 @@ export const EnhancedRfidAssignmentCell = ({
 
   // Show assigned RFID with edit/clear buttons or edit input
   if (currentRfidUid && (currentRfidStatus === 'active' || currentRfidStatus === 'assigned')) {
+    if (isReplacing) {
+      return (
+        <div className="space-y-2 min-w-[300px] p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+          <label className="text-sm font-medium text-red-900 dark:text-red-100">
+            Replace lost band <span className="font-mono">{currentRfidUid}</span>:
+          </label>
+          <Input
+            value={replaceReason}
+            onChange={(e) => setReplaceReason(e.target.value)}
+            placeholder="Reason (e.g., lost at camp, broke, damaged)"
+            className="text-sm"
+            disabled={isProcessing}
+          />
+          <Input
+            value={replaceValue}
+            onChange={(e) => setReplaceValue(e.target.value)}
+            placeholder="Scan or type the new wristband code..."
+            className="font-mono text-sm"
+            disabled={isProcessing}
+          />
+          {currentRfidStatus === 'active' && (
+            <p className="text-xs text-red-700 dark:text-red-300">
+              This band is checked in — the new band will be checked in automatically so nothing is lost.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={handleConfirmReplace}
+              disabled={!replaceValue.trim() || !replaceReason.trim() || validationError !== "" || isProcessing}
+              className="text-xs"
+            >
+              {isProcessing ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : (
+                <RefreshCw className="h-3 w-3 mr-1" />
+              )}
+              Confirm replacement
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancelReplace}
+              disabled={isProcessing}
+              className="text-xs"
+            >
+              <XCircle className="h-3 w-3 mr-1" />
+              Cancel
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     if (isEditing) {
       return (
         <div className="flex items-start gap-2 min-w-[280px]">
@@ -724,6 +778,16 @@ export const EnhancedRfidAssignmentCell = ({
             title="Edit credential assignment"
           >
             <Edit3 className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleStartReplace}
+            disabled={isProcessing}
+            className="h-8 px-3"
+            title="Replace lost or damaged band"
+          >
+            <RefreshCw className="h-3 w-3" />
           </Button>
           <Button
             variant="outline"
