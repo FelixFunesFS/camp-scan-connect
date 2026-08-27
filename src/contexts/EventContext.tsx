@@ -12,6 +12,9 @@ interface EventContextValue {
   /** True when viewing a year other than the live one — treat data as read-only. */
   isArchived: boolean;
   isLoading: boolean;
+  /** Only dev/admin views may look at a past year. */
+  canSwitchYear: boolean;
+  setYearSwitchEnabled: (enabled: boolean) => void;
   selectEvent: (id: string) => void;
   refresh: () => Promise<void>;
 }
@@ -24,6 +27,9 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Operational screens (stations, assignment, activation, staff hub) always run
+  // on the live event. Only dev/admin views may opt into a past year.
+  const [canSwitchYear, setCanSwitchYear] = useState(false);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -52,16 +58,25 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
   }, [load]);
 
   const activeEvent = useMemo(() => events.find((e) => e.is_active) ?? null, [events]);
+
   const selectedEvent = useMemo(() => {
-    const found = events.find((e) => e.id === selectedId) ?? activeEvent;
+    // Outside dev/admin the stored device preference is ignored entirely, so a
+    // device that once viewed an archived year can never read stale rows.
+    const chosen = canSwitchYear
+      ? events.find((e) => e.id === selectedId) ?? activeEvent
+      : activeEvent ?? events.find((e) => e.id === selectedId) ?? null;
     // Set synchronously so child effects that fire on mount already see it.
-    setCurrentEvent(found ?? null);
-    return found;
-  }, [events, selectedId, activeEvent]);
+    setCurrentEvent(chosen ?? null);
+    return chosen;
+  }, [events, selectedId, activeEvent, canSwitchYear]);
 
   const selectEvent = useCallback((id: string) => {
     localStorage.setItem(STORAGE_KEY, id);
     setSelectedId(id);
+  }, []);
+
+  const setYearSwitchEnabled = useCallback((enabled: boolean) => {
+    setCanSwitchYear((prev) => (prev === enabled ? prev : enabled));
   }, []);
 
   const value = useMemo<EventContextValue>(
@@ -73,10 +88,12 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
       eventYear: selectedEvent?.year ?? new Date().getFullYear(),
       isArchived: !!selectedEvent && !selectedEvent.is_active,
       isLoading,
+      canSwitchYear,
+      setYearSwitchEnabled,
       selectEvent,
       refresh: load,
     }),
-    [events, activeEvent, selectedEvent, isLoading, selectEvent, load],
+    [events, activeEvent, selectedEvent, isLoading, canSwitchYear, setYearSwitchEnabled, selectEvent, load],
   );
 
   // Hold rendering until the event is known — every data query is scoped to it.
@@ -91,6 +108,15 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
       )}
     </EventContext.Provider>
   );
+}
+
+/** Mount inside a dev/admin view to allow looking at a previous year there. */
+export function useYearSwitchAllowed(allowed: boolean) {
+  const { setYearSwitchEnabled } = useEvent();
+  useEffect(() => {
+    setYearSwitchEnabled(allowed);
+    return () => setYearSwitchEnabled(false);
+  }, [allowed, setYearSwitchEnabled]);
 }
 
 export function useEvent() {

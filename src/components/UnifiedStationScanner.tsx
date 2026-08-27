@@ -17,6 +17,7 @@ import { GroupActivationResult } from "@/services/phoneActivationService";
 import { EnhancedActivationService } from "@/services/enhancedActivationService";
 import { LensScanner } from "@/components/LensScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
+import { describeUnknownCredential } from "@/lib/credentialLookup";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -87,10 +88,11 @@ export function UnifiedStationScanner({
         setAutoTriggered(false);
         
       } else {
-        setError("credential not found or not assigned to an attendee");
+        setError(await describeUnknownCredential(uid));
         setSelectedRfid(null);
         setAttendeeReadiness(null);
       }
+
     } catch (error) {
       console.error("Error looking up wristband:", error);
       setError("Failed to look up wristband. Please try again.");

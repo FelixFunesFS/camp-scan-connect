@@ -36,6 +36,7 @@ import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
 import { GateAccessReport } from "@/components/reports/GateAccessReport";
 import { CheckInStatusAndOnSite } from "@/components/reports/CheckInStatusAndOnSite";
 import { ArrivalsBreakdown } from "@/components/reports/ArrivalsBreakdown";
+import { EventYearSwitcher, ArchivedYearBanner } from "@/components/EventYearSwitcher";
 import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";
@@ -273,8 +274,14 @@ const Reports = () => {
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
       <div className="max-w-7xl mx-auto">
+        {/* Year scope — admin only */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <EventYearSwitcher />
+        </div>
+        <ArchivedYearBanner />
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 mt-4">
+
           <div className="flex items-center gap-4">
             <Button
               variant="outline"

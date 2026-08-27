@@ -50,6 +50,20 @@ export function MobileActivationPreview({
     [all]
   );
 
+  // Same person listed twice on one phone number — staff must pick deliberately.
+  const duplicateNames = useMemo(() => {
+    const counts = new Map<string, number>();
+    all.forEach((a: any) => {
+      const key = String(a.name ?? '').trim().toLowerCase();
+      if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return all
+      .filter((a: any) => (counts.get(String(a.name ?? '').trim().toLowerCase()) ?? 0) > 1)
+      .map((a: any) => a.name)
+      .filter((name: string, i: number, arr: string[]) => arr.indexOf(name) === i);
+  }, [all]);
+
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(eligibleIds));
 
   const toggleSelected = (a: any) => {
@@ -158,6 +172,18 @@ export function MobileActivationPreview({
           </AlertDescription>
         </Alert>
       )}
+
+      {duplicateNames.length > 0 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <span className="font-medium">Duplicate registration:</span>{' '}
+            {duplicateNames.join(', ')} appears more than once on this phone number. Check the order
+            number and wristband status on each card before checking someone in.
+          </AlertDescription>
+        </Alert>
+      )}
+
 
       {/* Select-all shortcut for group orders */}
       {eligibleIds.length > 1 && (
