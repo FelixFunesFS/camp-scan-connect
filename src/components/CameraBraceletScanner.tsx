@@ -1,15 +1,10 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/browser';
-import {
-  BarcodeFormat,
-  DecodeHintType,
-  type Result,
-} from '@zxing/library';
+import React, { useEffect, useState } from 'react';
 import { Camera, Flashlight, FlashlightOff, Keyboard, RotateCcw, ScanLine, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { useBarcodeCamera } from '@/hooks/useBarcodeCamera';
 import {
   inferCredentialType,
   isValidCredentialFormat,
@@ -23,22 +18,6 @@ interface CameraBraceletScannerProps {
   onScan: (code: string) => void;
 }
 
-/** Formats printed on wristbands, badges and confirmation emails. */
-const SUPPORTED_FORMATS = [
-  BarcodeFormat.QR_CODE,
-  BarcodeFormat.CODE_128,
-  BarcodeFormat.CODE_39,
-  BarcodeFormat.EAN_13,
-  BarcodeFormat.EAN_8,
-  BarcodeFormat.UPC_A,
-  BarcodeFormat.UPC_E,
-  BarcodeFormat.ITF,
-  BarcodeFormat.DATA_MATRIX,
-  BarcodeFormat.PDF_417,
-];
-
-/** Ignore repeat reads of the same code inside this window. */
-const DUPLICATE_WINDOW_MS = 2500;
 
 export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
   isOpen,
