@@ -151,6 +151,38 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
       .slice(0, 25);
   }, [signed, recordSearch]);
 
+  /** Opens the PDF copy stored in the backend at signing time. */
+  const openStoredCopy = async (attendeeId: string, path: string | null) => {
+    if (!path) {
+      toast.info("No stored copy for this signature — use PDF to regenerate it.");
+      return;
+    }
+    const url = await getWaiverReceiptUrl(path);
+    if (!url) {
+      toast.error("Could not open the stored waiver copy.");
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  /** One combined PDF with every in-app signature for this event. */
+  const downloadAllSigned = () => {
+    const nameById = new Map(attendees.map((a) => [a.id, `${a.first_name} ${a.last_name}`]));
+    const records = Array.from(signatures.entries()).map(([attendeeId, record]) => ({
+      attendeeName: nameById.get(attendeeId) || record.typed_name,
+      typedName: record.typed_name,
+      signedAt: record.signed_at,
+      agreementVersion: record.agreement_version,
+      nameMatch: record.name_match,
+    }));
+    if (!records.length) {
+      toast.info("No in-app signatures captured yet.");
+      return;
+    }
+    downloadWaiverArchive(records);
+    toast.success(`Downloaded ${records.length} signed waivers`);
+  };
+
   const exportUnsigned = () => {
     if (!unsigned.length) {
       toast.info("Every attendee has signed — nothing to export.");
