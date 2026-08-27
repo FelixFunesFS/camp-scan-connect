@@ -276,7 +276,7 @@ export function ProductionReadiness() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">RFID Utilization</CardTitle>
+                <CardTitle className="text-sm font-medium">Wristband Utilization</CardTitle>
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -392,7 +392,7 @@ export function ProductionReadiness() {
                   <Database className="h-5 w-5" />
                   Data Management
                 </CardTitle>
-                <CardDescription>Bulk operations for attendee and RFID data</CardDescription>
+                <CardDescription>Bulk operations for attendee and wristband data</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button variant="outline" className="w-full justify-start">
@@ -450,7 +450,7 @@ export function ProductionReadiness() {
               </CardHeader>
               <CardContent>
                 <ol className="list-decimal list-inside space-y-2 text-sm">
-                  <li>Switch to manual RFID entry mode</li>
+                  <li>Switch to manual code entry mode</li>
                   <li>Record transactions on paper backup sheets</li>
                   <li>Use mobile hotspot for critical operations</li>
                   <li>Contact IT support: ext. 911</li>
@@ -488,7 +488,7 @@ export function ProductionReadiness() {
                 <ol className="list-decimal list-inside space-y-2 text-sm">
                   <li>Switch to manual UID entry mode</li>
                   <li>Use backup USB scanner if available</li>
-                  <li>Record RFID numbers manually on backup forms</li>
+                  <li>Record wristband numbers manually on backup forms</li>
                   <li>Contact hardware support: ext. 915</li>
                   <li>Process manual entries during next sync</li>
                 </ol>

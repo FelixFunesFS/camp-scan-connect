@@ -54,13 +54,13 @@ export const RfidManagementPanel: React.FC = () => {
       setStats(result.statistics);
       setLastGenerated(result.generated_rfids);
 
-      toast.success(`Mock RFIDs Generated Successfully - Generated ${result.generated_count} mock credentials`);
+      toast.success(`Mock Wristbands Generated Successfully - Generated ${result.generated_count} mock credentials`);
 
       console.log('Generated RFIDs:', result.generated_rfids);
 
     } catch (error) {
       console.error('Error generating mock RFIDs:', error);
-      toast.error(`Error - ${error.message || "Failed to generate mock RFIDs"}`);
+      toast.error(`Error - ${error.message || "Failed to generate mock wristbands"}`);
     } finally {
       setIsGenerating(false);
     }
@@ -77,7 +77,7 @@ export const RfidManagementPanel: React.FC = () => {
 
       const result = data[0];
       
-      toast.success(`${format} RFIDs Cleared - Reset ${result.deleted_count} credential assignments`);
+      toast.success(`${format} wristbands cleared - Reset ${result.deleted_count} credential assignments`);
 
       // Refresh stats and clear generated list if needed
       await loadCurrentStats();
@@ -89,7 +89,7 @@ export const RfidManagementPanel: React.FC = () => {
 
     } catch (error) {
       console.error(`Error clearing ${format} RFIDs:`, error);
-      toast.error(`Error - ${error.message || `Failed to clear ${format} RFIDs`}`);
+      toast.error(`Error - ${error.message || `Failed to clear ${format} wristbands`}`);
     } finally {
       setLoadingState(false);
     }
@@ -196,7 +196,7 @@ export const RfidManagementPanel: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Tag className="h-5 w-5" />
-            RFID Management
+            Wristband Management
           </CardTitle>
           <CardDescription>
             Generate mock Codes for testing and manage credential assignments
@@ -253,7 +253,7 @@ export const RfidManagementPanel: React.FC = () => {
                 ) : (
                   <Zap className="h-4 w-4" />
                 )}
-                Generate 50 Mock RFIDs
+                Generate 50 Mock Wristbands
               </Button>
               
               <Button
@@ -265,7 +265,7 @@ export const RfidManagementPanel: React.FC = () => {
                 ) : (
                   <Zap className="h-4 w-4" />
                 )}
-                Generate 100 Mock RFIDs
+                Generate 100 Mock Wristbands
               </Button>
               
               <Button
@@ -288,7 +288,7 @@ export const RfidManagementPanel: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-amber-600" />
                   <span className="font-semibold text-amber-900">
-                    {stats.assigned_attendees} attendees have assigned RFIDs but need activation
+                    {stats.assigned_attendees} attendees have assigned wristbands but need activation
                   </span>
                 </div>
                 <Button
@@ -304,7 +304,7 @@ export const RfidManagementPanel: React.FC = () => {
                   Bulk Activate All Assigned ({stats.assigned_attendees})
                 </Button>
                 <p className="text-sm text-amber-700">
-                  This will activate all attendees with assigned RFIDs and properly thank any veterans.
+                  This will activate all attendees with assigned wristbands and properly thank any veterans.
                 </p>
               </div>
             )}
@@ -322,7 +322,7 @@ export const RfidManagementPanel: React.FC = () => {
                   ) : (
                     <Zap className="h-4 w-4" />
                   )}
-                  Clear MOCK RFIDs
+                  Clear MOCK Wristbands
                 </Button>
 
                 <Button
@@ -336,7 +336,7 @@ export const RfidManagementPanel: React.FC = () => {
                   ) : (
                     <Zap className="h-4 w-4" />
                   )}
-                  Clear RFID Tags
+                  Clear Wristband Tags
                 </Button>
 
                 <Button
@@ -350,7 +350,7 @@ export const RfidManagementPanel: React.FC = () => {
                   ) : (
                     <Zap className="h-4 w-4" />
                   )}
-                  Clear TEST RFIDs
+                  Clear TEST Wristbands
                 </Button>
 
                 <Button

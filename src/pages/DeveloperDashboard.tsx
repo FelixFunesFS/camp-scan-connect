@@ -135,7 +135,7 @@ const DeveloperDashboard = () => {
                 </TabsTrigger>
               </TooltipTrigger>
               <TooltipContent>
-                <p>RFID error analysis, edge cases, and system improvement recommendations</p>
+                <p>Credential error analysis, edge cases, and system improvement recommendations</p>
               </TooltipContent>
             </Tooltip>
           </TabsList>

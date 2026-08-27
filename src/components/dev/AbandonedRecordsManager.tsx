@@ -261,7 +261,7 @@ export function AbandonedRecordsCleanup() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">RFIDs at Risk</CardTitle>
+              <CardTitle className="text-sm font-medium">Wristbands at Risk</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -364,7 +364,7 @@ export function AbandonedRecordsCleanup() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-blue-600">{cleanupResult.rfidsConsolidated}</div>
-                <p className="text-sm text-muted-foreground">RFIDs Consolidated</p>
+                <p className="text-sm text-muted-foreground">Wristbands Consolidated</p>
               </div>
             </div>
 
@@ -415,7 +415,7 @@ export function AbandonedRecordsCleanup() {
                         <div className="flex items-center justify-between">
                           <span>{idx === 0 ? 'KEEP' : 'REMOVE'}</span>
                           {record.has_rfid && (
-                            <Badge variant="outline" className="text-xs">RFID</Badge>
+                            <Badge variant="outline" className="text-xs">Wristband</Badge>
                           )}
                         </div>
                         <div className="text-muted-foreground">
