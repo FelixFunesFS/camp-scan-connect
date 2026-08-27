@@ -952,7 +952,7 @@ export const RfidAssignment = () => {
                   <span className="font-medium">{Math.round(progressData.progressPercent)}%</span>
                 </div>
                 <Progress value={progressData.progressPercent} className="h-2" />
-                <div className="grid grid-cols-4 gap-4 text-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-sm">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">{progressData.checkedInCount}</div>
                     <div className="text-muted-foreground">Checked In</div>
@@ -1010,7 +1010,7 @@ export const RfidAssignment = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input

@@ -82,7 +82,7 @@ const Index = () => {
               {/* Staff-Operated Stations */}
               <div className="pt-4 border-t">
                 <h4 className="font-medium text-sm text-muted-foreground mb-3">Staff-Operated Stations</h4>
-                <div className="grid md:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
                   <div 
                     className="p-4 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors group/item"
                     onClick={() => navigate("/main-gate-station")}
