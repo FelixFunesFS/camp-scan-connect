@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentEventId } from "@/lib/eventRuntime";
 import { normalizeCredential } from "@/lib/credentialFormat";
 
 export interface CredentialLookup {
@@ -18,7 +17,8 @@ export interface CredentialLookup {
 export async function lookupCredential(uid: string): Promise<CredentialLookup | null> {
   const { data, error } = await supabase.rpc("credential_lookup", {
     p_uid: normalizeCredential(uid),
-    p_event_id: getCurrentEventId(),
+    // Always the server-side active event: a stale browser must not scope a scan to a past year.
+    p_event_id: null,
   });
   if (error) {
     console.error("Credential lookup failed:", error);

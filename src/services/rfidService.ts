@@ -1,6 +1,7 @@
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
-import { inferCredentialType } from "@/lib/credentialFormat";
+import { inferCredentialType, normalizeCredential } from "@/lib/credentialFormat";
+import { resolveCredential } from "@/lib/credentialLookup";
 
 export interface RfidTag {
   uid: string;
@@ -29,7 +30,14 @@ class RfidService {
   // Find attendee by Code
   async findAttendeeByRfid(uid: string): Promise<RfidTag | null> {
     try {
-      const { data, error } = await supabase
+      // One resolver for every scan: case/whitespace-insensitive and scoped to
+      // the event the server considers active.
+      const resolved = await resolveCredential(uid);
+      if (!resolved || !resolved.attendee_id) return null;
+      if (resolved.wrong_event) return null;
+      if (!['assigned', 'active'].includes(resolved.status)) return null;
+
+      const { data: tag } = await supabase
         .from('rfid_tags')
         .select(`
           uid,
@@ -47,17 +55,10 @@ class RfidService {
             phone
           )
         `)
-        .eq('event_id', getCurrentEventId())
-        .eq('uid', uid)
-        .in('status', ['assigned', 'active'])
-        .single();
+        .eq('uid', resolved.uid)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error finding attendee by RFID:', error);
-        return null;
-      }
-
-      return data;
+      return (tag as RfidTag) ?? null;
     } catch (error) {
       console.error('Error in findAttendeeByRfid:', error);
       return null;
