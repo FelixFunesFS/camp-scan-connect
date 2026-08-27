@@ -17,9 +17,11 @@ A second, smaller inconsistency: some views compute "checked in" from `attendees
 ## Fixes
 
 ### 1. One event, everywhere
-- Self-service and station pages always operate on the **active event** — remove the ability for those pages to inherit an archived year from the device. The year switcher stays, but only for admin/reporting views, and it resets to the active event on load unless the user is on a reporting page.
-- Show a persistent amber "Viewing archived 2025 data" banner whenever the selected event is not the active one, so an operator can never mistake an archived record for a live one.
+- The year switcher appears **only** on the Developer Dashboard and the admin/reporting views. It is removed from the global header, so stations, assignment, staff hub, activation and every other view always run on the live event.
+- Any other year selected in dev/admin applies only while on those pages and never leaks into operational screens — operational pages always resolve to the active event, ignoring the stored device preference.
+- The archived-data banner shows only on the dev/admin views where a past year can be selected.
 - Never send a null/stale event id into a query: services get a resolved-event guard that throws (and logs) instead of silently returning "no rows".
+
 
 ### 2. One definition of "checked in"
 - A single server-side status source: the wristband row is the truth (`assigned` = has credential, `active` = checked in), waiver flag from the attendee record.
