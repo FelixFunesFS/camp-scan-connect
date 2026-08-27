@@ -159,6 +159,8 @@ const ScanTester = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Last Scan
+                <Badge variant="secondary" className="capitalize">{current.source}</Badge>
+
                 {mismatch && (
                   <Badge variant="destructive" className="gap-1">
                     <AlertTriangle className="h-3 w-3" />
