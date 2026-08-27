@@ -82,40 +82,69 @@ const ScanTester = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Raw Capture</CardTitle>
-            <CardDescription>
-              Aim the scanner and pull the trigger. The field stays focused automatically.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input
-              ref={inputRef}
-              {...focusProps}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  if (value) {
-                    handleScan(value);
-                    setValue("");
+        <div className="grid gap-6 lg:grid-cols-2 items-start">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CameraIcon className="h-5 w-5" />
+                Camera Scan
+              </CardTitle>
+              <CardDescription>
+                Use this device's camera. Results appear below without leaving the page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <InlineCameraScanner
+                acceptAnyPayload
+                onScan={(raw) => handleScan(raw, "camera")}
+                onExpand={() => setLensOpen(true)}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Raw Capture (Reader)</CardTitle>
+              <CardDescription>
+                Aim a USB/Bluetooth reader and pull the trigger. The field stays focused automatically.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Input
+                ref={inputRef}
+                {...focusProps}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (value) {
+                      handleScan(value, "reader");
+                      setValue("");
+                    }
                   }
-                }
-              }}
-              placeholder="Scan a barcode or wristband…"
-              className="font-mono text-lg"
-              autoFocus
-            />
-            <div className="flex items-center gap-2">
-              <div className={`h-2 w-2 rounded-full ${isFocused ? "bg-green-500 animate-pulse" : "bg-destructive"}`} />
-              <span className="text-xs text-muted-foreground">
-                {isFocused ? "Scanner armed — field focused" : "Field not focused — click it before scanning"}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+                }}
+                placeholder="Scan a barcode or wristband…"
+                className="font-mono text-lg"
+                autoFocus
+              />
+              <div className="flex items-center gap-2">
+                <div className={`h-2 w-2 rounded-full ${isFocused ? "bg-green-500 animate-pulse" : "bg-destructive"}`} />
+                <span className="text-xs text-muted-foreground">
+                  {isFocused ? "Scanner armed — field focused" : "Field not focused — click it before scanning"}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <LensScanner
+          isOpen={lensOpen}
+          onClose={() => setLensOpen(false)}
+          onScan={(code) => handleScan(code, "camera")}
+          title="Scan tester"
+        />
+
 
         {current && (
           <Card>
