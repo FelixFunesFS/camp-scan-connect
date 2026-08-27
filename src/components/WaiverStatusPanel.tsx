@@ -291,6 +291,10 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
                     <Download className="h-4 w-4 mr-2" />
                     Export CSV
                   </Button>
+                  <Button variant="outline" onClick={downloadAllSigned}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    All signed PDFs
+                  </Button>
                 </div>
 
                 {/* Unsigned queue */}
