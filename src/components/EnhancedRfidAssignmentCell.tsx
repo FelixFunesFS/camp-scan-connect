@@ -33,6 +33,9 @@ export const EnhancedRfidAssignmentCell = ({
   const [isValidating, setIsValidating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
+  const [isReplacing, setIsReplacing] = useState(false);
+  const [replaceValue, setReplaceValue] = useState("");
+  const [replaceReason, setReplaceReason] = useState("");
   const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
   const [scannerMode, setScannerMode] = useState<'usb' | 'camera'>('usb');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -465,6 +468,167 @@ export const EnhancedRfidAssignmentCell = ({
     } catch (error) {
       console.error('RFID clear error:', error);
       toast.error("Clear Failed - Failed to clear credential assignment.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Lost-band replacement: retire the old band as 'lost' (with a required
+  // reason), assign the new code, and carry over activation if the old band
+  // was already active.
+  const handleStartReplace = () => {
+    setReplaceValue("");
+    setReplaceReason("");
+    setValidationError("");
+    setIsReplacing(true);
+  };
+
+  const handleCancelReplace = () => {
+    setIsReplacing(false);
+    setReplaceValue("");
+    setReplaceReason("");
+    setValidationError("");
+  };
+
+  const handleConfirmReplace = async () => {
+    const newUid = replaceValue.trim();
+    const reason = replaceReason.trim();
+    if (!newUid || !reason || validationError || isProcessing || !currentRfidUid) return;
+
+    setIsProcessing(true);
+    const wasActive = currentRfidStatus === 'active';
+    const now = new Date().toISOString();
+
+    try {
+      const validationResult = await validateRfidUid(newUid, true);
+      if (!validationResult.isValid) {
+        toast.error("Replacement blocked - this wristband is already assigned to another attendee.");
+        return;
+      }
+
+      // 1. Retire the old band as lost
+      await supabase
+        .from('rfid_tags')
+        .update({
+          status: 'lost',
+          attendee_id: null,
+          deactivated_at: now,
+          reason: `Lost: ${reason}`
+        })
+        .eq('uid', currentRfidUid);
+
+      // 2. Assign the new band (active straight away if the old one was)
+      const { data: tagExists } = await supabase
+        .from('rfid_tags')
+        .select('uid, status, attendee_id')
+        .eq('event_id', getCurrentEventId())
+        .eq('uid', newUid)
+        .single();
+
+      if (tagExists?.attendee_id && tagExists.attendee_id !== attendeeId) {
+        toast.error("Replacement blocked - this wristband is assigned to another attendee.");
+        return;
+      }
+
+      const newStatus = wasActive ? 'active' : 'assigned';
+      const newTagFields = {
+        attendee_id: attendeeId,
+        status: newStatus,
+        issued_at: now,
+        deactivated_at: null,
+        reason: null,
+        ...(wasActive
+          ? { activated_at: now, activation_method: 'staff_assisted' }
+          : {})
+      };
+
+      if (!tagExists) {
+        await supabase
+          .from('rfid_tags')
+          .insert({
+            uid: newUid,
+            event_id: getCurrentEventId(),
+            credential_type: inferCredentialType(newUid),
+            ...newTagFields
+          });
+      } else {
+        await supabase
+          .from('rfid_tags')
+          .update(newTagFields)
+          .eq('uid', newUid);
+      }
+
+      // 3. Keep attendee check-in state in sync when activation carries over
+      if (wasActive) {
+        await supabase
+          .from('attendees')
+          .update({
+            activated_at: now,
+            most_recent_activation_at: now,
+            most_recent_activation_method: 'staff_assisted',
+            checked_in_at: now
+          })
+          .eq('id', attendeeId);
+      }
+
+      // 4. Audit trail: assignment + lifecycle transactions
+      await supabase
+        .from('station_transactions')
+        .insert({
+          attendee_id: attendeeId,
+          rfid_uid: newUid,
+          station_type: 'rfid_assignment',
+          transaction_type: 'rfid_assign' as any,
+          event_id: getCurrentEventId(),
+          extra_data: {
+            assignment_context: 'lost_replacement',
+            assignment_source: 'assignment_station',
+            previous_rfid: currentRfidUid,
+            reason
+          }
+        });
+
+      await supabase
+        .from('station_transactions')
+        .insert({
+          attendee_id: attendeeId,
+          rfid_uid: currentRfidUid,
+          station_type: 'activation',
+          transaction_type: 'deactivate',
+          current_status: 'inactive',
+          event_id: getCurrentEventId(),
+          extra_data: { deactivation_method: 'lost_band_replacement', reason }
+        });
+
+      if (wasActive) {
+        await supabase
+          .from('station_transactions')
+          .insert({
+            attendee_id: attendeeId,
+            rfid_uid: newUid,
+            station_type: 'activation',
+            transaction_type: 'activate',
+            current_status: 'active',
+            activation_method: 'staff_assisted',
+            event_id: getCurrentEventId(),
+            extra_data: { replacement_for: currentRfidUid, reason }
+          });
+      }
+
+      toast.success(`Band replaced: ${currentRfidUid} marked lost, ${newUid} → ${attendeeName}${wasActive ? ' (kept checked in)' : ''}`);
+
+      if (onOptimisticUpdate) {
+        onOptimisticUpdate(attendeeId, newUid, newStatus);
+      }
+
+      setIsReplacing(false);
+      setReplaceValue("");
+      setReplaceReason("");
+
+      setTimeout(() => onAssignmentComplete(), 300);
+    } catch (error) {
+      console.error('Band replacement error:', error);
+      toast.error("Replacement Failed - Could not replace the band. Please try again.");
     } finally {
       setIsProcessing(false);
     }
