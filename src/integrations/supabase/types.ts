@@ -707,6 +707,18 @@ export type Database = {
           warnings: string[]
         }[]
       }
+      attendee_status_for_event: {
+        Args: { p_attendee_ids: string[]; p_event_id?: string }
+        Returns: {
+          attendee_id: string
+          checked_in_at: string
+          credential_status: string
+          credential_uid: string
+          has_credential: boolean
+          is_checked_in: boolean
+          waiver_signed: boolean
+        }[]
+      }
       attendees_for_phone: {
         Args: { p_event_id?: string; p_phone: string }
         Returns: {
@@ -764,6 +776,20 @@ export type Database = {
         }[]
       }
       cleanup_stuck_syncs: { Args: never; Returns: number }
+      credential_lookup: {
+        Args: { p_event_id?: string; p_uid: string }
+        Returns: {
+          attendee_id: string
+          attendee_name: string
+          credential_status: string
+          credential_uid: string
+          event_year: number
+          found: boolean
+          is_checked_in: boolean
+          waiver_signed: boolean
+          wrong_event: boolean
+        }[]
+      }
       current_event_id: { Args: never; Returns: string }
       format_phone_number: {
         Args: { p_format: string }
