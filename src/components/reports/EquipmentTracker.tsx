@@ -103,7 +103,7 @@ export default function EquipmentTracker({
               <TableHead>Phone</TableHead>
               <TableHead>Checkout Date/Time</TableHead>
               <TableHead>Duration</TableHead>
-              <TableHead>RFID</TableHead>
+              <TableHead>Wristband</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

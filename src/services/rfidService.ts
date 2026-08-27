@@ -325,8 +325,11 @@ class RfidService {
         };
       }
 
-      const hasAssignment = accessRecord.rfid_status !== 'unassigned';
-      const hasActivation = accessRecord.activation_status === 'activate';
+      // DB returns rfid_status: 'none' | 'unissued' | 'assigned' | 'active' ...
+      // and activation_status: 'active' | 'inactive' | 'unknown'
+      const hasAssignment = !!accessRecord.rfid_status &&
+        !['none', 'unissued'].includes(accessRecord.rfid_status);
+      const hasActivation = accessRecord.activation_status === 'active';
 
       return {
         isReady: accessRecord.has_access,

@@ -42,14 +42,14 @@ export function StaffOverridePanel({
         };
       case 'unassigned':
         return {
-          title: "RFID Not Assigned or Readable",
+          title: "Wristband not assigned or unreadable",
           description: "Attendee needs new wristband assignment",
           action: "Override for manual service (recommend Info Desk visit)",
           variant: "destructive" as const
         };
       default:
         return {
-          title: "Other RFID Issue",
+          title: "Other wristband issue",
           description: "Manual staff intervention required",
           action: "Override current restrictions",
           variant: "outline" as const

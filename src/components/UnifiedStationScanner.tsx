@@ -91,8 +91,8 @@ export function UnifiedStationScanner({
         setAttendeeReadiness(null);
       }
     } catch (error) {
-      console.error("Error looking up RFID:", error);
-      setError("Failed to lookup RFID. Please try again.");
+      console.error("Error looking up wristband:", error);
+      setError("Failed to look up wristband. Please try again.");
       setSelectedRfid(null);
       setAttendeeReadiness(null);
     } finally {
@@ -174,12 +174,15 @@ export function UnifiedStationScanner({
     try {
       // Record staff override transaction using activate with special extra_data
       await executeAction('activate', {
-        is_staff_override: true,
-        override_reason: getOverrideIssueType(),
-        staff_notes: notes,
-        attendee_name: `${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`,
-        original_error: error || attendeeReadiness?.message,
-        activation_method: 'staff_override'
+        activation_method: 'staff_assisted',
+        current_status: 'active',
+        extra_data: {
+          is_staff_override: true,
+          override_reason: getOverrideIssueType(),
+          staff_notes: notes,
+          attendee_name: `${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`,
+          original_error: error || attendeeReadiness?.message
+        }
       });
       
       toast.success("Staff override recorded successfully");

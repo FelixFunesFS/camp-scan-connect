@@ -109,8 +109,8 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
       if (result.success) {
         const attendee = await rfidLookupService.getRfidWithAttendee(uid);
         const toastMessage = attendee ? 
-          `RFID Deactivated - ${attendee.first_name} ${attendee.last_name} deactivated` :
-          "RFID Deactivated - Credential deactivated successfully";
+          `Wristband deactivated - ${attendee.first_name} ${attendee.last_name} deactivated` :
+          "Wristband deactivated - Credential deactivated successfully";
         toast.success(toastMessage);
         loadActiveRfids();
         loadRecentActivity();
