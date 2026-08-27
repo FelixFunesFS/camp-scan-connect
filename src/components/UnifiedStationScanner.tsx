@@ -16,6 +16,7 @@ import { QuickStaffActivation } from "@/components/QuickStaffActivation";
 import { GroupActivationResult } from "@/services/phoneActivationService";
 import { EnhancedActivationService } from "@/services/enhancedActivationService";
 import { LensScanner } from "@/components/LensScanner";
+import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -132,8 +133,11 @@ export function UnifiedStationScanner({
     };
 
     try {
-      await StationTransactionService.recordTransaction(transaction);
+      const result = await StationTransactionService.recordTransaction(transaction);
       lastCommitRef.current = { key, at: Date.now() };
+      if (result === 'queued') {
+        toast.info("You're offline — scan saved on this device and will sync automatically");
+      }
     } finally {
       inFlightRef.current = false;
     }
@@ -300,6 +304,8 @@ export function UnifiedStationScanner({
           </Button>
           <h1 className="text-2xl font-bold">{stationTitle}</h1>
         </div>
+
+        <OfflineQueueBadge />
 
         {/* Camera Scanner Card */}
         <Card>

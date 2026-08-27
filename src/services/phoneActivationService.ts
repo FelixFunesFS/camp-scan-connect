@@ -101,6 +101,30 @@ export class PhoneActivationService {
     }
   }
 
+  static async activateSelectedByPhone(
+    phone: string,
+    attendeeIds: string[],
+    activationMethod: 'self_activated' | 'staff_assisted' = 'self_activated'
+  ): Promise<GroupActivationResult | null> {
+    try {
+      const { data, error } = await supabase.rpc('activate_selected_by_phone', {
+        p_phone: phone,
+        p_attendee_ids: attendeeIds,
+        p_activation_method: activationMethod
+      });
+
+      if (error) {
+        console.error('Error activating selected attendees:', error);
+        throw new Error(`Failed to activate selected attendees: ${error.message}`);
+      }
+
+      return data.length > 0 ? (data[0] as any) : null;
+    } catch (error) {
+      console.error('Selected activation error:', error);
+      throw error;
+    }
+  }
+
   static async lookupPhonePreview(phone: string): Promise<PhoneLookupResult | null> {
     const validation = this.validatePhone(phone);
     if (!validation.isValid) {

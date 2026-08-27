@@ -532,6 +532,7 @@ export type Database = {
         Row: {
           activation_method: string | null
           attendee_id: string
+          client_scan_id: string | null
           created_at: string
           current_status: string | null
           daily_count: number | null
@@ -546,6 +547,7 @@ export type Database = {
         Insert: {
           activation_method?: string | null
           attendee_id: string
+          client_scan_id?: string | null
           created_at?: string
           current_status?: string | null
           daily_count?: number | null
@@ -560,6 +562,7 @@ export type Database = {
         Update: {
           activation_method?: string | null
           attendee_id?: string
+          client_scan_id?: string | null
           created_at?: string
           current_status?: string | null
           daily_count?: number | null
@@ -680,6 +683,21 @@ export type Database = {
       }
       activate_remaining_rfids_by_phone: {
         Args: { p_activation_method: string; p_phone: string }
+        Returns: {
+          activated_count: number
+          already_active_count: number
+          attendee_details: Json
+          order_id: string
+          total_attendees: number
+          warnings: string[]
+        }[]
+      }
+      activate_selected_by_phone: {
+        Args: {
+          p_activation_method: string
+          p_attendee_ids: string[]
+          p_phone: string
+        }
         Returns: {
           activated_count: number
           already_active_count: number
