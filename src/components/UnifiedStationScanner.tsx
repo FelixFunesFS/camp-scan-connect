@@ -480,11 +480,11 @@ export function UnifiedStationScanner({
           />
         )}
 
-        {/* Station-specific Action Area — rendered only when the camera overlay is
-            closed, so the action panel never exists twice at the same time. */}
-        {!showLens && selectedRfid?.attendee && (attendeeReadiness?.isReady || showStaffOverride) && children({
+        {/* Station card — always visible so counts/status show while waiting for a
+            scan. It renders its own idle state when no attendee is resolved. */}
+        {!showLens && children({
           selectedRfid,
-          attendeeReadiness,
+          attendeeReadiness: effectiveReadiness,
           isProcessing,
           setIsProcessing,
           executeAction,
@@ -492,6 +492,7 @@ export function UnifiedStationScanner({
           getLatestStatus,
           onReset: handleReset
         })}
+
       </div>
 
       {/* Full-screen camera scanner */}
