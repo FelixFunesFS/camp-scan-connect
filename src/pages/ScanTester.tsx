@@ -14,6 +14,10 @@ import { LensScanner } from "@/components/LensScanner";
 
 type ScanSource = "camera" | "reader";
 
+/** Hidden for now — flip to true to bring back the USB/Bluetooth reader panel. */
+const SHOW_READER_CARD = false;
+
+
 interface ScanEntry {
   raw: string;
   normalized: string;
