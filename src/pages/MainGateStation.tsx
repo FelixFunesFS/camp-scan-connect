@@ -112,8 +112,12 @@ const MainGateContent = ({
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground">
-            {attendeeReadiness ? attendeeReadiness.message : "Ready to scan code..."}
+          <div className="text-center space-y-3">
+            <DoorOpen className="mx-auto h-8 w-8 text-muted-foreground" />
+            <p className="font-medium">Main Gate</p>
+            <p className="text-sm text-muted-foreground">
+              {attendeeReadiness ? attendeeReadiness.message : "Scan a wristband to record an entry or exit."}
+            </p>
           </div>
         </CardContent>
       </Card>

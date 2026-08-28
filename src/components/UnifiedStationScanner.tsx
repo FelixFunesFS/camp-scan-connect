@@ -58,7 +58,9 @@ export function UnifiedStationScanner({
   const [showStaffActivation, setShowStaffActivation] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
   const [showLens, setShowLens] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
+
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   // Guards against a single scan committing more than one transaction
@@ -295,6 +297,19 @@ export function UnifiedStationScanner({
     }
   }, [autoTrigger, selectedRfid, attendeeReadiness, autoTriggered, isProcessing]);
 
+  // A new scan always shows the preview strip again
+  useEffect(() => {
+    if (!selectedRfid) setShowPreview(false);
+  }, [selectedRfid]);
+
+  const cameraCollapsed = !!selectedRfid && !showPreview;
+  const effectiveReadiness =
+    showStaffOverride && attendeeReadiness && !attendeeReadiness.isReady
+      ? { ...attendeeReadiness, isReady: true }
+      : attendeeReadiness;
+
+
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -313,24 +328,30 @@ export function UnifiedStationScanner({
 
         <OfflineQueueBadge />
 
-        {/* Camera Scanner Card */}
+        {/* Condensed scan strip — the scanner is a tool, not the page */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Scan className="h-5 w-5" />
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Scan className="h-4 w-4" />
               Scan attendee code
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* In-page camera: stays inside the card so the attendee result and
-                the station action remain visible in the same viewport. */}
+          <CardContent className="space-y-3">
+            {/* In-page camera: compact strip, collapsed once a code resolves so the
+                station card and its action own the viewport. */}
             <InlineCameraScanner
               autoStart
+              compact
+              collapsed={cameraCollapsed}
+              collapsedLabel={
+                selectedRfid?.uid ? `Scanned ${selectedRfid.uid}` : 'Scanner ready'
+              }
+              onExpandPreview={() => setShowPreview(true)}
               paused={showLens}
               onScan={handleRfidFound}
               onExpand={() => setShowLens(true)}
-              className="[&_video]:max-h-[45vh]"
             />
+
 
 
             {showManualEntry ? (
@@ -472,11 +493,11 @@ export function UnifiedStationScanner({
           />
         )}
 
-        {/* Station-specific Action Area — rendered only when the camera overlay is
-            closed, so the action panel never exists twice at the same time. */}
-        {!showLens && selectedRfid?.attendee && (attendeeReadiness?.isReady || showStaffOverride) && children({
+        {/* Station card — always visible so counts/status show while waiting for a
+            scan. It renders its own idle state when no attendee is resolved. */}
+        {!showLens && children({
           selectedRfid,
-          attendeeReadiness,
+          attendeeReadiness: effectiveReadiness,
           isProcessing,
           setIsProcessing,
           executeAction,
@@ -484,6 +505,7 @@ export function UnifiedStationScanner({
           getLatestStatus,
           onReset: handleReset
         })}
+
       </div>
 
       {/* Full-screen camera scanner */}
