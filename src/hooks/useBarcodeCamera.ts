@@ -33,9 +33,10 @@ export const CAMERA_DIAGNOSTIC_FORMATS = [
 /** Ignore repeat reads of the same code inside this window. */
 const DUPLICATE_WINDOW_MS = 2500;
 /** A payload must decode twice inside this window before we trust it. */
-const CONFIRM_WINDOW_MS = 350;
+const CONFIRM_WINDOW_MS = 1500;
 /** Ignore everything decoded while the camera is still focusing. */
-const WARMUP_MS = 600;
+const WARMUP_MS = 300;
+
 
 export type DiscardReason = 'warmup' | 'unconfirmed' | 'retail-shape' | 'invalid-format';
 
@@ -106,15 +107,21 @@ export const useBarcodeCamera = ({
         return;
       }
 
-      // 3. Confirmation: the same payload must decode twice in quick succession.
-      const pending = pendingRef.current;
-      if (!pending || pending.code !== code || now - pending.at > CONFIRM_WINDOW_MS) {
-        pendingRef.current = { code, at: now };
-        onDiscardedRef.current?.(code, 'unconfirmed');
-        return;
+      // 3. Confirmation: ambiguous payloads must decode twice in quick
+      //    succession. A read that already matches our credential shape is
+      //    high-confidence and fires immediately.
+      const highConfidence = !looksLikeRetailBarcode(code) && isValidCredentialFormat(code);
+      if (!highConfidence) {
+        const pending = pendingRef.current;
+        if (!pending || pending.code !== code || now - pending.at > CONFIRM_WINDOW_MS) {
+          pendingRef.current = { code, at: now };
+          onDiscardedRef.current?.(code, 'unconfirmed');
+          return;
+        }
       }
       pendingRef.current = null;
       lastReadRef.current = { code, at: now };
+
 
       if (!acceptAnyPayload) {
         // 4. Shape check — retail barcodes are never our credentials.
@@ -161,7 +168,7 @@ export const useBarcodeCamera = ({
       diagnostics ? CAMERA_DIAGNOSTIC_FORMATS : CAMERA_SUPPORTED_FORMATS
     );
     hints.set(DecodeHintType.TRY_HARDER, true);
-    const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 120 });
+    const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 60 });
 
     const start = async () => {
       try {
