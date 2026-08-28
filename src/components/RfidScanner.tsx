@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Scan, User } from "lucide-react";
 import { useRfidCapture } from "@/hooks/useRfidCapture";
+import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 
 interface RfidTag {
   uid: string;
