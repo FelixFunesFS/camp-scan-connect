@@ -53,11 +53,25 @@ function CharBreakdown({ value }: { value: string }) {
   );
 }
 
+const DISCARD_LABELS: Record<string, string> = {
+  warmup: 'discarded — camera still focusing',
+  unconfirmed: 'discarded — unconfirmed (single frame)',
+  'retail-shape': 'discarded — retail barcode shape',
+  'invalid-format': 'discarded — not a credential format',
+};
+
+interface DiscardEntry {
+  raw: string;
+  reason: string;
+  timestamp: Date;
+}
+
 const ScanTester = () => {
   const navigate = useNavigate();
   const [value, setValue] = useState("");
   const [current, setCurrent] = useState<ScanEntry | null>(null);
   const [history, setHistory] = useState<ScanEntry[]>([]);
+  const [discarded, setDiscarded] = useState<DiscardEntry[]>([]);
   const [lensOpen, setLensOpen] = useState(false);
   const { inputRef, isFocused, focusProps } = useScanFocus([current]);
 
@@ -71,6 +85,11 @@ const ScanTester = () => {
     setCurrent(entry);
     setHistory((h) => [entry, ...h].slice(0, 20));
   };
+
+  const handleDiscarded = (raw: string, reason: string) => {
+    setDiscarded((d) => [{ raw, reason, timestamp: new Date() }, ...d].slice(0, 20));
+  };
+
 
 
   const mismatch = current ? current.raw !== current.normalized : false;
@@ -108,9 +127,12 @@ const ScanTester = () => {
             <CardContent>
               <InlineCameraScanner
                 acceptAnyPayload
+                diagnostics
+                onDiscarded={handleDiscarded}
                 onScan={(raw) => handleScan(raw, "camera")}
                 onExpand={() => setLensOpen(true)}
               />
+
             </CardContent>
           </Card>
 
@@ -267,6 +289,34 @@ const ScanTester = () => {
             </CardContent>
           </Card>
         )}
+
+        {discarded.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Discarded reads ({discarded.length})</CardTitle>
+              <CardDescription>
+                Decodes the camera produced but the scanner rejected — ghost reads from blurry
+                frames land here instead of being treated as a scan.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1 font-mono text-sm">
+                {discarded.map((entry, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-2 rounded px-2 py-1.5 hover:bg-muted">
+                    <span className="w-20 shrink-0 text-xs text-muted-foreground">
+                      {entry.timestamp.toLocaleTimeString()}
+                    </span>
+                    <span className="break-all">{visualize(entry.raw)}</span>
+                    <Badge variant="outline" className="ml-auto shrink-0 text-[10px]">
+                      {DISCARD_LABELS[entry.reason] ?? entry.reason}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
       </div>
     </div>
   );

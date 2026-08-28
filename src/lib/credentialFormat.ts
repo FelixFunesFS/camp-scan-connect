@@ -66,6 +66,17 @@ export const isValidCredentialFormat = (
   return true;
 };
 
+/**
+ * True for payloads shaped like a retail product barcode (EAN-8/13, UPC-A/E,
+ * ITF-14): digits only, in a length band we never issue. These are the classic
+ * false positives a camera produces from a blurry linear barcode.
+ */
+export const looksLikeRetailBarcode = (raw: string): boolean => {
+  const value = (raw ?? '').trim();
+  if (!/^\d+$/.test(value)) return false;
+  return [6, 8, 12, 13, 14].includes(value.length);
+};
+
 /** Best-effort guess of the medium a scanned payload came from. */
 export const inferCredentialType = (raw: string): CredentialType => {
   const value = (raw ?? '').trim();
