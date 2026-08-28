@@ -53,11 +53,25 @@ function CharBreakdown({ value }: { value: string }) {
   );
 }
 
+const DISCARD_LABELS: Record<string, string> = {
+  warmup: 'discarded — camera still focusing',
+  unconfirmed: 'discarded — unconfirmed (single frame)',
+  'retail-shape': 'discarded — retail barcode shape',
+  'invalid-format': 'discarded — not a credential format',
+};
+
+interface DiscardEntry {
+  raw: string;
+  reason: string;
+  timestamp: Date;
+}
+
 const ScanTester = () => {
   const navigate = useNavigate();
   const [value, setValue] = useState("");
   const [current, setCurrent] = useState<ScanEntry | null>(null);
   const [history, setHistory] = useState<ScanEntry[]>([]);
+  const [discarded, setDiscarded] = useState<DiscardEntry[]>([]);
   const [lensOpen, setLensOpen] = useState(false);
   const { inputRef, isFocused, focusProps } = useScanFocus([current]);
 
@@ -71,6 +85,11 @@ const ScanTester = () => {
     setCurrent(entry);
     setHistory((h) => [entry, ...h].slice(0, 20));
   };
+
+  const handleDiscarded = (raw: string, reason: string) => {
+    setDiscarded((d) => [{ raw, reason, timestamp: new Date() }, ...d].slice(0, 20));
+  };
+
 
 
   const mismatch = current ? current.raw !== current.normalized : false;
