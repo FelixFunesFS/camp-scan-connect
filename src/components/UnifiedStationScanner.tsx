@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Camera, Scan, User, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Scan, User, CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { rfidService } from "@/services/rfidService";
@@ -16,6 +16,7 @@ import { QuickStaffActivation } from "@/components/QuickStaffActivation";
 import { GroupActivationResult } from "@/services/phoneActivationService";
 import { EnhancedActivationService } from "@/services/enhancedActivationService";
 import { LensScanner } from "@/components/LensScanner";
+import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
 import { normalizeCredential } from "@/lib/credentialFormat";
@@ -321,16 +322,16 @@ export function UnifiedStationScanner({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Primary action: open the in-app camera scanner */}
-            <Button
-              size="lg"
-              className="w-full h-14 text-base"
-              onClick={() => setShowLens(true)}
-              disabled={isLookingUp}
-            >
-              <Camera className="h-5 w-5 mr-2" />
-              Scan with camera
-            </Button>
+            {/* In-page camera: stays inside the card so the attendee result and
+                the station action remain visible in the same viewport. */}
+            <InlineCameraScanner
+              autoStart
+              paused={showLens}
+              onScan={handleRfidFound}
+              onExpand={() => setShowLens(true)}
+              className="[&_video]:max-h-[45vh]"
+            />
+
 
             {showManualEntry ? (
               <div className="flex gap-2">

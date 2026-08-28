@@ -11,6 +11,10 @@ interface InlineCameraScannerProps {
   acceptAnyPayload?: boolean;
   /** Optional "expand" action that hands off to the full-screen scanner. */
   onExpand?: () => void;
+  /** Start the camera as soon as the panel mounts. */
+  autoStart?: boolean;
+  /** External pause switch (e.g. a full-screen scanner is open). */
+  paused?: boolean;
   className?: string;
 }
 
@@ -22,9 +26,12 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
   onScan,
   acceptAnyPayload = false,
   onExpand,
+  autoStart = false,
+  paused = false,
   className,
 }) => {
-  const [running, setRunning] = useState(false);
+  const [running, setRunning] = useState(autoStart);
+  const [tabHidden, setTabHidden] = useState(false);
   const [flash, setFlash] = useState<'hit' | 'miss' | null>(null);
   const [readError, setReadError] = useState('');
 
@@ -45,7 +52,7 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
     isStarting,
     cameraError,
   } = useBarcodeCamera({
-    active: running,
+    active: running && !paused && !tabHidden,
     acceptAnyPayload,
     onScan: (code) => {
       setReadError('');
@@ -60,6 +67,14 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
 
   // Stop the camera when this panel unmounts / the route changes.
   useEffect(() => () => setRunning(false), []);
+
+  // Release the camera while the tab is in the background.
+  useEffect(() => {
+    const onVisibility = () => setTabHidden(document.hidden);
+    document.addEventListener('visibilitychange', onVisibility);
+    onVisibility();
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   return (
     <div className={cn('space-y-3', className)}>
