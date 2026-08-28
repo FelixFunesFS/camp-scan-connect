@@ -127,9 +127,12 @@ const ScanTester = () => {
             <CardContent>
               <InlineCameraScanner
                 acceptAnyPayload
+                diagnostics
+                onDiscarded={handleDiscarded}
                 onScan={(raw) => handleScan(raw, "camera")}
                 onExpand={() => setLensOpen(true)}
               />
+
             </CardContent>
           </Card>
 
