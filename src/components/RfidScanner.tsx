@@ -143,6 +143,12 @@ export const RfidScanner = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* In-page camera scan */}
+        <InlineCameraScanner
+          onScan={handleDirectRfidScan}
+          className="[&_video]:max-h-[40vh]"
+        />
+
         {/* Auto-capture indicator */}
         {isCapturing && (
           <div className="flex items-center justify-center p-2 bg-green-50 border border-green-200 rounded-lg">
