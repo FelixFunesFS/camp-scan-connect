@@ -70,10 +70,8 @@ function DrinksContent({
   }, [attendeeReadiness, isProcessing, drinkCount, executeAction, selectedRfid, onReset, loadDrinkCount]);
 
   useEffect(() => {
-    if (selectedRfid && attendeeReadiness?.isReady) {
-      loadDrinkCount();
-    }
-  }, [selectedRfid, attendeeReadiness, loadDrinkCount]);
+    loadDrinkCount();
+  }, [loadDrinkCount, selectedRfid]);
 
   // Auto-trigger drink recording when ready
   useEffect(() => {
@@ -89,18 +87,8 @@ function DrinksContent({
     }
   }, [selectedRfid, attendeeReadiness, isProcessing, handleDrinkScan]);
 
-  // Don't render if attendee is not ready
-  if (!attendeeReadiness?.isReady) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center p-6 text-muted-foreground">
-            {attendeeReadiness ? attendeeReadiness.message : "Ready to scan code..."}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const isReady = !!attendeeReadiness?.isReady;
+
 
   return (
     <Card>
