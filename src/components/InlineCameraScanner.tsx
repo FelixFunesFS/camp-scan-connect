@@ -37,8 +37,13 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
   onExpand,
   autoStart = false,
   paused = false,
+  compact = false,
+  collapsed = false,
+  collapsedLabel = 'Scanner ready',
+  onExpandPreview,
   className,
 }) => {
+
   const [running, setRunning] = useState(autoStart);
   const [tabHidden, setTabHidden] = useState(false);
   const [flash, setFlash] = useState<'hit' | 'miss' | null>(null);
