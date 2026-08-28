@@ -313,24 +313,30 @@ export function UnifiedStationScanner({
 
         <OfflineQueueBadge />
 
-        {/* Camera Scanner Card */}
+        {/* Condensed scan strip — the scanner is a tool, not the page */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Scan className="h-5 w-5" />
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Scan className="h-4 w-4" />
               Scan attendee code
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* In-page camera: stays inside the card so the attendee result and
-                the station action remain visible in the same viewport. */}
+          <CardContent className="space-y-3">
+            {/* In-page camera: compact strip, collapsed once a code resolves so the
+                station card and its action own the viewport. */}
             <InlineCameraScanner
               autoStart
+              compact
+              collapsed={cameraCollapsed}
+              collapsedLabel={
+                selectedRfid?.uid ? `Scanned ${selectedRfid.uid}` : 'Scanner ready'
+              }
+              onExpandPreview={() => setShowPreview(true)}
               paused={showLens}
               onScan={handleRfidFound}
               onExpand={() => setShowLens(true)}
-              className="[&_video]:max-h-[45vh]"
             />
+
 
 
             {showManualEntry ? (
