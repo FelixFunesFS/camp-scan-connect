@@ -91,8 +91,32 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
   }, []);
 
   return (
-    <div className={cn('space-y-3', className)}>
-      <div className="relative w-full overflow-hidden rounded-xl border bg-muted aspect-video">
+    <div className={cn(compact ? 'space-y-2' : 'space-y-3', className)}>
+      {collapsed && (
+        <button
+          type="button"
+          onClick={onExpandPreview}
+          className="flex w-full items-center gap-2 rounded-lg border bg-muted/60 px-3 py-2 text-left text-sm"
+        >
+          <span
+            className={cn(
+              'h-2 w-2 shrink-0 rounded-full',
+              running && !paused ? 'animate-pulse bg-emerald-500' : 'bg-muted-foreground'
+            )}
+          />
+          <span className="truncate text-muted-foreground">{collapsedLabel}</span>
+          {onExpandPreview && (
+            <span className="ml-auto shrink-0 text-xs text-primary">Show camera</span>
+          )}
+        </button>
+      )}
+
+      <div
+        className={cn(
+          'relative w-full overflow-hidden rounded-xl border bg-muted',
+          collapsed ? 'h-0 border-0' : compact ? 'h-[150px] sm:h-[170px]' : 'aspect-video'
+        )}
+      >
         <video
           ref={videoRef}
           className={cn('h-full w-full object-cover', !running && 'invisible')}
@@ -105,7 +129,8 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div
               className={cn(
-                'relative h-24 w-4/5 rounded-xl border-2 transition-colors',
+                'relative w-4/5 rounded-xl border-2 transition-colors',
+                compact ? 'h-16' : 'h-24',
                 flash === 'hit'
                   ? 'border-emerald-400'
                   : flash === 'miss'
@@ -128,11 +153,13 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
         )}
 
         {!running && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
-            <Camera className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Camera is off. Start it to scan with this device.
-            </p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3 text-center">
+            <Camera className="h-6 w-6 text-muted-foreground" />
+            {!compact && (
+              <p className="text-sm text-muted-foreground">
+                Camera is off. Start it to scan with this device.
+              </p>
+            )}
             <Button onClick={() => setRunning(true)} size="sm">
               <Camera className="mr-2 h-4 w-4" />
               Start camera
@@ -148,51 +175,72 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
         )}
       </div>
 
-      {running && (
+      {running && !collapsed && (
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setRunning(false)}>
-            <CameraOff className="mr-2 h-4 w-4" />
-            Stop
+          <Button
+            variant="outline"
+            size={compact ? 'icon' : 'sm'}
+            onClick={() => setRunning(false)}
+            aria-label="Stop camera"
+            className={compact ? 'h-10 w-10' : undefined}
+          >
+            <CameraOff className={compact ? 'h-4 w-4' : 'mr-2 h-4 w-4'} />
+            {!compact && 'Stop'}
           </Button>
           {torchSupported && (
-            <Button variant="outline" size="sm" onClick={toggleTorch} aria-label="Toggle flashlight">
+            <Button
+              variant="outline"
+              size={compact ? 'icon' : 'sm'}
+              onClick={toggleTorch}
+              aria-label="Toggle flashlight"
+              className={compact ? 'h-10 w-10' : undefined}
+            >
               {torchOn ? <FlashlightOff className="h-4 w-4" /> : <Flashlight className="h-4 w-4" />}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={switchCamera} aria-label="Switch camera">
+          <Button
+            variant="outline"
+            size={compact ? 'icon' : 'sm'}
+            onClick={switchCamera}
+            aria-label="Switch camera"
+            className={compact ? 'h-10 w-10' : undefined}
+          >
             <RefreshCw className="h-4 w-4" />
           </Button>
           {onExpand && (
             <Button
               variant="outline"
-              size="sm"
+              size={compact ? 'icon' : 'sm'}
+              aria-label="Full screen scanner"
+              className={compact ? 'ml-auto h-10 w-10' : undefined}
               onClick={() => {
                 setRunning(false);
                 onExpand();
               }}
             >
-              <Maximize2 className="mr-2 h-4 w-4" />
-              Full screen
+              <Maximize2 className={compact ? 'h-4 w-4' : 'mr-2 h-4 w-4'} />
+              {!compact && 'Full screen'}
             </Button>
           )}
         </div>
       )}
 
-      {!running && onExpand && (
+      {!running && !collapsed && onExpand && (
         <Button variant="outline" size="sm" onClick={onExpand}>
           <Maximize2 className="mr-2 h-4 w-4" />
           Open full-screen scanner
         </Button>
       )}
 
-      {cameraError && (
+      {cameraError && !collapsed && (
         <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{cameraError}</div>
       )}
-      {readError && (
+      {readError && !collapsed && (
         <div className="rounded-lg bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
           {readError}
         </div>
       )}
     </div>
   );
+
 };
