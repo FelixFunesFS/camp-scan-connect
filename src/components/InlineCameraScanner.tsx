@@ -11,6 +11,10 @@ interface InlineCameraScannerProps {
   acceptAnyPayload?: boolean;
   /** Optional "expand" action that hands off to the full-screen scanner. */
   onExpand?: () => void;
+  /** Start the camera as soon as the panel mounts. */
+  autoStart?: boolean;
+  /** External pause switch (e.g. a full-screen scanner is open). */
+  paused?: boolean;
   className?: string;
 }
 
