@@ -90,7 +90,7 @@ const ScanTester = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2 items-start">
+        <div className="grid gap-6 items-start">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -110,41 +110,44 @@ const ScanTester = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Raw Capture (Reader)</CardTitle>
-              <CardDescription>
-                Aim a USB/Bluetooth reader and pull the trigger. The field stays focused automatically.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
-                ref={inputRef}
-                {...focusProps}
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    if (value) {
-                      handleScan(value, "reader");
-                      setValue("");
+          {SHOW_READER_CARD && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Raw Capture (Reader)</CardTitle>
+                <CardDescription>
+                  Aim a USB/Bluetooth reader and pull the trigger. The field stays focused automatically.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input
+                  ref={inputRef}
+                  {...focusProps}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (value) {
+                        handleScan(value, "reader");
+                        setValue("");
+                      }
                     }
-                  }
-                }}
-                placeholder="Scan a barcode or wristband…"
-                className="font-mono text-lg"
-                autoFocus
-              />
-              <div className="flex items-center gap-2">
-                <div className={`h-2 w-2 rounded-full ${isFocused ? "bg-green-500 animate-pulse" : "bg-destructive"}`} />
-                <span className="text-xs text-muted-foreground">
-                  {isFocused ? "Scanner armed — field focused" : "Field not focused — click it before scanning"}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+                  }}
+                  placeholder="Scan a barcode or wristband…"
+                  className="font-mono text-lg"
+                  autoFocus
+                />
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${isFocused ? "bg-green-500 animate-pulse" : "bg-destructive"}`} />
+                  <span className="text-xs text-muted-foreground">
+                    {isFocused ? "Scanner armed — field focused" : "Field not focused — click it before scanning"}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
+
 
         <LensScanner
           isOpen={lensOpen}
