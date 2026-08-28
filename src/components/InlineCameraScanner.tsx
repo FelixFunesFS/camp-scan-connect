@@ -2,13 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Camera, CameraOff, Flashlight, FlashlightOff, Maximize2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useBarcodeCamera } from '@/hooks/useBarcodeCamera';
+import { useBarcodeCamera, type DiscardReason } from '@/hooks/useBarcodeCamera';
 
 interface InlineCameraScannerProps {
   /** Called with the decoded payload. */
   onScan: (code: string) => void;
   /** Pass raw decoded text through without credential validation. */
   acceptAnyPayload?: boolean;
+  /** Enable the wide symbology set (diagnostics pages only). */
+  diagnostics?: boolean;
+  /** Observe decodes that were thrown away, with the reason. */
+  onDiscarded?: (code: string, reason: DiscardReason) => void;
   /** Optional "expand" action that hands off to the full-screen scanner. */
   onExpand?: () => void;
   /** Start the camera as soon as the panel mounts. */
@@ -25,6 +29,7 @@ interface InlineCameraScannerProps {
   onExpandPreview?: () => void;
   className?: string;
 }
+
 
 
 /**
