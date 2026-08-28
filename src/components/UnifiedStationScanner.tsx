@@ -321,16 +321,16 @@ export function UnifiedStationScanner({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Primary action: open the in-app camera scanner */}
-            <Button
-              size="lg"
-              className="w-full h-14 text-base"
-              onClick={() => setShowLens(true)}
-              disabled={isLookingUp}
-            >
-              <Camera className="h-5 w-5 mr-2" />
-              Scan with camera
-            </Button>
+            {/* In-page camera: stays inside the card so the attendee result and
+                the station action remain visible in the same viewport. */}
+            <InlineCameraScanner
+              autoStart
+              paused={showLens}
+              onScan={handleRfidFound}
+              onExpand={() => setShowLens(true)}
+              className="[&_video]:max-h-[45vh]"
+            />
+
 
             {showManualEntry ? (
               <div className="flex gap-2">
