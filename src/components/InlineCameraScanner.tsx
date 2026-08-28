@@ -39,6 +39,9 @@ interface InlineCameraScannerProps {
 export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
   onScan,
   acceptAnyPayload = false,
+  diagnostics = false,
+  onDiscarded,
+
   onExpand,
   autoStart = false,
   paused = false,
