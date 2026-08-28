@@ -15,8 +15,17 @@ interface InlineCameraScannerProps {
   autoStart?: boolean;
   /** External pause switch (e.g. a full-screen scanner is open). */
   paused?: boolean;
+  /** Short strip preview with icon-only controls (station pages). */
+  compact?: boolean;
+  /** Thin status bar only — camera keeps running but the preview is hidden. */
+  collapsed?: boolean;
+  /** Label shown in the collapsed bar. */
+  collapsedLabel?: string;
+  /** Called when the user taps the collapsed bar to show the preview again. */
+  onExpandPreview?: () => void;
   className?: string;
 }
+
 
 /**
  * Camera preview that lives inside the page (not full screen) so results stay
