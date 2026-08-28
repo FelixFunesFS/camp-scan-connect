@@ -297,6 +297,19 @@ export function UnifiedStationScanner({
     }
   }, [autoTrigger, selectedRfid, attendeeReadiness, autoTriggered, isProcessing]);
 
+  // A new scan always shows the preview strip again
+  useEffect(() => {
+    if (!selectedRfid) setShowPreview(false);
+  }, [selectedRfid]);
+
+  const cameraCollapsed = !!selectedRfid && !showPreview;
+  const effectiveReadiness =
+    showStaffOverride && attendeeReadiness && !attendeeReadiness.isReady
+      ? { ...attendeeReadiness, isReady: true }
+      : attendeeReadiness;
+
+
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
