@@ -99,8 +99,12 @@ function FannyPacksContent({
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="text-center p-6 text-muted-foreground">
-            {attendeeReadiness ? attendeeReadiness.message : "Ready to scan code..."}
+          <div className="text-center space-y-3">
+            <Package className="mx-auto h-8 w-8 text-muted-foreground" />
+            <p className="font-medium">Fanny Packs</p>
+            <p className="text-sm text-muted-foreground">
+              {attendeeReadiness ? attendeeReadiness.message : "Scan a wristband to check out or return a fanny pack."}
+            </p>
           </div>
         </CardContent>
       </Card>
