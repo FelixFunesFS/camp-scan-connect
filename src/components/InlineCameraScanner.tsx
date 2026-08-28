@@ -76,7 +76,9 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
   } = useBarcodeCamera({
     active: running && !paused && !tabHidden,
     acceptAnyPayload,
-    onScan: (code) => {
+    diagnostics,
+    onDiscarded,
+
       setReadError('');
       pulse('hit');
       onScan(code);
