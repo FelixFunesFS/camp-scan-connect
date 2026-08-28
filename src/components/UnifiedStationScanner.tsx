@@ -58,7 +58,9 @@ export function UnifiedStationScanner({
   const [showStaffActivation, setShowStaffActivation] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
   const [showLens, setShowLens] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
+
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   // Guards against a single scan committing more than one transaction
