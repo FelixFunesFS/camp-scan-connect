@@ -78,8 +78,9 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
     acceptAnyPayload,
     diagnostics,
     onDiscarded,
-
+    onScan: (code) => {
       setReadError('');
+
       pulse('hit');
       onScan(code);
     },
