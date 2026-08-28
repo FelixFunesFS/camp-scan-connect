@@ -289,6 +289,34 @@ const ScanTester = () => {
             </CardContent>
           </Card>
         )}
+
+        {discarded.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Discarded reads ({discarded.length})</CardTitle>
+              <CardDescription>
+                Decodes the camera produced but the scanner rejected — ghost reads from blurry
+                frames land here instead of being treated as a scan.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1 font-mono text-sm">
+                {discarded.map((entry, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-2 rounded px-2 py-1.5 hover:bg-muted">
+                    <span className="w-20 shrink-0 text-xs text-muted-foreground">
+                      {entry.timestamp.toLocaleTimeString()}
+                    </span>
+                    <span className="break-all">{visualize(entry.raw)}</span>
+                    <Badge variant="outline" className="ml-auto shrink-0 text-[10px]">
+                      {DISCARD_LABELS[entry.reason] ?? entry.reason}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
       </div>
     </div>
   );
