@@ -68,6 +68,14 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
   // Stop the camera when this panel unmounts / the route changes.
   useEffect(() => () => setRunning(false), []);
 
+  // Release the camera while the tab is in the background.
+  useEffect(() => {
+    const onVisibility = () => setTabHidden(document.hidden);
+    document.addEventListener('visibilitychange', onVisibility);
+    onVisibility();
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
   return (
     <div className={cn('space-y-3', className)}>
       <div className="relative w-full overflow-hidden rounded-xl border bg-muted aspect-video">
