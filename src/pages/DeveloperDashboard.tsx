@@ -154,7 +154,9 @@ const DeveloperDashboard = () => {
           </TabsContent>
 
           <TabsContent value="sync" className="space-y-6">
+            <SyncIntegrityPanel />
             <SyncHistoryTable />
+
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
