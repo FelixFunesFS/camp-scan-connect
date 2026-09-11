@@ -40,7 +40,7 @@ const DeveloperDashboard = () => {
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-bold leading-tight">Developer Dashboard</h1>
                 <p className="text-sm text-muted-foreground">
-                  Webhook & API Sync Monitoring
+                  RegFox import and delivery monitoring
                 </p>
               </div>
             </div>
@@ -53,12 +53,12 @@ const DeveloperDashboard = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge variant="outline" className="gap-1">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  Live
+                  <Clock className="h-3 w-3" />
+                  Hourly Safety Sync
                 </Badge>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Real-time data updates - No need to refresh pages</p>
+                 <p>RegFox webhooks update quickly when delivered; hourly reconciliation recovers missed changes.</p>
               </TooltipContent>
             </Tooltip>
             </div>

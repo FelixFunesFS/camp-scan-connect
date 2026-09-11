@@ -1,280 +1,81 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCallback, useEffect, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Activity, AlertCircle, CheckCircle2, Clock, Webhook } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Phone, Mail, MapPin, Clock, User, HelpCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { EnhancedAttendee } from "@/types/attendee";
+import { useEvent } from "@/contexts/EventContext";
 
-interface WebhookRegistrant extends EnhancedAttendee {
-  created_at: string;
-  ticket_type: string;
-  meal_plan?: string;
-  arrival_window?: string;
-  registration_status: string;
+interface Delivery {
+  id: string;
+  event_type: string | null;
+  regfox_registration_id: string | null;
+  status: string;
+  received_at: string;
+  processed_at: string | null;
+  error_message: string | null;
 }
 
 export const WebhookRegistrantTimeline = () => {
-  const [registrants, setRegistrants] = useState<WebhookRegistrant[]>([]);
+  const { selectedEvent } = useEvent();
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
-  const [liveCount, setLiveCount] = useState(0);
-  const navigate = useNavigate();
 
-  const fetchWebhookRegistrants = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('attendees')
-        .select('*')
-        .eq('registration_status', 'registered')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setRegistrants(data || []);
-      setLiveCount(data?.length || 0);
-    } catch (error) {
-      console.error('Error fetching webhook registrants:', error);
-    } finally {
+  const load = useCallback(async () => {
+    if (!selectedEvent?.regfox_form_id) {
+      setDeliveries([]);
       setLoading(false);
+      return;
     }
-  };
+    const { data, error } = await supabase
+      .from("regfox_webhook_deliveries")
+      .select("id,event_type,regfox_registration_id,status,received_at,processed_at,error_message")
+      .eq("regfox_form_id", selectedEvent.regfox_form_id)
+      .order("received_at", { ascending: false })
+      .limit(50);
+    if (error) console.error("Failed to load RegFox webhook activity:", error);
+    setDeliveries(data ?? []);
+    setLoading(false);
+  }, [selectedEvent?.regfox_form_id]);
 
   useEffect(() => {
-    fetchWebhookRegistrants();
-
-    // Set up real-time subscription for new registrants
-    const channel = supabase
-      .channel('webhook-registrants')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'attendees'
-        },
-        (payload) => {
-          const newRegistrant = payload.new as WebhookRegistrant;
-          if (newRegistrant.registration_status === 'registered') {
-            setRegistrants(prev => [newRegistrant, ...prev.slice(0, 49)]);
-            setLiveCount(prev => prev + 1);
-          }
-        }
-      )
+    load();
+    const channel = supabase.channel("regfox-webhook-deliveries")
+      .on("postgres_changes", { event: "*", schema: "public", table: "regfox_webhook_deliveries" }, load)
       .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [load]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const getTicketTypeColor = (ticketType: string) => {
-    switch (ticketType.toLowerCase()) {
-      case 'glamping': return 'bg-purple-500/10 text-purple-700 border-purple-500/20';
-      case 'cabin': return 'bg-orange-500/10 text-orange-700 border-orange-500/20';
-      case 'rv_site': return 'bg-blue-500/10 text-blue-700 border-blue-500/20';
-      case 'dry_site': return 'bg-green-500/10 text-green-700 border-green-500/20';
-      default: return 'bg-gray-500/10 text-gray-700 border-gray-500/20';
-    }
-  };
-
-  const formatTicketType = (ticketType: string) => {
-    return ticketType.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-  };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Loading registrant timeline...</CardTitle>
-        </CardHeader>
-      </Card>
-    );
-  }
+  const successful = deliveries.filter((item) => item.status === "processed").length;
+  const failed = deliveries.filter((item) => item.status === "error").length;
+  const latest = deliveries[0] ?? null;
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-1">
-                Live Registrants
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs max-w-[200px]">
-                      Shows the most recent 50 registrants in the timeline. This is a rolling window of the latest webhook-registered attendees.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{liveCount}</div>
-              <p className="text-xs text-muted-foreground">Total in timeline</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-1">
-                Recent Activity
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs max-w-[200px]">
-                      Number of new registrations received via webhook in the last 24 hours. Updates in real-time as new attendees register.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {registrants.filter(r => 
-                  new Date(r.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
-                ).length}
-              </div>
-              <p className="text-xs text-muted-foreground">Last 24 hours</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-1">
-                Connection Status
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs max-w-[200px]">
-                      Real-time webhook connection status. When "Live", new registrations from RegFox automatically appear in the timeline.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-sm font-medium">Live</span>
-              </div>
-              <p className="text-xs text-muted-foreground">Webhook active</p>
-            </CardContent>
-          </Card>
-        </div>
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Webhook deliveries</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{deliveries.length}</div><p className="text-xs text-muted-foreground">Latest 50 for this event</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Processed</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{successful}</div><p className="text-xs text-muted-foreground">{failed} failed deliveries</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Last signal</CardTitle></CardHeader><CardContent><div className="text-sm font-semibold">{latest ? formatDistanceToNow(new Date(latest.received_at), { addSuffix: true }) : "Not received yet"}</div><p className="text-xs text-muted-foreground">No signal is shown as live until received</p></CardContent></Card>
+      </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            New Registrant Timeline
-          </CardTitle>
-          <CardDescription>
-            Real-time feed of webhook-registered attendees (most recent first)
-          </CardDescription>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Webhook className="h-5 w-5" />RegFox Webhook Activity</CardTitle><CardDescription>Actual change notifications received from RegFox for {selectedEvent?.name ?? "the selected event"}.</CardDescription></CardHeader>
         <CardContent>
-          <ScrollArea className="h-[600px]">
-            <div className="space-y-4">
-              {registrants.map((registrant, index) => (
-                <div key={registrant.id} className="group">
-                  <div className="flex gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="text-xs">
-                        {registrant.first_name?.charAt(0)}{registrant.last_name?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-medium">
-                            {registrant.first_name} {registrant.last_name}
-                          </h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(registrant.created_at), { addSuffix: true })}
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/attendee/${registrant.id}`)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline" className={getTicketTypeColor(registrant.ticket_type)}>
-                          {formatTicketType(registrant.ticket_type)}
-                        </Badge>
-                        {registrant.meal_plan && (
-                          <Badge variant="secondary">
-                            {registrant.meal_plan}
-                          </Badge>
-                        )}
-                        {registrant.arrival_window && (
-                          <Badge variant="outline">
-                            {registrant.arrival_window}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-muted-foreground">
-                        {registrant.email && (
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            <span className="truncate">{registrant.email}</span>
-                          </div>
-                        )}
-                        {registrant.phone && (
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            <span>{registrant.phone}</span>
-                          </div>
-                        )}
-                        {registrant.order_id && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            <span className="font-mono text-xs">Order: {registrant.order_id}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {index < registrants.length - 1 && <Separator className="mt-4" />}
+          <ScrollArea className="h-[500px]">
+            <div className="space-y-3">
+              {loading && <p className="py-8 text-center text-muted-foreground">Loading webhook activity…</p>}
+              {!loading && deliveries.length === 0 && <div className="py-12 text-center text-muted-foreground"><Activity className="mx-auto mb-3 h-8 w-8 opacity-50" /><p className="font-medium">No webhook deliveries received</p><p className="text-sm">The hourly API sync remains the recovery path.</p></div>}
+              {deliveries.map((delivery) => (
+                <div key={delivery.id} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0"><p className="font-medium">{delivery.event_type ?? "Registration change"}</p><p className="break-words text-sm text-muted-foreground">Registration {delivery.regfox_registration_id ?? "not supplied"} · {formatDistanceToNow(new Date(delivery.received_at), { addSuffix: true })}</p>{delivery.error_message && <p className="mt-1 text-sm text-destructive">{delivery.error_message}</p>}</div>
+                  <Badge variant={delivery.status === "error" ? "destructive" : "outline"} className="w-fit gap-1">{delivery.status === "processed" ? <CheckCircle2 className="h-3 w-3" /> : delivery.status === "error" ? <AlertCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}{delivery.status}</Badge>
                 </div>
               ))}
-              
-              {registrants.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No registrants found</p>
-                </div>
-              )}
             </div>
           </ScrollArea>
         </CardContent>
       </Card>
-      </div>
-    </TooltipProvider>
+    </div>
   );
 };

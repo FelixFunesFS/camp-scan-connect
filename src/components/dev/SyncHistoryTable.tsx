@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow, format } from "date-fns";
 import { RefreshCw, Search, Filter, Database, Webhook, AlertCircle, CheckCircle, Clock, X, HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useEvent } from "@/contexts/EventContext";
 
 interface SyncEvent {
   id: string;
@@ -24,17 +25,6 @@ interface SyncEvent {
   created_at: string;
 }
 
-interface WebhookEvent {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email?: string;
-  phone?: string;
-  ticket_type: string;
-  created_at: string;
-  registration_status: string;
-}
-
 type UnifiedEvent = {
   id: string;
   type: 'webhook' | 'api_sync';
@@ -47,6 +37,7 @@ type UnifiedEvent = {
 };
 
 export const SyncHistoryTable = () => {
+  const { eventId, selectedEvent } = useEvent();
   const [events, setEvents] = useState<UnifiedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,22 +45,24 @@ export const SyncHistoryTable = () => {
   const [typeFilter, setTypeFilter] = useState("all");
 
   const fetchSyncHistory = async () => {
+    if (!eventId) return;
     try {
       // Fetch API sync events
       const { data: syncData, error: syncError } = await supabase
         .from('regfox_sync_log')
         .select('*')
+        .eq('event_id', eventId)
         .order('sync_started_at', { ascending: false })
         .limit(100);
 
       if (syncError) throw syncError;
 
-      // Fetch recent webhook events (attendee registrations)
+      // Fetch actual webhook deliveries, not attendee inserts.
       const { data: webhookData, error: webhookError } = await supabase
-        .from('attendees')
-        .select('id, first_name, last_name, email, phone, ticket_type, created_at, registration_status')
-        .eq('registration_status', 'registered')
-        .order('created_at', { ascending: false })
+        .from('regfox_webhook_deliveries')
+        .select('id,event_type,status,received_at,regfox_registration_id,error_message')
+        .eq('regfox_form_id', selectedEvent?.regfox_form_id ?? '')
+        .order('received_at', { ascending: false })
         .limit(100);
 
       if (webhookError) throw webhookError;
@@ -92,11 +85,11 @@ export const SyncHistoryTable = () => {
       const webhookEvents: UnifiedEvent[] = (webhookData || []).map(webhook => ({
         id: webhook.id,
         type: 'webhook' as const,
-        status: 'completed',
-        timestamp: webhook.created_at,
+        status: webhook.status === 'processed' ? 'success' : webhook.status,
+        timestamp: webhook.received_at,
         records: 1,
-        details: `New registrant: ${webhook.first_name} ${webhook.last_name} (${webhook.ticket_type})`,
-        error: undefined
+        details: `${webhook.event_type ?? 'Registration change'} · registration ${webhook.regfox_registration_id ?? 'not supplied'}`,
+        error: webhook.error_message ?? undefined
       }));
 
       // Combine and sort by timestamp
@@ -132,7 +125,7 @@ export const SyncHistoryTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [eventId, selectedEvent?.regfox_form_id]);
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = searchTerm === "" || 
@@ -148,6 +141,8 @@ export const SyncHistoryTable = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'partial': return <AlertCircle className="h-4 w-4 text-amber-500" />;
       case 'in_progress': return <Clock className="h-4 w-4 text-blue-500 animate-spin" />;
       case 'error': return <AlertCircle className="h-4 w-4 text-red-500" />;
       case 'cancelled': return <X className="h-4 w-4 text-gray-500" />;
@@ -158,6 +153,8 @@ export const SyncHistoryTable = () => {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
       completed: "bg-green-500/10 text-green-700 border-green-500/20",
+      success: "bg-green-500/10 text-green-700 border-green-500/20",
+      partial: "bg-amber-500/10 text-amber-700 border-amber-500/20",
       in_progress: "bg-blue-500/10 text-blue-700 border-blue-500/20",
       error: "bg-red-500/10 text-red-700 border-red-500/20",
       cancelled: "bg-gray-500/10 text-gray-700 border-gray-500/20"
@@ -187,7 +184,7 @@ export const SyncHistoryTable = () => {
                 Unified Sync History
               </CardTitle>
               <CardDescription>
-                Combined view of webhook registrations and API sync operations
+                Actual RegFox webhook deliveries and API sync operations for this event
               </CardDescription>
             </div>
             <Button 
@@ -228,6 +225,8 @@ export const SyncHistoryTable = () => {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="success">Success</SelectItem>
+                <SelectItem value="partial">Partial</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="error">Error</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
