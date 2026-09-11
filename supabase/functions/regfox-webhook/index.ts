@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
     sync_id: syncData?.syncId ?? null,
     error_message: syncError?.message ?? syncData?.error ?? (deferred ? 'Sync already running; hourly reconciliation will catch up' : null),
     processed_at: new Date().toISOString(),
-  }).eq('id', delivery.id);
+  }).eq('id', deliveryId);
 
   return json({ success: !syncError, accepted: true, deferred, sync: syncData }, syncError ? 502 : 202);
 });
