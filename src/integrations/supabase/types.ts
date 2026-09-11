@@ -337,6 +337,62 @@ export type Database = {
         }
         Relationships: []
       }
+      regfox_webhook_deliveries: {
+        Row: {
+          created_at: string
+          delivery_key: string
+          error_message: string | null
+          event_type: string | null
+          id: string
+          payload_hash: string
+          processed_at: string | null
+          received_at: string
+          regfox_form_id: string | null
+          regfox_registration_id: string | null
+          status: string
+          sync_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_key: string
+          error_message?: string | null
+          event_type?: string | null
+          id?: string
+          payload_hash: string
+          processed_at?: string | null
+          received_at?: string
+          regfox_form_id?: string | null
+          regfox_registration_id?: string | null
+          status?: string
+          sync_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_key?: string
+          error_message?: string | null
+          event_type?: string | null
+          id?: string
+          payload_hash?: string
+          processed_at?: string | null
+          received_at?: string
+          regfox_form_id?: string | null
+          regfox_registration_id?: string | null
+          status?: string
+          sync_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regfox_webhook_deliveries_sync_id_fkey"
+            columns: ["sync_id"]
+            isOneToOne: false
+            referencedRelation: "regfox_sync_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rfid_tags: {
         Row: {
           activated_at: string | null
@@ -737,6 +793,14 @@ export type Database = {
           display_name: string
           staff_id: string
         }[]
+      }
+      begin_regfox_sync: {
+        Args: {
+          p_event_id: string
+          p_progress_info?: Json
+          p_sync_type: string
+        }
+        Returns: string
       }
       bulk_activate_assigned_rfids: {
         Args: never
