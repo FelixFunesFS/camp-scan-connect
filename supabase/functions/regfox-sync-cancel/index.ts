@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/regfox.ts';
+import { authErrorResponse, requireAdmin } from '../_shared/regfoxAuth.ts';
 
 /** Cancels a specific running sync, or all of them when `cancelAll` is set. */
 Deno.serve(async (req) => {
@@ -8,6 +9,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await requireAdmin(req);
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -33,6 +35,8 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error, corsHeaders);
+    if (authResponse) return authResponse;
     const message = (error as Error).message;
     console.error('RegFox sync cancel failed:', message);
     return new Response(JSON.stringify({ success: false, error: message }), {

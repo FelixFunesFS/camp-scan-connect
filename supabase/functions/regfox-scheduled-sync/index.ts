@@ -13,14 +13,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { data: canStart, error: lockError } = await supabase.rpc('can_start_sync');
-    if (lockError) throw new Error(`Failed to check sync lock: ${lockError.message}`);
-
-    if (!canStart) {
-      return new Response(
-        JSON.stringify({ success: true, skipped: true, message: 'Sync already in progress' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+    if (token !== Deno.env.get('SUPABASE_ANON_KEY') && token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+      return new Response(JSON.stringify({ success: false, error: 'UNAUTHORIZED' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const { data, error } = await supabase.functions.invoke('regfox-sync', {

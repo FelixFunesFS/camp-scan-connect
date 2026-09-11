@@ -7,6 +7,7 @@ import {
   mapRegistrant,
   resolveSyncTarget,
 } from '../_shared/regfox.ts';
+import { authErrorResponse, requireAdmin } from '../_shared/regfoxAuth.ts';
 
 /**
  * Compares the live RegFox roster against the database without writing
@@ -18,6 +19,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await requireAdmin(req);
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -132,6 +134,8 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error, corsHeaders);
+    if (authResponse) return authResponse;
     const message = (error as Error).message;
     console.error('RegFox reconcile failed:', message);
     return new Response(JSON.stringify({ success: false, error: message }), {
