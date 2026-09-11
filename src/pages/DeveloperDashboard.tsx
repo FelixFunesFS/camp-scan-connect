@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { WebhookRegistrantTimeline } from "@/components/dev/WebhookRegistrantTimeline";
 import { SyncHistoryTable } from "@/components/dev/SyncHistoryTable";
+import { SyncIntegrityPanel } from "@/components/dev/SyncIntegrityPanel";
+
 import { AnalyticsDashboard } from "@/components/dev/AnalyticsDashboard";
 import { DebugTools } from "@/components/dev/DebugTools";
 import { ProductionReadiness } from "@/components/dev/ProductionReadiness";
