@@ -11,7 +11,7 @@ import { DebugTools } from "@/components/dev/DebugTools";
 import { ProductionReadiness } from "@/components/dev/ProductionReadiness";
 import AdminRequestManager from "@/components/dev/AdminRequestManager";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare, Shield, AlertTriangle, ScanBarcode } from "lucide-react";
+import { ArrowLeft, Activity, Database, BarChart, Wrench, CheckSquare, Shield, AlertTriangle, ScanBarcode, Clock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PostProductionAnalysis } from "@/components/dev/PostProductionAnalysis";
 import { SheetsSyncPanel } from "@/components/dev/SheetsSyncPanel";
