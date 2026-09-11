@@ -13,13 +13,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
-    if (token !== Deno.env.get('SUPABASE_ANON_KEY') && token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
-      return new Response(JSON.stringify({ success: false, error: 'UNAUTHORIZED' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const { data, error } = await supabase.functions.invoke('regfox-sync', {
       body: { sync_type: 'scheduled' },
     });
