@@ -1,6 +1,6 @@
-- [ ] Implement RegFox webhook receiver and delivery log
-- [ ] Restore hourly reconciliation scheduling
-- [ ] Make sync locking and reporting reliable
-- [ ] Update live sync dashboard labels and health states
-- [ ] Deploy, reconcile 2026 roster, and verify
-- [ ] Document RegFox-side webhook setup blocker
+- [x] Implement RegFox webhook receiver and delivery log
+- [x] Restore hourly reconciliation scheduling
+- [x] Make sync locking and reporting reliable
+- [x] Update live sync dashboard labels and health states
+- [x] Deploy, reconcile 2026 roster, and verify
+- [ ] Configure the shared RegFox webhook signing secret and add the endpoint in RegFox (waiting for user)
