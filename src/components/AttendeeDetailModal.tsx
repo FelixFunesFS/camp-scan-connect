@@ -22,6 +22,7 @@ import {
 import { EnhancedAttendee } from "./StaffActivationHub";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
+import { formatTicketType } from "@/lib/ticketTypes";
 
 interface AttendeeDetailModalProps {
   attendee: any; // Made flexible to work with different attendee types
@@ -129,7 +130,7 @@ export function AttendeeDetailModal({
                 <div className="space-y-3">
                   <div>
                     <span className="text-sm font-medium">Ticket Type:</span>
-                    <Badge className="ml-2">{attendee.ticket_type}</Badge>
+                    <Badge className="ml-2">{formatTicketType(attendee.ticket_type)}</Badge>
                   </div>
                   <div>
                     <span className="text-sm font-medium">Meal Plan:</span>
@@ -357,7 +358,7 @@ export function AttendeeDetailModal({
                           <div className="space-y-3">
                             <div>
                               <span className="text-sm font-medium">Ticket Type:</span>
-                              <Badge className="ml-2">{selectedCompanion.ticket_type}</Badge>
+                              <Badge className="ml-2">{formatTicketType(selectedCompanion.ticket_type)}</Badge>
                             </div>
                             <div>
                               <span className="text-sm font-medium">Meal Plan:</span>

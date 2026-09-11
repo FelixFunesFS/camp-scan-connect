@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Scan, User } from "lucide-react";
 import { useRfidCapture } from "@/hooks/useRfidCapture";
 import { InlineCameraScanner } from "@/components/InlineCameraScanner";
+import { formatTicketType } from "@/lib/ticketTypes";
 
 interface RfidTag {
   uid: string;
@@ -190,7 +191,7 @@ export const RfidScanner = ({
             </div>
             {showTicketType && (
               <Badge variant="outline">
-                {selectedRfidData.attendee.ticket_type.replace('_', ' ').toUpperCase()}
+                {formatTicketType(selectedRfidData.attendee.ticket_type)}
               </Badge>
             )}
           </div>

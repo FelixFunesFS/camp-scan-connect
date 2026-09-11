@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { RfidScanner } from "@/components/RfidScanner";
 import { rfidLookupService, AttendeeSearchResult } from "@/services/rfidLookupService";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
+import { formatTicketType } from "@/lib/ticketTypes";
 
 interface StaffDeactivationPanelProps {
   staffId?: string;
@@ -270,7 +271,7 @@ export function StaffDeactivationPanel({ staffId }: StaffDeactivationPanelProps)
                         )}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {attendee.ticket_type} • Code: {attendee.rfid_uid}
+                        {formatTicketType(attendee.ticket_type)} • Code: {attendee.rfid_uid}
                       </p>
                     </div>
                     <Button 

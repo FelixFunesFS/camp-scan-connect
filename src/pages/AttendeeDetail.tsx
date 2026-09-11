@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatTicketType } from "@/lib/ticketTypes";
 
 interface AttendeeProfile {
   id: string;
@@ -290,7 +291,7 @@ export default function AttendeeDetail() {
               </div>
               <div>
                 <p className="font-medium text-muted-foreground">Ticket Type</p>
-                <Badge variant="outline">{attendee.ticket_type}</Badge>
+                <Badge variant="outline">{formatTicketType(attendee.ticket_type)}</Badge>
               </div>
               <div>
                 <p className="font-medium text-muted-foreground">Meal Plan</p>
@@ -450,7 +451,7 @@ export default function AttendeeDetail() {
                     </div>
                     <div className="text-right">
                       <Badge variant="outline" className="mb-1">
-                        {member.ticket_type}
+                        {formatTicketType(member.ticket_type)}
                       </Badge>
                       <p className="text-xs text-muted-foreground">
                         {member.activated_at ? "Activated" : "Not activated"}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio, Ticket, Headphones } from "lucide-react";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import type { NotificationState, FlexibleAttendeeData } from "@/types/attendee";
+import { formatTicketType } from "@/lib/ticketTypes";
 
 interface MobileAttendeeCardProps {
   attendee: FlexibleAttendeeData & {
@@ -57,7 +58,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
 
   const getTicketTypeBadge = () => {
     if (!attendee.ticket_type) return null;
-    const ticketLabel = attendee.ticket_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const ticketLabel = formatTicketType(attendee.ticket_type);
     
     return (
       <Badge variant="outline" className="text-xs bg-secondary/10 text-secondary border-secondary/20">
