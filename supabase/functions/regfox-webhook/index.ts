@@ -143,16 +143,58 @@ Deno.serve(async (req) => {
   const { data: event } = await supabase.from('events').select('id').eq('regfox_form_id', formId).maybeSingle();
   if (!event) return json({ success: true, ignored: true, reason: 'unknown_form' }, 202);
 
-  const { data: delivery, error: insertError } = await supabase
+  // A re-delivery of the same ID is a duplicate only when we already handled it.
+  // RegFox re-sends failures with the same ID, so those must be allowed through.
+  const { data: priorDelivery } = await supabase
     .from('regfox_webhook_deliveries')
-    .insert({ delivery_key: deliveryKey, event_type: eventType, regfox_form_id: formId, regfox_registration_id: registrationId || null, payload_hash: payloadHash })
-    .select('id')
+    .select('id, status')
+    .eq('delivery_key', deliveryKey)
     .maybeSingle();
-  if (insertError?.code === '23505') return json({ success: true, duplicate: true }, 200);
-  if (insertError || !delivery) {
-    console.error('regfox-webhook: failed to record delivery', insertError);
-    return json({ success: false, error: insertError?.message ?? 'Failed to record webhook' }, 500);
+
+  let deliveryId: string;
+  if (priorDelivery) {
+    if (['processed', 'ignored', 'processing'].includes(priorDelivery.status)) {
+      return json({ success: true, duplicate: true, status: priorDelivery.status }, 200);
+    }
+    deliveryId = priorDelivery.id as string;
+    await supabase
+      .from('regfox_webhook_deliveries')
+      .update({ status: 'processing', error_message: null, updated_at: new Date().toISOString() })
+      .eq('id', deliveryId);
+  } else {
+    const { data: delivery, error: insertError } = await supabase
+      .from('regfox_webhook_deliveries')
+      .insert({ delivery_key: deliveryKey, event_type: eventType, regfox_form_id: formId, regfox_registration_id: registrationId || null, payload_hash: payloadHash })
+      .select('id')
+      .maybeSingle();
+    if (insertError?.code === '23505') return json({ success: true, duplicate: true }, 200);
+    if (insertError || !delivery) {
+      console.error('regfox-webhook: failed to record delivery', insertError);
+      return json({ success: false, error: insertError?.message ?? 'Failed to record webhook' }, 500);
+    }
+    deliveryId = delivery.id as string;
   }
+
+  // Debounce: a full roster sync that just finished already covers this change.
+  const { data: recentSync } = await supabase
+    .from('regfox_sync_log')
+    .select('id, sync_completed_at')
+    .eq('event_id', event.id)
+    .eq('status', 'success')
+    .gte('sync_completed_at', new Date(Date.now() - 60_000).toISOString())
+    .order('sync_completed_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (recentSync) {
+    await supabase.from('regfox_webhook_deliveries').update({
+      status: 'ignored',
+      sync_id: recentSync.id,
+      error_message: 'Covered by a sync that completed moments earlier',
+      processed_at: new Date().toISOString(),
+    }).eq('id', deliveryId);
+    return json({ success: true, debounced: true, syncId: recentSync.id }, 200);
+  }
+
 
   const syncResponse = await fetch(`${Deno.env.get('SUPABASE_URL')!}/functions/v1/regfox-sync`, {
     method: 'POST',
@@ -172,7 +214,7 @@ Deno.serve(async (req) => {
     sync_id: syncData?.syncId ?? null,
     error_message: syncError?.message ?? syncData?.error ?? (deferred ? 'Sync already running; hourly reconciliation will catch up' : null),
     processed_at: new Date().toISOString(),
-  }).eq('id', delivery.id);
+  }).eq('id', deliveryId);
 
   return json({ success: !syncError, accepted: true, deferred, sync: syncData }, syncError ? 502 : 202);
 });

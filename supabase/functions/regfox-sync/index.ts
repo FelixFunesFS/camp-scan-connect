@@ -43,16 +43,31 @@ async function runSync(
 
     const { data: existingRows, error: existingError } = await supabase
       .from('attendees')
-      .select('id, regfox_registration_id, sync_hash')
+      .select('id, regfox_registration_id, sync_hash, waiver_signed')
       .eq('event_id', eventId)
       .not('regfox_registration_id', 'is', null);
 
     if (existingError) throw new Error(`Failed to read attendees: ${existingError.message}`);
 
     const existing = new Map<string, string | null>();
+    const localWaiverSigned = new Set<string>();
+    const attendeeIdByRegistration = new Map<string, string>();
     for (const row of existingRows ?? []) {
-      existing.set(row.regfox_registration_id as string, row.sync_hash as string | null);
+      const regId = row.regfox_registration_id as string;
+      existing.set(regId, row.sync_hash as string | null);
+      attendeeIdByRegistration.set(regId, row.id as string);
+      if (row.waiver_signed) localWaiverSigned.add(regId);
     }
+
+    // A waiver signed on site must never be reset by a RegFox form answer.
+    const { data: signatureRows } = await supabase
+      .from('waiver_signatures')
+      .select('attendee_id');
+    const signedAttendeeIds = new Set((signatureRows ?? []).map((s) => s.attendee_id as string));
+    for (const [regId, attendeeId] of attendeeIdByRegistration) {
+      if (signedAttendeeIds.has(attendeeId)) localWaiverSigned.add(regId);
+    }
+
 
     const toUpsert: Record<string, unknown>[] = [];
     const errors: string[] = [];
@@ -62,11 +77,17 @@ async function runSync(
     let newCount = 0;
     let updatedCount = 0;
 
+    const cancelledRegistrationIds: string[] = [];
+
     for (const r of usable) {
       try {
         const mapped = mapRegistrant(r, eventId, orderAccommodations);
         const hash = contentHash(mapped);
         const known = existing.has(mapped.regfox_registration_id);
+
+        if (mapped.registration_status === 'cancelled') {
+          cancelledRegistrationIds.push(mapped.regfox_registration_id);
+        }
 
         if (known && existing.get(mapped.regfox_registration_id) === hash) {
           skipped += 1;
@@ -76,16 +97,28 @@ async function runSync(
         if (known) plannedUpdated += 1;
         else plannedNew += 1;
 
-        toUpsert.push({
+        const row: Record<string, unknown> = {
           ...mapped,
           sync_hash: hash,
           last_synced_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        });
+        };
+
+        // Operational state is owned on site, never by the form answer.
+        if (!mapped.waiver_signed && localWaiverSigned.has(mapped.regfox_registration_id)) {
+          row.waiver_signed = true;
+        }
+        delete row.checked_in_at;
+        delete row.activated_at;
+        delete row.most_recent_activation_at;
+        delete row.most_recent_activation_method;
+
+        toUpsert.push(row);
       } catch (e) {
         errors.push(`Registrant ${r.id}: ${(e as Error).message}`);
       }
     }
+
 
     // Idempotent on (event_id, regfox_registration_id).
     const chunkSize = 200;
@@ -124,6 +157,35 @@ async function runSync(
       if (removalError) errors.push(`Removal reconciliation: ${removalError.message}`);
     }
 
+    // A cancelled or removed registration must not keep a working credential.
+    let deactivatedCredentials = 0;
+    const cancelledAll = [...new Set([...removedIds, ...cancelledRegistrationIds])];
+    if (cancelledAll.length > 0) {
+      const { data: cancelledAttendees } = await supabase
+        .from('attendees')
+        .select('id')
+        .eq('event_id', eventId)
+        .in('regfox_registration_id', cancelledAll);
+      const cancelledIds = (cancelledAttendees ?? []).map((a) => a.id as string);
+      for (let i = 0; i < cancelledIds.length; i += 200) {
+        const slice = cancelledIds.slice(i, i + 200);
+        const { data: retired, error: tagError } = await supabase
+          .from('rfid_tags')
+          .update({
+            status: 'deactivated',
+            deactivated_at: new Date().toISOString(),
+            reason: 'Registration cancelled in RegFox',
+          })
+          .eq('event_id', eventId)
+          .in('attendee_id', slice)
+          .in('status', ['assigned', 'active'])
+          .select('uid');
+        if (tagError) errors.push(`Credential retirement: ${tagError.message}`);
+        else deactivatedCredentials += retired?.length ?? 0;
+      }
+    }
+
+
     const failedEverything = errors.length > 0 && newCount + updatedCount === 0;
     const finalStatus = failedEverything ? 'error' : errors.length > 0 ? 'partial' : 'success';
 
@@ -141,6 +203,8 @@ async function runSync(
         planned_new: plannedNew,
         planned_updated: plannedUpdated,
         cancelled_missing_from_regfox: removedIds.length,
+        credentials_deactivated: deactivatedCredentials,
+
         phase: 'done',
       },
     });
