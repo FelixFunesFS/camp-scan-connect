@@ -203,6 +203,8 @@ async function runSync(
         planned_new: plannedNew,
         planned_updated: plannedUpdated,
         cancelled_missing_from_regfox: removedIds.length,
+        credentials_deactivated: deactivatedCredentials,
+
         phase: 'done',
       },
     });
