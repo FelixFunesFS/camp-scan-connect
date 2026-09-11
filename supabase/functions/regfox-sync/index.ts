@@ -157,6 +157,35 @@ async function runSync(
       if (removalError) errors.push(`Removal reconciliation: ${removalError.message}`);
     }
 
+    // A cancelled or removed registration must not keep a working credential.
+    let deactivatedCredentials = 0;
+    const cancelledAll = [...new Set([...removedIds, ...cancelledRegistrationIds])];
+    if (cancelledAll.length > 0) {
+      const { data: cancelledAttendees } = await supabase
+        .from('attendees')
+        .select('id')
+        .eq('event_id', eventId)
+        .in('regfox_registration_id', cancelledAll);
+      const cancelledIds = (cancelledAttendees ?? []).map((a) => a.id as string);
+      for (let i = 0; i < cancelledIds.length; i += 200) {
+        const slice = cancelledIds.slice(i, i + 200);
+        const { data: retired, error: tagError } = await supabase
+          .from('rfid_tags')
+          .update({
+            status: 'deactivated',
+            deactivated_at: new Date().toISOString(),
+            reason: 'Registration cancelled in RegFox',
+          })
+          .eq('event_id', eventId)
+          .in('attendee_id', slice)
+          .in('status', ['assigned', 'active'])
+          .select('uid');
+        if (tagError) errors.push(`Credential retirement: ${tagError.message}`);
+        else deactivatedCredentials += retired?.length ?? 0;
+      }
+    }
+
+
     const failedEverything = errors.length > 0 && newCount + updatedCount === 0;
     const finalStatus = failedEverything ? 'error' : errors.length > 0 ? 'partial' : 'success';
 
