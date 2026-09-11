@@ -25,9 +25,9 @@ Deno.serve(async (req) => {
   const contentLength = Number(req.headers.get('content-length') ?? '0');
   if (contentLength > MAX_BODY_BYTES) return new Response('Payload too large', { status: 413, headers: corsHeaders });
 
-  const webhookSecret = Deno.env.get('REGFOX_WEBHOOK_SECRET');
-  const appToken = Deno.env.get('REGFOX_APP_TOKEN') ?? webhookSecret;
-  const appKey = Deno.env.get('REGFOX_APP_KEY');
+  const webhookSecret = Deno.env.get('REGFOX_WEBHOOK_SECRET')?.trim() || undefined;
+  const appToken = Deno.env.get('REGFOX_APP_TOKEN')?.trim() || webhookSecret;
+  const appKey = Deno.env.get('REGFOX_APP_KEY')?.trim() || undefined;
   if (!appToken) return new Response('Webhook is not configured', { status: 503, headers: corsHeaders });
 
   const rawBody = await req.text();
