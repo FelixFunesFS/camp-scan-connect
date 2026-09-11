@@ -916,6 +916,9 @@ export type Database = {
         | "glamping"
         | "cabin"
         | "rv_site"
+        | "villa"
+        | "premium_tent"
+        | "premium_rv"
       transaction_type:
         | "activate"
         | "deactivate"
@@ -1112,6 +1115,9 @@ export const Constants = {
         "glamping",
         "cabin",
         "rv_site",
+        "villa",
+        "premium_tent",
+        "premium_rv",
       ],
       transaction_type: [
         "activate",
