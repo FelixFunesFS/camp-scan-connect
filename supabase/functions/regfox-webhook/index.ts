@@ -25,20 +25,41 @@ Deno.serve(async (req) => {
   const contentLength = Number(req.headers.get('content-length') ?? '0');
   if (contentLength > MAX_BODY_BYTES) return new Response('Payload too large', { status: 413, headers: corsHeaders });
 
-  const secret = Deno.env.get('REGFOX_WEBHOOK_SECRET');
-  if (!secret) return new Response('Webhook is not configured', { status: 503, headers: corsHeaders });
+  const webhookSecret = Deno.env.get('REGFOX_WEBHOOK_SECRET');
+  const appToken = Deno.env.get('REGFOX_APP_TOKEN') ?? webhookSecret;
+  const appKey = Deno.env.get('REGFOX_APP_KEY');
+  if (!appToken) return new Response('Webhook is not configured', { status: 503, headers: corsHeaders });
 
   const rawBody = await req.text();
   if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
     return new Response('Payload too large', { status: 413, headers: corsHeaders });
   }
 
-  const supplied = (req.headers.get('x-regfox-signature') ?? req.headers.get('x-webhook-signature') ?? '').replace(/^sha256=/i, '');
+  const suppliedSignature = (req.headers.get('x-regfox-signature') ?? req.headers.get('x-webhook-signature') ?? '').replace(/^sha256=/i, '');
   const bearer = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
-  const direct = req.headers.get('x-webhook-secret') ?? bearer;
-  const expected = await hmacHex(secret, rawBody);
-  if (!safeEqual(supplied, expected) && !safeEqual(direct, secret)) {
-    return new Response('Invalid signature', { status: 401, headers: corsHeaders });
+  const directSecret =
+    req.headers.get('x-webhook-secret') ??
+    req.headers.get('x-regfox-app-token') ??
+    req.headers.get('x-api-token') ??
+    req.headers.get('x-app-token') ??
+    bearer;
+  const suppliedAppKey = req.headers.get('x-regfox-app-key') ?? req.headers.get('x-app-key') ?? '';
+
+  let signatureValid = false;
+  if (suppliedSignature && webhookSecret) {
+    const expected = await hmacHex(webhookSecret, rawBody);
+    signatureValid = safeEqual(suppliedSignature, expected);
+  }
+
+  const sharedSecret = appToken || webhookSecret;
+  const tokenValid = !!(directSecret && sharedSecret && safeEqual(directSecret, sharedSecret));
+  const appKeyValid = appKey ? safeEqual(suppliedAppKey, appKey) : true;
+
+  if (!signatureValid && !tokenValid) {
+    return new Response('Invalid signature or token', { status: 401, headers: corsHeaders });
+  }
+  if (!appKeyValid) {
+    return new Response('Invalid app key', { status: 401, headers: corsHeaders });
   }
 
   let payload: Record<string, unknown>;
@@ -77,9 +98,8 @@ Deno.serve(async (req) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')!}`,
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
       'apikey': Deno.env.get('SUPABASE_ANON_KEY')!,
-      'x-regfox-internal': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     },
     body: JSON.stringify({ sync_type: 'webhook', event_id: event.id, registration_id: registrationId || null }),
   });
