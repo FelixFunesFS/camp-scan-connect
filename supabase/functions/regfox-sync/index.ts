@@ -77,11 +77,17 @@ async function runSync(
     let newCount = 0;
     let updatedCount = 0;
 
+    const cancelledRegistrationIds: string[] = [];
+
     for (const r of usable) {
       try {
         const mapped = mapRegistrant(r, eventId, orderAccommodations);
         const hash = contentHash(mapped);
         const known = existing.has(mapped.regfox_registration_id);
+
+        if (mapped.registration_status === 'cancelled') {
+          cancelledRegistrationIds.push(mapped.regfox_registration_id);
+        }
 
         if (known && existing.get(mapped.regfox_registration_id) === hash) {
           skipped += 1;
@@ -91,16 +97,28 @@ async function runSync(
         if (known) plannedUpdated += 1;
         else plannedNew += 1;
 
-        toUpsert.push({
+        const row: Record<string, unknown> = {
           ...mapped,
           sync_hash: hash,
           last_synced_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        });
+        };
+
+        // Operational state is owned on site, never by the form answer.
+        if (!mapped.waiver_signed && localWaiverSigned.has(mapped.regfox_registration_id)) {
+          row.waiver_signed = true;
+        }
+        delete row.checked_in_at;
+        delete row.activated_at;
+        delete row.most_recent_activation_at;
+        delete row.most_recent_activation_method;
+
+        toUpsert.push(row);
       } catch (e) {
         errors.push(`Registrant ${r.id}: ${(e as Error).message}`);
       }
     }
+
 
     // Idempotent on (event_id, regfox_registration_id).
     const chunkSize = 200;
