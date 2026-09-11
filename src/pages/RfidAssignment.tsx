@@ -53,6 +53,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileRfidControls } from "@/components/MobileRfidControls";
 import { MobileAttendeeList } from "@/components/MobileAttendeeList";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
+import { formatTicketType } from "@/lib/ticketTypes";
 
 export interface AttendeeData {
   id: string;
@@ -635,7 +636,7 @@ export const RfidAssignment = () => {
       'Email': attendee.email || '',
       'Phone': attendee.phone || '',
       'Order ID': attendee.order_id || '',
-      'Ticket Type': attendee.ticket_type,
+      'Ticket Type': formatTicketType(attendee.ticket_type),
       'Meal Plan': attendee.formatted_meal_plan || '',
       'Arrival Day': attendee.arrival_day || '',
       'Site Location': attendee.site_location_assignment || '',

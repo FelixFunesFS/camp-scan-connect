@@ -49,6 +49,7 @@ import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { WaiverStatusPanel } from "@/components/WaiverStatusPanel";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
+import { formatTicketType } from "@/lib/ticketTypes";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {
@@ -1217,7 +1218,7 @@ export function StaffActivationHub() {
                                 
                                  <div className="space-y-1 text-sm text-muted-foreground">
                                    <p>{attendee.email}</p>
-                                   <p>{attendee.ticket_type}</p>
+                                   <p>{formatTicketType(attendee.ticket_type)}</p>
                                    <div className="flex items-center gap-2 flex-wrap">
                                      <Badge variant={getRegistrationStatusVariant(attendee.registration_status)} className="text-xs">
                                        {getRegistrationStatusDisplayText(attendee.registration_status)}
@@ -1432,7 +1433,7 @@ export function StaffActivationHub() {
                                <td className="p-3 text-sm">{attendee.email}</td>
                                <td className="p-3 text-sm">{attendee.phone}</td>
                                <td className="p-3 text-sm">{attendee.order_id}</td>
-                               <td className="p-3 text-sm">{attendee.ticket_type}</td>
+                               <td className="p-3 text-sm">{formatTicketType(attendee.ticket_type)}</td>
                                <td className="p-3 text-sm">
                                  <Badge variant={getRegistrationStatusVariant(attendee.registration_status)}>
                                    {getRegistrationStatusDisplayText(attendee.registration_status)}

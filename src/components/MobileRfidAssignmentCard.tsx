@@ -7,6 +7,7 @@ import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentCell";
 import { getCheckInStatus, getEnhancedCheckInStatus } from "@/utils/statusUtils";
 import type { AttendeeData } from "@/pages/RfidAssignment";
+import { formatTicketType } from "@/lib/ticketTypes";
 
 interface MobileRfidAssignmentCardProps {
   attendee: AttendeeData;
@@ -61,7 +62,7 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
 
   const getTicketTypeBadge = () => {
     if (!attendee.ticket_type) return null;
-    const ticketLabel = attendee.ticket_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const ticketLabel = formatTicketType(attendee.ticket_type);
     return (
       <Badge variant="outline" className="text-xs bg-secondary/10 text-secondary border-secondary/20">
         <Ticket className="h-3 w-3 mr-1" />

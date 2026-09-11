@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Caravan, Users, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { formatTicketType, getTicketTypeStyle, getTicketTypeOrder } from "@/lib/ticketTypes";
 
 interface TicketTypeStats {
   ticket_type: string;
@@ -80,8 +81,12 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
         };
       });
 
-      // Sort by total count (largest first)
-      ticketStats.sort((a, b) => b.total - a.total);
+      // Consistent category order across the app
+      ticketStats.sort(
+        (a, b) =>
+          getTicketTypeOrder(a.ticket_type) - getTicketTypeOrder(b.ticket_type) ||
+          b.total - a.total
+      );
 
       setStats(ticketStats);
     } catch (error) {
@@ -96,55 +101,7 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
     refreshTrigger
   });
 
-  const formatTicketType = (type: string): string => {
-    switch (type) {
-      case 'dry_site':
-        return 'Dry Site';
-      case 'glamping':
-        return 'Glamping';
-      case 'cabin':
-        return 'Cabin';
-      case 'rv_site':
-        return 'RV Site';
-      default:
-        return type.charAt(0).toUpperCase() + type.slice(1);
-    }
-  };
-
-  const getTicketTypeColors = (ticketType: string) => {
-    switch (ticketType) {
-      case 'glamping':
-        return {
-          progress: 'bg-primary',
-          background: 'bg-primary/5 border-primary/20',
-          badge: 'bg-primary/20 text-primary'
-        };
-      case 'cabin':
-        return {
-          progress: 'bg-accent',
-          background: 'bg-accent/5 border-accent/20',
-          badge: 'bg-accent/20 text-accent'
-        };
-      case 'rv_site':
-        return {
-          progress: 'bg-secondary',
-          background: 'bg-secondary/5 border-secondary/20',
-          badge: 'bg-secondary/20 text-secondary'
-        };
-      case 'dry_site':
-        return {
-          progress: 'bg-info',
-          background: 'bg-info/5 border-info/20',
-          badge: 'bg-info/20 text-info'
-        };
-      default:
-        return {
-          progress: 'bg-primary',
-          background: 'bg-primary/5 border-primary/20',
-          badge: 'bg-primary/20 text-primary'
-        };
-    }
-  };
+  const getTicketTypeColors = getTicketTypeStyle;
 
   if (isLoading) {
     return (
@@ -157,7 +114,7 @@ export const ArrivalsBreakdown = ({ refreshTrigger }: ArrivalsBreakdownProps) =>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1,2,3,4].map(i => (
+            {[1,2,3,4,5,6,7,8].map(i => (
               <div key={i} className="h-24 bg-muted rounded animate-pulse"></div>
             ))}
           </div>

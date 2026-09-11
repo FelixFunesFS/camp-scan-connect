@@ -189,9 +189,10 @@ export function rawAccommodation(f: Map<string, string>): Accommodation | null {
   if (stay === 'cabin') {
     return { ticket_type: 'cabin', site_location_assignment: 'cabin' };
   }
-  // 2026 introduced villa lodging; it is a built structure, like a cabin.
+  // 2026 introduced villa lodging; a built structure sited with the cabins,
+  // but reported as its own category.
   if (stay === 'villa') {
-    return { ticket_type: 'cabin', site_location_assignment: 'cabin' };
+    return { ticket_type: 'villa', site_location_assignment: 'cabin' };
   }
   // Glamping tents are pre-pitched and priced separately from dry tenting.
   if (stay.includes('glamping')) {
@@ -201,14 +202,14 @@ export function rawAccommodation(f: Map<string, string>): Accommodation | null {
     // premiumRv is a powered space; dryRv / pavedDryCampingRv are not.
     const premium = rvTier.includes('premium');
     return {
-      ticket_type: premium ? 'premium_power' : 'rv_site',
+      ticket_type: premium ? 'premium_rv' : 'rv_site',
       site_location_assignment: 'rv_site',
     };
   }
   // tent, vanrooftop, or anything else that still occupies a ground site
   const premiumTent = tentTier.includes('option2') || tentTier2.includes('option2');
   return {
-    ticket_type: premiumTent ? 'premium_power' : 'dry_site',
+    ticket_type: premiumTent ? 'premium_tent' : 'dry_site',
     site_location_assignment: 'dry_site',
   };
 }

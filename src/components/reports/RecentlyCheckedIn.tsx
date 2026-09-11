@@ -11,6 +11,7 @@ import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
 import { getStandardTimeBoundaries } from "@/utils/etTimezone";
 import { SiteLocationBadge } from "@/components/shared/SiteLocationBadge";
 import { MobileAttendeeCard } from "./MobileTableCard";
+import { formatTicketType } from "@/lib/ticketTypes";
 
 interface AttendeeStatus {
   id: string;
@@ -223,7 +224,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
-                        {attendee.ticketType}
+                        {formatTicketType(attendee.ticketType)}
                       </Badge>
                     </TableCell>
                     <TableCell>
