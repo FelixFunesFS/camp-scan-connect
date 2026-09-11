@@ -189,44 +189,29 @@ Deno.serve(async (req) => {
     const target = await resolveSyncTarget(supabase, (body.event_id as string) ?? null);
     const { eventId, formId, warning: routingWarning } = target;
 
-    // Only one sync may run at a time.
-    const { data: canStart, error: lockError } = await supabase.rpc('can_start_sync');
-    if (lockError) throw new Error(`Failed to check sync lock: ${lockError.message}`);
-    if (!canStart) {
+    const { data: syncId, error: lockError } = await supabase.rpc('begin_regfox_sync', {
+      p_sync_type: syncType,
+      p_event_id: eventId,
+      p_progress_info: {
+        processed: 0,
+        total: 0,
+        phase: 'starting',
+        regfox_form_id: formId,
+        event_name: target.eventName,
+        routing_warning: routingWarning,
+      },
+    });
+    if (lockError) throw new Error(`Failed to reserve sync: ${lockError.message}`);
+    if (!syncId) {
       return new Response(
         JSON.stringify({ success: false, error: 'SYNC_IN_PROGRESS', skipped: true }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    const { data: logRow, error: logError } = await supabase
-      .from('regfox_sync_log')
-      .insert({
-        sync_type: syncType,
-        status: 'in_progress',
-        event_id: eventId,
-        sync_started_at: new Date().toISOString(),
-        heartbeat_at: new Date().toISOString(),
-        sync_timeout_minutes: 10,
-        progress_info: {
-          processed: 0,
-          total: 0,
-          phase: 'starting',
-          regfox_form_id: formId,
-          event_name: target.eventName,
-          routing_warning: routingWarning,
-        },
-      })
-      .select('id')
-      .single();
-
-    if (logError) throw new Error(`Failed to open sync log: ${logError.message}`);
-
-    const syncId = logRow.id as string;
-
     // Keep running after the response is sent.
     // @ts-ignore EdgeRuntime is provided by the Supabase edge runtime.
-    EdgeRuntime.waitUntil(runSync(supabase, syncId, eventId, apiKey, formId));
+    EdgeRuntime.waitUntil(runSync(supabase, String(syncId), eventId, apiKey, formId));
 
     return new Response(
       JSON.stringify({

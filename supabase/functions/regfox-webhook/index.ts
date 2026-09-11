@@ -48,8 +48,10 @@ Deno.serve(async (req) => {
     return new Response('Invalid JSON', { status: 400, headers: corsHeaders });
   }
 
-  const formId = String(payload.formId ?? payload.form_id ?? payload.form?.id ?? '');
-  const registrationId = String(payload.registrantId ?? payload.registrationId ?? payload.registrant_id ?? payload.data?.id ?? '');
+  const form = typeof payload.form === 'object' && payload.form ? payload.form as Record<string, unknown> : {};
+  const data = typeof payload.data === 'object' && payload.data ? payload.data as Record<string, unknown> : {};
+  const formId = String(payload.formId ?? payload.form_id ?? form.id ?? '');
+  const registrationId = String(payload.registrantId ?? payload.registrationId ?? payload.registrant_id ?? data.id ?? '');
   const eventType = String(payload.event ?? payload.eventType ?? payload.type ?? 'registration.changed').slice(0, 120);
   const providerId = String(payload.deliveryId ?? payload.webhookId ?? req.headers.get('x-webhook-id') ?? '');
   const payloadHash = contentHash(payload);
