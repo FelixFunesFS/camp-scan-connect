@@ -200,6 +200,13 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
             Error
           </Badge>
         );
+      case 'partial':
+        return (
+          <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-300">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Partial
+          </Badge>
+        );
       case 'in_progress':
         return (
           <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -223,6 +230,10 @@ export const RegFoxSyncPanel: React.FC<RegFoxSyncPanelProps> = ({ className }) =
         return 'Initial Sync';
       case 'manual_sync':
         return 'Manual Sync';
+      case 'scheduled':
+        return 'Hourly Reconciliation';
+      case 'webhook':
+        return 'Webhook Refresh';
       default:
         return syncType;
     }

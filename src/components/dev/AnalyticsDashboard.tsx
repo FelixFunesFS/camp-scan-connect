@@ -42,14 +42,14 @@ export const AnalyticsDashboard = () => {
       const totalRegistrations = attendeeData?.length || 0;
       const totalApiSyncs = syncData?.length || 0;
       
-      const successfulSyncs = syncData?.filter(s => s.status === 'completed').length || 0;
+      const successfulSyncs = syncData?.filter(s => s.status === 'success').length || 0;
       const successRate = totalApiSyncs > 0 ? (successfulSyncs / totalApiSyncs) * 100 : 0;
       
       const errorSyncs = syncData?.filter(s => s.status === 'error').length || 0;
       const errorRate = totalApiSyncs > 0 ? (errorSyncs / totalApiSyncs) * 100 : 0;
 
       // Calculate average sync duration
-      const completedSyncs = syncData?.filter(s => s.status === 'completed' && s.sync_completed_at) || [];
+      const completedSyncs = syncData?.filter(s => s.status === 'success' && s.sync_completed_at) || [];
       const avgSyncDuration = completedSyncs.length > 0 ? 
         completedSyncs.reduce((acc, sync) => {
           const duration = new Date(sync.sync_completed_at!).getTime() - new Date(sync.sync_started_at).getTime();
@@ -323,7 +323,7 @@ export const AnalyticsDashboard = () => {
                     ✓ Excellent ({'>'}90%) | ⚠️ Good (70-90%) | ❌ Needs attention ({'<'}70%)
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Red X often indicates past webhook failures - now resolved with scheduled syncing
+                    A low rate means recent imports need review.
                   </p>
                 </TooltipContent>
               </UITooltip>

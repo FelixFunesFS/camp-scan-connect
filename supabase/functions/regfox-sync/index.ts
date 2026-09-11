@@ -8,6 +8,7 @@ import {
   mapRegistrant,
   resolveSyncTarget,
 } from '../_shared/regfox.ts';
+import { authErrorResponse, requireAdmin } from '../_shared/regfoxAuth.ts';
 
 /**
  * The roster can run to thousands of registrants, which exceeds the edge
@@ -56,6 +57,8 @@ async function runSync(
     const toUpsert: Record<string, unknown>[] = [];
     const errors: string[] = [];
     let skipped = 0;
+    let plannedNew = 0;
+    let plannedUpdated = 0;
     let newCount = 0;
     let updatedCount = 0;
 
@@ -70,8 +73,8 @@ async function runSync(
           continue;
         }
 
-        if (known) updatedCount += 1;
-        else newCount += 1;
+        if (known) plannedUpdated += 1;
+        else plannedNew += 1;
 
         toUpsert.push({
           ...mapped,
@@ -92,7 +95,14 @@ async function runSync(
         .from('attendees')
         .upsert(chunk, { onConflict: 'event_id,regfox_registration_id' });
 
-      if (upsertError) errors.push(`Batch at ${i}: ${upsertError.message}`);
+      if (upsertError) {
+        errors.push(`Batch at ${i}: ${upsertError.message}`);
+      } else {
+        for (const row of chunk) {
+          if (existing.has(String(row.regfox_registration_id))) updatedCount += 1;
+          else newCount += 1;
+        }
+      }
 
       await touch({
         progress_info: {
@@ -103,10 +113,22 @@ async function runSync(
       });
     }
 
+    const remoteIds = new Set(usable.map((r) => String(r.id)));
+    const removedIds = [...existing.keys()].filter((id) => !remoteIds.has(id));
+    if (removedIds.length > 0) {
+      const { error: removalError } = await supabase
+        .from('attendees')
+        .update({ registration_status: 'cancelled', last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('event_id', eventId)
+        .in('regfox_registration_id', removedIds);
+      if (removalError) errors.push(`Removal reconciliation: ${removalError.message}`);
+    }
+
     const failedEverything = errors.length > 0 && newCount + updatedCount === 0;
+    const finalStatus = failedEverything ? 'error' : errors.length > 0 ? 'partial' : 'success';
 
     await touch({
-      status: failedEverything ? 'error' : 'success',
+      status: finalStatus,
       total_records: usable.length,
       new_records: newCount,
       updated_records: updatedCount,
@@ -116,6 +138,9 @@ async function runSync(
         processed: toUpsert.length,
         total: toUpsert.length,
         skipped_unchanged: skipped,
+        planned_new: plannedNew,
+        planned_updated: plannedUpdated,
+        cancelled_missing_from_regfox: removedIds.length,
         phase: 'done',
       },
     });
@@ -145,6 +170,7 @@ Deno.serve(async (req) => {
   );
 
   try {
+    await requireAdmin(req);
     let body: Record<string, unknown> = {};
     try {
       const text = await req.text();
@@ -163,44 +189,29 @@ Deno.serve(async (req) => {
     const target = await resolveSyncTarget(supabase, (body.event_id as string) ?? null);
     const { eventId, formId, warning: routingWarning } = target;
 
-    // Only one sync may run at a time.
-    const { data: canStart, error: lockError } = await supabase.rpc('can_start_sync');
-    if (lockError) throw new Error(`Failed to check sync lock: ${lockError.message}`);
-    if (!canStart) {
+    const { data: syncId, error: lockError } = await supabase.rpc('begin_regfox_sync', {
+      p_sync_type: syncType,
+      p_event_id: eventId,
+      p_progress_info: {
+        processed: 0,
+        total: 0,
+        phase: 'starting',
+        regfox_form_id: formId,
+        event_name: target.eventName,
+        routing_warning: routingWarning,
+      },
+    });
+    if (lockError) throw new Error(`Failed to reserve sync: ${lockError.message}`);
+    if (!syncId) {
       return new Response(
         JSON.stringify({ success: false, error: 'SYNC_IN_PROGRESS', skipped: true }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    const { data: logRow, error: logError } = await supabase
-      .from('regfox_sync_log')
-      .insert({
-        sync_type: syncType,
-        status: 'in_progress',
-        event_id: eventId,
-        sync_started_at: new Date().toISOString(),
-        heartbeat_at: new Date().toISOString(),
-        sync_timeout_minutes: 10,
-        progress_info: {
-          processed: 0,
-          total: 0,
-          phase: 'starting',
-          regfox_form_id: formId,
-          event_name: target.eventName,
-          routing_warning: routingWarning,
-        },
-      })
-      .select('id')
-      .single();
-
-    if (logError) throw new Error(`Failed to open sync log: ${logError.message}`);
-
-    const syncId = logRow.id as string;
-
     // Keep running after the response is sent.
     // @ts-ignore EdgeRuntime is provided by the Supabase edge runtime.
-    EdgeRuntime.waitUntil(runSync(supabase, syncId, eventId, apiKey, formId));
+    EdgeRuntime.waitUntil(runSync(supabase, String(syncId), eventId, apiKey, formId));
 
     return new Response(
       JSON.stringify({
@@ -216,6 +227,8 @@ Deno.serve(async (req) => {
       { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error, corsHeaders);
+    if (authResponse) return authResponse;
     const message = (error as Error).message;
     console.error('Failed to start RegFox sync:', message);
     return new Response(JSON.stringify({ success: false, error: message }), {

@@ -7,6 +7,7 @@ import {
   mapRegistrant,
   resolveSyncTarget,
 } from '../_shared/regfox.ts';
+import { authErrorResponse, requireAdmin } from '../_shared/regfoxAuth.ts';
 
 /**
  * Server-side RegFox <-> database comparison.
@@ -20,6 +21,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await requireAdmin(req);
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -86,7 +88,8 @@ Deno.serve(async (req) => {
     const { data: lastSyncRow } = await supabase
       .from('regfox_sync_log')
       .select('sync_completed_at')
-      .eq('status', 'success')
+      .in('status', ['success', 'partial'])
+      .eq('event_id', target.eventId)
       .order('sync_completed_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -165,6 +168,8 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error, corsHeaders);
+    if (authResponse) return authResponse;
     const message = (error as Error).message;
     console.error('RegFox compare failed:', message);
     return new Response(JSON.stringify({ success: false, error: message }), {
