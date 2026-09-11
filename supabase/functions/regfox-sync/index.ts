@@ -43,16 +43,31 @@ async function runSync(
 
     const { data: existingRows, error: existingError } = await supabase
       .from('attendees')
-      .select('id, regfox_registration_id, sync_hash')
+      .select('id, regfox_registration_id, sync_hash, waiver_signed')
       .eq('event_id', eventId)
       .not('regfox_registration_id', 'is', null);
 
     if (existingError) throw new Error(`Failed to read attendees: ${existingError.message}`);
 
     const existing = new Map<string, string | null>();
+    const localWaiverSigned = new Set<string>();
+    const attendeeIdByRegistration = new Map<string, string>();
     for (const row of existingRows ?? []) {
-      existing.set(row.regfox_registration_id as string, row.sync_hash as string | null);
+      const regId = row.regfox_registration_id as string;
+      existing.set(regId, row.sync_hash as string | null);
+      attendeeIdByRegistration.set(regId, row.id as string);
+      if (row.waiver_signed) localWaiverSigned.add(regId);
     }
+
+    // A waiver signed on site must never be reset by a RegFox form answer.
+    const { data: signatureRows } = await supabase
+      .from('waiver_signatures')
+      .select('attendee_id');
+    const signedAttendeeIds = new Set((signatureRows ?? []).map((s) => s.attendee_id as string));
+    for (const [regId, attendeeId] of attendeeIdByRegistration) {
+      if (signedAttendeeIds.has(attendeeId)) localWaiverSigned.add(regId);
+    }
+
 
     const toUpsert: Record<string, unknown>[] = [];
     const errors: string[] = [];
