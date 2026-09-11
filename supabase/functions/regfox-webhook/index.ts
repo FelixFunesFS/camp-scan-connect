@@ -18,6 +18,13 @@ function safeEqual(a: string, b: string): boolean {
   return mismatch === 0;
 }
 
+function json(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: corsHeaders });
@@ -26,41 +33,67 @@ Deno.serve(async (req) => {
   if (contentLength > MAX_BODY_BYTES) return new Response('Payload too large', { status: 413, headers: corsHeaders });
 
   const webhookSecret = Deno.env.get('REGFOX_WEBHOOK_SECRET')?.trim() || undefined;
-  const appToken = Deno.env.get('REGFOX_APP_TOKEN')?.trim() || webhookSecret;
+  const appToken = Deno.env.get('REGFOX_APP_TOKEN')?.trim() || undefined;
   const appKey = Deno.env.get('REGFOX_APP_KEY')?.trim() || undefined;
-  if (!appToken) return new Response('Webhook is not configured', { status: 503, headers: corsHeaders });
+  if (!webhookSecret && !appToken && !appKey) {
+    return new Response('Webhook is not configured', { status: 503, headers: corsHeaders });
+  }
 
   const rawBody = await req.text();
   if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
     return new Response('Payload too large', { status: 413, headers: corsHeaders });
   }
 
-  const suppliedSignature = (req.headers.get('x-regfox-signature') ?? req.headers.get('x-webhook-signature') ?? '').replace(/^sha256=/i, '');
-  const bearer = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
-  const directSecret =
+  const suppliedSignature = (
+    req.headers.get('x-webconnex-signature') ??
+    req.headers.get('x-regfox-signature') ??
+    req.headers.get('x-webhook-signature') ??
+    ''
+  ).replace(/^sha256=/i, '').trim();
+
+  const bearer = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+  const directSecret = (
     req.headers.get('x-webhook-secret') ??
     req.headers.get('x-regfox-app-token') ??
     req.headers.get('x-api-token') ??
     req.headers.get('x-app-token') ??
-    bearer;
-  const suppliedAppKey = req.headers.get('x-regfox-app-key') ?? req.headers.get('x-app-key') ?? '';
+    bearer
+  ).trim();
+
+  // Try every configured secret: RegFox may sign with the signing secret or the app key.
+  const candidates: Array<{ name: string; value: string }> = [];
+  if (webhookSecret) candidates.push({ name: 'REGFOX_WEBHOOK_SECRET', value: webhookSecret });
+  if (appKey) candidates.push({ name: 'REGFOX_APP_KEY', value: appKey });
+  if (appToken) candidates.push({ name: 'REGFOX_APP_TOKEN', value: appToken });
 
   let signatureValid = false;
-  if (suppliedSignature && webhookSecret) {
-    const expected = await hmacHex(webhookSecret, rawBody);
-    signatureValid = safeEqual(suppliedSignature, expected);
+  let matchedSecret: string | null = null;
+  if (suppliedSignature) {
+    for (const candidate of candidates) {
+      const expected = await hmacHex(candidate.value, rawBody);
+      if (safeEqual(suppliedSignature.toLowerCase(), expected)) {
+        signatureValid = true;
+        matchedSecret = candidate.name;
+        break;
+      }
+    }
   }
 
-  const sharedSecret = appToken || webhookSecret;
-  const tokenValid = !!(directSecret && sharedSecret && safeEqual(directSecret, sharedSecret));
-  const appKeyValid = appKey ? safeEqual(suppliedAppKey, appKey) : true;
+  let tokenValid = false;
+  if (!signatureValid && directSecret) {
+    tokenValid = candidates.some((candidate) => safeEqual(directSecret, candidate.value));
+    if (tokenValid) matchedSecret = 'header-token';
+  }
 
   if (!signatureValid && !tokenValid) {
+    console.error('regfox-webhook: rejected request', {
+      hasSignature: !!suppliedSignature,
+      hasToken: !!directSecret,
+      configured: candidates.map((c) => c.name),
+    });
     return new Response('Invalid signature or token', { status: 401, headers: corsHeaders });
   }
-  if (!appKeyValid) {
-    return new Response('Invalid app key', { status: 401, headers: corsHeaders });
-  }
+  console.log('regfox-webhook: authorized via', matchedSecret);
 
   let payload: Record<string, unknown>;
   try {
@@ -69,30 +102,57 @@ Deno.serve(async (req) => {
     return new Response('Invalid JSON', { status: 400, headers: corsHeaders });
   }
 
+  const meta = typeof payload.meta === 'object' && payload.meta ? payload.meta as Record<string, unknown> : {};
+  if (appKey && typeof meta.appKey === 'string' && meta.appKey.trim() && !safeEqual(meta.appKey.trim(), appKey)) {
+    return new Response('Invalid app key', { status: 401, headers: corsHeaders });
+  }
+
   const form = typeof payload.form === 'object' && payload.form ? payload.form as Record<string, unknown> : {};
   const data = typeof payload.data === 'object' && payload.data ? payload.data as Record<string, unknown> : {};
   const formId = String(payload.formId ?? payload.form_id ?? form.id ?? '');
   const registrationId = String(payload.registrantId ?? payload.registrationId ?? payload.registrant_id ?? data.id ?? '');
-  const eventType = String(payload.event ?? payload.eventType ?? payload.type ?? 'registration.changed').slice(0, 120);
-  const providerId = String(payload.deliveryId ?? payload.webhookId ?? req.headers.get('x-webhook-id') ?? '');
+  const eventType = String(
+    payload.event ?? payload.eventType ?? payload.type ?? req.headers.get('x-webconnex-event') ?? 'registration.changed',
+  ).slice(0, 120);
+  const providerId = String(
+    req.headers.get('x-webconnex-delivery') ??
+    payload.deliveryId ??
+    payload.webhookId ??
+    req.headers.get('x-webhook-id') ??
+    '',
+  );
   const payloadHash = contentHash(payload);
   const deliveryKey = providerId || `${eventType}:${formId}:${registrationId}:${payloadHash}`;
 
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+  // Ping / test deliveries: acknowledge without touching the roster.
+  if (eventType.toLowerCase() === 'ping' || eventType.toLowerCase() === 'test') {
+    await supabase.from('regfox_webhook_deliveries').insert({
+      delivery_key: deliveryKey,
+      event_type: eventType,
+      regfox_form_id: formId || null,
+      regfox_registration_id: null,
+      payload_hash: payloadHash,
+      status: 'ignored',
+      processed_at: new Date().toISOString(),
+    });
+    return json({ success: true, ping: true }, 200);
+  }
+
   const { data: event } = await supabase.from('events').select('id').eq('regfox_form_id', formId).maybeSingle();
-  if (!event) return new Response(JSON.stringify({ success: true, ignored: true, reason: 'unknown_form' }), {
-    status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  if (!event) return json({ success: true, ignored: true, reason: 'unknown_form' }, 202);
 
   const { data: delivery, error: insertError } = await supabase
     .from('regfox_webhook_deliveries')
     .insert({ delivery_key: deliveryKey, event_type: eventType, regfox_form_id: formId, regfox_registration_id: registrationId || null, payload_hash: payloadHash })
     .select('id')
     .maybeSingle();
-  if (insertError?.code === '23505') return new Response(JSON.stringify({ success: true, duplicate: true }), {
-    status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-  if (insertError || !delivery) throw new Error(insertError?.message ?? 'Failed to record webhook');
+  if (insertError?.code === '23505') return json({ success: true, duplicate: true }, 200);
+  if (insertError || !delivery) {
+    console.error('regfox-webhook: failed to record delivery', insertError);
+    return json({ success: false, error: insertError?.message ?? 'Failed to record webhook' }, 500);
+  }
 
   const syncResponse = await fetch(`${Deno.env.get('SUPABASE_URL')!}/functions/v1/regfox-sync`, {
     method: 'POST',
@@ -103,17 +163,16 @@ Deno.serve(async (req) => {
     },
     body: JSON.stringify({ sync_type: 'webhook', event_id: event.id, registration_id: registrationId || null }),
   });
-  const syncData = await syncResponse.json();
-  const syncError = syncResponse.ok || syncResponse.status === 409 ? null : new Error(syncData?.error ?? `Sync returned ${syncResponse.status}`);
+  const syncData = await syncResponse.json().catch(() => ({}));
+  const deferred = syncResponse.status === 409;
+  const syncError = syncResponse.ok || deferred ? null : new Error(syncData?.error ?? `Sync returned ${syncResponse.status}`);
+
   await supabase.from('regfox_webhook_deliveries').update({
-    status: syncError ? 'error' : syncData?.skipped ? 'ignored' : 'processed',
+    status: syncError ? 'error' : deferred ? 'deferred' : syncData?.skipped ? 'ignored' : 'processed',
     sync_id: syncData?.syncId ?? null,
-    error_message: syncError?.message ?? syncData?.error ?? null,
+    error_message: syncError?.message ?? syncData?.error ?? (deferred ? 'Sync already running; hourly reconciliation will catch up' : null),
     processed_at: new Date().toISOString(),
   }).eq('id', delivery.id);
 
-  return new Response(JSON.stringify({ success: !syncError, accepted: true, sync: syncData }), {
-    status: syncError ? 502 : 202,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  return json({ success: !syncError, accepted: true, deferred, sync: syncData }, syncError ? 502 : 202);
 });
