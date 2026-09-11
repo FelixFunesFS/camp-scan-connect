@@ -73,9 +73,18 @@ Deno.serve(async (req) => {
   });
   if (insertError || !delivery) throw new Error(insertError?.message ?? 'Failed to record webhook');
 
-  const { data: syncData, error: syncError } = await supabase.functions.invoke('regfox-sync', {
-    body: { sync_type: 'webhook', event_id: event.id, registration_id: registrationId || null },
+  const syncResponse = await fetch(`${Deno.env.get('SUPABASE_URL')!}/functions/v1/regfox-sync`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')!}`,
+      'apikey': Deno.env.get('SUPABASE_ANON_KEY')!,
+      'x-regfox-internal': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    },
+    body: JSON.stringify({ sync_type: 'webhook', event_id: event.id, registration_id: registrationId || null }),
   });
+  const syncData = await syncResponse.json();
+  const syncError = syncResponse.ok || syncResponse.status === 409 ? null : new Error(syncData?.error ?? `Sync returned ${syncResponse.status}`);
   await supabase.from('regfox_webhook_deliveries').update({
     status: syncError ? 'error' : syncData?.skipped ? 'ignored' : 'processed',
     sync_id: syncData?.syncId ?? null,

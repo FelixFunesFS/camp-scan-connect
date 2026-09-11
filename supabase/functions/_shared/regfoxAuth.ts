@@ -3,7 +3,10 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 export async function requireAdmin(req: Request): Promise<void> {
   const authorization = req.headers.get('Authorization') ?? '';
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  if (serviceKey && authorization === `Bearer ${serviceKey}`) return;
+  if (serviceKey && (
+    authorization === `Bearer ${serviceKey}` ||
+    req.headers.get('x-regfox-internal') === serviceKey
+  )) return;
 
   const token = authorization.replace(/^Bearer\s+/i, '');
   if (!token) throw new Error('UNAUTHORIZED');
