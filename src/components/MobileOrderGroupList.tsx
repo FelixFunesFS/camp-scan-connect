@@ -23,7 +23,7 @@ const fullName = (attendee?: AttendeeData) =>
   attendee ? `${attendee.first_name} ${attendee.last_name}`.trim() : "Individual attendees";
 
 const nameKey = (attendee?: AttendeeData) =>
-  attendee ? `${attendee.last_name} ${attendee.first_name}`.trim().toLocaleLowerCase() : "";
+  attendee ? `${attendee.first_name} ${attendee.last_name}`.trim().toLocaleLowerCase() : "";
 
 export function MobileOrderGroupList({
   attendees,
