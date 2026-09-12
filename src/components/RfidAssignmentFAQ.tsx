@@ -201,6 +201,24 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               </AccordionContent>
             </AccordionItem>
 
+            {/* Deactivating a band */}
+            <AccordionItem value="deactivation">
+              <AccordionTrigger className="text-left">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  How to deactivate a band
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="space-y-2 text-sm">
+                  <p><strong>Change code</strong> — the wrong code was typed or scanned. Swaps the code on the same person; nothing else changes.</p>
+                  <p><strong>Replace</strong> — the band was lost or broken and the person is still on site. Retires the old band, assigns the new one, and keeps them checked in.</p>
+                  <p><strong>Remove</strong> — the band should no longer belong to this person (departure, security, duplicate). You must pick a reason. If they were checked in, removing the band checks them out and they cannot use any station until a new band is assigned and activated.</p>
+                  <p className="text-muted-foreground">Every removal is recorded with its reason so it shows up in the audit reports.</p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
             {/* Troubleshooting */}
             <AccordionItem value="troubleshooting">
               <AccordionTrigger className="text-left">

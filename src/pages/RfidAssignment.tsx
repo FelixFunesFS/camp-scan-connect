@@ -50,8 +50,9 @@ import {
   Filter
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileRfidControls } from "@/components/MobileRfidControls";
-import { MobileAttendeeList } from "@/components/MobileAttendeeList";
+import { MobileRfidAssignmentCard } from "@/components/MobileRfidAssignmentCard";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { formatTicketType } from "@/lib/ticketTypes";
 
@@ -86,6 +87,16 @@ export interface AttendeeData {
 }
 
 const ROWS_PER_PAGE = 100;
+
+const MOBILE_SORT_OPTIONS = [
+  { value: 'name', label: 'Name' },
+  { value: 'arrival_day', label: 'Arrival day' },
+  { value: 'order', label: 'Order' },
+  { value: 'ticket_type', label: 'Accommodation' },
+  { value: 'check_in_status', label: 'Check-in status' },
+  { value: 'status', label: 'Assignment status' },
+  { value: 'most_recent_activation', label: 'Most recent activation' }
+] as const;
 
 export const RfidAssignment = () => {
   // Consolidated state for better performance
@@ -593,6 +604,14 @@ export const RfidAssignment = () => {
     }));
   }, []);
 
+  const activeFilterCount = [
+    uiState.mealPlanFilter !== 'all',
+    uiState.arrivalDayFilter !== 'all',
+    uiState.checkInStatusFilter !== 'all',
+    uiState.showOnlyUnassigned,
+    uiState.showCancelledRegistrants
+  ].filter(Boolean).length;
+
   const getSortIcon = useCallback((field: typeof uiState.sortField) => {
     if (uiState.sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
     return uiState.sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
@@ -732,65 +751,200 @@ export const RfidAssignment = () => {
               />
             )}
 
-            {/* Mobile Controls - simplified to use existing props */}
-            <div className="space-y-4">
+            {/* Mobile controls: search, sort, filters, grouping */}
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <div className="relative flex-1 min-w-0">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Search attendees..."
+                    placeholder="Search name, phone, order..."
                     value={uiState.searchTerm}
-                    onChange={(e) => setUiState(prev => ({ ...prev, searchTerm: e.target.value }))}
-                    className="pl-10"
+                    onChange={(e) => setUiState(prev => ({ ...prev, searchTerm: e.target.value, currentPage: 1 }))}
+                    className="pl-10 h-11"
                   />
                 </div>
                 {uiState.searchTerm && (
                   <Button
                     variant="outline"
                     size="icon"
+                    className="h-11 w-11 shrink-0"
                     onClick={() => setUiState(prev => ({ ...prev, searchTerm: '' }))}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 )}
               </div>
-              
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={uiState.showOnlyUnassigned ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setUiState(prev => ({ ...prev, showOnlyUnassigned: !prev.showOnlyUnassigned }))}
-                >
-                  Unassigned Only
-                </Button>
-                
+
+              {/* Sort + Filters */}
+              <div className="grid grid-cols-2 gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="h-11 w-full justify-start truncate">
+                      <ArrowUpDown className="h-4 w-4 mr-2 shrink-0" />
+                      <span className="truncate">{MOBILE_SORT_OPTIONS.find(o => o.value === uiState.sortField)?.label || 'Sort'}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="z-50 bg-popover w-56">
+                    {MOBILE_SORT_OPTIONS.map(option => (
+                      <DropdownMenuItem key={option.value} onClick={() => handleSort(option.value)}>
+                        <span className="flex-1">{option.label}</span>
+                        {uiState.sortField === option.value && (
+                          uiState.sortDirection === 'asc'
+                            ? <ArrowUp className="h-4 w-4" />
+                            : <ArrowDown className="h-4 w-4" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" className="h-11 w-full justify-start">
+                      <Filter className="h-4 w-4 mr-2 shrink-0" />
+                      <span className="truncate">Filters</span>
+                      {activeFilterCount > 0 && (
+                        <Badge variant="secondary" className="ml-auto">{activeFilterCount}</Badge>
+                      )}
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+                    <SheetHeader>
+                      <SheetTitle>Filters</SheetTitle>
+                    </SheetHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Meal plan</Label>
+                        <Select
+                          value={uiState.mealPlanFilter}
+                          onValueChange={(v) => setUiState(prev => ({ ...prev, mealPlanFilter: v, currentPage: 1 }))}
+                        >
+                          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                          <SelectContent className="z-50 bg-popover">
+                            <SelectItem value="all">All meal plans</SelectItem>
+                            <SelectItem value="1">Plan 1</SelectItem>
+                            <SelectItem value="2">Plan 2</SelectItem>
+                            <SelectItem value="none">No plan</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Arrival day</Label>
+                        <Select
+                          value={uiState.arrivalDayFilter}
+                          onValueChange={(v) => setUiState(prev => ({ ...prev, arrivalDayFilter: v, currentPage: 1 }))}
+                        >
+                          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                          <SelectContent className="z-50 bg-popover">
+                            <SelectItem value="all">All arrival days</SelectItem>
+                            <SelectItem value="early">Thursday (Early)</SelectItem>
+                            <SelectItem value="standard">Friday (Standard)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Check-in status</Label>
+                        <Select
+                          value={uiState.checkInStatusFilter}
+                          onValueChange={(v) => setUiState(prev => ({ ...prev, checkInStatusFilter: v, currentPage: 1 }))}
+                        >
+                          <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                          <SelectContent className="z-50 bg-popover">
+                            <SelectItem value="all">All statuses</SelectItem>
+                            <SelectItem value="checked_in">Checked in</SelectItem>
+                            <SelectItem value="assigned">Assigned</SelectItem>
+                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="mobile-unassigned">Unassigned only</Label>
+                        <Switch
+                          id="mobile-unassigned"
+                          checked={uiState.showOnlyUnassigned}
+                          onCheckedChange={(v) => setUiState(prev => ({ ...prev, showOnlyUnassigned: v, currentPage: 1 }))}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="mobile-cancelled">Show cancelled registrants</Label>
+                        <Switch
+                          id="mobile-cancelled"
+                          checked={uiState.showCancelledRegistrants}
+                          onCheckedChange={(v) => setUiState(prev => ({ ...prev, showCancelledRegistrants: v, currentPage: 1 }))}
+                        />
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        className="w-full h-11"
+                        onClick={() => setUiState(prev => ({
+                          ...prev,
+                          mealPlanFilter: 'all',
+                          arrivalDayFilter: 'all',
+                          checkInStatusFilter: 'all',
+                          showOnlyUnassigned: false,
+                          showCancelledRegistrants: false,
+                          currentPage: 1
+                        }))}
+                      >
+                        Clear all filters
+                      </Button>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+
+              {/* Grouping */}
+              <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+                {([
+                  { value: 'individual', label: 'Individual' },
+                  { value: 'group', label: 'By Order' },
+                  { value: 'site-location', label: 'By Site' }
+                ] as const).map(option => (
+                  <Button
+                    key={option.value}
+                    variant={uiState.viewMode === option.value ? 'default' : 'ghost'}
+                    size="sm"
+                    className="h-10 text-xs"
+                    onClick={() => setUiState(prev => ({ ...prev, viewMode: option.value, currentPage: 1 }))}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
-                  size="sm"
+                  className="h-11"
                   onClick={handleCsvExport}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                  Export
                 </Button>
 
                 <Button
                   variant="outline"
-                  size="sm"
+                  className="h-11"
                   onClick={handleRegFoxSync}
                   disabled={operationState.syncing}
                 >
                   <RefreshCw className={`h-4 w-4 mr-2 ${operationState.syncing ? 'animate-spin' : ''}`} />
-                  Sync RegFox
+                  Sync
                 </Button>
 
                 <Button
                   variant="default"
-                  size="sm"
+                  className="h-11 col-span-2"
                   onClick={handleBulkActivation}
                   disabled={operationState.isActivating}
                 >
                   <Zap className={`h-4 w-4 mr-2 ${operationState.isActivating ? 'animate-pulse' : ''}`} />
-                  Bulk Activate
+                  Activate all assigned bands
                 </Button>
               </div>
             </div>
@@ -813,66 +967,57 @@ export const RfidAssignment = () => {
               </CardContent>
             </Card>
 
-            {/* Attendee List - simplified */}
-            <div className="space-y-3">
-              {sortedAndPaginatedAttendees.map(attendee => {
-                const enhancedStatus = enhancedStatuses[attendee.id] || getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status);
-                return (
-                  <Card key={attendee.id} className="p-4">
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{attendee.first_name} {attendee.last_name}</h3>
-                        <p className="text-sm text-muted-foreground truncate">{attendee.phone}</p>
-                        <p className="text-sm text-muted-foreground truncate">{attendee.order_id}</p>
+            <p className="text-xs text-muted-foreground">
+              {uiState.viewMode === 'individual'
+                ? `Showing ${sortedAndPaginatedAttendees.length} of ${filteredAttendees.length} people`
+                : `Showing ${filteredAttendees.length} people`}
+            </p>
 
-                        {attendee.most_recent_activation_method && (
-                          <div className="mt-2">
-                            <Badge variant={attendee.most_recent_activation_method === 'staff_assisted' ? 'default' : 'secondary'} className="text-xs">
-                              {attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff Assisted' : 'Self Activated'}
-                            </Badge>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {new Date(attendee.most_recent_activation_at!).toLocaleString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        <Badge variant={enhancedStatus.variant} className="whitespace-nowrap">
-                          {enhancedStatus.icon} {enhancedStatus.label}
-                        </Badge>
+            {/* Attendee list / grouped views */}
+            {uiState.viewMode === 'group' ? (
+              <GroupRfidView
+                attendees={filteredAttendees}
+                onRefresh={loadAttendees}
+                onOptimisticUpdate={handleOptimisticUpdate}
+                searchTerm={uiState.searchTerm}
+              />
+            ) : uiState.viewMode === 'site-location' ? (
+              <SiteLocationRfidView
+                attendees={filteredAttendees}
+                onRefresh={loadAttendees}
+                onOptimisticUpdate={handleOptimisticUpdate}
+                searchTerm={uiState.searchTerm}
+              />
+            ) : (
+              <div className="space-y-3">
+                {sortedAndPaginatedAttendees.length === 0 && (
+                  <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">
+                    No one matches these filters.
+                  </CardContent></Card>
+                )}
+                {sortedAndPaginatedAttendees.map(attendee => (
+                  <div key={attendee.id} className="space-y-1">
+                    <MobileRfidAssignmentCard
+                      attendee={attendee}
+                      onOptimisticUpdate={handleOptimisticUpdate}
+                      onAssignmentComplete={() => {}}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-9 text-xs"
+                      onClick={() => setSelectedAttendeeId(attendee.id)}
+                    >
+                      View full details
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedAttendeeId(attendee.id)}
-                        >
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <EnhancedRfidAssignmentCell
-                        attendeeId={attendee.id}
-                        attendeeName={`${attendee.first_name} ${attendee.last_name}`}
-                        currentRfidUid={attendee.rfid_uid}
-                        currentRfidStatus={attendee.rfid_status}
-                        onOptimisticUpdate={handleOptimisticUpdate}
-                        onAssignmentComplete={() => {}}
-                      />
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {uiState.viewMode === 'individual' && totalPages > 1 && (
               <div className="flex justify-between items-center">
                 <Button
                   variant="outline"
@@ -904,7 +1049,9 @@ export const RfidAssignment = () => {
         {selectedAttendeeId && attendees.find(a => a.id === selectedAttendeeId) && (
           <AttendeeDetailModal
             attendee={attendees.find(a => a.id === selectedAttendeeId)!}
-            trigger={<div />}
+            allAttendees={attendees}
+            open={!!selectedAttendeeId}
+            onOpenChange={(open) => { if (!open) setSelectedAttendeeId(null); }}
           />
         )}
       </div>
@@ -1275,7 +1422,9 @@ export const RfidAssignment = () => {
       {selectedAttendeeId && attendees.find(a => a.id === selectedAttendeeId) && (
         <AttendeeDetailModal
           attendee={attendees.find(a => a.id === selectedAttendeeId)!}
-          trigger={<div />}
+          allAttendees={attendees}
+          open={!!selectedAttendeeId}
+          onOpenChange={(open) => { if (!open) setSelectedAttendeeId(null); }}
         />
       )}
     </div>

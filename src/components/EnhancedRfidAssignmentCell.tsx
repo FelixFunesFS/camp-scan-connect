@@ -4,6 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, AlertCircle, Loader2, Edit3, Save, XCircle, Camera, Usb, RefreshCw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DEACTIVATION_REASONS } from "@/components/StaffDeactivationPanel";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -37,6 +49,8 @@ export const EnhancedRfidAssignmentCell = ({
   const [isReplacing, setIsReplacing] = useState(false);
   const [replaceValue, setReplaceValue] = useState("");
   const [replaceReason, setReplaceReason] = useState("");
+  const [isRemoveOpen, setIsRemoveOpen] = useState(false);
+  const [removeReason, setRemoveReason] = useState("");
   const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
   const [scannerMode, setScannerMode] = useState<'usb' | 'camera'>('usb');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -419,7 +433,10 @@ export const EnhancedRfidAssignmentCell = ({
   };
 
   const handleClearRfid = async () => {
-    if (!currentRfidUid) return;
+    if (!currentRfidUid || !removeReason) return;
+
+    const reasonLabel =
+      DEACTIVATION_REASONS.find((r) => r.value === removeReason)?.label || removeReason;
 
     setIsProcessing(true);
     try {
@@ -430,7 +447,7 @@ export const EnhancedRfidAssignmentCell = ({
           status: 'unissued',
           attendee_id: null,
           deactivated_at: new Date().toISOString(),
-          reason: 'Cleared via assignment station'
+          reason: reasonLabel
         })
         .eq('uid', currentRfidUid);
 
@@ -451,11 +468,13 @@ export const EnhancedRfidAssignmentCell = ({
           current_status: 'inactive',
           event_id: getCurrentEventId(),
           extra_data: {
-            deactivation_method: 'assignment_station_clear'
+            deactivation_method: 'assignment_station_clear',
+            reason: reasonLabel,
+            reason_code: removeReason
           }
         });
 
-      toast.success(`Credential cleared: ${currentRfidUid} has been unassigned from ${attendeeName}`);
+      toast.success(`Band removed: ${currentRfidUid} is no longer assigned to ${attendeeName} (${reasonLabel})`);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
@@ -466,9 +485,11 @@ export const EnhancedRfidAssignmentCell = ({
       const refreshTimeout = setTimeout(() => {
         onAssignmentComplete();
       }, 300);
+      setIsRemoveOpen(false);
+      setRemoveReason("");
     } catch (error) {
       console.error('RFID clear error:', error);
-      toast.error("Clear Failed - Failed to clear credential assignment.");
+      toast.error("Could not remove the band. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -765,46 +786,90 @@ export const EnhancedRfidAssignmentCell = ({
     }
 
     return (
-      <div className="flex items-center gap-2 w-full sm:min-w-[280px]">
-        <div className="flex flex-col flex-1">
-          <span className="font-mono text-sm font-medium">{currentRfidUid}</span>
+      <div className="flex w-full flex-col gap-2 sm:min-w-[280px] sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1">
+          <span className="font-mono text-sm font-medium break-all">{currentRfidUid}</span>
         </div>
-        <div className="flex gap-1">
+        <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-1">
           <Button
             variant="outline"
             size="sm"
             onClick={handleStartEdit}
             disabled={isProcessing}
-            className="h-8 px-3"
-            title="Edit credential assignment"
+            className="h-11 px-2 text-xs sm:h-8 sm:px-3"
+            title="Change code"
           >
-            <Edit3 className="h-3 w-3" />
+            <Edit3 className="h-3 w-3 sm:mr-0" />
+            <span className="ml-1 sm:hidden">Change</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleStartReplace}
             disabled={isProcessing}
-            className="h-8 px-3"
+            className="h-11 px-2 text-xs sm:h-8 sm:px-3"
             title="Replace lost or damaged band"
           >
             <RefreshCw className="h-3 w-3" />
+            <span className="ml-1 sm:hidden">Replace</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={handleClearRfid}
+            onClick={() => { setRemoveReason(""); setIsRemoveOpen(true); }}
             disabled={isProcessing}
-            className="h-8 px-3"
-            title="Clear credential assignment"
+            className="h-11 px-2 text-xs text-destructive sm:h-8 sm:px-3"
+            title="Remove band"
           >
             {isProcessing ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
               <X className="h-3 w-3" />
             )}
+            <span className="ml-1 sm:hidden">Remove</span>
           </Button>
         </div>
+
+        <AlertDialog open={isRemoveOpen} onOpenChange={(open) => { if (!isProcessing) setIsRemoveOpen(open); }}>
+          <AlertDialogContent className="max-w-[95vw] sm:max-w-lg">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove band {currentRfidUid}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {currentRfidStatus === 'active'
+                  ? `${attendeeName} is checked in. Removing this band checks them out — they will not be able to use any station until a new band is assigned and activated.`
+                  : `This band will no longer be assigned to ${attendeeName}. It can be assigned to someone else afterwards.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason (required)</label>
+              <Select value={removeReason} onValueChange={setRemoveReason}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Choose a reason" />
+                </SelectTrigger>
+                <SelectContent className="z-50">
+                  {DEACTIVATION_REASONS.map((reason) => (
+                    <SelectItem key={reason.value} value={reason.value}>
+                      {reason.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                If the band was lost or broken and the person is still here, use <strong>Replace</strong> instead so their check-in carries over.
+              </p>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isProcessing}>Keep band</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); handleClearRfid(); }}
+                disabled={!removeReason || isProcessing}
+              >
+                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Remove band
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }

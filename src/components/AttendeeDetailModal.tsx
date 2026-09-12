@@ -26,7 +26,9 @@ import { formatTicketType } from "@/lib/ticketTypes";
 
 interface AttendeeDetailModalProps {
   attendee: any; // Made flexible to work with different attendee types
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onActivate?: (attendeeId: string) => void;
   onGroupActivate?: (orderAttendees: any[]) => void;
   allAttendees?: any[];
@@ -35,11 +37,19 @@ interface AttendeeDetailModalProps {
 export function AttendeeDetailModal({ 
   attendee, 
   trigger, 
+  open: controlledOpen,
+  onOpenChange,
   onActivate, 
   onGroupActivate, 
   allAttendees = [] 
 }: AttendeeDetailModalProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [companionModalOpen, setCompanionModalOpen] = useState(false);
   const [selectedCompanion, setSelectedCompanion] = useState<any | null>(null);
 
@@ -65,10 +75,12 @@ export function AttendeeDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger}
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      {trigger ? (
+        <DialogTrigger asChild>
+          {trigger}
+        </DialogTrigger>
+      ) : null}
+      <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -164,12 +176,12 @@ export function AttendeeDetailModal({
               </CardContent>
             </Card>
 
-            {/* RFID Information */}
+            {/* Credential Information */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
-                  RFID Information
+                  Credential Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -392,12 +404,12 @@ export function AttendeeDetailModal({
                         </CardContent>
                       </Card>
 
-                      {/* RFID Information */}
+                      {/* Credential Information */}
                       <Card>
                         <CardHeader>
                           <CardTitle className="text-lg flex items-center gap-2">
                             <CreditCard className="h-4 w-4" />
-                            RFID Information
+                            Credential Information
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">

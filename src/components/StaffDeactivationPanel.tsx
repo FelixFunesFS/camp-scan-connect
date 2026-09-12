@@ -26,7 +26,7 @@ interface StaffDeactivationPanelProps {
   staffId?: string;
 }
 
-const DEACTIVATION_REASONS = [
+export const DEACTIVATION_REASONS = [
   { value: "lost", label: "Lost credential" },
   { value: "damaged", label: "Damaged credential" },
   { value: "replaced", label: "Replaced with new credential" },
