@@ -8,7 +8,6 @@ import {
   Camera,
   AlertTriangle,
   CheckCircle,
-  WifiOff,
   RefreshCw
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";

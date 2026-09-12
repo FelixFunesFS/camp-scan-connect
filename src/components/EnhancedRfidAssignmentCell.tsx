@@ -669,6 +669,24 @@ export const EnhancedRfidAssignmentCell = ({
     }
   };
 
+  const cameraScanner = (
+    <CameraBraceletScanner
+      isOpen={isCameraScannerOpen}
+      onClose={() => setIsCameraScannerOpen(false)}
+      onScan={(code) => {
+        if (cameraTarget === 'edit') {
+          setEditValue(code);
+        } else if (cameraTarget === 'replace') {
+          setReplaceValue(code);
+        } else {
+          setScannerMode('camera');
+          triggerCapture(code, inputRef.current || undefined);
+        }
+        setIsCameraScannerOpen(false);
+      }}
+    />
+  );
+
   // Show assigned RFID with edit/clear buttons or edit input
   if (currentRfidUid && (currentRfidStatus === 'active' || currentRfidStatus === 'assigned')) {
     if (isReplacing) {
@@ -731,6 +749,7 @@ export const EnhancedRfidAssignmentCell = ({
               Cancel
             </Button>
           </div>
+          {cameraScanner}
         </div>
       );
     }
@@ -804,6 +823,7 @@ export const EnhancedRfidAssignmentCell = ({
             <Camera className="mr-2 h-4 w-4" />
             Scan new code with phone camera
           </Button>
+          {cameraScanner}
         </div>
       );
     }
@@ -963,21 +983,7 @@ export const EnhancedRfidAssignmentCell = ({
         )}
       </Button>
 
-      <CameraBraceletScanner
-        isOpen={isCameraScannerOpen}
-        onClose={() => setIsCameraScannerOpen(false)}
-        onScan={(code) => {
-          if (cameraTarget === 'edit') {
-            setEditValue(code);
-          } else if (cameraTarget === 'replace') {
-            setReplaceValue(code);
-          } else {
-            setScannerMode('camera');
-            triggerCapture(code, inputRef.current || undefined);
-          }
-          setIsCameraScannerOpen(false);
-        }}
-      />
+      {cameraScanner}
     </div>
   );
 };
