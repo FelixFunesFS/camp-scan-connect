@@ -50,8 +50,9 @@ import {
   Filter
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileRfidControls } from "@/components/MobileRfidControls";
-import { MobileAttendeeList } from "@/components/MobileAttendeeList";
+import { MobileRfidAssignmentCard } from "@/components/MobileRfidAssignmentCard";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { formatTicketType } from "@/lib/ticketTypes";
 
