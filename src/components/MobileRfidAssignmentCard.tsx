@@ -13,12 +13,16 @@ interface MobileRfidAssignmentCardProps {
   attendee: AttendeeData;
   onAssignmentComplete?: () => void;
   onOptimisticUpdate?: (attendeeId: string, rfidUid: string | null, rfidStatus: string) => void;
+  onViewDetails?: () => void;
+  compact?: boolean;
 }
 
 export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> = ({
   attendee,
   onAssignmentComplete,
-  onOptimisticUpdate
+  onOptimisticUpdate,
+  onViewDetails,
+  compact = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [enhancedStatus, setEnhancedStatus] = useState<any>(null);
@@ -102,11 +106,11 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
   };
 
   return (
-    <Card className="transition-all duration-200 touch-target">
-      <CardContent className="mobile-card">
-        <div className="space-y-4">
+    <Card className={compact ? "touch-target overflow-hidden rounded-none border-0 bg-transparent shadow-none" : "touch-target overflow-hidden transition-all duration-200"}>
+      <CardContent className={compact ? "px-0 py-4" : "mobile-card"}>
+        <div className={compact ? "space-y-3" : "space-y-4"}>
           {/* Header with Name and Main Status */}
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -123,7 +127,7 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
               variant="ghost"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="ml-2 touch-target"
+              className="touch-target shrink-0"
             >
               {isExpanded ? 'Less' : 'More'}
             </Button>
@@ -147,7 +151,7 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
           </div>
 
           {/* Credential Assignment Section - Always Visible */}
-          <div className="border-t pt-4">
+          <div className={compact ? "border-t pt-3" : "border-t pt-4"}>
             <div className="mb-2">
               <span className="text-sm font-medium text-muted-foreground">Credential Assignment</span>
             </div>
@@ -182,6 +186,11 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
                   <span className="truncate">{attendee.email}</span>
                 </div>
               )}
+              {onViewDetails ? (
+                <Button variant="outline" className="h-11 w-full" onClick={onViewDetails}>
+                  View full details
+                </Button>
+              ) : null}
             </div>
           )}
         </div>

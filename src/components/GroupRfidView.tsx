@@ -21,6 +21,8 @@ import { SiteLocationBadge } from "@/components/shared/SiteLocationBadge";
 import { AttendeeData } from "@/pages/RfidAssignment";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { getOrderGroupBackgroundColor, groupAttendeesByOrder } from "@/utils/orderGroupUtils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileOrderGroupList } from "@/components/MobileOrderGroupList";
 
 interface GroupRfidViewProps {
   attendees: AttendeeData[];
@@ -38,6 +40,7 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
   onOptimisticUpdate,
   searchTerm 
 }) => {
+  const isMobile = useIsMobile();
   const [sortField, setSortField] = useState<SortField>('order_id');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -148,6 +151,17 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
           </p>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <MobileOrderGroupList
+        attendees={attendees}
+        onRefresh={onRefresh}
+        onOptimisticUpdate={onOptimisticUpdate}
+        searchTerm={searchTerm}
+      />
     );
   }
 
