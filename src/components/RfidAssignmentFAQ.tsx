@@ -52,6 +52,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
             size="sm"
             onClick={onClose}
             className="h-8 w-8 p-0"
+            aria-label="Close assignment guide"
           >
             <X className="h-4 w-4" />
           </Button>
