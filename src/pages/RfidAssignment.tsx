@@ -531,8 +531,8 @@ export const RfidAssignment = () => {
       
       switch (uiState.sortField) {
         case 'name':
-          aValue = `${a.first_name} ${a.last_name}`.toLowerCase();
-          bValue = `${b.first_name} ${b.last_name}`.toLowerCase();
+          aValue = `${a.last_name} ${a.first_name}`.toLocaleLowerCase();
+          bValue = `${b.last_name} ${b.first_name}`.toLocaleLowerCase();
           break;
         case 'phone':
           aValue = a.phone || '';
@@ -602,6 +602,10 @@ export const RfidAssignment = () => {
       sortDirection: prev.sortField === field ? (prev.sortDirection === 'asc' ? 'desc' : 'asc') : 'asc',
       sortField: field
     }));
+  }, []);
+
+  const setSortDirection = useCallback((sortDirection: 'asc' | 'desc') => {
+    setUiState(prev => ({ ...prev, sortDirection, currentPage: 1 }));
   }, []);
 
   const activeFilterCount = [
@@ -776,10 +780,10 @@ export const RfidAssignment = () => {
               </div>
 
               {/* Sort + Filters */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="h-11 w-full justify-start truncate">
+                    <Button variant="outline" className="h-11 w-full min-w-0 justify-start truncate">
                       <ArrowUpDown className="h-4 w-4 mr-2 shrink-0" />
                       <span className="truncate">{MOBILE_SORT_OPTIONS.find(o => o.value === uiState.sortField)?.label || 'Sort'}</span>
                     </Button>
@@ -797,6 +801,16 @@ export const RfidAssignment = () => {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                <Button
+                  variant="outline"
+                  className="h-11 min-w-[78px] px-3"
+                  onClick={() => setSortDirection(uiState.sortDirection === 'asc' ? 'desc' : 'asc')}
+                  aria-label={uiState.sortDirection === 'asc' ? 'Sorted ascending; change to descending' : 'Sorted descending; change to ascending'}
+                >
+                  {uiState.sortDirection === 'asc' ? <ArrowUp className="mr-1 h-4 w-4" /> : <ArrowDown className="mr-1 h-4 w-4" />}
+                  {uiState.sortField === 'name' ? (uiState.sortDirection === 'asc' ? 'A–Z' : 'Z–A') : (uiState.sortDirection === 'asc' ? 'Asc' : 'Desc')}
+                </Button>
 
                 <Sheet>
                   <SheetTrigger asChild>
@@ -996,20 +1010,13 @@ export const RfidAssignment = () => {
                   </CardContent></Card>
                 )}
                 {sortedAndPaginatedAttendees.map(attendee => (
-                  <div key={attendee.id} className="space-y-1">
+                  <div key={attendee.id}>
                     <MobileRfidAssignmentCard
                       attendee={attendee}
                       onOptimisticUpdate={handleOptimisticUpdate}
-                      onAssignmentComplete={() => {}}
+                      onAssignmentComplete={loadAttendees}
+                      onViewDetails={() => setSelectedAttendeeId(attendee.id)}
                     />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full h-9 text-xs"
-                      onClick={() => setSelectedAttendeeId(attendee.id)}
-                    >
-                      View full details
-                    </Button>
                   </div>
                 ))}
               </div>
