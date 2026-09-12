@@ -786,46 +786,90 @@ export const EnhancedRfidAssignmentCell = ({
     }
 
     return (
-      <div className="flex items-center gap-2 w-full sm:min-w-[280px]">
-        <div className="flex flex-col flex-1">
-          <span className="font-mono text-sm font-medium">{currentRfidUid}</span>
+      <div className="flex w-full flex-col gap-2 sm:min-w-[280px] sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1">
+          <span className="font-mono text-sm font-medium break-all">{currentRfidUid}</span>
         </div>
-        <div className="flex gap-1">
+        <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-1">
           <Button
             variant="outline"
             size="sm"
             onClick={handleStartEdit}
             disabled={isProcessing}
-            className="h-8 px-3"
-            title="Edit credential assignment"
+            className="h-11 px-2 text-xs sm:h-8 sm:px-3"
+            title="Change code"
           >
-            <Edit3 className="h-3 w-3" />
+            <Edit3 className="h-3 w-3 sm:mr-0" />
+            <span className="ml-1 sm:hidden">Change</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleStartReplace}
             disabled={isProcessing}
-            className="h-8 px-3"
+            className="h-11 px-2 text-xs sm:h-8 sm:px-3"
             title="Replace lost or damaged band"
           >
             <RefreshCw className="h-3 w-3" />
+            <span className="ml-1 sm:hidden">Replace</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={handleClearRfid}
+            onClick={() => { setRemoveReason(""); setIsRemoveOpen(true); }}
             disabled={isProcessing}
-            className="h-8 px-3"
-            title="Clear credential assignment"
+            className="h-11 px-2 text-xs text-destructive sm:h-8 sm:px-3"
+            title="Remove band"
           >
             {isProcessing ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
               <X className="h-3 w-3" />
             )}
+            <span className="ml-1 sm:hidden">Remove</span>
           </Button>
         </div>
+
+        <AlertDialog open={isRemoveOpen} onOpenChange={(open) => { if (!isProcessing) setIsRemoveOpen(open); }}>
+          <AlertDialogContent className="max-w-[95vw] sm:max-w-lg">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove band {currentRfidUid}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {currentRfidStatus === 'active'
+                  ? `${attendeeName} is checked in. Removing this band checks them out — they will not be able to use any station until a new band is assigned and activated.`
+                  : `This band will no longer be assigned to ${attendeeName}. It can be assigned to someone else afterwards.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason (required)</label>
+              <Select value={removeReason} onValueChange={setRemoveReason}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Choose a reason" />
+                </SelectTrigger>
+                <SelectContent className="z-50">
+                  {DEACTIVATION_REASONS.map((reason) => (
+                    <SelectItem key={reason.value} value={reason.value}>
+                      {reason.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                If the band was lost or broken and the person is still here, use <strong>Replace</strong> instead so their check-in carries over.
+              </p>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isProcessing}>Keep band</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); handleClearRfid(); }}
+                disabled={!removeReason || isProcessing}
+              >
+                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Remove band
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
