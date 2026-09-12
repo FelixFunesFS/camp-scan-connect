@@ -433,7 +433,10 @@ export const EnhancedRfidAssignmentCell = ({
   };
 
   const handleClearRfid = async () => {
-    if (!currentRfidUid) return;
+    if (!currentRfidUid || !removeReason) return;
+
+    const reasonLabel =
+      DEACTIVATION_REASONS.find((r) => r.value === removeReason)?.label || removeReason;
 
     setIsProcessing(true);
     try {
@@ -444,7 +447,7 @@ export const EnhancedRfidAssignmentCell = ({
           status: 'unissued',
           attendee_id: null,
           deactivated_at: new Date().toISOString(),
-          reason: 'Cleared via assignment station'
+          reason: reasonLabel
         })
         .eq('uid', currentRfidUid);
 
