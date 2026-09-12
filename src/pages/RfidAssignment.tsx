@@ -1017,7 +1017,7 @@ export const RfidAssignment = () => {
 
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {uiState.viewMode === 'individual' && totalPages > 1 && (
               <div className="flex justify-between items-center">
                 <Button
                   variant="outline"
