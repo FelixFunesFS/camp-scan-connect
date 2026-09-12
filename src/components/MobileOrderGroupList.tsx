@@ -141,7 +141,7 @@ export function MobileOrderGroupList({
             <Progress value={percentage} className="h-1 rounded-none" />
 
             {expanded ? (
-              <div className="space-y-3 border-t bg-muted/30 p-3">
+              <div className="divide-y border-t bg-card px-3">
                 {group.attendees.map((attendee) => (
                   <MobileRfidAssignmentCard
                     key={attendee.id}

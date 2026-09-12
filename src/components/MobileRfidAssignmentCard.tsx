@@ -106,8 +106,8 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
   };
 
   return (
-    <Card className="touch-target overflow-hidden transition-all duration-200">
-      <CardContent className={compact ? "p-3" : "mobile-card"}>
+    <Card className={compact ? "touch-target overflow-hidden rounded-none border-0 bg-transparent shadow-none" : "touch-target overflow-hidden transition-all duration-200"}>
+      <CardContent className={compact ? "px-0 py-4" : "mobile-card"}>
         <div className={compact ? "space-y-3" : "space-y-4"}>
           {/* Header with Name and Main Status */}
           <div className="flex items-start justify-between gap-2">
