@@ -204,9 +204,16 @@ export const useBarcodeCamera = ({
       } catch (err) {
         console.error('Camera scanner error:', err);
         if (!cancelled) {
-          setCameraError(
-            'Camera unavailable. Allow camera access for this site in your browser settings, then start the camera again.'
-          );
+          const errorName = err instanceof DOMException ? err.name : '';
+          if (errorName === 'NotAllowedError' || errorName === 'SecurityError') {
+            setCameraError('Camera access is blocked. Allow camera access for this site in browser settings, then tap Start camera.');
+          } else if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
+            setCameraError('No camera was found on this device. Use the USB reader backup or type the printed code.');
+          } else if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
+            setCameraError('The camera is being used by another app or tab. Close it there, then tap Start camera.');
+          } else {
+            setCameraError('Camera unavailable. Check browser permission, then tap Start camera or use the backup method.');
+          }
         }
       } finally {
         if (!cancelled) setIsStarting(false);

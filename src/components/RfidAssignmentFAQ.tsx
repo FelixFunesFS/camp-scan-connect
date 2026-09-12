@@ -5,10 +5,9 @@ import {
   Zap, 
   Users, 
   Search, 
-  Keyboard, 
+  Camera,
   AlertTriangle,
   CheckCircle,
-  WifiOff,
   RefreshCw
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -53,6 +52,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
             size="sm"
             onClick={onClose}
             className="h-8 w-8 p-0"
+            aria-label="Close assignment guide"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -77,21 +77,21 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                   </div>
                   <div className="flex items-start gap-2">
                     <Badge variant="secondary" className="text-xs">2</Badge>
-                    <span className="text-sm">Click in the Code field (blue highlight indicates active)</span>
+                    <span className="text-sm">Choose the correct attendee, then tap <strong>Scan with phone camera</strong></span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Badge variant="secondary" className="text-xs">3</Badge>
-                    <span className="text-sm">Scan or tap credential near scanner</span>
+                    <span className="text-sm">Hold the printed barcode or QR code inside the camera frame</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Badge variant="secondary" className="text-xs">4</Badge>
-                    <span className="text-sm">UID auto-fills and saves (or press Enter/click ✓)</span>
+                    <span className="text-sm">Verify the code, then tap ✓ to assign it</span>
                   </div>
                 </div>
                 
                 <div className="pt-2 border-t">
                   <p className="text-xs text-muted-foreground">
-                    <strong>Default View:</strong> Shows all active attendees, sorted by arrival day then order ID.
+                    <strong>Default view:</strong> Shows registered and pending attendees. Use sorting and filters to organize the list.
                   </p>
                 </div>
               </AccordionContent>
@@ -101,33 +101,34 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
             <AccordionItem value="scanner">
               <AccordionTrigger className="text-left">
                 <div className="flex items-center gap-2">
-                  <WifiOff className="h-4 w-4" />
+                   <Camera className="h-4 w-4" />
                   Scanner Instructions
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-3">
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Hardware Setup:</h4>
+                  <h4 className="font-medium text-sm">Phone camera (default):</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Connect USB scanner to computer</li>
-                    <li>• Ensure scanner is in "keyboard emulation" mode</li>
-                    <li>• Scanner should send data + Enter key automatically</li>
+                    <li>• Tap <strong>Scan with phone camera</strong> for the selected attendee</li>
+                    <li>• Allow camera access when the browser asks</li>
+                    <li>• Center the full printed code in the guide; the scan happens automatically</li>
+                    <li>• Use the flashlight or switch-camera controls when needed</li>
                   </ul>
                 </div>
                 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Scanning Process:</h4>
+                  <h4 className="font-medium text-sm">USB reader (backup):</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Position credential within 1-2 inches of scanner</li>
-                    <li>• Listen for beep or see LED confirmation</li>
-                    <li>• UID appears instantly in active field</li>
-                    <li>• System validates and saves automatically</li>
+                    <li>• Connect a USB or Bluetooth reader in keyboard mode</li>
+                    <li>• Tap <strong>USB reader (backup)</strong> and keep the code field selected</li>
+                    <li>• A reader configured to send Enter validates and saves automatically</li>
+                    <li>• Otherwise, tap ✓ after the code appears</li>
                   </ul>
                 </div>
 
                 <div className="pt-2 border-t">
                   <p className="text-xs text-muted-foreground">
-                    <strong>Manual Entry:</strong> You can also type UIDs manually and press Enter to save.
+                    <strong>Type code instead:</strong> Enter the printed code in the field, verify it, then press Enter or tap ✓.
                   </p>
                 </div>
               </AccordionContent>
@@ -145,8 +146,8 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">"Show Only Unassigned" Toggle:</h4>
                   <p className="text-sm text-muted-foreground">
-                    When ON: Shows only attendees needing credential assignment (workflow focus).
-                    When OFF: Shows all active attendees (comprehensive overview).
+                    When ON: Shows only attendees without an assigned or active credential.
+                    When OFF: Shows all registered and pending attendees.
                   </p>
                 </div>
 
@@ -185,8 +186,7 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">Group Assignment:</h4>
                   <p className="text-sm text-muted-foreground">
-                    Switch to "Group" view to assign multiple RFIDs to attendees from the same order. 
-                    Useful for families or groups registering together.
+                     Use <strong>By Order</strong> to keep people from the same order together. Use <strong>By Site</strong> to organize by site assignment.
                   </p>
                 </div>
 
@@ -211,9 +211,9 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               </AccordionTrigger>
               <AccordionContent className="space-y-3">
                 <div className="space-y-2 text-sm">
-                  <p><strong>Change code</strong> — the wrong code was typed or scanned. Swaps the code on the same person; nothing else changes.</p>
-                  <p><strong>Replace</strong> — the band was lost or broken and the person is still on site. Retires the old band, assigns the new one, and keeps them checked in.</p>
-                  <p><strong>Remove</strong> — the band should no longer belong to this person (departure, security, duplicate). You must pick a reason. If they were checked in, removing the band checks them out and they cannot use any station until a new band is assigned and activated.</p>
+                  <p><strong>Change code</strong> — correct a code that was typed or scanned incorrectly. The replacement code is linked to the same person.</p>
+                  <p><strong>Replace</strong> — use this when a band is lost or damaged. The old band is retired and, if the person was already checked in, the replacement keeps that check-in status.</p>
+                  <p><strong>Remove</strong> — use this when the credential should no longer belong to the person. A reason is required. Removing an active credential checks the person out; staff can still use the documented override process when necessary.</p>
                   <p className="text-muted-foreground">Every removal is recorded with its reason so it shows up in the audit reports.</p>
                 </div>
               </AccordionContent>
@@ -229,29 +229,29 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               </AccordionTrigger>
               <AccordionContent className="space-y-3">
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Scanner Not Working:</h4>
+                  <h4 className="font-medium text-sm">Camera will not scan:</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Check USB connection and power</li>
-                    <li>• Try scanning into notepad first</li>
-                    <li>• Ensure cursor is in the wristband field (blue highlight)</li>
-                    <li>• Restart browser if scanner was recently connected</li>
+                    <li>• Allow camera access for this site in browser settings</li>
+                    <li>• Hold the phone steady with the entire code visible and well lit</li>
+                    <li>• Move slightly closer or farther away until the code is sharp</li>
+                    <li>• Try the flashlight or switch-camera control</li>
+                    <li>• If needed, use the USB reader backup or type the printed code</li>
                   </ul>
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm">Duplicate wristband error:</h4>
+                  <h4 className="font-medium text-sm">Code already assigned:</h4>
                   <p className="text-sm text-muted-foreground">
-                    If you see "Wristband already assigned," the tag is already in use. Check the error message 
-                    for details about who has it assigned.
+                    Assignment is blocked when a code belongs to someone else. Read the message to identify the current attendee before changing anything.
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">Save Issues:</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Click the ✓ button or press Enter to save</li>
-                    <li>• Red border indicates validation error</li>
-                    <li>• Check internet connection for sync issues</li>
+                    <li>• Verify the displayed attendee and code before tapping ✓</li>
+                    <li>• A red border or message means the code needs attention</li>
+                    <li>• Check the internet connection if saving or syncing fails</li>
                   </ul>
                 </div>
               </AccordionContent>
@@ -269,30 +269,25 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               <AccordionContent className="space-y-3">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm">Assigned - credential successfully linked</span>
+                    <div className="w-3 h-3 bg-success rounded-full"></div>
+                    <span className="text-sm">Checked In — credential is active</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <span className="text-sm">Pending - Assignment in progress</span>
+                    <div className="w-3 h-3 bg-warning rounded-full"></div>
+                    <span className="text-sm">Assigned — credential is linked but not activated</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-sm">Error - Assignment failed, check details</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                    <span className="text-sm">Unassigned - No credential linked</span>
+                    <div className="w-3 h-3 bg-muted-foreground rounded-full"></div>
+                    <span className="text-sm">Unassigned — no credential is linked</span>
                   </div>
                 </div>
 
                 <div className="pt-2 border-t">
                   <h4 className="font-medium text-sm">Field Indicators:</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Blue border: Active input field</li>
-                    <li>• Green border: Successfully saved</li>
-                    <li>• Red border: Validation error</li>
-                    <li>• ✓ button: Click to save assignment</li>
+                    <li>• Camera result: decoded code appears in the assignment field</li>
+                    <li>• Red border or message: validation needs attention</li>
+                    <li>• ✓ button: confirm the assignment</li>
                   </ul>
                 </div>
               </AccordionContent>
@@ -307,10 +302,10 @@ export const RfidAssignmentFAQ: React.FC<RfidAssignmentFAQProps> = ({ isOpen, on
               Quick Reference
             </h3>
             <ul className="space-y-1 text-xs text-muted-foreground">
-              <li>• <strong>Default Sort:</strong> Arrival day → Order ID for organized workflow</li>
+              <li>• <strong>Sort:</strong> Choose a field and use Asc/Desc or A–Z/Z–A</li>
               <li>• <strong>Search:</strong> Find by name, order, or phone</li>
-              <li>• <strong>Scan:</strong> Position tag near scanner, listen for beep</li>
-              <li>• <strong>Save:</strong> Auto-saves on scan or press Enter</li>
+              <li>• <strong>Scan:</strong> Phone camera is primary; USB reader is backup</li>
+              <li>• <strong>Save:</strong> Verify the code, then tap ✓</li>
               <li>• <strong>Navigate:</strong> Use mouse/touch to navigate between attendees</li>
               <li>• <strong>Filter:</strong> "Unassigned Only" for workflow, "Cancelled Registrations" for cleanup</li>
             </ul>

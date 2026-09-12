@@ -58,21 +58,21 @@ export function SelfActivationFAQ() {
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                "Unassigned" means your wristband hasn't been programmed with your unique RFID code yet.
+                "Unassigned" means no credential code is linked to your registration yet.
               </p>
               <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                <p className="text-sm font-medium">Technical explanation:</p>
+                  <p className="text-sm font-medium">What to do:</p>
                 <div className="flex items-start gap-2">
                   <HelpCircle className="h-4 w-4 text-primary mt-0.5" />
-                  <span className="text-sm">Your wristband exists but has no Code loaded onto it</span>
+                  <span className="text-sm">Ask a staff member to assign your wristband to your registration</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Users className="h-4 w-4 text-primary mt-0.5" />
-                  <span className="text-sm">Staff need to program your wristband with your unique ID before you can check-in</span>
+                  <span className="text-sm">After assignment, return here to finish check-in</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />
-                  <span className="text-sm">Find staff to program your wristband, then return here to check-in</span>
+                  <span className="text-sm">If a waiver is required, it must be signed before that person can check in</span>
                 </div>
               </div>
             </AccordionContent>
@@ -87,22 +87,22 @@ export function SelfActivationFAQ() {
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                The system automatically checks in <strong>everyone</strong> associated with your phone number, including:
+                The phone number opens a list of matching people. Eligible people are selected initially, and you can choose who to check in.
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />
-                  <span>Anyone who registered directly with this phone number</span>
+                  <span>Select or clear each eligible person before continuing</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />
-                  <span>All companions in the same order</span>
+                  <span>Use <strong>Check-In Everyone</strong> when everyone eligible should be included</span>
                 </div>
               </div>
               <Alert>
                 <HelpCircle className="h-4 w-4" />
                 <AlertDescription className="text-sm">
-                  This ensures everyone in your party gets activated together automatically - no need to check in each person separately!
+                  A person who still needs a waiver or wristband assignment remains blocked, but other eligible people can continue.
                 </AlertDescription>
               </Alert>
             </AccordionContent>
@@ -184,7 +184,7 @@ export function SelfActivationFAQ() {
               <div className="space-y-1 text-sm text-muted-foreground ml-4">
                 <div>• Finding your registration by name or email</div>
                 <div>• Manual check-in if technical issues occur</div>
-                <div>• wristband assignment</div>
+                <div>• Wristband assignment</div>
                 <div>• Registration corrections or updates</div>
               </div>
               <Alert>

@@ -147,6 +147,7 @@ export const RfidScanner = ({
       <CardContent className="space-y-4">
         {/* In-page camera scan */}
         <InlineCameraScanner
+          autoStart
           onScan={handleDirectRfidScan}
           className="[&_video]:max-h-[40vh]"
         />
@@ -155,7 +156,7 @@ export const RfidScanner = ({
         {isCapturing && (
           <div className="flex items-center justify-center p-2 bg-green-50 border border-green-200 rounded-lg">
             <div className="animate-pulse w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-            <span className="text-sm text-green-700">Waiting for code scan...</span>
+            <span className="text-sm text-green-700">USB reader ready (backup)</span>
           </div>
         )}
 
