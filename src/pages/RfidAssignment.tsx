@@ -88,6 +88,16 @@ export interface AttendeeData {
 
 const ROWS_PER_PAGE = 100;
 
+const MOBILE_SORT_OPTIONS = [
+  { value: 'name', label: 'Name' },
+  { value: 'arrival_day', label: 'Arrival day' },
+  { value: 'order', label: 'Order' },
+  { value: 'ticket_type', label: 'Accommodation' },
+  { value: 'check_in_status', label: 'Check-in status' },
+  { value: 'status', label: 'Assignment status' },
+  { value: 'most_recent_activation', label: 'Most recent activation' }
+] as const;
+
 export const RfidAssignment = () => {
   // Consolidated state for better performance
   const [uiState, setUiState] = useState({
