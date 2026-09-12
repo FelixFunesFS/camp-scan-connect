@@ -604,6 +604,14 @@ export const RfidAssignment = () => {
     }));
   }, []);
 
+  const activeFilterCount = [
+    uiState.mealPlanFilter !== 'all',
+    uiState.arrivalDayFilter !== 'all',
+    uiState.checkInStatusFilter !== 'all',
+    uiState.showOnlyUnassigned,
+    uiState.showCancelledRegistrants
+  ].filter(Boolean).length;
+
   const getSortIcon = useCallback((field: typeof uiState.sortField) => {
     if (uiState.sortField !== field) return <ArrowUpDown className="h-4 w-4" />;
     return uiState.sortDirection === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />;
