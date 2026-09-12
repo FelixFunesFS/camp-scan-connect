@@ -531,8 +531,8 @@ export const RfidAssignment = () => {
       
       switch (uiState.sortField) {
         case 'name':
-          aValue = `${a.last_name} ${a.first_name}`.toLocaleLowerCase();
-          bValue = `${b.last_name} ${b.first_name}`.toLocaleLowerCase();
+          aValue = `${a.first_name} ${a.last_name}`.toLocaleLowerCase();
+          bValue = `${b.first_name} ${b.last_name}`.toLocaleLowerCase();
           break;
         case 'phone':
           aValue = a.phone || '';
