@@ -26,7 +26,9 @@ import { formatTicketType } from "@/lib/ticketTypes";
 
 interface AttendeeDetailModalProps {
   attendee: any; // Made flexible to work with different attendee types
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onActivate?: (attendeeId: string) => void;
   onGroupActivate?: (orderAttendees: any[]) => void;
   allAttendees?: any[];
@@ -35,11 +37,19 @@ interface AttendeeDetailModalProps {
 export function AttendeeDetailModal({ 
   attendee, 
   trigger, 
+  open: controlledOpen,
+  onOpenChange,
   onActivate, 
   onGroupActivate, 
   allAttendees = [] 
 }: AttendeeDetailModalProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [companionModalOpen, setCompanionModalOpen] = useState(false);
   const [selectedCompanion, setSelectedCompanion] = useState<any | null>(null);
 
