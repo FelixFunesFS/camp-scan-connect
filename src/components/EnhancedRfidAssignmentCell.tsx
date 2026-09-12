@@ -468,11 +468,13 @@ export const EnhancedRfidAssignmentCell = ({
           current_status: 'inactive',
           event_id: getCurrentEventId(),
           extra_data: {
-            deactivation_method: 'assignment_station_clear'
+            deactivation_method: 'assignment_station_clear',
+            reason: reasonLabel,
+            reason_code: removeReason
           }
         });
 
-      toast.success(`Credential cleared: ${currentRfidUid} has been unassigned from ${attendeeName}`);
+      toast.success(`Band removed: ${currentRfidUid} is no longer assigned to ${attendeeName} (${reasonLabel})`);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
