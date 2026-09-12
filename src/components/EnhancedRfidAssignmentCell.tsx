@@ -52,7 +52,8 @@ export const EnhancedRfidAssignmentCell = ({
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [removeReason, setRemoveReason] = useState("");
   const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
-  const [scannerMode, setScannerMode] = useState<'usb' | 'camera'>('usb');
+  const [scannerMode, setScannerMode] = useState<'usb' | 'camera'>('camera');
+  const [cameraTarget, setCameraTarget] = useState<'assign' | 'edit' | 'replace'>('assign');
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const { registerInput, unregisterInput, triggerCapture } = useRfidCaptureContext();
@@ -683,6 +684,16 @@ export const EnhancedRfidAssignmentCell = ({
             className="text-sm"
             disabled={isProcessing}
           />
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full"
+            onClick={() => { setCameraTarget('replace'); setIsCameraScannerOpen(true); }}
+            disabled={isProcessing}
+          >
+            <Camera className="mr-2 h-4 w-4" />
+            Scan replacement with phone camera
+          </Button>
           <Input
             value={replaceValue}
             onChange={(e) => setReplaceValue(e.target.value)}
@@ -726,8 +737,9 @@ export const EnhancedRfidAssignmentCell = ({
 
     if (isEditing) {
       return (
-        <div className="flex items-start gap-2 w-full sm:min-w-[280px]">
-          <div className="flex-1">
+        <div className="w-full space-y-2 sm:min-w-[280px]">
+          <div className="flex items-start gap-2">
+            <div className="flex-1">
             <Input
               ref={editInputRef}
               type="text"
@@ -754,8 +766,8 @@ export const EnhancedRfidAssignmentCell = ({
                 )}
               </div>
             )}
-          </div>
-          <div className="flex gap-1">
+            </div>
+            <div className="flex gap-1">
             <Button
               variant="outline"
               size="sm"
@@ -780,7 +792,18 @@ export const EnhancedRfidAssignmentCell = ({
             >
               <XCircle className="h-3 w-3" />
             </Button>
+            </div>
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full sm:h-9"
+            onClick={() => { setCameraTarget('edit'); setIsCameraScannerOpen(true); }}
+            disabled={isProcessing}
+          >
+            <Camera className="mr-2 h-4 w-4" />
+            Scan new code with phone camera
+          </Button>
         </div>
       );
     }
@@ -878,25 +901,24 @@ export const EnhancedRfidAssignmentCell = ({
   return (
     <div className="flex w-full items-start gap-2 sm:min-w-[250px]">
       <div className="min-w-0 flex-1">
-        <div className="badge-row mb-2">
-
-          <Button
-            variant={scannerMode === 'usb' ? "default" : "outline"}
-            size="sm"
-            onClick={() => setScannerMode('usb')}
-            className="h-7 px-2 text-xs"
-          >
-            <Usb className="h-3 w-3 mr-1" />
-            USB
-          </Button>
+        <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <Button
             variant={scannerMode === 'camera' ? "default" : "outline"}
             size="sm"
-            onClick={() => setIsCameraScannerOpen(true)}
-            className="h-7 px-2 text-xs"
+            onClick={() => { setScannerMode('camera'); setCameraTarget('assign'); setIsCameraScannerOpen(true); }}
+            className="h-11 px-3 text-xs sm:h-9"
           >
-            <Camera className="h-3 w-3 mr-1" />
-            Camera
+            <Camera className="mr-2 h-4 w-4" />
+            Scan with phone camera
+          </Button>
+          <Button
+            variant={scannerMode === 'usb' ? "default" : "outline"}
+            size="sm"
+            onClick={() => { setScannerMode('usb'); setTimeout(() => inputRef.current?.focus(), 0); }}
+            className="h-11 px-3 text-xs sm:h-9"
+          >
+            <Usb className="mr-2 h-4 w-4" />
+            USB reader (backup)
           </Button>
         </div>
         
@@ -905,7 +927,7 @@ export const EnhancedRfidAssignmentCell = ({
           type="text"
           value={uid}
           onChange={(e) => setUid(e.target.value)}
-          placeholder={scannerMode === 'usb' ? "Scan wristband or enter code" : "Enter UID or use camera"}
+          placeholder={scannerMode === 'usb' ? "Scan with USB reader or type code" : "Camera result appears here; type code instead"}
           className={`font-mono text-sm rfid-input ${validationError ? 'border-destructive' : ''}`}
           disabled={isProcessing}
           data-rfid-input="true"
@@ -945,7 +967,14 @@ export const EnhancedRfidAssignmentCell = ({
         isOpen={isCameraScannerOpen}
         onClose={() => setIsCameraScannerOpen(false)}
         onScan={(code) => {
-          triggerCapture(code, inputRef.current || undefined);
+          if (cameraTarget === 'edit') {
+            setEditValue(code);
+          } else if (cameraTarget === 'replace') {
+            setReplaceValue(code);
+          } else {
+            setScannerMode('camera');
+            triggerCapture(code, inputRef.current || undefined);
+          }
           setIsCameraScannerOpen(false);
         }}
       />

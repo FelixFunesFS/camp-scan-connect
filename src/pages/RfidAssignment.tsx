@@ -443,7 +443,7 @@ export const RfidAssignment = () => {
 
     // Assignment status filter
     if (uiState.showOnlyUnassigned) {
-      filtered = filtered.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned');
+      filtered = filtered.filter(a => !a.rfid_uid || !['assigned', 'active'].includes(a.rfid_status || ''));
     }
 
     // Meal plan filter
@@ -500,7 +500,7 @@ export const RfidAssignment = () => {
         filtered = filtered.filter(a => ['registered', 'pending'].includes(a.registration_status || 'registered'));
       }
       if (uiState.showOnlyUnassigned) {
-        filtered = filtered.filter(a => !a.rfid_uid || a.rfid_status !== 'assigned');
+        filtered = filtered.filter(a => !a.rfid_uid || !['assigned', 'active'].includes(a.rfid_status || ''));
       }
       if (uiState.mealPlanFilter !== 'all') {
         if (uiState.mealPlanFilter === 'none') {

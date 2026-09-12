@@ -101,6 +101,12 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
+  // A failed start returns to an actionable state so the user can retry after
+  // changing browser permissions or switch to the backup method.
+  useEffect(() => {
+    if (cameraError) setRunning(false);
+  }, [cameraError]);
+
   return (
     <div className={cn(compact ? 'space-y-2' : 'space-y-3', className)}>
       {collapsed && (
@@ -244,7 +250,10 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
       )}
 
       {cameraError && !collapsed && (
-        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{cameraError}</div>
+        <div className="space-y-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          <p>{cameraError}</p>
+          <p className="text-xs">You can retry after changing permission, use the USB reader backup, or type the printed code.</p>
+        </div>
       )}
       {readError && !collapsed && (
         <div className="rounded-lg bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
