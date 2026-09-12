@@ -1422,7 +1422,9 @@ export const RfidAssignment = () => {
       {selectedAttendeeId && attendees.find(a => a.id === selectedAttendeeId) && (
         <AttendeeDetailModal
           attendee={attendees.find(a => a.id === selectedAttendeeId)!}
-          trigger={<div />}
+          allAttendees={attendees}
+          open={!!selectedAttendeeId}
+          onOpenChange={(open) => { if (!open) setSelectedAttendeeId(null); }}
         />
       )}
     </div>
