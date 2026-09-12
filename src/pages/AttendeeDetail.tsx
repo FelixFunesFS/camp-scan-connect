@@ -342,12 +342,12 @@ export default function AttendeeDetail() {
           </CardContent>
         </Card>
 
-        {/* RFID Information */}
+        {/* Credential Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <QrCode className="h-5 w-5" />
-              RFID Information
+              Credential Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

@@ -176,12 +176,12 @@ export function AttendeeDetailModal({
               </CardContent>
             </Card>
 
-            {/* RFID Information */}
+            {/* Credential Information */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
-                  RFID Information
+                  Credential Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -404,12 +404,12 @@ export function AttendeeDetailModal({
                         </CardContent>
                       </Card>
 
-                      {/* RFID Information */}
+                      {/* Credential Information */}
                       <Card>
                         <CardHeader>
                           <CardTitle className="text-lg flex items-center gap-2">
                             <CreditCard className="h-4 w-4" />
-                            RFID Information
+                            Credential Information
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
