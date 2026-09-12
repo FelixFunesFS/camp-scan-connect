@@ -485,9 +485,11 @@ export const EnhancedRfidAssignmentCell = ({
       const refreshTimeout = setTimeout(() => {
         onAssignmentComplete();
       }, 300);
+      setIsRemoveOpen(false);
+      setRemoveReason("");
     } catch (error) {
       console.error('RFID clear error:', error);
-      toast.error("Clear Failed - Failed to clear credential assignment.");
+      toast.error("Could not remove the band. Please try again.");
     } finally {
       setIsProcessing(false);
     }
