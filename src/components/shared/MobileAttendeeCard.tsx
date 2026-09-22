@@ -210,6 +210,13 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
               </div>
             )}
 
+            {attendee.site_location_assignment && (
+              <div className="flex items-center gap-2">
+                <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <span className="truncate">Site {attendee.site_location_assignment}</span>
+              </div>
+            )}
+
             {attendee.order_id && (
               <div className="flex items-center gap-2">
                 <CreditCard className="h-3 w-3 text-muted-foreground flex-shrink-0" />
