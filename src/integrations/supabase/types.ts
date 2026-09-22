@@ -110,6 +110,7 @@ export type Database = {
           priority: string | null
           regfox_id: string | null
           regfox_order_id: string | null
+          regfox_raw_status: string | null
           regfox_registration_id: string | null
           registration_status:
             | Database["public"]["Enums"]["registration_status"]
@@ -163,6 +164,7 @@ export type Database = {
           priority?: string | null
           regfox_id?: string | null
           regfox_order_id?: string | null
+          regfox_raw_status?: string | null
           regfox_registration_id?: string | null
           registration_status?:
             | Database["public"]["Enums"]["registration_status"]
@@ -216,6 +218,7 @@ export type Database = {
           priority?: string | null
           regfox_id?: string | null
           regfox_order_id?: string | null
+          regfox_raw_status?: string | null
           regfox_registration_id?: string | null
           registration_status?:
             | Database["public"]["Enums"]["registration_status"]
@@ -850,6 +853,7 @@ export type Database = {
           event_year: number
           found: boolean
           is_checked_in: boolean
+          registration_status: string
           waiver_signed: boolean
           wrong_event: boolean
         }[]
