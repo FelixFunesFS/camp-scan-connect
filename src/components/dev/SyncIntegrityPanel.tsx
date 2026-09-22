@@ -41,7 +41,6 @@ export const SyncIntegrityPanel = () => {
           "uid, status, attendee_id, attendees!inner(id, first_name, last_name, order_id, registration_status)",
         )
         .eq("event_id", eventId)
-        .in("status", ["assigned", "active"])
         .eq("attendees.registration_status", "cancelled");
       if (error) throw error;
 
