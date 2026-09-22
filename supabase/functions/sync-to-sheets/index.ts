@@ -27,7 +27,7 @@ const SPECS: TableSpec[] = [
     ascending: true,
     columns: [
       'id', 'event_id', 'first_name', 'last_name', 'email', 'phone', 'order_id',
-      'ticket_type', 'site_location_assignment', 'meal_plan', 'arrival_day', 'arrival_window',
+      'ticket_type', 'site_location_assignment', 'site_detail', 'meal_plan', 'arrival_day', 'arrival_window',
       'registration_status', 'status', 'waiver_signed', 'checked_in_at', 'activated_at',
       'deactivated_at', 'most_recent_activation_method', 'most_recent_activation_at',
       'is_veteran', 'early_access', 't_shirt_size', 'dietary_restrictions',
