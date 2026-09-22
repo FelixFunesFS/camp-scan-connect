@@ -73,6 +73,8 @@ const navigationItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useStaffAuth();
   const isCollapsed = state === "collapsed";
   
   const isActive = (path: string) => {
