@@ -11,6 +11,7 @@ const stationRoutes = [
   '/',
   '/staff',
   '/activation',
+  '/stations',
   '/meal-station',
   '/drinks-station', 
   '/headphones-station',

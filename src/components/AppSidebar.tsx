@@ -15,7 +15,8 @@ import {
   DoorOpen,
   User,
   Shirt,
-  LogOut
+  LogOut,
+  LayoutGrid
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useStaffAuth } from "@/contexts/StaffAuthContext";
@@ -58,6 +59,7 @@ const navigationItems = [
   {
     label: "Station Operations",
     items: [
+      { title: "Stations", url: "/stations", icon: LayoutGrid },
       { title: "Meal Station", url: "/meal-station", icon: Utensils },
       { title: "Drinks Station", url: "/drinks-station", icon: Coffee },
       { title: "Headphones Station", url: "/headphones-station", icon: Headphones },
