@@ -168,8 +168,11 @@ export function AttendeeDetailModal({
                   </div>
                   <div>
                     <span className="text-sm font-medium">Registration:</span>
-                    <Badge variant="outline" className="ml-2">
-                      {attendee.registration_status}
+                    <Badge
+                      variant="outline"
+                      className={`ml-2 ${getStatusClassName(attendee.registration_status)}`}
+                    >
+                      {getStatusLabel(attendee.registration_status)}
                     </Badge>
                   </div>
                 </div>
@@ -396,8 +399,11 @@ export function AttendeeDetailModal({
                             </div>
                             <div>
                               <span className="text-sm font-medium">Registration:</span>
-                              <Badge variant="outline" className="ml-2">
-                                {selectedCompanion.registration_status}
+                              <Badge
+                                variant="outline"
+                                className={`ml-2 ${getStatusClassName(selectedCompanion.registration_status)}`}
+                              >
+                                {getStatusLabel(selectedCompanion.registration_status)}
                               </Badge>
                             </div>
                           </div>

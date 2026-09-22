@@ -40,7 +40,7 @@ export function getRegistrationStatusVariant(status: string): 'default' | 'secon
 export function getRegistrationStatusDisplayText(status: string): string {
   switch (status) {
     case 'registered':
-      return 'Registered';
+      return 'Confirmed';
     case 'pending':
       return 'Pending Payment';
     case 'waitlisted':
