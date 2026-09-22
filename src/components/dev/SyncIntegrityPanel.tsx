@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, ShieldAlert, ArrowLeftRight, CheckCircle2 } from "lucide-react";
+import { Loader2, RefreshCw, ShieldAlert, ArrowLeftRight, CheckCircle2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEvent } from "@/contexts/EventContext";
@@ -227,6 +227,28 @@ export const SyncIntegrityPanel = () => {
                     {working === row.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : "Retire band"}
                   </Button>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {retired.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold">
+              Cancelled registrations whose band is already retired ({retired.length})
+            </h4>
+            {retired.map((row) => (
+              <div
+                key={row.uid}
+                className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{row.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    Band {row.uid} · Order {row.orderId ?? "—"}
+                  </p>
+                </div>
+                <Badge variant="secondary">{row.status}</Badge>
               </div>
             ))}
           </div>
