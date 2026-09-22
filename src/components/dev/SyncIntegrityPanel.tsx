@@ -84,7 +84,7 @@ export const SyncIntegrityPanel = () => {
       const banded = new Set((bandedTags ?? []).map((t) => t.attendee_id));
 
       const candidates: TransferCandidate[] = [];
-      for (const row of rows) {
+      for (const row of workingRows) {
         const replacement = (sameOrder ?? []).find(
           (a) => a.order_id === row.orderId && !banded.has(a.id),
         );
@@ -142,6 +142,28 @@ export const SyncIntegrityPanel = () => {
       load();
     }
   };
+
+  const exportCsv = () => {
+    const header = "Name,Order,Band,Band status,Retired\n";
+    const body = cancelled
+      .map((r) => {
+        const retired = r.status === "assigned" || r.status === "active" ? "No" : "Yes";
+        return [r.name, r.orderId ?? "", r.uid, r.status, retired]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(",");
+      })
+      .join("\n");
+    const blob = new Blob([header + body], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cancelled-registrations-with-bands-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const stillWorking = cancelled.filter((r) => r.status === "assigned" || r.status === "active");
+  const retired = cancelled.filter((r) => r.status !== "assigned" && r.status !== "active");
 
   return (
     <Card>
