@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio, Ticket, Headphones } from "lucide-react";
+import { User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio, Ticket, Headphones, MapPin } from "lucide-react";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import type { NotificationState, FlexibleAttendeeData } from "@/types/attendee";
 import { formatTicketType } from "@/lib/ticketTypes";
