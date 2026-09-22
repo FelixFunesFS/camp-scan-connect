@@ -55,6 +55,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { formatTicketType } from "@/lib/ticketTypes";
+import { getStatusClassName, getStatusLabel } from "@/lib/registrationStatus";
 
 export interface AttendeeData {
   id: string;
