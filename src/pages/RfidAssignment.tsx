@@ -1295,6 +1295,7 @@ export const RfidAssignment = () => {
                           Most Recent Activation {getSortIcon('most_recent_activation')}
                         </div>
                       </TableHead>
+                      <TableHead>Registration</TableHead>
                       <TableHead>Credential Assignment</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
