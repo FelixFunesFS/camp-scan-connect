@@ -50,6 +50,7 @@ import { WaiverStatusPanel } from "@/components/WaiverStatusPanel";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
 import { formatTicketType } from "@/lib/ticketTypes";
+import { getStatusClassName, WORKING_STATUSES } from "@/lib/registrationStatus";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {
