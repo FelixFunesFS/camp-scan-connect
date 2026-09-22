@@ -14,9 +14,11 @@ import {
   Package2,
   DoorOpen,
   User,
-  Shirt
+  Shirt,
+  LogOut
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useStaffAuth } from "@/contexts/StaffAuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -34,7 +36,7 @@ const navigationItems = [
   {
     label: "Management",
     items: [
-      { title: "Dashboard", url: "/", icon: Home },
+      { title: "Dashboard", url: "/dashboard", icon: Home },
       { title: "Reports", url: "/reports", icon: BarChart3 },
       { title: "Developer Tools", url: "/dev", icon: Settings },
     ]
@@ -117,6 +119,25 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         ))}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => {
+                    signOut();
+                    navigate("/", { replace: true });
+                  }}
+                  tooltip={isCollapsed ? "Sign out" : undefined}
+                  className="h-9 transition-colors duration-200"
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && <span className="truncate">Sign out</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   );
