@@ -178,10 +178,21 @@ export const SyncIntegrityPanel = () => {
             band moved.
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading} className="shrink-0">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          <span className="ml-2">Refresh</span>
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCsv}
+            disabled={loading || cancelled.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            <span className="ml-2">Export CSV</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            <span className="ml-2">Refresh</span>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {!loading && cancelled.length === 0 && transfers.length === 0 && (
