@@ -34,6 +34,9 @@ export function formatPhoneNumberPartial(phone: string): string {
  * @returns Formatted meal plan string
  */
 export function formatMealPlan(mealPlan: string | null): string {
-  if (!mealPlan) return "No Meal Plan";
+  const value = (mealPlan ?? '').toLowerCase();
+  if (!value || value === 'none') return "No meal plan";
+  if (value === 'standard') return "Standard Meal Plan";
+  if (value === 'premium') return "Premium Meal Plan";
   return `Meal Plan ${mealPlan}`;
 }
