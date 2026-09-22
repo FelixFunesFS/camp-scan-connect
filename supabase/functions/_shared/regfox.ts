@@ -162,6 +162,35 @@ function selectedChild(
 export interface Accommodation {
   ticket_type: string;
   site_location_assignment: string | null;
+  site_detail?: string | null;
+}
+
+/**
+ * The specific spot the registrant chose (pad, green-space tent, cabin,
+ * room type). RegFox stores it as a separate question per stay type, so the
+ * first answered one wins.
+ */
+const SITE_DETAIL_KEYS = [
+  'premiumTentSite',
+  'premiumTentSite3',
+  'dryCampingTentSite',
+  'preferredRvSpaceNote',
+  'preferredPremiumVanRoof',
+  'preferredPremiumVanRoof2',
+  'winnebagoLotPreferredRv',
+  'whichGlampingTentKing',
+  'glampingTent',
+  'glampingTentKingBunks',
+  'glampingTentDoubleQueen',
+  'cabinRegistrationOptions2',
+];
+
+export function siteDetail(f: Map<string, string>): string | null {
+  for (const key of SITE_DETAIL_KEYS) {
+    const v = (f.get(key) ?? '').trim();
+    if (v && !/^option\d+$/.test(v)) return v;
+  }
+  return null;
 }
 
 /**
@@ -176,6 +205,7 @@ export interface Accommodation {
  * roughly a third of the roster, so the caller resolves them instead.
  */
 export function rawAccommodation(f: Map<string, string>): Accommodation | null {
+  const detail = siteDetail(f);
   const stay = (f.get('multipleChoice') ?? '').toLowerCase();
   const tentTier = (f.get('registrationOptions') ?? '').toLowerCase();
   const tentTier2 = (f.get('registrationOptions2') ?? '').toLowerCase();
@@ -184,19 +214,19 @@ export function rawAccommodation(f: Map<string, string>): Accommodation | null {
   if (!stay) return null;
 
   if (stay === 'daypassonly') {
-    return { ticket_type: 'day_pass', site_location_assignment: null };
+    return { ticket_type: 'day_pass', site_location_assignment: null, site_detail: detail };
   }
   if (stay === 'cabin') {
-    return { ticket_type: 'cabin', site_location_assignment: 'cabin' };
+    return { ticket_type: 'cabin', site_location_assignment: 'cabin', site_detail: detail };
   }
   // 2026 introduced villa lodging; a built structure sited with the cabins,
   // but reported as its own category.
   if (stay === 'villa') {
-    return { ticket_type: 'villa', site_location_assignment: 'cabin' };
+    return { ticket_type: 'villa', site_location_assignment: 'cabin', site_detail: detail };
   }
   // Glamping tents are pre-pitched and priced separately from dry tenting.
   if (stay.includes('glamping')) {
-    return { ticket_type: 'glamping', site_location_assignment: 'glamping' };
+    return { ticket_type: 'glamping', site_location_assignment: 'glamping', site_detail: detail };
   }
   if (stay === 'rv') {
     // premiumRv is a powered space; dryRv / pavedDryCampingRv are not.
@@ -204,6 +234,7 @@ export function rawAccommodation(f: Map<string, string>): Accommodation | null {
     return {
       ticket_type: premium ? 'premium_rv' : 'rv_site',
       site_location_assignment: 'rv_site',
+      site_detail: detail,
     };
   }
   // tent, vanrooftop, or anything else that still occupies a ground site
@@ -211,6 +242,7 @@ export function rawAccommodation(f: Map<string, string>): Accommodation | null {
   return {
     ticket_type: premiumTent ? 'premium_tent' : 'dry_site',
     site_location_assignment: 'dry_site',
+    site_detail: detail,
   };
 }
 
@@ -397,6 +429,7 @@ export function mapRegistrant(
 
     ticket_type: accommodation.ticket_type,
     site_location_assignment: accommodation.site_location_assignment,
+    site_detail: siteDetail(f) ?? accommodation.site_detail ?? null,
     meal_plan: mapMealPlan(f),
     t_shirt_size: shirt?.label ?? null,
 
