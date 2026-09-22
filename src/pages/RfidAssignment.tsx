@@ -55,6 +55,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { formatTicketType } from "@/lib/ticketTypes";
+import { getStatusClassName, getStatusLabel } from "@/lib/registrationStatus";
 
 export interface AttendeeData {
   id: string;
@@ -1295,6 +1296,7 @@ export const RfidAssignment = () => {
                           Most Recent Activation {getSortIcon('most_recent_activation')}
                         </div>
                       </TableHead>
+                      <TableHead>Registration</TableHead>
                       <TableHead>Credential Assignment</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -1362,6 +1364,14 @@ export const RfidAssignment = () => {
                                 Not Activated
                               </Badge>
                             )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={getStatusClassName(attendee.registration_status)}
+                            >
+                              {getStatusLabel(attendee.registration_status)}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <EnhancedRfidAssignmentCell

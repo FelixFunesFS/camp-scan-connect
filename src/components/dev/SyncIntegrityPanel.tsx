@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, ShieldAlert, ArrowLeftRight, CheckCircle2 } from "lucide-react";
+import { Loader2, RefreshCw, ShieldAlert, ArrowLeftRight, CheckCircle2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEvent } from "@/contexts/EventContext";
@@ -41,7 +41,6 @@ export const SyncIntegrityPanel = () => {
           "uid, status, attendee_id, attendees!inner(id, first_name, last_name, order_id, registration_status)",
         )
         .eq("event_id", eventId)
-        .in("status", ["assigned", "active"])
         .eq("attendees.registration_status", "cancelled");
       if (error) throw error;
 
@@ -63,7 +62,8 @@ export const SyncIntegrityPanel = () => {
       setCancelled(rows);
 
       // Transfer candidates: an active registrant on the same order with no band.
-      const orderIds = [...new Set(rows.map((r) => r.orderId).filter(Boolean))] as string[];
+      const workingRows = rows.filter((r) => r.status === "assigned" || r.status === "active");
+      const orderIds = [...new Set(workingRows.map((r) => r.orderId).filter(Boolean))] as string[];
       if (orderIds.length === 0) {
         setTransfers([]);
         return;
@@ -84,7 +84,7 @@ export const SyncIntegrityPanel = () => {
       const banded = new Set((bandedTags ?? []).map((t) => t.attendee_id));
 
       const candidates: TransferCandidate[] = [];
-      for (const row of rows) {
+      for (const row of workingRows) {
         const replacement = (sameOrder ?? []).find(
           (a) => a.order_id === row.orderId && !banded.has(a.id),
         );
@@ -143,6 +143,28 @@ export const SyncIntegrityPanel = () => {
     }
   };
 
+  const exportCsv = () => {
+    const header = "Name,Order,Band,Band status,Retired\n";
+    const body = cancelled
+      .map((r) => {
+        const retired = r.status === "assigned" || r.status === "active" ? "No" : "Yes";
+        return [r.name, r.orderId ?? "", r.uid, r.status, retired]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(",");
+      })
+      .join("\n");
+    const blob = new Blob([header + body], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cancelled-registrations-with-bands-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const stillWorking = cancelled.filter((r) => r.status === "assigned" || r.status === "active");
+  const retired = cancelled.filter((r) => r.status !== "assigned" && r.status !== "active");
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -156,10 +178,21 @@ export const SyncIntegrityPanel = () => {
             band moved.
           </CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading} className="shrink-0">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          <span className="ml-2">Refresh</span>
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportCsv}
+            disabled={loading || cancelled.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            <span className="ml-2">Export CSV</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            <span className="ml-2">Refresh</span>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {!loading && cancelled.length === 0 && transfers.length === 0 && (
@@ -169,10 +202,10 @@ export const SyncIntegrityPanel = () => {
           </div>
         )}
 
-        {cancelled.length > 0 && (
+        {stillWorking.length > 0 && (
           <div className="space-y-3">
             <h4 className="text-sm font-semibold">Cancelled but band still works</h4>
-            {cancelled.map((row) => (
+            {stillWorking.map((row) => (
               <div
                 key={row.uid}
                 className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
@@ -194,6 +227,28 @@ export const SyncIntegrityPanel = () => {
                     {working === row.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : "Retire band"}
                   </Button>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {retired.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold">
+              Cancelled registrations whose band is already retired ({retired.length})
+            </h4>
+            {retired.map((row) => (
+              <div
+                key={row.uid}
+                className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{row.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    Band {row.uid} · Order {row.orderId ?? "—"}
+                  </p>
+                </div>
+                <Badge variant="secondary">{row.status}</Badge>
               </div>
             ))}
           </div>

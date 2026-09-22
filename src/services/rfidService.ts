@@ -2,6 +2,7 @@ import { getCurrentEventId } from "@/lib/eventRuntime";
 import { supabase } from "@/integrations/supabase/client";
 import { inferCredentialType, normalizeCredential } from "@/lib/credentialFormat";
 import { resolveCredential } from "@/lib/credentialLookup";
+import { isActivatable } from "@/lib/registrationStatus";
 
 export interface RfidTag {
   uid: string;
@@ -36,6 +37,8 @@ class RfidService {
       if (!resolved || !resolved.attendee_id) return null;
       if (resolved.wrong_event) return null;
       if (!['assigned', 'active'].includes(resolved.status)) return null;
+      // Cancelled / abandoned / transferred registrations never pass a station.
+      if (!isActivatable(resolved.registration_status)) return null;
 
       const { data: tag } = await supabase
         .from('rfid_tags')

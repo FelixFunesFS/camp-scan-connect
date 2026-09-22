@@ -8,6 +8,7 @@ import { EnhancedRfidAssignmentCell } from "@/components/EnhancedRfidAssignmentC
 import { getCheckInStatus, getEnhancedCheckInStatus } from "@/utils/statusUtils";
 import type { AttendeeData } from "@/pages/RfidAssignment";
 import { formatTicketType } from "@/lib/ticketTypes";
+import { getStatusClassName, getStatusLabel } from "@/lib/registrationStatus";
 
 interface MobileRfidAssignmentCardProps {
   attendee: AttendeeData;
@@ -118,8 +119,14 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
               </div>
               
               {/* Primary Status Badge */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {getRfidStatusBadge()}
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${getStatusClassName(attendee.registration_status)}`}
+                >
+                  {getStatusLabel(attendee.registration_status)}
+                </Badge>
               </div>
             </div>
             

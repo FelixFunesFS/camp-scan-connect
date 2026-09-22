@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeCredential } from "@/lib/credentialFormat";
+import { getBlockedReason, isActivatable } from "@/lib/registrationStatus";
 
 export interface CredentialLookup {
   found: boolean;
@@ -11,6 +12,7 @@ export interface CredentialLookup {
   attendee_name: string | null;
   waiver_signed: boolean;
   is_checked_in: boolean;
+  registration_status: string | null;
 }
 
 /** Identify a scanned code anywhere in the system (any year). */
@@ -46,6 +48,10 @@ export async function describeUnknownCredential(uid: string): Promise<string> {
     return `Code ${uid} isn't assigned to anyone yet — assign it at the assignment station.`;
   }
 
+  if (!isActivatable(result.registration_status)) {
+    return getBlockedReason(result.registration_status, result.attendee_name);
+  }
+
   if (result.credential_status === "lost" || result.credential_status === "replaced") {
     return `Code ${uid} was retired (${result.credential_status}) — scan the camper's replacement band.`;
   }
@@ -66,6 +72,7 @@ export interface ResolvedCredential {
   is_checked_in: boolean;
   wrong_event: boolean;
   event_year: number | null;
+  registration_status: string | null;
 }
 
 /**
@@ -89,5 +96,6 @@ export async function resolveCredential(raw: string): Promise<ResolvedCredential
     is_checked_in: result.is_checked_in,
     wrong_event: result.wrong_event,
     event_year: result.event_year,
+    registration_status: result.registration_status ?? null,
   };
 }

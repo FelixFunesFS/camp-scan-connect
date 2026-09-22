@@ -50,6 +50,7 @@ import { WaiverStatusPanel } from "@/components/WaiverStatusPanel";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
 import { formatTicketType } from "@/lib/ticketTypes";
+import { getStatusClassName, WORKING_STATUSES } from "@/lib/registrationStatus";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {
@@ -228,8 +229,11 @@ export function StaffActivationHub() {
         .eq('event_id', getCurrentEventId())
         .order('created_at', { ascending: false });
 
-      // Staff Hub shows ALL registration statuses for complete oversight
-      // No filtering by registration_status - staff needs to see everything
+      // Cancelled/abandoned/transferred registrations are hidden unless staff
+      // explicitly asks to see them.
+      if (!showCancelledRegistrants) {
+        query = query.in('registration_status', WORKING_STATUSES);
+      }
 
       const { data: attendeesData, error: attendeesError } = await query;
 
@@ -1220,7 +1224,7 @@ export function StaffActivationHub() {
                                    <p>{attendee.email}</p>
                                    <p>{formatTicketType(attendee.ticket_type)}</p>
                                    <div className="flex items-center gap-2 flex-wrap">
-                                     <Badge variant={getRegistrationStatusVariant(attendee.registration_status)} className="text-xs">
+                                     <Badge variant={getRegistrationStatusVariant(attendee.registration_status)} className={`text-xs ${getStatusClassName(attendee.registration_status)}`}>
                                        {getRegistrationStatusDisplayText(attendee.registration_status)}
                                      </Badge>
                                      {(() => {
@@ -1435,7 +1439,7 @@ export function StaffActivationHub() {
                                <td className="p-3 text-sm">{attendee.order_id}</td>
                                <td className="p-3 text-sm">{formatTicketType(attendee.ticket_type)}</td>
                                <td className="p-3 text-sm">
-                                 <Badge variant={getRegistrationStatusVariant(attendee.registration_status)}>
+                                 <Badge variant={getRegistrationStatusVariant(attendee.registration_status)} className={getStatusClassName(attendee.registration_status)}>
                                    {getRegistrationStatusDisplayText(attendee.registration_status)}
                                  </Badge>
                                </td>

@@ -407,6 +407,8 @@ export function mapRegistrant(
     additional_guests: extraPerson ? { extra_person: true } : null,
 
     registration_status: mapRegistrationStatus(r.status),
+    // Keep RegFox's own wording so waiting list can be split out of Pending.
+    regfox_raw_status: r.status ?? null,
     custom_fields: customFields,
   };
 }
