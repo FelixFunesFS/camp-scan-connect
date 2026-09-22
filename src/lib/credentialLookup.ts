@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeCredential } from "@/lib/credentialFormat";
+import { getBlockedReason, isActivatable } from "@/lib/registrationStatus";
 
 export interface CredentialLookup {
   found: boolean;
@@ -45,6 +46,10 @@ export async function describeUnknownCredential(uid: string): Promise<string> {
 
   if (!result.attendee_id) {
     return `Code ${uid} isn't assigned to anyone yet — assign it at the assignment station.`;
+  }
+
+  if (!isActivatable(result.registration_status)) {
+    return getBlockedReason(result.registration_status, result.attendee_name);
   }
 
   if (result.credential_status === "lost" || result.credential_status === "replaced") {
