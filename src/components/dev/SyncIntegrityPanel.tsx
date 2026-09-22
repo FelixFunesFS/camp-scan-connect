@@ -62,7 +62,8 @@ export const SyncIntegrityPanel = () => {
       setCancelled(rows);
 
       // Transfer candidates: an active registrant on the same order with no band.
-      const orderIds = [...new Set(rows.map((r) => r.orderId).filter(Boolean))] as string[];
+      const workingRows = rows.filter((r) => r.status === "assigned" || r.status === "active");
+      const orderIds = [...new Set(workingRows.map((r) => r.orderId).filter(Boolean))] as string[];
       if (orderIds.length === 0) {
         setTransfers([]);
         return;
