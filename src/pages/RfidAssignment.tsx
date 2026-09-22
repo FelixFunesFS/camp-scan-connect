@@ -1365,6 +1365,14 @@ export const RfidAssignment = () => {
                             )}
                           </TableCell>
                           <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={getStatusClassName(attendee.registration_status)}
+                            >
+                              {getStatusLabel(attendee.registration_status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
                             <EnhancedRfidAssignmentCell
                               attendeeId={attendee.id}
                               attendeeName={`${attendee.first_name} ${attendee.last_name}`}
