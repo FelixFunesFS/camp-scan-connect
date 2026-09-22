@@ -185,12 +185,11 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
                   {getHeadphonesBadge()}
                 </div>
               </div>
-                {attendee.is_veteran && (
-                  <p className="mt-2 text-xs font-medium text-primary">
-                    Thank you for your service.
-                  </p>
-                )}
-              </div>
+              {attendee.is_veteran && (
+                <p className="mt-2 text-xs font-medium text-primary">
+                  Thank you for your service.
+                </p>
+              )}
             </div>
           </div>
 
