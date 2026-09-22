@@ -63,7 +63,7 @@ const App = () => (
               {/* Legacy path — keep working for printed links and bookmarks */}
               <Route path="/rfid-assignment" element={<Navigate to="/assignment" replace />} />
               <Route path="/staff-hub" element={staff(<StaffActivationHub />)} />
-              <Route path="/stations" element={staff(<StationsPage />)} />
+              <Route path="/stations" element={<StationsPage />} />
               <Route path="/meal-station" element={staff(<MealStation />)} />
               <Route path="/drinks-station" element={staff(<DrinksStation />)} />
               <Route path="/headphones-station" element={staff(<HeadphonesStation />)} />

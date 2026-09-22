@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
+import { StaffPasscodeGate } from "@/components/StaffPasscodeGate";
+import { useStaffAuth } from "@/contexts/StaffAuthContext";
 import {
   Utensils,
   Coffee,
@@ -25,6 +27,11 @@ const STATIONS = [
 
 export default function StationsPage() {
   const navigate = useNavigate();
+  const { isUnlocked } = useStaffAuth();
+
+  if (!isUnlocked) {
+    return <StaffPasscodeGate />;
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6">
