@@ -115,6 +115,7 @@ export type Database = {
           registration_status:
             | Database["public"]["Enums"]["registration_status"]
             | null
+          site_detail: string | null
           site_location_assignment:
             | Database["public"]["Enums"]["site_location"]
             | null
@@ -169,6 +170,7 @@ export type Database = {
           registration_status?:
             | Database["public"]["Enums"]["registration_status"]
             | null
+          site_detail?: string | null
           site_location_assignment?:
             | Database["public"]["Enums"]["site_location"]
             | null
@@ -223,6 +225,7 @@ export type Database = {
           registration_status?:
             | Database["public"]["Enums"]["registration_status"]
             | null
+          site_detail?: string | null
           site_location_assignment?:
             | Database["public"]["Enums"]["site_location"]
             | null
@@ -792,6 +795,7 @@ export type Database = {
           order_id: string
           phone: string
           registration_status: string
+          site_detail: string
           site_location_assignment: string
           ticket_type: string
           waiver_signed: boolean
