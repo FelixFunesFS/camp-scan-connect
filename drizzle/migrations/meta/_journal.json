@@ -8,6 +8,13 @@
       "when": 1790114803634,
       "tag": "0000_status_handling_and_activation_reset",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790119118465,
+      "tag": "0001_phone_lookup_camper_details",
+      "breakpoints": true
     }
   ]
 }

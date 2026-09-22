@@ -781,12 +781,19 @@ export type Database = {
       attendees_for_phone: {
         Args: { p_event_id?: string; p_phone: string }
         Returns: {
+          arrival_day: string
+          arrival_window: string
           first_name: string
           id: string
           is_direct: boolean
+          is_veteran: boolean
           last_name: string
+          meal_plan: string
           order_id: string
           phone: string
+          registration_status: string
+          site_location_assignment: string
+          ticket_type: string
           waiver_signed: boolean
         }[]
       }
