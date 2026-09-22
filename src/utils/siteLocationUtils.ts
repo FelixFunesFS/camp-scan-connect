@@ -228,22 +228,30 @@ export function formatSiteLocationForDisplay(siteLocationString: string | null, 
  * Helper function to format assignment text with proper capitalization and spacing
  */
 function formatAssignmentText(assignment: string): string {
+  // Waiting-list picks never carry a real spot.
+  if (assignment.toLowerCase().includes('waitlist')) {
+    return 'Waitlist';
+  }
+
   // Handle cabin assignments like "#cabin5" -> "Cabin 5"
   if (assignment.match(/^#?cabin\d+$/i)) {
     const cabinNum = assignment.replace(/^#?cabin/i, '');
     return `Cabin ${cabinNum}`;
   }
-  
-  // Handle pad assignments like "pad02lakefront30Amp" -> "Pad 02 Lakefront 30 Amp"
-  if (assignment.match(/^pad\d+/i)) {
+
+  // Handle pad / site codes like "pad02lakefront30Amp" -> "Pad 02 Lakefront 30 Amp"
+  if (assignment.match(/^(pad|site)\d+/i)) {
     return assignment
-      .replace(/^pad(\d+)/i, 'Pad $1 ')
-      .replace(/lakefront/i, 'Lakefront ')
-      .replace(/(\d+)amp/i, '$1 Amp')
-      .replace(/50amp/i, '50 Amp')
-      .replace(/30amp/i, '30 Amp')
-      .trim();
+      .replace(/^(pad|site)(\d+)/i, (_m, word: string, num: string) =>
+        `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()} ${num} `)
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/([A-Za-z])(\d+)/g, '$1 $2')
+      .replace(/(\d+)\s*amp/gi, '$1 Amp')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, l => l.toUpperCase());
   }
+  
   
   // Handle space numbers like "27" -> "Space 27"
   if (assignment.match(/^\d+$/)) {
