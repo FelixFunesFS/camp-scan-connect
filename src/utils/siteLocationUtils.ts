@@ -2,6 +2,43 @@
  * Utility functions for site location assignment handling
  */
 
+import { formatTicketType } from "@/lib/ticketTypes";
+
+/**
+ * Combine the accommodation category with the specific spot the registrant
+ * picked (`attendees.site_detail`) into the canonical
+ * "Premium Tent: greenSpaceForTent25" string every screen parses.
+ */
+export function buildSiteAssignment(
+  ticketType?: string | null,
+  siteDetail?: string | null,
+  fallbackCategory?: string | null,
+): string | null {
+  const detail = (siteDetail ?? '').trim();
+  const label = ticketType ? formatTicketType(ticketType) : null;
+  if (detail) {
+    return label ? `${label}: ${detail}` : detail;
+  }
+  if (fallbackCategory && fallbackCategory !== 'Not Assigned') {
+    return label ?? formatTicketType(fallbackCategory);
+  }
+  return null;
+}
+
+/** Ready-to-render "Type: Spot" text, or null when nothing is assigned. */
+export function formatSiteAssignment(
+  ticketType?: string | null,
+  siteDetail?: string | null,
+  fallbackCategory?: string | null,
+  maxLength = 28,
+): string | null {
+  const combined = buildSiteAssignment(ticketType, siteDetail, fallbackCategory);
+  if (!combined) return null;
+  if (!combined.includes(': ')) return combined;
+  const [type] = combined.split(': ');
+  return `${type}: ${formatSiteLocationForDisplay(combined, maxLength)}`;
+}
+
 export interface SiteLocationAssignment {
   type: string;
   assignment: string;
