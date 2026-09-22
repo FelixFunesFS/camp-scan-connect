@@ -70,7 +70,14 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   };
 
   const getMealPlanBadge = () => {
-    if (!attendee.meal_plan) return null;
+    if (!attendee.meal_plan) {
+      return (
+        <Badge variant="outline" className="text-xs text-muted-foreground">
+          <Utensils className="h-3 w-3 mr-1" />
+          No meal plan
+        </Badge>
+      );
+    }
     return (
       <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
         <Utensils className="h-3 w-3 mr-1" />
