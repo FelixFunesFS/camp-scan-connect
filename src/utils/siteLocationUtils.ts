@@ -2,6 +2,43 @@
  * Utility functions for site location assignment handling
  */
 
+import { formatTicketType } from "@/lib/ticketTypes";
+
+/**
+ * Combine the accommodation category with the specific spot the registrant
+ * picked (`attendees.site_detail`) into the canonical
+ * "Premium Tent: greenSpaceForTent25" string every screen parses.
+ */
+export function buildSiteAssignment(
+  ticketType?: string | null,
+  siteDetail?: string | null,
+  fallbackCategory?: string | null,
+): string | null {
+  const detail = (siteDetail ?? '').trim();
+  const label = ticketType ? formatTicketType(ticketType) : null;
+  if (detail) {
+    return label ? `${label}: ${detail}` : detail;
+  }
+  if (fallbackCategory && fallbackCategory !== 'Not Assigned') {
+    return label ?? formatTicketType(fallbackCategory);
+  }
+  return null;
+}
+
+/** Ready-to-render "Type: Spot" text, or null when nothing is assigned. */
+export function formatSiteAssignment(
+  ticketType?: string | null,
+  siteDetail?: string | null,
+  fallbackCategory?: string | null,
+  maxLength = 28,
+): string | null {
+  const combined = buildSiteAssignment(ticketType, siteDetail, fallbackCategory);
+  if (!combined) return null;
+  if (!combined.includes(': ')) return combined;
+  const [type] = combined.split(': ');
+  return `${type}: ${formatSiteLocationForDisplay(combined, maxLength)}`;
+}
+
 export interface SiteLocationAssignment {
   type: string;
   assignment: string;
@@ -191,22 +228,30 @@ export function formatSiteLocationForDisplay(siteLocationString: string | null, 
  * Helper function to format assignment text with proper capitalization and spacing
  */
 function formatAssignmentText(assignment: string): string {
+  // Waiting-list picks never carry a real spot.
+  if (assignment.toLowerCase().includes('waitlist')) {
+    return 'Waitlist';
+  }
+
   // Handle cabin assignments like "#cabin5" -> "Cabin 5"
   if (assignment.match(/^#?cabin\d+$/i)) {
     const cabinNum = assignment.replace(/^#?cabin/i, '');
     return `Cabin ${cabinNum}`;
   }
-  
-  // Handle pad assignments like "pad02lakefront30Amp" -> "Pad 02 Lakefront 30 Amp"
-  if (assignment.match(/^pad\d+/i)) {
+
+  // Handle pad / site codes like "pad02lakefront30Amp" -> "Pad 02 Lakefront 30 Amp"
+  if (assignment.match(/^(pad|site)\d+/i)) {
     return assignment
-      .replace(/^pad(\d+)/i, 'Pad $1 ')
-      .replace(/lakefront/i, 'Lakefront ')
-      .replace(/(\d+)amp/i, '$1 Amp')
-      .replace(/50amp/i, '50 Amp')
-      .replace(/30amp/i, '30 Amp')
-      .trim();
+      .replace(/^(pad|site)(\d+)/i, (_m, word: string, num: string) =>
+        `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()} ${num} `)
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/([A-Za-z])(\d+)/g, '$1 $2')
+      .replace(/(\d+)\s*amp/gi, '$1 Amp')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, l => l.toUpperCase());
   }
+  
   
   // Handle space numbers like "27" -> "Space 27"
   if (assignment.match(/^\d+$/)) {
@@ -224,11 +269,13 @@ function formatAssignmentText(assignment: string): string {
     return assignment
       // Insert spaces before capital letters
       .replace(/([a-z])([A-Z])/g, '$1 $2')
+      // Separate a trailing site number, e.g. "Tent200" -> "Tent 200"
+      .replace(/([A-Za-z])(\d+)/g, '$1 $2')
       // Capitalize first letter of each word
       .replace(/\b\w/g, l => l.toUpperCase())
       // Fix common abbreviations
       .replace(/\bRv\b/g, 'RV')
-      .replace(/\bAmp\b/g, 'Amp')
+      .replace(/\bAda\b/g, 'ADA')
       .replace(/(\d+)\s*Amp/g, '$1 Amp');
   }
   

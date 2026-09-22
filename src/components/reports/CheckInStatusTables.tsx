@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ResponsiveTable, ResponsiveTableMobile } from "@/components/ui/responsive-table";
 import { UserCheck, Phone, ChevronDown, Zap } from "lucide-react";
+import { buildSiteAssignment } from '@/utils/siteLocationUtils';
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
@@ -51,7 +52,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
           .from('rfid_tags')
           .select(`
             activated_at, activation_method, uid,
-            attendees!inner(id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, site_location_assignment, created_at)
+            attendees!inner(id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, site_location_assignment, site_detail, created_at)
           `)
         .eq('event_id', getCurrentEventId())
           .eq('attendees.registration_status', 'registered')
@@ -83,7 +84,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
               ticketType: attendee.ticket_type || 'Standard',
               orderInfo: attendee.order_id || 'No Order',
               arrivalWindow: attendee.arrival_window,
-              siteLocation: attendee.site_location_assignment,
+              siteLocation: buildSiteAssignment(attendee.ticket_type, (attendee as any).site_detail, attendee.site_location_assignment),
               arrivalScheduled: getScheduledArrivalDay(attendee.arrival_window)
             };
           });

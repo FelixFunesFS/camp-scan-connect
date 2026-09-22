@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserCheck, Phone, Zap, Calendar } from "lucide-react";
+import { buildSiteAssignment } from '@/utils/siteLocationUtils';
 import { supabase } from "@/integrations/supabase/client";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTimeET } from "@/utils/dateTimeUtils";
@@ -48,7 +49,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
           .from('rfid_tags')
           .select(`
             activated_at, activation_method, uid,
-            attendees!inner(id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, site_location_assignment, created_at)
+            attendees!inner(id, first_name, last_name, phone, email, ticket_type, order_id, arrival_window, site_location_assignment, site_detail, created_at)
           `)
         .eq('event_id', getCurrentEventId())
           .eq('attendees.registration_status', 'registered')
@@ -91,7 +92,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
               ticketType: attendee.ticket_type || 'Standard',
               orderInfo: attendee.order_id || 'No Order',
               arrivalWindow: attendee.arrival_window,
-              siteLocation: attendee.site_location_assignment,
+              siteLocation: buildSiteAssignment(attendee.ticket_type, (attendee as any).site_detail, attendee.site_location_assignment),
               scheduledArrivalDay: scheduledDay,
               actualCheckInDay: actualDay
             };

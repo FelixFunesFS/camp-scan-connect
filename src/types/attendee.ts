@@ -14,6 +14,7 @@ export interface EnhancedAttendee {
   rfid_uid?: string | null;
   rfid_status?: string | null;
   site_location_assignment?: string | null;
+  site_detail?: string | null;
   tshirt_orders?: Array<{
     id: string;
     style: string;
@@ -52,6 +53,7 @@ export interface FlexibleAttendeeData {
   rfid_uid?: string | null;
   rfid_status?: string | null;
   site_location_assignment?: string | null;
+  site_detail?: string | null;
   is_activated?: boolean;
   has_rfid?: boolean;
   is_veteran?: boolean;

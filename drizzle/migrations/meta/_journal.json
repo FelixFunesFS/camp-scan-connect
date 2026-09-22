@@ -15,6 +15,13 @@
       "when": 1790119118465,
       "tag": "0001_phone_lookup_camper_details",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790120294521,
+      "tag": "0002_site_detail",
+      "breakpoints": true
     }
   ]
 }
