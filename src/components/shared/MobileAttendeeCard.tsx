@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio, Ticket, Headphones } from "lucide-react";
+import { User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio, Ticket, Headphones, MapPin } from "lucide-react";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import type { NotificationState, FlexibleAttendeeData } from "@/types/attendee";
 import { formatTicketType } from "@/lib/ticketTypes";
@@ -33,15 +33,6 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   backgroundColor,
   className = ""
 }) => {
-  // Debug: Log the attendee data to see what's being passed
-  console.log('MobileAttendeeCard received attendee:', {
-    name: attendee.name,
-    ticket_type: attendee.ticket_type,
-    meal_plan: attendee.meal_plan,
-    arrival_window: attendee.arrival_window,
-    full_attendee: attendee
-  });
-
   const displayName = attendee.name || `${attendee.first_name || ''} ${attendee.last_name || ''}`.trim();
   const isActivated = attendee.is_activated || attendee.activated_at;
   const hasRfid = attendee.has_rfid || attendee.rfid_uid;
@@ -79,7 +70,14 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   };
 
   const getMealPlanBadge = () => {
-    if (!attendee.meal_plan) return null;
+    if (!attendee.meal_plan) {
+      return (
+        <Badge variant="outline" className="text-xs text-muted-foreground">
+          <Utensils className="h-3 w-3 mr-1" />
+          No meal plan
+        </Badge>
+      );
+    }
     return (
       <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
         <Utensils className="h-3 w-3 mr-1" />
@@ -187,6 +185,11 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
                   {getHeadphonesBadge()}
                 </div>
               </div>
+              {attendee.is_veteran && (
+                <p className="mt-2 text-xs font-medium text-primary">
+                  Thank you for your service.
+                </p>
+              )}
             </div>
           </div>
 
@@ -203,6 +206,13 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
               <div className="flex items-center gap-2">
                 <Mail className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 <span className="truncate">{attendee.email}</span>
+              </div>
+            )}
+
+            {attendee.site_location_assignment && (
+              <div className="flex items-center gap-2">
+                <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <span className="truncate">Site {attendee.site_location_assignment}</span>
               </div>
             )}
 

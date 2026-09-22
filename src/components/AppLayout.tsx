@@ -8,6 +8,8 @@ interface AppLayoutProps {
 }
 
 const stationRoutes = [
+  '/',
+  '/staff',
   '/activation',
   '/meal-station',
   '/drinks-station', 
