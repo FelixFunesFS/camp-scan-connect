@@ -202,10 +202,10 @@ export const SyncIntegrityPanel = () => {
           </div>
         )}
 
-        {cancelled.length > 0 && (
+        {stillWorking.length > 0 && (
           <div className="space-y-3">
             <h4 className="text-sm font-semibold">Cancelled but band still works</h4>
-            {cancelled.map((row) => (
+            {stillWorking.map((row) => (
               <div
                 key={row.uid}
                 className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
