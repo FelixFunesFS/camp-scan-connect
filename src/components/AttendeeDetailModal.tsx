@@ -23,6 +23,7 @@ import { EnhancedAttendee } from "./StaffActivationHub";
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
 import { formatTicketType } from "@/lib/ticketTypes";
+import { getStatusClassName, getStatusLabel } from "@/lib/registrationStatus";
 
 interface AttendeeDetailModalProps {
   attendee: any; // Made flexible to work with different attendee types
