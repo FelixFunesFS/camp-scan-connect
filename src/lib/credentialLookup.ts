@@ -96,5 +96,6 @@ export async function resolveCredential(raw: string): Promise<ResolvedCredential
     is_checked_in: result.is_checked_in,
     wrong_event: result.wrong_event,
     event_year: result.event_year,
+    registration_status: result.registration_status ?? null,
   };
 }
