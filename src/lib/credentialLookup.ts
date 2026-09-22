@@ -11,6 +11,7 @@ export interface CredentialLookup {
   attendee_name: string | null;
   waiver_signed: boolean;
   is_checked_in: boolean;
+  registration_status: string | null;
 }
 
 /** Identify a scanned code anywhere in the system (any year). */
@@ -66,6 +67,7 @@ export interface ResolvedCredential {
   is_checked_in: boolean;
   wrong_event: boolean;
   event_year: number | null;
+  registration_status: string | null;
 }
 
 /**
