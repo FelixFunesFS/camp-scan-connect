@@ -261,11 +261,13 @@ function formatAssignmentText(assignment: string): string {
     return assignment
       // Insert spaces before capital letters
       .replace(/([a-z])([A-Z])/g, '$1 $2')
+      // Separate a trailing site number, e.g. "Tent200" -> "Tent 200"
+      .replace(/([A-Za-z])(\d+)/g, '$1 $2')
       // Capitalize first letter of each word
       .replace(/\b\w/g, l => l.toUpperCase())
       // Fix common abbreviations
       .replace(/\bRv\b/g, 'RV')
-      .replace(/\bAmp\b/g, 'Amp')
+      .replace(/\bAda\b/g, 'ADA')
       .replace(/(\d+)\s*Amp/g, '$1 Amp');
   }
   
