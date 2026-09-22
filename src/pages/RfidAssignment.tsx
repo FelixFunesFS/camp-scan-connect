@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { buildSiteAssignment, formatSiteAssignment } from '@/utils/siteLocationUtils';
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Search, 
@@ -208,6 +209,7 @@ export const RfidAssignment = () => {
           state,
           custom_fields,
           site_location_assignment,
+          site_detail,
           rfid_tags(uid, status, activated_at)
         `)
         .eq('event_id', getCurrentEventId())
@@ -274,7 +276,11 @@ export const RfidAssignment = () => {
         const arrivalDay = (attendee as any).arrival_window === 'early' ? 'Thursday' : 'Friday';
         const formattedMealPlan = (attendee as any).meal_plan === '1' ? 'Plan 1' : 
                                  (attendee as any).meal_plan === '2' ? 'Plan 2' : 'No Plan';
-        const siteLocationAssignment = (attendee as any).site_location_assignment || 'Not Assigned';
+        const siteLocationAssignment = buildSiteAssignment(
+          (attendee as any).ticket_type,
+          (attendee as any).site_detail,
+          (attendee as any).site_location_assignment,
+        ) || 'Not Assigned';
         
         const activation = activationMap.get(attendee.id);
         
@@ -663,7 +669,7 @@ export const RfidAssignment = () => {
       'Ticket Type': formatTicketType(attendee.ticket_type),
       'Meal Plan': attendee.formatted_meal_plan || '',
       'Arrival Day': attendee.arrival_day || '',
-      'Site Location': attendee.site_location_assignment || '',
+      'Site Location': formatSiteAssignment(attendee.ticket_type, (attendee as any).site_detail, attendee.site_location_assignment) || '',
       'Code': attendee.rfid_uid || '',
       'Credential Status': attendee.rfid_status || '',
       'Most Recent Activation Method': attendee.most_recent_activation_method 
