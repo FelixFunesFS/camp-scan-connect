@@ -6,6 +6,7 @@ import { User, Phone, Mail, CreditCard, X, Utensils, Calendar, Radio, Ticket, He
 import { formatPhoneNumber, formatMealPlan } from "@/lib/phoneUtils";
 import type { NotificationState, FlexibleAttendeeData } from "@/types/attendee";
 import { formatTicketType } from "@/lib/ticketTypes";
+import { formatSiteAssignment } from "@/utils/siteLocationUtils";
 
 interface MobileAttendeeCardProps {
   attendee: FlexibleAttendeeData & {
@@ -36,6 +37,11 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
   const displayName = attendee.name || `${attendee.first_name || ''} ${attendee.last_name || ''}`.trim();
   const isActivated = attendee.is_activated || attendee.activated_at;
   const hasRfid = attendee.has_rfid || attendee.rfid_uid;
+  const siteLine = formatSiteAssignment(
+    attendee.ticket_type,
+    attendee.site_detail,
+    attendee.site_location_assignment,
+  );
 
   const getRfidStatusBadge = () => {
     if (isActivated) {
@@ -209,10 +215,10 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
               </div>
             )}
 
-            {attendee.site_location_assignment && (
+            {siteLine && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                <span className="truncate">Site {attendee.site_location_assignment}</span>
+                <span className="truncate">{siteLine}</span>
               </div>
             )}
 
