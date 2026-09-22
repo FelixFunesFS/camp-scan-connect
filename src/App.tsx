@@ -1,13 +1,15 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { EventProvider } from "./contexts/EventContext";
+import { StaffAuthProvider, useStaffAuth } from "./contexts/StaffAuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 import ActivationStation from "./pages/ActivationStation";
+import StaffLogin from "./pages/StaffLogin";
 import { RfidAssignment } from "./pages/RfidAssignment";
 import { StaffActivationHub } from "./components/StaffActivationHub";
 import MealStation from "./pages/MealStation";
@@ -27,42 +29,61 @@ import ScanTester from "./pages/ScanTester";
 
 const queryClient = new QueryClient();
 
+/** Every staff screen sits behind the shared device passcode. */
+function RequireStaff({ children }: { children: React.ReactNode }) {
+  const { isUnlocked } = useStaffAuth();
+  const location = useLocation();
+  if (!isUnlocked) {
+    return <Navigate to="/staff" replace state={{ from: location.pathname }} />;
+  }
+  return <>{children}</>;
+}
+
+const staff = (element: React.ReactNode) => <RequireStaff>{element}</RequireStaff>;
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <EventProvider>
-      <TooltipProvider>
-        <Toaster />
-        <BrowserRouter>
-          <AppLayout>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            
-            <Route path="/activation" element={<ActivationStation />} />
-            <Route path="/assignment" element={<RfidAssignment />} />
-            {/* Legacy path — keep working for printed links and bookmarks */}
-            <Route path="/rfid-assignment" element={<Navigate to="/assignment" replace />} />
-            <Route path="/staff-hub" element={<StaffActivationHub />} />
-            <Route path="/meal-station" element={<MealStation />} />
-            <Route path="/drinks-station" element={<DrinksStation />} />
-            <Route path="/headphones-station" element={<HeadphonesStation />} />
-            <Route path="/golf-carts-station" element={<GolfCartsStation />} />
-            <Route path="/walkie-talkies-station" element={<WalkieTalkiesStation />} />
-            <Route path="/fanny-packs-station" element={<FannyPacksStation />} />
-            <Route path="/tshirts-station" element={<TShirtsStation />} />
-            <Route path="/main-gate-station" element={<MainGateStation />} />
-            <Route path="/equipment-hub" element={<EquipmentHub />} />
-            <Route path="/attendee/:id" element={<AttendeeDetail />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/debrief" element={<EventDebrief />} />
-            <Route path="/dev" element={<DeveloperDashboard />} />
-            <Route path="/scan-test" element={<ScanTester />} />
-            
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          </AppLayout>
-        </BrowserRouter>
-      </TooltipProvider>
+      <StaffAuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <BrowserRouter>
+            <AppLayout>
+            <Routes>
+              {/* Camper-facing home: self check-in */}
+              <Route path="/" element={<ActivationStation />} />
+              <Route path="/activation" element={<ActivationStation />} />
+
+              {/* Hidden staff entry point */}
+              <Route path="/staff" element={<StaffLogin />} />
+
+              <Route path="/dashboard" element={staff(<Index />)} />
+              <Route path="/assignment" element={staff(<RfidAssignment />)} />
+              {/* Legacy path — keep working for printed links and bookmarks */}
+              <Route path="/rfid-assignment" element={<Navigate to="/assignment" replace />} />
+              <Route path="/staff-hub" element={staff(<StaffActivationHub />)} />
+              <Route path="/meal-station" element={staff(<MealStation />)} />
+              <Route path="/drinks-station" element={staff(<DrinksStation />)} />
+              <Route path="/headphones-station" element={staff(<HeadphonesStation />)} />
+              <Route path="/golf-carts-station" element={staff(<GolfCartsStation />)} />
+              <Route path="/walkie-talkies-station" element={staff(<WalkieTalkiesStation />)} />
+              <Route path="/fanny-packs-station" element={staff(<FannyPacksStation />)} />
+              <Route path="/tshirts-station" element={staff(<TShirtsStation />)} />
+              <Route path="/main-gate-station" element={staff(<MainGateStation />)} />
+              <Route path="/equipment-hub" element={staff(<EquipmentHub />)} />
+              <Route path="/attendee/:id" element={staff(<AttendeeDetail />)} />
+              <Route path="/reports" element={staff(<Reports />)} />
+              <Route path="/debrief" element={staff(<EventDebrief />)} />
+              <Route path="/dev" element={staff(<DeveloperDashboard />)} />
+              <Route path="/scan-test" element={staff(<ScanTester />)} />
+
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            </AppLayout>
+          </BrowserRouter>
+        </TooltipProvider>
+      </StaffAuthProvider>
     </EventProvider>
   </QueryClientProvider>
 );
