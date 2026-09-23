@@ -560,45 +560,6 @@ export function StaffActivationHub() {
     }
   };
 
-  // New function for activating remaining attendees by phone
-  const handleActivateRemainingByPhone = async (phoneNumber: string) => {
-    try {
-      setIsUnifiedProcessing(true);
-      
-      // Use the phone activation service
-      const { data, error } = await supabase.rpc('activate_remaining_rfids_by_phone', {
-        p_phone: phoneNumber,
-        p_activation_method: 'staff_assisted'
-      });
-
-      if (error) throw error;
-
-      const result = data[0];
-      // Provide contextual messaging based on activation results
-      if (result && result.activated_count > 0) {
-        toast.success(`Activated ${result.activated_count} additional attendees${
-          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
-        }`);
-      } else if (result && result.warnings && result.warnings.length > 0) {
-        toast.error("Remaining attendees need credentials assigned before activation");
-      } else {
-        toast.info("All attendees with this phone number are already activated");
-      }
-
-      fetchAttendees();
-      loadDashboardData();
-      // Also refresh unified search results if we're in that view
-      if (showUnifiedPreview) {
-        await refreshUnifiedSearchResults();
-      }
-    } catch (error) {
-      console.error('Remaining activation error:', error);
-      toast.error("Failed to activate remaining attendees");
-    } finally {
-      setIsUnifiedProcessing(false);
-    }
-  };
-
   const handleGroupActivation = async (orderAttendees: EnhancedAttendee[]) => {
     try {
       const activatableAttendees = orderAttendees.filter(a => a.rfid_uid && !a.activated_at);
