@@ -55,12 +55,10 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 type ReportSection = 'recent' | 'arrivals' | 'gate' | 'services' | 'tshirts' | 'status';
 
 const REPORT_SECTIONS: Array<{ id: ReportSection; label: string }> = [
-  { id: 'recent', label: 'Recent Check-ins' },
   { id: 'arrivals', label: 'Arrivals' },
   { id: 'gate', label: 'Main Gate' },
   { id: 'services', label: 'Services' },
   { id: 'tshirts', label: 'T-Shirts' },
-  { id: 'status', label: 'On-Site' },
 ];
 
 const Reports = () => {
