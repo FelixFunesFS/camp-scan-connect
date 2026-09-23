@@ -4,7 +4,10 @@ A clean, client-ready Excel invoice covering all development work on the Camp Sc
 
 ## What the client receives
 
-A single spreadsheet, `MKQ-Consulting-Invoice-INV-2026-09.xlsx`, saved to Files.
+Two files saved to Files, with identical figures:
+
+- `MKQ-Consulting-Invoice-INV-2026-09.xlsx` — the working spreadsheet (three sheets below)
+- `MKQ-Consulting-Invoice-INV-2026-09.pdf` — a clean, printable invoice to send the client directly
 
 **Sheet 1 — Invoice**
 - Header: consultant name, client (Melanated Campout), invoice number, issue date, billing period March 1 – September 22, 2026, rate $35/hour
