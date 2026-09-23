@@ -39,7 +39,8 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
   const [recentCheckIns, setRecentCheckIns] = useState<AttendeeStatus[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(10);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     const fetchRecentCheckIns = async () => {
