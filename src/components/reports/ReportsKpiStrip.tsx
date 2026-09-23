@@ -44,9 +44,8 @@ export const ReportsKpiStrip = ({ selectedPeriod, refreshTrigger, onSelect }: Re
     try {
       const eventId = getCurrentEventId();
       const gateBoundaries = getStandardTimeBoundaries(selectedPeriod);
-      const hpBoundaries = getDrinksHeadphonesTimeBoundaries(selectedPeriod);
 
-      const [totalRes, activeRes, gateRes, hpRes, tshirtRes] = await Promise.all([
+      const [totalRes, activeRes, gateRes, earlyRes, tshirtRes] = await Promise.all([
         supabase
           .from('attendees')
           .select('id', { count: 'exact', head: true })
