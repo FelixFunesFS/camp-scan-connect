@@ -41,8 +41,8 @@ export function SelfActivationInstructions() {
                 3
               </div>
               <div>
-                <p className="font-medium text-sm">Check-In Your Entire Order</p>
-                <p className="text-xs text-muted-foreground">The system will automatically check in all attendees associated with your phone number</p>
+                <p className="font-medium text-sm">Choose Who to Check In</p>
+                <p className="text-xs text-muted-foreground">Everyone on your order is listed — select the people who are here, or use Check-In Everyone</p>
               </div>
             </div>
           </div>

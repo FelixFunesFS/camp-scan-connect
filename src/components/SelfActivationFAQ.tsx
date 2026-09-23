@@ -119,19 +119,25 @@ export function SelfActivationFAQ() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
-                    Meal Plan A
+                    Standard Meal Plan
                   </Badge>
-                  <span className="text-sm text-muted-foreground">Shows which meal service you're registered for</span>
+                  <span className="text-sm text-muted-foreground">Includes the 6 weekend meals: Friday lunch and dinner, Saturday breakfast, lunch and dinner, Sunday breakfast</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
-                    No Meal Plan
+                    Vegan Meal Plan
                   </Badge>
-                  <span className="text-sm text-muted-foreground">You're not registered for meal service</span>
+                  <span className="text-sm text-muted-foreground">Same 6 meals, prepared vegan</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                    No meal plan
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">Meals were not purchased with your ticket</span>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Your meal plan determines which dining services you can access during the event.
+                Meals purchased in one order are shared across the people on that order, so a companion may hold the plan instead of the buyer.
               </p>
             </AccordionContent>
           </AccordionItem>
