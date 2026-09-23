@@ -49,6 +49,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MobileReportCard } from "@/components/MobileReportCard";
+import { ReportsKpiStrip } from "@/components/reports/ReportsKpiStrip";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
 type ReportSection = 'recent' | 'arrivals' | 'gate' | 'services' | 'tshirts' | 'status';
@@ -293,6 +294,12 @@ const Reports = () => {
                 </DropdownMenu>
               </header>
 
+              <ReportsKpiStrip
+                selectedPeriod={selectedPeriod}
+                refreshTrigger={refreshTrigger}
+                onSelect={goToSection}
+              />
+
               {sectionNavigation}
 
               {/* Mobile Report Cards */}
@@ -513,6 +520,14 @@ const Reports = () => {
               </TooltipContent>
             </Tooltip>
           </div>
+        </div>
+
+        <div className="pb-4">
+          <ReportsKpiStrip
+            selectedPeriod={selectedPeriod}
+            refreshTrigger={refreshTrigger}
+            onSelect={goToSection}
+          />
         </div>
 
         {sectionNavigation}
