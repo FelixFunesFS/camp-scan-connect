@@ -24,8 +24,7 @@ import {
   ChevronRight,
   UserCheck,
   CheckCircle2,
-  Search,
-  Zap
+  Search
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
