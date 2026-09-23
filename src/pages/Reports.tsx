@@ -66,13 +66,15 @@ const Reports = () => {
   // Collapsible section states with localStorage persistence
   const [sections, setSections] = useState(() => {
     const saved = localStorage.getItem('reports-sections-state');
-    return saved ? JSON.parse(saved) : {
+    const defaults = {
+      recent: true,       // Recently Checked In (mobile collapsible)
       arrivals: true,     // Arrivals by Ticket Type (default: expanded)
       gate: true,         // Main Gate Access (default: expanded)
       services: true,     // Attendee Services (default: expanded)
       tshirts: true,      // T-Shirt Distribution (default: expanded)
       status: true        // Check-in Status & On-Site (default: expanded)
     };
+    return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
   });
 
   const handleRefresh = () => {
