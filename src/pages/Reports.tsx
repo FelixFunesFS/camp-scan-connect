@@ -111,7 +111,7 @@ const Reports = () => {
   };
 
   const goToSection = (section: ReportSection) => {
-    if (section !== 'recent' || isMobile) updateSectionState(section, true);
+    updateSectionState(section, true);
     setActiveSection(section);
     window.setTimeout(() => {
       document.getElementById(`report-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
