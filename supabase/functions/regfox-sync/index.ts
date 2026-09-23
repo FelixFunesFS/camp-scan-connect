@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import {
   buildOrderAccommodations,
+  buildOrderExtras,
   contentHash,
   corsHeaders,
   fetchAllRegistrants,
@@ -40,6 +41,7 @@ async function runSync(
     // Companions on a group order do not answer the stay question themselves,
     // so resolve one accommodation per order before mapping any row.
     const orderAccommodations = buildOrderAccommodations(usable);
+    const orderExtras = buildOrderExtras(usable);
 
     const { data: existingRows, error: existingError } = await supabase
       .from('attendees')
@@ -81,7 +83,7 @@ async function runSync(
 
     for (const r of usable) {
       try {
-        const mapped = mapRegistrant(r, eventId, orderAccommodations);
+        const mapped = mapRegistrant(r, eventId, orderAccommodations, orderExtras);
         const hash = contentHash(mapped);
         const known = existing.has(mapped.regfox_registration_id);
 

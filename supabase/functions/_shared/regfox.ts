@@ -279,17 +279,83 @@ export function buildOrderAccommodations(
   return byOrder;
 }
 
-/** A meal plan add-on under `merchandise.mealPlan`. */
-export function mapMealPlan(f: Map<string, string>): string {
-  const qty = f.get('merchandise.mealPlan');
-  if (!qty || qty === '0') return 'none';
+/** Quantity and tier of the meal plan add-on bought on one registrant's row. */
+export function mealPlanPurchase(f: Map<string, string>): { qty: number; tier: string } {
+  const raw = f.get('merchandise.mealPlan');
+  const qty = raw ? Number(raw) || 0 : 0;
+  if (qty <= 0) return { qty: 0, tier: 'none' };
   for (const key of f.keys()) {
     if (key.startsWith('merchandise.mealPlan.') && key.toLowerCase().includes('premium')) {
-      return 'premium';
+      return { qty, tier: 'premium' };
     }
   }
-  return 'standard';
+  return { qty, tier: 'standard' };
 }
+
+/** A meal plan add-on under `merchandise.mealPlan`. */
+export function mapMealPlan(f: Map<string, string>): string {
+  return mealPlanPurchase(f).tier;
+}
+
+/** Quantity of the "Additional Night (Thursday)" add-on on one row. */
+export function extraNightQty(f: Map<string, string>): number {
+  const raw = f.get('eventMerchandise.motivationalPoster');
+  return raw ? Number(raw) || 0 : 0;
+}
+
+/**
+ * Order-level add-ons. RegFox charges add-ons to whoever checked out, so a
+ * lead registrant can buy three meal plans or an extra night for a group of
+ * four. Those purchases belong to the order, not to the buyer's row.
+ */
+export interface OrderExtras {
+  /** Orders where anybody bought the Thursday night: everyone arrives early. */
+  earlyAccessOrders: Set<string>;
+  /** regfox registration id -> resolved meal plan tier. */
+  mealPlanByRegistrant: Map<string, string>;
+}
+
+export function buildOrderExtras(registrants: RegFoxRegistrant[]): OrderExtras {
+  const earlyAccessOrders = new Set<string>();
+  const mealPlanByRegistrant = new Map<string, string>();
+
+  const byOrder = new Map<string, RegFoxRegistrant[]>();
+  for (const r of registrants) {
+    const key = r.orderId != null ? String(r.orderId) : `solo:${r.id}`;
+    byOrder.set(key, [...(byOrder.get(key) ?? []), r]);
+  }
+
+  for (const [orderKey, members] of byOrder) {
+    // Stable ordering so repeated syncs hand the same plan to the same person.
+    const ordered = [...members].sort((a, b) => String(a.id).localeCompare(String(b.id)));
+
+    // Meal plans: build a pool of purchased plans, then hand them out to the
+    // buyers first and the remaining companions after.
+    const pool: string[] = [];
+    const buyers: string[] = [];
+    for (const m of ordered) {
+      const { qty, tier } = mealPlanPurchase(indexFields(m.fieldData));
+      if (qty > 0) buyers.push(String(m.id));
+      for (let i = 0; i < qty; i++) pool.push(tier);
+    }
+    if (pool.length > 0) {
+      const recipients = [
+        ...buyers,
+        ...ordered.map((m) => String(m.id)).filter((id) => !buyers.includes(id)),
+      ];
+      recipients.forEach((id, i) => {
+        mealPlanByRegistrant.set(id, i < pool.length ? pool[i] : 'none');
+      });
+    }
+
+    // Thursday arrival: one purchase covers the whole order.
+    const earlyAnywhere = ordered.some((m) => extraNightQty(indexFields(m.fieldData)) > 0);
+    if (earlyAnywhere) earlyAccessOrders.add(orderKey);
+  }
+
+  return { earlyAccessOrders, mealPlanByRegistrant };
+}
+
 
 /**
  * The waiver field holds `false` when unsigned and the filename of the signed
@@ -338,11 +404,14 @@ export function isAbandoned(raw?: string): boolean {
  *
  * `orderAccommodations` (from `buildOrderAccommodations`) lets companions on a
  * group order inherit the stay booked by the order's lead registrant.
+ * `orderExtras` (from `buildOrderExtras`) spreads add-ons bought at checkout —
+ * meal plans and the Thursday night — across the order's members.
  */
 export function mapRegistrant(
   r: RegFoxRegistrant,
   eventId: string,
   orderAccommodations?: Map<string, Accommodation>,
+  orderExtras?: OrderExtras,
 ) {
   const fields = r.fieldData;
   const f = indexFields(fields);
@@ -365,9 +434,17 @@ export function mapRegistrant(
         : 'unassigned';
   const emergency = splitEmergencyContact(f.get('emergencyContactNameNumber'));
 
-  // "Additional Night (Thursday)" add-on means they arrive a day early.
-  const extraNight = f.get('eventMerchandise.motivationalPoster');
-  const earlyAccess = !!extraNight && extraNight !== '0';
+  // "Additional Night (Thursday)" is bought once for the whole order.
+  const extrasKey = r.orderId != null ? String(r.orderId) : `solo:${r.id}`;
+  const earlyAccess = orderExtras
+    ? orderExtras.earlyAccessOrders.has(extrasKey)
+    : extraNightQty(f) > 0;
+
+  // Meal plans bought in bulk are spread across the order's members.
+  const mealPlan = orderExtras
+    ? orderExtras.mealPlanByRegistrant.get(String(r.id)) ?? 'none'
+    : mapMealPlan(f);
+
 
   const shirt = selectedChild(fields, 'merchandise.tshirt');
   const extraPerson = (f.get('willYouBeAdding') ?? '').toLowerCase() === 'yesextraperson';
@@ -430,7 +507,7 @@ export function mapRegistrant(
     ticket_type: accommodation.ticket_type,
     site_location_assignment: accommodation.site_location_assignment,
     site_detail: siteDetail(f) ?? accommodation.site_detail ?? null,
-    meal_plan: mapMealPlan(f),
+    meal_plan: mealPlan,
     t_shirt_size: shirt?.label ?? null,
 
     arrival_day: earlyAccess ? 'Thursday' : 'Friday',

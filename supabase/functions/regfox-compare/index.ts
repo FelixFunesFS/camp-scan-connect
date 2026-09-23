@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   buildOrderAccommodations,
+  buildOrderExtras,
   corsHeaders,
   fetchAllRegistrants,
   isAbandoned,
@@ -47,6 +48,7 @@ Deno.serve(async (req) => {
       (r) => !isAbandoned(r.status),
     );
     const orderAccommodations = buildOrderAccommodations(registrants);
+    const orderExtras = buildOrderExtras(registrants);
 
     const emptyBreakdown = () => ({ dry_site: 0, glamping: 0, cabin: 0, rv_site: 0 });
     const bump = (b: Record<string, number>, type: string) => {
@@ -58,7 +60,7 @@ Deno.serve(async (req) => {
     const regfoxNames = new Map<string, string>();
     for (const r of registrants) {
       try {
-        const mapped = mapRegistrant(r, target.eventId, orderAccommodations);
+        const mapped = mapRegistrant(r, target.eventId, orderAccommodations, orderExtras);
         const id = String(mapped.regfox_registration_id);
         regfoxIds.add(id);
         regfoxNames.set(id, `${mapped.first_name ?? ''} ${mapped.last_name ?? ''}`.trim());

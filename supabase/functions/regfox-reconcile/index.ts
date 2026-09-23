@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   buildOrderAccommodations,
+  buildOrderExtras,
   corsHeaders,
   fetchAllRegistrants,
   isAbandoned,
@@ -43,6 +44,7 @@ Deno.serve(async (req) => {
       (r) => !isAbandoned(r.status),
     );
     const orderAccommodations = buildOrderAccommodations(registrants);
+    const orderExtras = buildOrderExtras(registrants);
 
     const { data: rows, error } = await supabase
       .from('attendees')
@@ -63,7 +65,7 @@ Deno.serve(async (req) => {
     const missingLocally = registrants
       .filter((r) => !dbById.has(String(r.id)))
       .map((r) => {
-        const m = mapRegistrant(r, eventId, orderAccommodations);
+        const m = mapRegistrant(r, eventId, orderAccommodations, orderExtras);
         return {
           regfox_registration_id: m.regfox_registration_id,
           name: `${m.first_name} ${m.last_name}`.trim(),
@@ -106,7 +108,7 @@ Deno.serve(async (req) => {
       }, {});
 
     const regfoxTickets = countByTicket(
-      registrants.map((r) => mapRegistrant(r, eventId, orderAccommodations).ticket_type),
+      registrants.map((r) => mapRegistrant(r, eventId, orderAccommodations, orderExtras).ticket_type),
     );
     const dbTickets = countByTicket((rows ?? []).map((r) => String(r.ticket_type)));
 
