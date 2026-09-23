@@ -372,7 +372,7 @@ export const AnalyticsCards = ({ selectedPeriod, refreshTrigger, section = 'all'
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="text-center p-3 bg-warning/10 rounded-lg">
                 <div className="text-2xl font-bold text-warning">
                   {analytics.mealCounts.breakfast}

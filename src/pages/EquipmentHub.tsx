@@ -265,7 +265,7 @@ export default function EquipmentHub() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Summary Stats */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="text-center p-4 bg-warning/10 rounded-lg cursor-help border-2 border-transparent hover:border-warning/20 transition-colors">

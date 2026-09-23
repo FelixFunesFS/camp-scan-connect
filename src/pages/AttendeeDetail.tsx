@@ -191,17 +191,17 @@ export default function AttendeeDetail() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
         <Link to="/reports">
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Reports
           </Button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold">{attendee.first_name} {attendee.last_name}</h1>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold sm:text-2xl">{attendee.first_name} {attendee.last_name}</h1>
           <p className="text-muted-foreground">Order ID: {attendee.order_id}</p>
         </div>
       </div>
@@ -216,7 +216,7 @@ export default function AttendeeDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
               <div>
                 <p className="font-medium text-muted-foreground">Email</p>
                 <p className="flex items-center gap-2">
@@ -417,7 +417,7 @@ export default function AttendeeDetail() {
             <CardTitle>Emergency Contact</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
               <div>
                 <p className="font-medium text-muted-foreground">Name</p>
                 <p>{attendee.emergency_contact_name || "Not provided"}</p>
@@ -444,12 +444,12 @@ export default function AttendeeDetail() {
             <div className="space-y-3">
               {groupMembers.map((member) => (
                 <Link key={member.id} to={`/attendee/${member.id}`}>
-                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div>
+                  <div className="flex min-w-0 flex-col gap-2 p-3 border rounded-lg hover:bg-muted/50 transition-colors sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
                       <p className="font-medium">{member.first_name} {member.last_name}</p>
                       <p className="text-sm text-muted-foreground">{member.phone}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <Badge variant="outline" className="mb-1">
                         {formatTicketType(member.ticket_type)}
                       </Badge>
@@ -477,12 +477,12 @@ export default function AttendeeDetail() {
           <CardContent>
             <div className="space-y-3">
               {transactions.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={transaction.id} className="flex flex-col gap-2 p-3 border rounded-lg sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-medium">{transaction.station_type}</p>
                     <p className="text-sm text-muted-foreground">{transaction.transaction_type}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="sm:text-right">
                     <p className="text-sm">{new Date(transaction.created_at).toLocaleString()}</p>
                     {transaction.current_status && (
                       <Badge variant="outline" className="text-xs">

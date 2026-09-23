@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { StaffPasscodeGate } from "@/components/StaffPasscodeGate";
+import { Button } from "@/components/ui/button";
 import { useStaffAuth } from "@/contexts/StaffAuthContext";
 import {
   Utensils,
@@ -67,14 +68,16 @@ export default function StationsPage() {
         </div>
 
         <div className="text-center pt-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => navigate("/dashboard")}
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="touch-target gap-1.5 text-xs text-muted-foreground"
           >
             <LayoutDashboard className="h-3.5 w-3.5" />
             Staff menu
-          </button>
+          </Button>
         </div>
       </div>
     </div>
