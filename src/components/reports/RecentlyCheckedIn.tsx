@@ -135,6 +135,19 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
   };
 
   if (isLoading) {
+    const skeleton = (
+      <div className="animate-pulse space-y-4">
+        <div className="h-10 bg-muted rounded"></div>
+        <div className="space-y-2">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="h-12 bg-muted rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+
+    if (embedded) return skeleton;
+
     return (
       <Card>
         <CardHeader>
@@ -143,32 +156,12 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
             Recently Checked In
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-10 bg-muted rounded"></div>
-            <div className="space-y-2">
-              {[1,2,3,4,5].map(i => (
-                <div key={i} className="h-12 bg-muted rounded"></div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
+        <CardContent>{skeleton}</CardContent>
       </Card>
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserCheck className="h-5 w-5 text-success" />
-          Recently Checked In
-          <Badge variant="outline" className="text-success">
-            {filteredRecent.length}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+  const body = (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <Select value={timeFilter} onValueChange={setTimeFilter}>
