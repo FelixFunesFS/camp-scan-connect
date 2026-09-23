@@ -12,7 +12,6 @@ import {
   ChevronDown, 
   ChevronRight, 
   BarChart3, 
-  Users, 
   Activity, 
   Headphones, 
   Shirt, 
@@ -28,7 +27,6 @@ import {
   Minimize
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { RecentlyCheckedIn } from "@/components/reports/RecentlyCheckedIn";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
 import { TShirtTracker } from "@/components/reports/TShirtTracker";
@@ -45,14 +43,14 @@ import { MobileReportsControls } from "@/components/MobileReportsControls";
 import { MobileReportCard } from "@/components/MobileReportCard";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
-type ReportSection = 'overview' | 'recent' | 'arrivals' | 'gate' | 'services' | 'status';
+type ReportSection = 'recent' | 'arrivals' | 'gate' | 'services' | 'tshirts' | 'status';
 
 const REPORT_SECTIONS: Array<{ id: ReportSection; label: string }> = [
-  { id: 'overview', label: 'Overview' },
   { id: 'recent', label: 'Recent Check-ins' },
   { id: 'arrivals', label: 'Arrivals' },
   { id: 'gate', label: 'Main Gate' },
   { id: 'services', label: 'Services' },
+  { id: 'tshirts', label: 'T-Shirts' },
   { id: 'status', label: 'On-Site' },
 ];
 
@@ -63,16 +61,16 @@ const Reports = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
   const isMobile = useIsMobile();
-  const [activeSection, setActiveSection] = useState<ReportSection>('overview');
+  const [activeSection, setActiveSection] = useState<ReportSection>('recent');
   
   // Collapsible section states with localStorage persistence
   const [sections, setSections] = useState(() => {
     const saved = localStorage.getItem('reports-sections-state');
     return saved ? JSON.parse(saved) : {
-      overview: true,     // Event Check-in Overview (default: expanded)
       arrivals: true,     // Arrivals by Ticket Type (default: expanded)
       gate: true,         // Main Gate Access (default: expanded)
       services: true,     // Attendee Services (default: expanded)
+      tshirts: true,      // T-Shirt Distribution (default: expanded)
       status: true        // Check-in Status & On-Site (default: expanded)
     };
   });
@@ -92,13 +90,13 @@ const Reports = () => {
 
   // Expand/Collapse All functions
   const expandAll = () => {
-    const allExpanded = { overview: true, arrivals: true, gate: true, services: true, status: true };
+    const allExpanded = { arrivals: true, gate: true, services: true, tshirts: true, status: true };
     setSections(allExpanded);
     localStorage.setItem('reports-sections-state', JSON.stringify(allExpanded));
   };
 
   const collapseAll = () => {
-    const allCollapsed = { overview: false, arrivals: false, gate: false, services: false, status: false };
+    const allCollapsed = { arrivals: false, gate: false, services: false, tshirts: false, status: false };
     setSections(allCollapsed);
     localStorage.setItem('reports-sections-state', JSON.stringify(allCollapsed));
   };
@@ -250,17 +248,6 @@ const Reports = () => {
 
               {/* Mobile Report Cards */}
               <div className="space-y-4">
-                <section id="report-overview" data-report-section="overview" className="scroll-mt-20">
-                <MobileReportCard
-                  title="Event Check-in Overview"
-                  icon={<Users className="h-5 w-5 text-primary" />}
-                  isOpen={sections.overview}
-                  onToggle={() => updateSectionState('overview', !sections.overview)}
-                >
-                  <CheckInOverview refreshTrigger={refreshTrigger} />
-                </MobileReportCard>
-                </section>
-
                 <section id="report-recent" data-report-section="recent" className="scroll-mt-20">
                   <RecentlyCheckedIn refreshTrigger={refreshTrigger} />
                 </section>
@@ -304,21 +291,28 @@ const Reports = () => {
                       section="top"
                     />
                     
-                    <HeadphonesTracker 
+                    <HeadphonesTracker
                       selectedPeriod={selectedPeriod}
                       refreshTrigger={refreshTrigger}
                     />
-                    
-                    <TShirtTracker 
-                      refreshTrigger={refreshTrigger}
-                    />
-                    
-                    <AnalyticsCards 
+
+                    <AnalyticsCards
                       selectedPeriod={selectedPeriod}
                       refreshTrigger={refreshTrigger}
                       section="bottom"
                     />
                   </div>
+                </MobileReportCard>
+                </section>
+
+                <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-20">
+                <MobileReportCard
+                  title="T-Shirt Distribution"
+                  icon={<Shirt className="h-5 w-5 text-primary" />}
+                  isOpen={sections.tshirts}
+                  onToggle={() => updateSectionState('tshirts', !sections.tshirts)}
+                >
+                  <TShirtTracker refreshTrigger={refreshTrigger} />
                 </MobileReportCard>
                 </section>
 
@@ -468,31 +462,6 @@ const Reports = () => {
         {sectionNavigation}
 
         <div className="space-y-6 pt-4">
-          {/* Event Check-in Overview */}
-          <section id="report-overview" data-report-section="overview" className="scroll-mt-20"><Collapsible 
-            open={sections.overview} 
-            onOpenChange={(isOpen) => updateSectionState('overview', isOpen)}
-          >
-            <CollapsibleTrigger asChild>
-              <Button 
-                variant="ghost" 
-                className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-lg border border-border/50"
-              >
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-semibold">Event Check-in Overview</h2>
-                </div>
-                {sections.overview ? 
-                  <ChevronDown className="h-4 w-4 transition-transform duration-200" /> : 
-                  <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                }
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-4">
-              <CheckInOverview refreshTrigger={refreshTrigger} />
-            </CollapsibleContent>
-          </Collapsible></section>
-
           {/* Recently Checked In - Standalone Section */}
           <section id="report-recent" data-report-section="recent" className="scroll-mt-20"><RecentlyCheckedIn refreshTrigger={refreshTrigger} /></section>
 
@@ -578,22 +547,42 @@ const Reports = () => {
               />
               
               {/* Equipment Services - positioned above Average Party Time and Peak Usage */}
-              <HeadphonesTracker 
+              <HeadphonesTracker
                 selectedPeriod={selectedPeriod}
                 refreshTrigger={refreshTrigger}
               />
-              
-              {/* T-Shirt Distribution Tracking */}
-              <TShirtTracker 
-                refreshTrigger={refreshTrigger}
-              />
-              
+
               {/* Analytics Cards - Bottom Section: Average Party Time, Peak Usage Hours */}
-              <AnalyticsCards 
+              <AnalyticsCards
                 selectedPeriod={selectedPeriod}
                 refreshTrigger={refreshTrigger}
                 section="bottom"
               />
+            </CollapsibleContent>
+          </Collapsible></section>
+
+          {/* T-Shirt Distribution */}
+          <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-20"><Collapsible
+            open={sections.tshirts}
+            onOpenChange={(isOpen) => updateSectionState('tshirts', isOpen)}
+          >
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-lg border border-border/50"
+              >
+                <div className="flex items-center gap-2">
+                  <Shirt className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">T-Shirt Distribution</h2>
+                </div>
+                {sections.tshirts ?
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200" /> :
+                  <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                }
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <TShirtTracker refreshTrigger={refreshTrigger} />
             </CollapsibleContent>
           </Collapsible></section>
 
