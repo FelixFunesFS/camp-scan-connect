@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { StaffPasscodeGate } from "@/components/StaffPasscodeGate";
-import { Button } from "@/components/ui/button";
 import { useStaffAuth } from "@/contexts/StaffAuthContext";
 import {
   Utensils,
@@ -12,7 +11,6 @@ import {
   Package2,
   Shirt,
   DoorOpen,
-  LayoutDashboard,
 } from "lucide-react";
 
 const STATIONS = [
