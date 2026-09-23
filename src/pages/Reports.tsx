@@ -300,7 +300,7 @@ const Reports = () => {
                   </MobileReportCard>
                 </section>
 
-                <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-20">
+                <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-32">
                 <MobileReportCard
                   title="Arrivals by Ticket Type"
                   icon={<Caravan className="h-5 w-5 text-primary" />}
@@ -311,7 +311,7 @@ const Reports = () => {
                 </MobileReportCard>
                 </section>
 
-                <section id="report-gate" data-report-section="gate" className="scroll-mt-20">
+                <section id="report-gate" data-report-section="gate" className="scroll-mt-32">
                 <MobileReportCard
                   title="Main Gate Access"
                   icon={<Shield className="h-5 w-5 text-primary" />}
@@ -325,7 +325,7 @@ const Reports = () => {
                 </MobileReportCard>
                 </section>
 
-                <section id="report-services" data-report-section="services" className="scroll-mt-20">
+                <section id="report-services" data-report-section="services" className="scroll-mt-32">
                 <MobileReportCard
                   title="Attendee Services"
                   icon={<Headphones className="h-5 w-5 text-primary" />}
@@ -353,7 +353,7 @@ const Reports = () => {
                 </MobileReportCard>
                 </section>
 
-                <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-20">
+                <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-32">
                 <MobileReportCard
                   title="T-Shirt Distribution"
                   icon={<Shirt className="h-5 w-5 text-primary" />}
@@ -364,7 +364,7 @@ const Reports = () => {
                 </MobileReportCard>
                 </section>
 
-                <section id="report-status" data-report-section="status" className="scroll-mt-20">
+                <section id="report-status" data-report-section="status" className="scroll-mt-32">
                 <MobileReportCard
                   title="Currently On-Site"
                   icon={<BarChart3 className="h-5 w-5 text-primary" />}
