@@ -4,7 +4,10 @@ A clean, client-ready Excel invoice covering all development work on the Camp Sc
 
 ## What the client receives
 
-A single spreadsheet, `MKQ-Consulting-Invoice-INV-2026-09.xlsx`, saved to Files.
+Two files saved to Files, with identical figures:
+
+- `MKQ-Consulting-Invoice-INV-2026-09.xlsx` — the working spreadsheet (three sheets below)
+- `MKQ-Consulting-Invoice-INV-2026-09.pdf` — a clean, printable invoice to send the client directly
 
 **Sheet 1 — Invoice**
 - Header: consultant name, client (Melanated Campout), invoice number, issue date, billing period March 1 – September 22, 2026, rate $35/hour
@@ -18,6 +21,11 @@ A single spreadsheet, `MKQ-Consulting-Invoice-INV-2026-09.xlsx`, saved to Files.
 
 **Sheet 3 — Activity Log**
 - Dates work was performed and the number of changes delivered on each, as supporting evidence
+
+**The PDF**
+- Page 1: the invoice itself — header block, billed-to details, the itemized work-area table with hours and line totals, total hours and amount due, payment terms
+- Page 2 onward: the same work detail as Sheet 2, so the client can see what each line covered
+- Formatted for letter-size printing with clear margins, ruled table, and shaded header row
 
 ## Work areas to be itemized
 
@@ -45,11 +53,13 @@ Hours are estimated from the recorded change history (565 individual changes acr
 
 ## Technical notes
 
-- Built with openpyxl; all totals are live Excel formulas (`SUMPRODUCT` / `SUM`), not hardcoded numbers
+- Spreadsheet built with openpyxl; all totals are live Excel formulas (`SUMPRODUCT` / `SUM`), not hardcoded numbers
 - Arial throughout, currency formatted `$#,##0.00`, hours `0.0`
 - Column widths set so nothing is clipped; header rows frozen
-- Formulas recalculated and the workbook verified error-free, then every sheet rendered to an image and visually checked before delivery
-- Output written to `/mnt/documents/` as a standalone deliverable
+- Formulas recalculated and the workbook verified error-free
+- PDF generated with reportlab from the same single source of line-item data, so the two files can never disagree
+- Both files rendered to images page by page and visually inspected for clipping, overlap, or bad wrapping before delivery
+- Output written to `/mnt/documents/` and grouped in one Files collection
 
 ## Confirmation needed at delivery
 
