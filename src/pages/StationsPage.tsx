@@ -66,19 +66,6 @@ export default function StationsPage() {
             </Card>
           ))}
         </div>
-
-        <div className="text-center pt-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/dashboard")}
-            className="touch-target gap-1.5 text-xs text-muted-foreground"
-          >
-            <LayoutDashboard className="h-3.5 w-3.5" />
-            Staff menu
-          </Button>
-        </div>
       </div>
     </div>
   );
