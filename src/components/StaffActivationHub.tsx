@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { getRfidStatusVariant, getRegistrationStatusVariant, getRegistrationStatusDisplayText } from "@/utils/statusUtils";
 import { 
   ArrowLeft, 
   Shield, 
@@ -32,17 +31,10 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { RfidScanner } from "@/components/RfidScanner";
 import { UnifiedSearchFilter, QuickFilter } from "@/components/shared/UnifiedSearchFilter";
-import { MobileAttendeeCard } from "@/components/shared/MobileAttendeeCard";
 import { rfidLookupService } from "@/services/rfidLookupService";
-import { enhancedActivationService, UnifiedSearchResult, EnhancedActivationService } from "@/services/enhancedActivationService";
-import { StationTransactionService } from '@/services/stationTransactionService';
-import { phoneActivationService } from '@/services/phoneActivationService';
-import { HeadphonesStatusService } from '@/services/headphonesStatusService';
-import { EquipmentStatusService } from '@/services/equipmentStatusService';
+import { UnifiedSearchResult, EnhancedActivationService } from "@/services/enhancedActivationService";
 import { TShirtService } from '@/services/tshirtService';
 import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
-import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
-import { useIsMobile } from "@/hooks/use-mobile";
 import type { NotificationState } from "@/types/attendee";
 import { StaffAssistanceNotifications } from "@/components/StaffAssistanceNotifications";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
@@ -50,7 +42,7 @@ import { WaiverStatusPanel } from "@/components/WaiverStatusPanel";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
 import { formatTicketType } from "@/lib/ticketTypes";
-import { getStatusClassName, WORKING_STATUSES } from "@/lib/registrationStatus";
+import { WORKING_STATUSES } from "@/lib/registrationStatus";
 import { StaffAttendeeRow } from "@/components/staff/StaffAttendeeRow";
 
 // Enhanced attendee interface matching AttendeeManagementTab
@@ -109,15 +101,6 @@ export interface EnhancedAttendee {
   };
 }
 
-export interface TableColumn {
-  key: string;
-  label: string;
-  mobile?: boolean;
-  desktop?: boolean;
-  width?: string;
-  sortable?: boolean;
-}
-
 interface StaffStats {
   totalActive: number;
   todayDeactivations: number;
@@ -162,10 +145,6 @@ export function StaffActivationHub() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [visibleColumns] = useState<string[]>([
-    'first_name', 'email', 'phone', 'order_id', 'ticket_type', 'registration_status', 'rfid_status', 'headphones', 'golf_carts', 'walkie_talkies', 'fanny_packs', 'tshirts', 'actions'
-  ]);
-  
   // Unified activation section state
   const [unifiedSearchQuery, setUnifiedSearchQuery] = useState("");
   const [unifiedSearchResult, setUnifiedSearchResult] = useState<UnifiedSearchResult | null>(null);
@@ -183,8 +162,6 @@ export function StaffActivationHub() {
   const [deactivationActivity, setDeactivationActivity] = useState<any[]>([]);
   
   // Attendee detail modal state
-  const [selectedAttendee, setSelectedAttendee] = useState<EnhancedAttendee | null>(null);
-
   // Expandable master-detail rows
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const toggleRow = (id: string) => {
@@ -197,25 +174,6 @@ export function StaffActivationHub() {
   
   const navigate = useNavigate();
   
-  const isMobile = useIsMobile();
-
-  // Table columns configuration for staff use
-  const allColumns: TableColumn[] = [
-    { key: 'first_name', label: 'Name', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'email', label: 'Email', mobile: true, desktop: true, width: 'min-w-48', sortable: true },
-    { key: 'phone', label: 'Phone', desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'order_id', label: 'Order ID', mobile: true, desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'ticket_type', label: 'Ticket Type', desktop: true, width: 'min-w-24', sortable: true },
-    { key: 'registration_status', label: 'Registration Status', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
-    { key: 'rfid_status', label: 'Credential Status', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
-    { key: 'headphones', label: 'Headphones', mobile: true, desktop: true, width: 'min-w-28', sortable: true },
-    { key: 'golf_carts', label: 'Golf Carts', desktop: true, width: 'min-w-28', sortable: true },
-    { key: 'walkie_talkies', label: 'Walkie Talkies', desktop: true, width: 'min-w-32', sortable: true },
-    { key: 'fanny_packs', label: 'Fanny Packs', desktop: true, width: 'min-w-28', sortable: true },
-    { key: 'tshirts', label: 'T-Shirts', mobile: true, desktop: true, width: 'min-w-24', sortable: true },
-    { key: 'actions', label: 'Actions', mobile: true, desktop: true, width: 'min-w-32', sortable: false }
-  ];
-
   useEffect(() => {
     if (isAuthenticated) {
       fetchAttendees();
@@ -1056,28 +1014,25 @@ export function StaffActivationHub() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
             <Button 
               variant="outline" 
               onClick={() => navigate("/")}
-              className="flex items-center gap-2"
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              aria-label="Back to main hub"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Main Hub
             </Button>
-            <h1 className="text-2xl font-bold">Staff Hub</h1>
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Shield className="h-3 w-3" />
-              Staff: {staffId}
-            </Badge>
+            <h1 className="truncate text-2xl font-bold">Staff Hub</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={exportActivity}>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+            <Button variant="outline" className="min-h-11" onClick={exportActivity}>
               <Download className="h-4 w-4 mr-2" />
               Export Activity
             </Button>
-            <Button variant="outline" onClick={handleLogout}>
+            <Button variant="outline" className="min-h-11" onClick={handleLogout}>
               Logout
             </Button>
           </div>
@@ -1087,14 +1042,6 @@ export function StaffActivationHub() {
 
         {/* Staff Assistance Queue */}
         <StaffAssistanceNotifications />
-
-        {/* Waiver completion queue */}
-        <WaiverStatusPanel
-          onFilterUnsigned={() => {
-            setActiveQuickFilter('waiver_missing');
-            document.getElementById('individual-search')?.scrollIntoView({ behavior: 'smooth' });
-          }}
-        />
 
         {/* Unified Multi-Criteria Activation Section */}
         <Card>
@@ -1179,7 +1126,7 @@ export function StaffActivationHub() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserCheck className="h-5 w-5" />
-              Individual Search & Management
+              Attendee Management
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1192,6 +1139,11 @@ export function StaffActivationHub() {
                 setActiveQuickFilter(active ? filterKey : "all");
               }}
               placeholder="Search attendees for detailed management..."
+            />
+
+            <WaiverStatusPanel
+              refreshTrigger={attendees.filter((attendee) => attendee.waiver_signed).length}
+              onFilterUnsigned={() => setActiveQuickFilter('waiver_missing')}
             />
 
             <div className="flex items-center justify-between">
@@ -1266,6 +1218,7 @@ export function StaffActivationHub() {
                       onToggle={() => toggleRow(attendee.id)}
                       onActivate={handleIndividualActivation}
                       onGroupActivate={handleGroupActivation}
+                      onWaiverSigned={() => fetchAttendees()}
                     />
                   ))}
                 </div>
