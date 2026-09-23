@@ -31,12 +31,14 @@ interface AttendeeStatus {
 
 interface RecentlyCheckedInProps {
   refreshTrigger?: number;
+  embedded?: boolean;
 }
 
-export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) => {
+export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: RecentlyCheckedInProps) => {
   const [recentCheckIns, setRecentCheckIns] = useState<AttendeeStatus[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   useEffect(() => {
     const fetchRecentCheckIns = async () => {
