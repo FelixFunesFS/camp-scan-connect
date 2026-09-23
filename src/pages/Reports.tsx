@@ -226,35 +226,78 @@ const Reports = () => {
 
           <div className="responsive-container">
             <div className="space-y-4">
-              {/* Mobile Header */}
-              <div className="mobile-header">
+              {/* Compact mobile header */}
+              <header className="sticky top-0 z-40 -mx-4 flex h-14 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur-sm">
                 <Button
-                  variant="outline"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Back to dashboard"
                   onClick={() => navigate("/")}
-                  className="flex items-center gap-2"
+                  className="h-10 w-10 shrink-0"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  Dashboard
+                  <ArrowLeft className="h-5 w-5" />
                 </Button>
-              </div>
 
-              {/* Mobile Controls */}
-              <MobileReportsControls
-                selectedPeriod={selectedPeriod}
-                onPeriodChange={(period) => setSelectedPeriod(period)}
-                onRefresh={handleRefresh}
-                onExport={handleExportReport}
-                onExpandAll={expandAll}
-                onCollapseAll={collapseAll}
-                isRefreshing={isRefreshing || isPullRefreshing}
-              />
+                <div className="min-w-0 flex-1">
+                  <h1 className="truncate text-base font-semibold leading-tight">Reports</h1>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    Live • {formatTimePeriod(selectedPeriod)}
+                  </p>
+                </div>
+
+                <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as TimePeriod)}>
+                  <SelectTrigger className="h-10 w-[112px] shrink-0 text-xs" aria-label="Time period">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                    <SelectItem value="this_event">This Event</SelectItem>
+                    <SelectItem value="all_time">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label="More report actions" className="h-10 w-10 shrink-0">
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem onSelect={handleRefresh} disabled={isRefreshing || isPullRefreshing}>
+                      <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing || isPullRefreshing ? 'animate-spin' : ''}`} />
+                      {isRefreshing || isPullRefreshing ? 'Refreshing…' : 'Refresh data'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleExportReport}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={expandAll}>
+                      <Expand className="mr-2 h-4 w-4" />
+                      Expand all sections
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={collapseAll}>
+                      <Minimize className="mr-2 h-4 w-4" />
+                      Collapse all sections
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </header>
 
               {sectionNavigation}
 
               {/* Mobile Report Cards */}
               <div className="space-y-4">
-                <section id="report-recent" data-report-section="recent" className="scroll-mt-20">
-                  <RecentlyCheckedIn refreshTrigger={refreshTrigger} />
+                <section id="report-recent" data-report-section="recent" className="scroll-mt-32">
+                  <MobileReportCard
+                    title="Recently Checked In"
+                    icon={<UserCheck className="h-5 w-5 text-success" />}
+                    isOpen={sections.recent}
+                    onToggle={() => updateSectionState('recent', !sections.recent)}
+                  >
+                    <RecentlyCheckedIn refreshTrigger={refreshTrigger} embedded />
+                  </MobileReportCard>
                 </section>
 
                 <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-20">
