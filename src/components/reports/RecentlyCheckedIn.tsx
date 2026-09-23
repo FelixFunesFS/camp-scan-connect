@@ -130,6 +130,43 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
     }
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredRecent.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pagedRecent = filteredRecent.slice(pageStart, pageStart + PAGE_SIZE);
+
+  const pagination = (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
+      <p className="text-xs text-muted-foreground">
+        {filteredRecent.length === 0
+          ? 'No check-ins in this time range.'
+          : `Showing ${pageStart + 1}–${Math.min(pageStart + PAGE_SIZE, filteredRecent.length)} of ${filteredRecent.length} • Page ${currentPage} of ${totalPages}`}
+      </p>
+      {totalPages > 1 && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 flex-1 sm:flex-none"
+            disabled={currentPage <= 1}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 flex-1 sm:flex-none"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   // Helper function to get day comparison badge variant
   const getDayComparisonVariant = (scheduled: string, actual: string) => {
     if (scheduled === actual) return "secondary";
