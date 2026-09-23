@@ -83,7 +83,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
     ? pendingPickups
     : pendingPickups.filter(pickup => pickup.productLine === selectedProduct);
   const selectedStats = selectedProduct === 'Overall'
-    ? stats
+    ? { ordered: stats.totalOrdered, pickedUp: stats.pickedUp, remaining: stats.remaining, sizeBreakdown: stats.sizeBreakdown }
     : stats.productBreakdown[selectedProduct] ?? { ordered: 0, pickedUp: 0, remaining: 0, sizeBreakdown: {} };
 
   return (
@@ -130,7 +130,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center p-4 bg-info/10 rounded-lg">
             <Package className="h-6 w-6 text-info mx-auto mb-2" />
-            <div className="text-2xl font-bold text-info">{selectedStats.ordered ?? stats.totalOrdered}</div>
+            <div className="text-2xl font-bold text-info">{selectedStats.ordered}</div>
             <div className="text-sm text-muted-foreground">Total Items Ordered</div>
           </div>
           

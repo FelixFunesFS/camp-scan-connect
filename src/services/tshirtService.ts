@@ -409,15 +409,15 @@ export class TShirtService {
     this.log('T-Shirt Debug - Descriptive fields found:', descriptiveFields);
     this.log('T-Shirt Debug - Final filtered keys:', filteredKeys);
     
-    // Step 3: Group fields by detected size AND type to avoid losing different products of same size
+    // Step 3: Group by product line, size, and style so distinct garments never collapse together.
     const sizeTypeToFields = new Map<string, { descriptive: string[], coded: string[], generic: string[] }>();
     
     this.log('T-Shirt Debug - Starting field grouping process...');
     filteredKeys.forEach(key => {
-      const { size, type } = this.parseTShirtProduct(key);
+      const { size, type, productLine } = this.parseTShirtProduct(key);
       const normalizedSize = size.toLowerCase() || 'unknown';
       const normalizedType = type.toLowerCase().replace(/[^a-z0-9]/g, '') || 'tshirt';
-      const groupKey = `${normalizedSize}-${normalizedType}`;
+      const groupKey = `${productLine.toLowerCase()}-${normalizedSize}-${normalizedType}`;
       this.log(`T-Shirt Debug - Processing key "${key}": detected size="${size}", type="${type}", groupKey="${groupKey}"`);
       
       if (!sizeTypeToFields.has(groupKey)) {
