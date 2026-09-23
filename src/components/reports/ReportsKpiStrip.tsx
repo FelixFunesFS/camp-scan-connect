@@ -52,7 +52,7 @@ export const ReportsKpiStrip = ({ selectedPeriod, refreshTrigger, onSelect }: Re
           .eq('registration_status', 'registered'),
         supabase
           .from('rfid_tags')
-          .select('id', { count: 'exact', head: true })
+          .select('uid', { count: 'exact', head: true })
           .eq('event_id', eventId)
           .eq('status', 'active'),
         supabase
