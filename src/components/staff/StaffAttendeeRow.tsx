@@ -13,6 +13,7 @@ import {
   Phone,
   Mail,
   Shirt,
+  FileSignature,
 } from "lucide-react";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { getStatusClassName } from "@/lib/registrationStatus";
@@ -24,6 +25,9 @@ import {
 import { HeadphonesStatusService } from "@/services/headphonesStatusService";
 import { EquipmentStatusService } from "@/services/equipmentStatusService";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
+import { getCurrentEventId } from "@/lib/eventRuntime";
+import { useState } from "react";
 import type { EnhancedAttendee } from "@/components/StaffActivationHub";
 
 interface EquipmentLine {
@@ -104,6 +108,7 @@ interface StaffAttendeeRowProps {
   onToggle: () => void;
   onActivate: (attendeeId: string) => void;
   onGroupActivate: (attendees: EnhancedAttendee[]) => void;
+  onWaiverSigned: () => void;
 }
 
 export function StaffAttendeeRow({
@@ -113,7 +118,9 @@ export function StaffAttendeeRow({
   onToggle,
   onActivate,
   onGroupActivate,
+  onWaiverSigned,
 }: StaffAttendeeRowProps) {
+  const [showWaiver, setShowWaiver] = useState(false);
   const lines = equipmentLines(attendee);
   const activeEquipment = lines.filter((l) => l.status === "checked_out");
   const summary = attendee.tshirt_summary;
@@ -183,6 +190,13 @@ export function StaffAttendeeRow({
             {getRegistrationStatusDisplayText(attendee.registration_status)}
           </Badge>
           {credentialBadge}
+          <Badge
+            variant="outline"
+            className={attendee.waiver_signed ? "text-xs text-success border-success" : "text-xs text-warning border-warning"}
+          >
+            <FileSignature className="h-3 w-3 mr-1" />
+            {attendee.waiver_signed ? "Waiver signed" : "Waiver missing"}
+          </Badge>
           {activeEquipment.length > 0 && (
             <Badge variant="secondary" className="text-xs">
               {activeEquipment.length} item{activeEquipment.length !== 1 ? "s" : ""} out
@@ -197,7 +211,18 @@ export function StaffAttendeeRow({
         </div>
 
         <div className="flex gap-2 lg:shrink-0">
-          {attendee.rfid_uid && !attendee.activated_at && (
+          {!attendee.waiver_signed && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="min-h-11 flex-1 border-warning text-warning lg:min-h-9 lg:flex-none"
+              onClick={() => setShowWaiver(true)}
+            >
+              <FileSignature className="h-4 w-4 mr-1" />
+              Sign waiver
+            </Button>
+          )}
+          {attendee.rfid_uid && !attendee.activated_at && attendee.waiver_signed && (
             <Button size="sm" className="h-9 flex-1 lg:flex-none" onClick={() => onActivate(attendee.id)}>
               <UserCheck className="h-4 w-4 mr-1" />
               Activate
@@ -279,7 +304,19 @@ export function StaffAttendeeRow({
                 label="Activated"
                 value={attendee.activated_at ? new Date(attendee.activated_at).toLocaleString() : "Not activated"}
               />
-              <DetailItem label="Waiver" value={attendee.waiver_signed ? "Signed" : "Not signed"} />
+              <DetailItem
+                label="Waiver"
+                value={
+                  attendee.waiver_signed ? (
+                    <span className="text-success">Signed</span>
+                  ) : (
+                    <Button size="sm" variant="outline" className="min-h-11 sm:min-h-9" onClick={() => setShowWaiver(true)}>
+                      <FileSignature className="h-4 w-4 mr-1" />
+                      Sign waiver
+                    </Button>
+                  )
+                }
+              />
               <DetailItem
                 label="Registration"
                 value={getRegistrationStatusDisplayText(attendee.registration_status)}
@@ -347,6 +384,17 @@ export function StaffAttendeeRow({
           </div>
         </div>
       )}
+
+      <WaiverSigningDialog
+        open={showWaiver}
+        onOpenChange={setShowWaiver}
+        attendeeId={attendee.id}
+        attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+        eventId={getCurrentEventId()}
+        signedBySelf={false}
+        witnessedBy="Staff device"
+        onSigned={onWaiverSigned}
+      />
     </Card>
   );
 }

@@ -98,7 +98,7 @@ export function StaffAssistanceNotifications() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Staff Assistance Queue
+            Assistance Queue
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -114,11 +114,11 @@ export function StaffAssistanceNotifications() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
-            Staff Assistance Queue
+            Assistance Queue
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">No pending assistance requests. Great job team! 🎉</p>
+          <p className="text-muted-foreground">No pending assistance requests.</p>
         </CardContent>
       </Card>
     );
@@ -129,7 +129,7 @@ export function StaffAssistanceNotifications() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
-          Staff Assistance Queue
+          Assistance Queue
           <Badge variant="destructive" className="ml-2">
             {openRequests.length + inProgressRequests.length}
           </Badge>
