@@ -12,7 +12,6 @@ import {
   ChevronDown, 
   ChevronRight, 
   BarChart3, 
-  Users, 
   Activity, 
   Headphones, 
   Shirt, 
@@ -28,7 +27,6 @@ import {
   Minimize
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { CheckInOverview } from "@/components/reports/CheckInOverview";
 import { RecentlyCheckedIn } from "@/components/reports/RecentlyCheckedIn";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
 import { TShirtTracker } from "@/components/reports/TShirtTracker";
