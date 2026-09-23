@@ -217,25 +217,15 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
               {filteredRecent.length} of {recentCheckIns.length} check-ins (ET timezone)
             </div>
           </div>
-          {/* Mobile cards — no nested scrolling, incremental reveal */}
+          {/* Mobile cards — no nested scrolling, paginated 10 at a time */}
           <div className="md:hidden space-y-3">
-            {filteredRecent.slice(0, visibleCount).map((attendee) => (
+            {pagedRecent.map((attendee) => (
               <MobileAttendeeCard key={attendee.id} attendee={attendee} />
             ))}
-            {filteredRecent.length === 0 && (
-              <p className="text-sm text-muted-foreground">No check-ins in this time range.</p>
-            )}
-            {visibleCount < filteredRecent.length && (
-              <Button
-                variant="outline"
-                className="w-full min-h-11"
-                onClick={() => setVisibleCount(count => count + 10)}
-              >
-                Show 10 more ({filteredRecent.length - visibleCount} left)
-              </Button>
-            )}
+            {pagination}
           </div>
-          <div className="hidden md:block border rounded-lg max-h-[500px] overflow-y-auto">
+          <div className="hidden md:block border rounded-lg">
+
 
             <Table>
               <TableHeader className="sticky top-0 bg-background">
