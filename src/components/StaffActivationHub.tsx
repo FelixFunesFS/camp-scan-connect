@@ -1,5 +1,5 @@
 import { getCurrentEventId } from "@/lib/eventRuntime";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,25 +22,20 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  UserCheck,
-  CheckCircle2,
-  Search,
-  Zap
+  UserCheck
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { RfidScanner } from "@/components/RfidScanner";
 import { UnifiedSearchFilter, QuickFilter } from "@/components/shared/UnifiedSearchFilter";
 import { rfidLookupService } from "@/services/rfidLookupService";
-import { UnifiedSearchResult, EnhancedActivationService } from "@/services/enhancedActivationService";
+import { EnhancedActivationService } from "@/services/enhancedActivationService";
 import { TShirtService } from '@/services/tshirtService';
-import { UnifiedActivationPreview } from "@/components/UnifiedActivationPreview";
-import type { NotificationState } from "@/types/attendee";
 import { StaffAssistanceNotifications } from "@/components/StaffAssistanceNotifications";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { WaiverStatusPanel } from "@/components/WaiverStatusPanel";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
-import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
+import { formatStandardDateTime } from "@/utils/dateTimeUtils";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { WORKING_STATUSES } from "@/lib/registrationStatus";
 import { StaffAttendeeRow } from "@/components/staff/StaffAttendeeRow";
@@ -107,12 +102,6 @@ interface StaffStats {
   todayActivations: number;
 }
 
-export interface AttendeeNotification {
-  attendeeId: string;
-  state: NotificationState;
-  message: string;
-  showNotification: boolean;
-}
 
 const DEACTIVATION_REASONS = [
   { value: "lost", label: "Lost credential" },
@@ -142,16 +131,8 @@ export function StaffActivationHub() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeQuickFilter, setActiveQuickFilter] = useState<string | null>(null);
   const [showCancelledRegistrants, setShowCancelledRegistrants] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  // Unified activation section state
-  const [unifiedSearchQuery, setUnifiedSearchQuery] = useState("");
-  const [unifiedSearchResult, setUnifiedSearchResult] = useState<UnifiedSearchResult | null>(null);
-  const [showUnifiedPreview, setShowUnifiedPreview] = useState(false);
-  const [isUnifiedProcessing, setIsUnifiedProcessing] = useState(false);
-  const [isUnifiedSearching, setIsUnifiedSearching] = useState(false);
-  const [attendeeNotifications, setAttendeeNotifications] = useState<AttendeeNotification[]>([]);
   
   // Deactivation section state
   const [isDeactivationOpen, setIsDeactivationOpen] = useState(false);
@@ -550,21 +531,6 @@ export function StaffActivationHub() {
     setSortDirection(sortField === field ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
   };
 
-  // Refresh unified search results after activation
-  const refreshUnifiedSearchResults = async () => {
-    if (unifiedSearchQuery && unifiedSearchQuery.trim()) {
-      try {
-        setIsUnifiedSearching(true);
-        const result = await EnhancedActivationService.unifiedSearch(unifiedSearchQuery.trim());
-        setUnifiedSearchResult(result);
-      } catch (error) {
-        console.error('Error refreshing search results:', error);
-      } finally {
-        setIsUnifiedSearching(false);
-      }
-    }
-  };
-
   // Enhanced activation handlers with edge case functions
   const handleIndividualActivation = async (attendeeId: string) => {
     try {
@@ -582,55 +548,12 @@ export function StaffActivationHub() {
         toast.success(`${attendee.first_name} ${attendee.last_name} has been activated`);
         fetchAttendees(); // Refresh data
         loadDashboardData();
-        // Also refresh unified search results if we're in that view
-        if (showUnifiedPreview) {
-          await refreshUnifiedSearchResults();
-        }
       } else {
         toast.error(result.message);
       }
     } catch (error) {
       console.error('Individual activation error:', error);
       toast.error("Failed to activate attendee");
-    }
-  };
-
-  // New function for activating remaining attendees by phone
-  const handleActivateRemainingByPhone = async (phoneNumber: string) => {
-    try {
-      setIsUnifiedProcessing(true);
-      
-      // Use the phone activation service
-      const { data, error } = await supabase.rpc('activate_remaining_rfids_by_phone', {
-        p_phone: phoneNumber,
-        p_activation_method: 'staff_assisted'
-      });
-
-      if (error) throw error;
-
-      const result = data[0];
-      // Provide contextual messaging based on activation results
-      if (result && result.activated_count > 0) {
-        toast.success(`Activated ${result.activated_count} additional attendees${
-          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} warnings.` : ''
-        }`);
-      } else if (result && result.warnings && result.warnings.length > 0) {
-        toast.error("Remaining attendees need credentials assigned before activation");
-      } else {
-        toast.info("All attendees with this phone number are already activated");
-      }
-
-      fetchAttendees();
-      loadDashboardData();
-      // Also refresh unified search results if we're in that view
-      if (showUnifiedPreview) {
-        await refreshUnifiedSearchResults();
-      }
-    } catch (error) {
-      console.error('Remaining activation error:', error);
-      toast.error("Failed to activate remaining attendees");
-    } finally {
-      setIsUnifiedProcessing(false);
     }
   };
 
@@ -667,10 +590,6 @@ export function StaffActivationHub() {
       
       fetchAttendees(); // Refresh data
       loadDashboardData();
-      // Also refresh unified search results if we're in that view
-      if (showUnifiedPreview) {
-        await refreshUnifiedSearchResults();
-      }
     } catch (error) {
       console.error('Group activation error:', error);
       toast.error("Failed to activate group");
@@ -743,201 +662,6 @@ export function StaffActivationHub() {
     if (!manualRfid.trim()) return;
     await deactivateSingleRfid(manualRfid.trim());
     setManualRfid("");
-  };
-
-  // Unified activation handlers
-  const handleUnifiedSearch = async () => {
-    if (!unifiedSearchQuery.trim()) return;
-    
-    setIsUnifiedSearching(true);
-    setAttendeeNotifications([]); // Clear previous notifications
-    try {
-      const result = await EnhancedActivationService.unifiedSearch(unifiedSearchQuery);
-      
-      if (result) {
-        setUnifiedSearchResult(result);
-        setShowUnifiedPreview(true);
-      } else {
-        toast.error("No attendees found for this search query");
-      }
-    } catch (error) {
-      console.error('Unified search error:', error);
-      toast.error("Failed to search attendees");
-    } finally {
-      setIsUnifiedSearching(false);
-    }
-  };
-
-  const handleUnifiedActivateSearchGroup = async (notifications: AttendeeNotification[] = []) => {
-    if (!unifiedSearchResult) return;
-
-    setIsUnifiedProcessing(true);
-    
-    // Set processing state for all attendees
-    const allAttendees = [
-      ...(unifiedSearchResult.attendee_details || []),
-      ...(unifiedSearchResult.order_companions || [])
-    ];
-    
-    const processingNotifications: AttendeeNotification[] = allAttendees.map(attendee => ({
-      attendeeId: attendee.id,
-      state: 'processing' as NotificationState,
-      message: 'Activating...',
-      showNotification: true
-    }));
-    
-    setAttendeeNotifications(processingNotifications);
-    
-    try {
-      const result = await EnhancedActivationService.activateSearchGroup(
-        unifiedSearchResult,
-        staffId || undefined
-      );
-
-      // Create per-attendee notifications based on results
-      const resultNotifications: AttendeeNotification[] = [];
-      
-      // Process successful activations
-      if (result.activated_count > 0) {
-        // Enhanced notifications with veteran recognition
-        result.attendee_details?.forEach(attendee => {
-          if (attendee.can_use_services && !attendee.was_already_active) {
-            const message = attendee.is_veteran && attendee.veteran_thanked_at 
-              ? '✅ Activated - Thank you for your service! 🇺🇸'
-              : '✅ Activated successfully';
-              
-            resultNotifications.push({
-              attendeeId: attendee.id || attendee.name,
-              state: 'success',
-              message,
-              showNotification: true
-            });
-          } else if (attendee.was_already_active) {
-            resultNotifications.push({
-              attendeeId: attendee.id || attendee.name,
-              state: 'warning',
-              message: '⚠️ Already activated',
-              showNotification: true
-            });
-          } else if (!attendee.has_rfid) {
-            resultNotifications.push({
-              attendeeId: attendee.id || attendee.name,
-              state: 'error',
-              message: '❌ credential required for activation',
-              showNotification: true
-            });
-          }
-        });
-      }
-      
-      // Process warnings/errors  
-      if (result.warnings && result.warnings.length > 0) {
-        const remainingAttendees = allAttendees.slice(result.activated_count);
-        remainingAttendees.forEach(attendee => {
-          if (!attendee.rfid_uid) {
-            resultNotifications.push({
-              attendeeId: attendee.id,
-              state: 'error',
-              message: '❌ credential required for activation',
-              showNotification: true
-            });
-          } else if (attendee.is_activated) {
-            resultNotifications.push({
-              attendeeId: attendee.id,
-              state: 'warning',
-              message: '⚠️ Already activated',
-              showNotification: true
-            });
-          }
-        });
-      }
-      
-      setAttendeeNotifications(resultNotifications);
-
-      // Only show summary toast for major issues or complete success with veteran recognition
-      if (result.activated_count === allAttendees.length) {
-        const veteranCount = result.attendee_details?.filter(a => a.is_veteran && a.veteran_thanked_at).length || 0;
-        const baseMessage = `Successfully activated all ${result.activated_count} attendees`;
-        const veteranMessage = veteranCount > 0 ? `! Thank you for your service to our ${veteranCount} veteran${veteranCount > 1 ? 's' : ''}!` : '';
-        toast.success(baseMessage + veteranMessage);
-      } else if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
-        toast.info("Check individual attendee cards for specific activation issues");
-      } else if (result.activated_count > 0) {
-        const veteranCount = result.attendee_details?.filter(a => a.is_veteran && a.veteran_thanked_at && a.can_use_services && !a.was_already_active).length || 0;
-        const baseMessage = `Successfully activated ${result.activated_count} of ${allAttendees.length} attendees`;
-        const veteranMessage = veteranCount > 0 ? `! Thank you for your service to our ${veteranCount} veteran${veteranCount > 1 ? 's' : ''}!` : '';
-        toast.success(baseMessage + veteranMessage);
-      }
-
-      // Refresh data
-      fetchAttendees();
-      loadDashboardData();
-      // Also refresh unified search results
-      await refreshUnifiedSearchResults();
-    } catch (error) {
-      console.error('Group activation error:', error);
-      
-      // Set error state for all attendees
-      const errorNotifications: AttendeeNotification[] = allAttendees.map(attendee => ({
-        attendeeId: attendee.id,
-        state: 'error' as NotificationState,
-        message: '❌ Activation failed - system error',
-        showNotification: true
-      }));
-      
-      setAttendeeNotifications(errorNotifications);
-      
-      toast.error("Failed to activate group");
-    } finally {
-      setIsUnifiedProcessing(false);
-    }
-  };
-
-  const handleUnifiedActivateEntireOrder = async () => {
-    if (!unifiedSearchResult) return;
-
-    setIsUnifiedProcessing(true);
-    try {
-      const result = await EnhancedActivationService.activateEntireOrder(
-        unifiedSearchResult,
-        staffId || undefined
-      );
-
-      // Provide contextual messaging based on activation results
-      if (result.activated_count === 0 && result.warnings && result.warnings.length > 0) {
-        toast.error("No attendees could be activated - credentials must be assigned first");
-      } else if (result.activated_count === 0) {
-        toast.info("All order members are already activated");
-      } else if (result.activated_count < result.total_attendees) {
-        toast.warning(`Activated ${result.activated_count} of ${result.total_attendees} attendees${
-          result.warnings && result.warnings.length > 0 ? `. ${result.warnings.length} need credential assignment.` : ''
-        }`);
-      } else {
-        toast.success(`Successfully activated all ${result.activated_count} order members`);
-      }
-
-      // Reset unified search state
-      setShowUnifiedPreview(false);
-      setUnifiedSearchQuery("");
-      setUnifiedSearchResult(null);
-
-      // Refresh data
-      fetchAttendees();
-      loadDashboardData();
-      // Also refresh unified search results  
-      await refreshUnifiedSearchResults();
-    } catch (error) {
-      console.error('Order activation error:', error);
-      toast.error("Failed to activate entire order");
-    } finally {
-      setIsUnifiedProcessing(false);
-    }
-  };
-
-  const handleUnifiedBack = () => {
-    setShowUnifiedPreview(false);
-    setUnifiedSearchResult(null);
-    setAttendeeNotifications([]);
   };
 
   const exportActivity = () => {
@@ -1042,84 +766,6 @@ export function StaffActivationHub() {
 
         {/* Staff Assistance Queue */}
         <StaffAssistanceNotifications />
-
-        {/* Unified Multi-Criteria Activation Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5" />
-              Smart Activation Search
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!showUnifiedPreview ? (
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Search by name, email, phone, or order ID to activate..."
-                      value={unifiedSearchQuery}
-                      onChange={(e) => setUnifiedSearchQuery(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleUnifiedSearch()}
-                      disabled={isUnifiedSearching}
-                      className="h-12 text-base"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleUnifiedSearch}
-                    disabled={!unifiedSearchQuery.trim() || isUnifiedSearching}
-                    size="lg"
-                    className="h-12 px-6"
-                  >
-                    {isUnifiedSearching ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    ) : (
-                      <><Search className="h-4 w-4 mr-2" />Search</>
-                    )}
-                  </Button>
-                </div>
-                
-                <div className="text-sm text-muted-foreground">
-                  <p className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    Automatically detects search type and shows group context for activation
-                  </p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">📞</Badge>
-                      Phone numbers
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">📧</Badge>
-                      Email addresses
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">#</Badge>
-                      Order IDs
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">👤</Badge>
-                      Names
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              unifiedSearchResult && (
-                <UnifiedActivationPreview
-                  searchQuery={unifiedSearchQuery}
-                  searchResult={unifiedSearchResult}
-                  isProcessing={isUnifiedProcessing}
-                  onActivateSearchGroup={handleUnifiedActivateSearchGroup}
-                  onActivateEntireOrder={handleUnifiedActivateEntireOrder}
-                  onBack={handleUnifiedBack}
-                  onRefreshResults={refreshUnifiedSearchResults}
-                  attendeeNotifications={attendeeNotifications}
-                />
-              )
-            )}
-          </CardContent>
-        </Card>
 
         {/* Individual Search & Management */}
         <Card id="individual-search">
