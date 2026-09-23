@@ -104,12 +104,6 @@ interface StaffStats {
   todayActivations: number;
 }
 
-export interface AttendeeNotification {
-  attendeeId: string;
-  state: NotificationState;
-  message: string;
-  showNotification: boolean;
-}
 
 const DEACTIVATION_REASONS = [
   { value: "lost", label: "Lost credential" },
