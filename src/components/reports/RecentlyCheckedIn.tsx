@@ -294,7 +294,22 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
             </Table>
           </div>
         </div>
-      </CardContent>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <UserCheck className="h-5 w-5 text-success" />
+          Recently Checked In
+          <Badge variant="outline" className="text-success">
+            {filteredRecent.length}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{body}</CardContent>
     </Card>
   );
 };
