@@ -5,3 +5,7 @@
 - [x] Deploy, reconcile 2026 roster, and verify
 - [x] Consolidate Staff Hub waiver signing, records, attendee management, and header
 - [ ] Configure the shared RegFox webhook signing secret and add the endpoint in RegFox (waiting for user)
+- [ ] Distinguish all five apparel product lines, styles, sizes, and per-item pickups
+- [ ] Add accessible quick-jump navigation and responsive report sections
+- [ ] Audit and harden every camper, staff, admin, and station page for mobile viewing and transactions
+- [ ] Verify critical workflows at phone, tablet, and desktop widths
