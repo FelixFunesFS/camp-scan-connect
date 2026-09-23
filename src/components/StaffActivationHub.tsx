@@ -551,10 +551,6 @@ export function StaffActivationHub() {
         toast.success(`${attendee.first_name} ${attendee.last_name} has been activated`);
         fetchAttendees(); // Refresh data
         loadDashboardData();
-        // Also refresh unified search results if we're in that view
-        if (showUnifiedPreview) {
-          await refreshUnifiedSearchResults();
-        }
       } else {
         toast.error(result.message);
       }
