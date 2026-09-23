@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Shirt, Package, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { UnifiedStationScanner, StationActionProps } from "@/components/UnifiedStationScanner";
 import { TShirtService, TShirtOrder } from "@/services/tshirtService";
+import { ApparelProductBadge } from "@/components/ApparelProductBadge";
 
 export default function TShirtsStation() {
   return (
@@ -102,7 +104,7 @@ function TShirtsContent({
       setSelectedOrderIds([]);
 
       const orderDetails = selectedOrders
-        .map(o => o.quantity > 1 ? `${o.quantity}× ${o.style} ${o.size}` : `${o.style} ${o.size}`)
+        .map(o => `${o.quantity > 1 ? `${o.quantity}× ` : ''}${o.productLine} ${o.style} ${o.size}`)
         .join(", ");
       toast.success(
         `T-shirts picked up by ${selectedRfid?.attendee?.first_name}: ${orderDetails}`
@@ -192,15 +194,15 @@ function TShirtsContent({
           {/* Order Selection List */}
           <div className="space-y-3">
             {tshirtOrders.map((order) => (
-              <div 
+              <label
                 key={order.id} 
-                className={`flex items-center justify-between p-4 rounded-lg border ${
+                className={`flex min-w-0 items-start justify-between gap-3 rounded-lg border p-4 ${
                   order.isPickedUp 
-                    ? 'bg-green-50 border-green-200' 
+                    ? 'bg-success/10 border-success/30' 
                     : 'bg-muted hover:bg-muted/80'
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   {!order.isPickedUp ? (
                     <Checkbox
                       checked={selectedOrderIds.includes(order.id)}
@@ -210,23 +212,24 @@ function TShirtsContent({
                       disabled={order.isPickedUp}
                     />
                   ) : (
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
                   )}
                   
-                  <div>
-                    <div className="font-medium flex items-center gap-2">
-                      <Shirt className="h-4 w-4" />
-                      {order.style} - {order.size}
+                  <div className="min-w-0 space-y-1">
+                    <div className="badge-row">
+                      <ApparelProductBadge productLine={order.productLine} />
                       {order.quantity > 1 && (
-                        <span className="text-sm text-muted-foreground">
-                          (×{order.quantity})
-                        </span>
+                        <Badge variant="outline">×{order.quantity}</Badge>
                       )}
+                    </div>
+                    <div className="flex min-w-0 items-center gap-2 font-medium">
+                      <Shirt className="h-4 w-4 shrink-0" />
+                      <span>{order.style} — {order.size}</span>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {order.quantity === 1 ? '1 item' : `${order.quantity} items`}
                       {order.isPickedUp && order.pickupTime && (
-                        <span className="ml-2 text-green-600">
+                        <span className="ml-2 text-success">
                           • Picked up {new Date(order.pickupTime).toLocaleDateString()}
                         </span>
                       )}
@@ -235,18 +238,18 @@ function TShirtsContent({
                 </div>
 
                 {order.isPickedUp && (
-                  <div className="text-green-600 font-medium text-sm">
+                  <div className="shrink-0 text-success font-medium text-xs sm:text-sm">
                     PICKED UP
                   </div>
                 )}
-              </div>
+              </label>
             ))}
           </div>
 
           {/* Action Buttons */}
           {!allPickedUp && (
             <div className="space-y-3">
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
                   variant="outline"
                   onClick={handleSelectAll}
@@ -285,12 +288,12 @@ function TShirtsContent({
 
           {/* All Picked Up Status */}
           {allPickedUp && (
-            <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-600" />
-              <div className="text-green-800 font-medium">
+            <div className="text-center p-4 bg-success/10 rounded-lg border border-success/30">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-success" />
+              <div className="text-success font-medium">
                 All T-Shirts Picked Up
               </div>
-              <div className="text-sm text-green-600 mt-1">
+              <div className="text-sm text-success mt-1">
                 {selectedRfid?.attendee?.first_name} has collected all their t-shirt orders
               </div>
             </div>

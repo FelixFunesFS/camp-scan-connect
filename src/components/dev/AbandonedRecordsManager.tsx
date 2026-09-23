@@ -343,7 +343,7 @@ export function AbandonedRecordsCleanup() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-1 gap-4 text-center sm:grid-cols-3">
               {cleanupResult.beforeCount && cleanupResult.afterCount && (
                 <div className="col-span-3 mb-4">
                   <div className="flex justify-between items-center text-sm text-muted-foreground mb-2">

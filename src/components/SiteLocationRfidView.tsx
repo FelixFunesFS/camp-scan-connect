@@ -7,6 +7,7 @@ import { SiteLocationBadge } from "@/components/shared/SiteLocationBadge";
 import { AttendeeData } from "@/pages/RfidAssignment";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { flattenAndSortAttendees, FlatAttendeeWithSorting } from "@/utils/siteLocationGroupUtils";
+import { Badge } from "@/components/ui/badge";
 
 interface SiteLocationRfidViewProps {
   attendees: AttendeeData[];
@@ -62,11 +63,41 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
+        <div className="mobile-table-card">
+          {flatAttendees.map(attendee => (
+            <div key={attendee.id} className="space-y-3 rounded-md border p-4">
+              <div className="flex min-w-0 items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{attendee.first_name} {attendee.last_name}</p>
+                  <p className="text-sm text-muted-foreground">{attendee.phone ? formatPhoneNumber(attendee.phone) : 'No phone'}</p>
+                </div>
+                <Badge variant={attendee.waiver_signed ? 'outline' : 'destructive'} className="shrink-0">
+                  {attendee.waiver_signed ? 'Waiver signed' : 'Waiver missing'}
+                </Badge>
+              </div>
+              <div className="badge-row">
+                <SiteLocationBadge siteLocationAssignment={attendee.site_location_assignment} />
+                <Badge variant="outline">{attendee.arrival_window || 'Standard arrival'}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">Order: {attendee.orderDisplayName}</p>
+              <div className="border-t pt-3">
+                <EnhancedRfidAssignmentCell
+                  attendeeId={attendee.id}
+                  currentRfidUid={attendee.rfid_uid}
+                  currentRfidStatus={attendee.rfid_status}
+                  attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+                  onAssignmentComplete={onRefresh}
+                  onOptimisticUpdate={onOptimisticUpdate}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="desktop-table overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-64 min-w-[250px]">Site Location</TableHead>
+                <TableHead className="w-64 min-w-[220px]">Site Location</TableHead>
                 <TableHead>Order ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Phone</TableHead>
@@ -89,7 +120,7 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
                       </TableRow>
                     )}
                     <TableRow className="hover:bg-muted/50">
-                      <TableCell className="w-64 min-w-[250px]">
+                      <TableCell className="w-64 min-w-[220px]">
                         <SiteLocationBadge 
                           siteLocationAssignment={attendee.site_location_assignment}
                         />

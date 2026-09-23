@@ -79,6 +79,13 @@ All colors MUST be HSL.
     --warning-foreground: 0 0% 100%;
     --info: 217 91% 60%;
     --info-foreground: 0 0% 100%;
+
+    /* Apparel product-line identifiers */
+    --apparel-souvenir: 215 16% 47%;
+    --apparel-orange: 25 95% 45%;
+    --apparel-blue: 217 91% 52%;
+    --apparel-purpose: 271 68% 45%;
+    --apparel-volunteer: 142 76% 32%;
     
     /* Veteran Colors - Deep forest green for military association */
     --veteran: 120 100% 25%;
@@ -104,6 +111,12 @@ All colors MUST be HSL.
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
+
+    --apparel-souvenir: 215 20% 70%;
+    --apparel-orange: 25 95% 62%;
+    --apparel-blue: 217 91% 68%;
+    --apparel-purpose: 271 68% 70%;
+    --apparel-volunteer: 142 70% 58%;
 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;

@@ -155,11 +155,12 @@ export function StaffAttendeeRow({
     <Card className="overflow-hidden">
       {/* Summary row */}
       <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center lg:gap-4">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={onToggle}
           aria-expanded={expanded}
-          className="flex flex-1 min-w-0 items-start gap-2 text-left"
+          className="flex h-auto min-h-11 flex-1 min-w-0 items-start justify-start gap-2 whitespace-normal p-0 text-left hover:bg-transparent"
         >
           <span className="mt-0.5 text-muted-foreground shrink-0">
             {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -180,7 +181,7 @@ export function StaffAttendeeRow({
               {attendee.order_id ? ` · #${attendee.order_id}` : ""}
             </span>
           </span>
-        </button>
+        </Button>
 
         <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
           <Badge

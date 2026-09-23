@@ -110,10 +110,11 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
   return (
     <div className={cn(compact ? 'space-y-2' : 'space-y-3', className)}>
       {collapsed && (
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={onExpandPreview}
-          className="flex w-full items-center gap-2 rounded-lg border bg-muted/60 px-3 py-2 text-left text-sm"
+          className="flex h-auto min-h-11 w-full items-center justify-start gap-2 bg-muted/60 px-3 py-2 text-left text-sm"
         >
           <span
             className={cn(
@@ -125,7 +126,7 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
           {onExpandPreview && (
             <span className="ml-auto shrink-0 text-xs text-primary">Show camera</span>
           )}
-        </button>
+        </Button>
       )}
 
       <div

@@ -280,7 +280,7 @@ export function PostProductionAnalysis() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-1 gap-4 text-center sm:grid-cols-3">
                 <div className="p-4 border rounded-lg">
                   <div className="text-2xl font-bold text-green-600">{analysisData.transactionsWithRfid}</div>
                   <div className="text-sm text-muted-foreground">With Code</div>

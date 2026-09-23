@@ -27,14 +27,15 @@ export const MobileReportCard: React.FC<MobileReportCardProps> = ({
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full p-0 h-auto hover:bg-transparent"
+            className="w-full min-h-[44px] p-0 h-auto hover:bg-transparent"
+            aria-expanded={isOpen}
           >
             <CardHeader className="w-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   {icon}
-                  <div className="text-left">
-                    <h3 className="font-semibold">{title}</h3>
+                  <div className="min-w-0 text-left">
+                    <h3 className="font-semibold whitespace-normal">{title}</h3>
                     {description && (
                       <p className="text-sm text-muted-foreground">{description}</p>
                     )}

@@ -45,6 +45,17 @@ import { MobileReportsControls } from "@/components/MobileReportsControls";
 import { MobileReportCard } from "@/components/MobileReportCard";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
+type ReportSection = 'overview' | 'recent' | 'arrivals' | 'gate' | 'services' | 'status';
+
+const REPORT_SECTIONS: Array<{ id: ReportSection; label: string }> = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'recent', label: 'Recent Check-ins' },
+  { id: 'arrivals', label: 'Arrivals' },
+  { id: 'gate', label: 'Main Gate' },
+  { id: 'services', label: 'Services' },
+  { id: 'status', label: 'On-Site' },
+];
+
 const Reports = () => {
   const navigate = useNavigate();
   const { exportToCsv } = useCsvExport();
@@ -52,6 +63,7 @@ const Reports = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
   const isMobile = useIsMobile();
+  const [activeSection, setActiveSection] = useState<ReportSection>('overview');
   
   // Collapsible section states with localStorage persistence
   const [sections, setSections] = useState(() => {
@@ -90,6 +102,51 @@ const Reports = () => {
     setSections(allCollapsed);
     localStorage.setItem('reports-sections-state', JSON.stringify(allCollapsed));
   };
+
+  const goToSection = (section: ReportSection) => {
+    if (section !== 'recent') updateSectionState(section, true);
+    setActiveSection(section);
+    window.setTimeout(() => {
+      document.getElementById(`report-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        const section = visible?.target.getAttribute('data-report-section') as ReportSection | null;
+        if (section) setActiveSection(section);
+      },
+      { rootMargin: '-20% 0px -65% 0px', threshold: 0 }
+    );
+    document.querySelectorAll('[data-report-section]').forEach(element => observer.observe(element));
+    return () => observer.disconnect();
+  }, [isMobile]);
+
+  const sectionNavigation = (
+    <nav aria-label="Go to report section" className="sticky top-0 z-30 -mx-4 border-y bg-background/95 px-4 py-2 backdrop-blur-sm sm:mx-0 sm:rounded-md sm:border">
+      <div className="scroll-tabs gap-2">
+        <span className="shrink-0 text-xs font-semibold text-muted-foreground">Go to</span>
+        {REPORT_SECTIONS.map(section => (
+          <Button
+            key={section.id}
+            type="button"
+            size="sm"
+            variant={activeSection === section.id ? 'default' : 'outline'}
+            className="touch-target"
+            aria-controls={`report-${section.id}`}
+            aria-current={activeSection === section.id ? 'location' : undefined}
+            onClick={() => goToSection(section.id)}
+          >
+            {section.label}
+          </Button>
+        ))}
+      </div>
+    </nav>
+  );
 
   const handleExportReport = async () => {
     try {
@@ -189,8 +246,11 @@ const Reports = () => {
                 isRefreshing={isRefreshing || isPullRefreshing}
               />
 
+              {sectionNavigation}
+
               {/* Mobile Report Cards */}
               <div className="space-y-4">
+                <section id="report-overview" data-report-section="overview" className="scroll-mt-20">
                 <MobileReportCard
                   title="Event Check-in Overview"
                   icon={<Users className="h-5 w-5 text-primary" />}
@@ -199,9 +259,13 @@ const Reports = () => {
                 >
                   <CheckInOverview refreshTrigger={refreshTrigger} />
                 </MobileReportCard>
+                </section>
 
-                <RecentlyCheckedIn refreshTrigger={refreshTrigger} />
+                <section id="report-recent" data-report-section="recent" className="scroll-mt-20">
+                  <RecentlyCheckedIn refreshTrigger={refreshTrigger} />
+                </section>
 
+                <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-20">
                 <MobileReportCard
                   title="Arrivals by Ticket Type"
                   icon={<Caravan className="h-5 w-5 text-primary" />}
@@ -210,7 +274,9 @@ const Reports = () => {
                 >
                   <ArrivalsBreakdown refreshTrigger={refreshTrigger} />
                 </MobileReportCard>
+                </section>
 
+                <section id="report-gate" data-report-section="gate" className="scroll-mt-20">
                 <MobileReportCard
                   title="Main Gate Access"
                   icon={<Shield className="h-5 w-5 text-primary" />}
@@ -222,7 +288,9 @@ const Reports = () => {
                     refreshTrigger={refreshTrigger}
                   />
                 </MobileReportCard>
+                </section>
 
+                <section id="report-services" data-report-section="services" className="scroll-mt-20">
                 <MobileReportCard
                   title="Attendee Services"
                   icon={<Headphones className="h-5 w-5 text-primary" />}
@@ -252,7 +320,9 @@ const Reports = () => {
                     />
                   </div>
                 </MobileReportCard>
+                </section>
 
+                <section id="report-status" data-report-section="status" className="scroll-mt-20">
                 <MobileReportCard
                   title="Currently On-Site"
                   icon={<BarChart3 className="h-5 w-5 text-primary" />}
@@ -261,6 +331,7 @@ const Reports = () => {
                 >
                   <CheckInStatusAndOnSite refreshTrigger={refreshTrigger} selectedPeriod={selectedPeriod} />
                 </MobileReportCard>
+                </section>
               </div>
             </div>
           </div>
@@ -280,7 +351,7 @@ const Reports = () => {
         </div>
         <ArchivedYearBanner />
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 mt-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 mt-4">
 
           <div className="flex items-center gap-4">
             <Button
@@ -302,7 +373,7 @@ const Reports = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -337,6 +408,7 @@ const Reports = () => {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
+                <div>
                 <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as TimePeriod)}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -348,6 +420,7 @@ const Reports = () => {
                     <SelectItem value="all_time">All Time</SelectItem>
                   </SelectContent>
                 </Select>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Select time period for report data</p>
@@ -392,9 +465,11 @@ const Reports = () => {
           </div>
         </div>
 
-        <div className="space-y-6">
+        {sectionNavigation}
+
+        <div className="space-y-6 pt-4">
           {/* Event Check-in Overview */}
-          <Collapsible 
+          <section id="report-overview" data-report-section="overview" className="scroll-mt-20"><Collapsible 
             open={sections.overview} 
             onOpenChange={(isOpen) => updateSectionState('overview', isOpen)}
           >
@@ -416,13 +491,13 @@ const Reports = () => {
             <CollapsibleContent className="space-y-4 mt-4">
               <CheckInOverview refreshTrigger={refreshTrigger} />
             </CollapsibleContent>
-          </Collapsible>
+          </Collapsible></section>
 
           {/* Recently Checked In - Standalone Section */}
-          <RecentlyCheckedIn refreshTrigger={refreshTrigger} />
+          <section id="report-recent" data-report-section="recent" className="scroll-mt-20"><RecentlyCheckedIn refreshTrigger={refreshTrigger} /></section>
 
           {/* Arrivals by Ticket Type */}
-          <Collapsible 
+          <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-20"><Collapsible 
             open={sections.arrivals} 
             onOpenChange={(isOpen) => updateSectionState('arrivals', isOpen)}
           >
@@ -444,10 +519,10 @@ const Reports = () => {
             <CollapsibleContent className="space-y-4 mt-4">
               <ArrivalsBreakdown refreshTrigger={refreshTrigger} />
             </CollapsibleContent>
-          </Collapsible>
+          </Collapsible></section>
 
           {/* Main Gate Access */}
-          <Collapsible 
+          <section id="report-gate" data-report-section="gate" className="scroll-mt-20"><Collapsible 
             open={sections.gate} 
             onOpenChange={(isOpen) => updateSectionState('gate', isOpen)}
           >
@@ -472,10 +547,10 @@ const Reports = () => {
                 refreshTrigger={refreshTrigger}
               />
             </CollapsibleContent>
-          </Collapsible>
+          </Collapsible></section>
 
           {/* Attendee Services */}
-          <Collapsible 
+          <section id="report-services" data-report-section="services" className="scroll-mt-20"><Collapsible 
             open={sections.services} 
             onOpenChange={(isOpen) => updateSectionState('services', isOpen)}
           >
@@ -520,10 +595,10 @@ const Reports = () => {
                 section="bottom"
               />
             </CollapsibleContent>
-          </Collapsible>
+          </Collapsible></section>
 
           {/* Currently On-Site */}
-          <Collapsible 
+          <section id="report-status" data-report-section="status" className="scroll-mt-20"><Collapsible 
             open={sections.status} 
             onOpenChange={(isOpen) => updateSectionState('status', isOpen)}
           >
@@ -545,7 +620,7 @@ const Reports = () => {
             <CollapsibleContent className="space-y-4 mt-4">
               <CheckInStatusAndOnSite refreshTrigger={refreshTrigger} selectedPeriod={selectedPeriod} />
             </CollapsibleContent>
-          </Collapsible>
+          </Collapsible></section>
         </div>
 
         {/* Auto-refresh indicator */}

@@ -314,16 +314,16 @@ export function UnifiedStationScanner({
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 items-center justify-between gap-2">
           <Button 
             variant="outline" 
             onClick={() => navigate("/stations")}
-            className="flex items-center gap-2"
+            className="touch-target shrink-0 gap-2 px-3"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Stations
           </Button>
-          <h1 className="text-2xl font-bold">{stationTitle}</h1>
+          <h1 className="min-w-0 text-right text-lg font-bold sm:text-2xl">{stationTitle}</h1>
         </div>
 
         <OfflineQueueBadge />
@@ -355,7 +355,7 @@ export function UnifiedStationScanner({
 
 
             {showManualEntry ? (
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   ref={inputRef}
                   autoFocus
@@ -374,6 +374,7 @@ export function UnifiedStationScanner({
                 <Button
                   onClick={handleManualScan}
                   disabled={isLookingUp || !manualUid.trim()}
+                  className="touch-target sm:shrink-0"
                 >
                   {isLookingUp ? "Looking up..." : "Look up"}
                 </Button>
@@ -411,10 +412,10 @@ export function UnifiedStationScanner({
             {/* Attendee Info Display */}
             {selectedRfid?.attendee && (
               <div className="p-4 bg-muted rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
                     <User className="h-5 w-5 text-muted-foreground" />
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium">
                         {selectedRfid.attendee.first_name} {selectedRfid.attendee.last_name}
                       </p>
@@ -430,7 +431,7 @@ export function UnifiedStationScanner({
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     {attendeeReadiness?.isReady ? (
                       <CheckCircle className="h-5 w-5 text-green-600" />
                     ) : (

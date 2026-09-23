@@ -200,7 +200,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
               {[1,2,3,4].map(i => (
                 <div key={i} className="h-16 bg-muted rounded"></div>
               ))}
@@ -215,7 +215,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <Headphones className="h-5 w-5" />
             Headphones Tracking - {formatTimePeriod(selectedPeriod)}
@@ -279,7 +279,23 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
               <p className="text-sm">All equipment returned ✓</p>
             </div>
           ) : (
-            <div className="border rounded-lg">
+            <>
+            <div className="mobile-table-card">
+              {checkouts.map(checkout => (
+                <div key={checkout.id} className="space-y-2 rounded-md border p-4">
+                  <div className="flex min-w-0 items-start justify-between gap-2">
+                    <p className="truncate font-semibold">{checkout.attendeeName}</p>
+                    <Badge variant="outline" className="shrink-0 font-mono text-xs">{checkout.rfidUid}</Badge>
+                  </div>
+                  {checkout.phone && <p className="text-sm text-muted-foreground">{formatPhoneNumber(checkout.phone)}</p>}
+                  <div className="flex flex-wrap justify-between gap-2 text-sm">
+                    <span>{formatStandardDateTime(checkout.checkoutTime)}</span>
+                    <span className="font-medium">{checkout.duration}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="desktop-table overflow-x-auto border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -330,6 +346,7 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
                 </TableBody>
               </Table>
             </div>
+            </>
           )}
         </div>
       </CardContent>

@@ -244,7 +244,7 @@ export function AttendeeDetailModal({
                   Activity Summary
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4">
+              <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="text-center p-3 bg-muted rounded-lg">
                   <div className="font-semibold text-lg">{attendee.bar_hits || 0}</div>
                   <div className="text-sm text-muted-foreground">Bar Visits</div>
@@ -477,7 +477,7 @@ export function AttendeeDetailModal({
                             Activity Summary
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4">
+                        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <div className="text-center p-3 bg-muted rounded-lg">
                             <div className="font-semibold text-lg">{selectedCompanion.bar_hits || 0}</div>
                             <div className="text-sm text-muted-foreground">Bar Visits</div>

@@ -7,10 +7,19 @@ export interface TShirtInfo {
   hasAnyTShirt: boolean;
   purchaseDetails: Array<{
     product: string;
+    productLine: TShirtProductLine;
     size: string;
     type: string;
   }>;
 }
+
+export type TShirtProductLine =
+  | 'Souvenir 2026'
+  | 'Team Orange'
+  | 'Team Blue'
+  | 'Purpose Over Passion'
+  | 'Volunteer'
+  | 'Other';
 
 export interface TShirtPickupData {
   id: string;
@@ -18,6 +27,7 @@ export interface TShirtPickupData {
   phone: string | null;
   tshirtSize: string | null;
   tshirtType: string | null;
+  productLine: TShirtProductLine;
   pickedUp: boolean;
   pickupTime: string | null;
   rfidUid: string;
@@ -28,10 +38,17 @@ export interface TShirtStats {
   pickedUp: number;
   remaining: number;
   sizeBreakdown: Record<string, { ordered: number; pickedUp: number; remaining: number }>;
+  productBreakdown: Record<string, {
+    ordered: number;
+    pickedUp: number;
+    remaining: number;
+    sizeBreakdown: Record<string, { ordered: number; pickedUp: number; remaining: number }>;
+  }>;
 }
 
 export interface TShirtOrder {
   id: string;
+  productLine: TShirtProductLine;
   style: string;
   size: string;
   quantity: number;
@@ -74,7 +91,7 @@ export class TShirtService {
       };
     }
 
-    const purchaseDetails: Array<{ product: string; size: string; type: string }> = [];
+    const purchaseDetails: Array<{ product: string; productLine: TShirtProductLine; size: string; type: string }> = [];
     let primarySize: string | null = null;
     let primaryType: string | null = null;
 
@@ -94,7 +111,7 @@ export class TShirtService {
       if (customFields[fieldName] && typeof customFields[fieldName] === 'string') {
         const orderString = customFields[fieldName];
         this.log(`T-Shirt Debug - Processing order string field "${fieldName}":`, orderString);
-        const parsedOrders = this.parseOrderString(orderString);
+        const parsedOrders = this.parseOrderString(orderString, this.getProductLine(fieldName));
         this.log(`T-Shirt Debug - Parsed orders from "${fieldName}":`, parsedOrders);
         purchaseDetails.push(...parsedOrders);
       }
@@ -106,7 +123,7 @@ export class TShirtService {
     
     Object.entries(tshirtFields).forEach(([key, value]) => {
       if (typeof key === 'string' && value) {
-        const { size, type } = this.parseTShirtProduct(key);
+        const { size, type, productLine } = this.parseTShirtProduct(key);
         if (size) {
           this.log(`T-Shirt Debug - BEFORE extractQuantityFromValue for field "${key}": value=${JSON.stringify(value)}, type=${typeof value}`);
           const quantity = this.extractQuantityFromValue(value);
@@ -114,7 +131,7 @@ export class TShirtService {
           this.log(`T-Shirt Debug - Processing field "${key}": size=${size}, type=${type}, value=${JSON.stringify(value)}, quantity=${quantity}`); // Enhanced debug logging
           // Add multiple entries for quantities > 1
           for (let i = 0; i < quantity; i++) {
-            purchaseDetails.push({ product: key, size, type });
+            purchaseDetails.push({ product: key, productLine, size, type });
           }
         }
       }
@@ -140,8 +157,8 @@ export class TShirtService {
   /**
    * Parse detailed order strings like "1 Women's Fitted V-Neck X-Large $32.00" or comma-separated orders
    */
-  private static parseOrderString(orderString: string): Array<{ product: string; size: string; type: string }> {
-    const orders: Array<{ product: string; size: string; type: string }> = [];
+  private static parseOrderString(orderString: string, fallbackProductLine: TShirtProductLine): Array<{ product: string; productLine: TShirtProductLine; size: string; type: string }> {
+    const orders: Array<{ product: string; productLine: TShirtProductLine; size: string; type: string }> = [];
     
     // Smart detection: Only parse strings that contain actual order details
     if (!this.isDetailedOrderString(orderString)) {
@@ -158,6 +175,7 @@ export class TShirtService {
         for (let i = 0; i < parsedItem.quantity; i++) {
           orders.push({
             product: item,
+            productLine: this.getProductLine(item, fallbackProductLine),
             size: parsedItem.size,
             type: parsedItem.type
           });
@@ -320,11 +338,11 @@ export class TShirtService {
   /**
    * Consolidate and deduplicate orders
    */
-  private static consolidateOrders(orders: Array<{ product: string; size: string; type: string }>): Array<{ product: string; size: string; type: string }> {
-    const consolidated = new Map<string, { product: string; size: string; type: string; count: number }>();
+  private static consolidateOrders(orders: Array<{ product: string; productLine: TShirtProductLine; size: string; type: string }>): Array<{ product: string; productLine: TShirtProductLine; size: string; type: string }> {
+    const consolidated = new Map<string, { product: string; productLine: TShirtProductLine; size: string; type: string; count: number }>();
     
     orders.forEach(order => {
-      const key = `${order.type}-${order.size}`;
+      const key = `${order.productLine}-${order.type}-${order.size}`;
       if (consolidated.has(key)) {
         consolidated.get(key)!.count++;
       } else {
@@ -333,11 +351,12 @@ export class TShirtService {
     });
     
     // Convert back to array format, expanding for quantities
-    const result: Array<{ product: string; size: string; type: string }> = [];
+    const result: Array<{ product: string; productLine: TShirtProductLine; size: string; type: string }> = [];
     consolidated.forEach(item => {
       for (let i = 0; i < item.count; i++) {
         result.push({
           product: item.product,
+          productLine: item.productLine,
           size: item.size,
           type: item.type
         });
@@ -390,15 +409,15 @@ export class TShirtService {
     this.log('T-Shirt Debug - Descriptive fields found:', descriptiveFields);
     this.log('T-Shirt Debug - Final filtered keys:', filteredKeys);
     
-    // Step 3: Group fields by detected size AND type to avoid losing different products of same size
+    // Step 3: Group by product line, size, and style so distinct garments never collapse together.
     const sizeTypeToFields = new Map<string, { descriptive: string[], coded: string[], generic: string[] }>();
     
     this.log('T-Shirt Debug - Starting field grouping process...');
     filteredKeys.forEach(key => {
-      const { size, type } = this.parseTShirtProduct(key);
+      const { size, type, productLine } = this.parseTShirtProduct(key);
       const normalizedSize = size.toLowerCase() || 'unknown';
       const normalizedType = type.toLowerCase().replace(/[^a-z0-9]/g, '') || 'tshirt';
-      const groupKey = `${normalizedSize}-${normalizedType}`;
+      const groupKey = `${productLine.toLowerCase()}-${normalizedSize}-${normalizedType}`;
       this.log(`T-Shirt Debug - Processing key "${key}": detected size="${size}", type="${type}", groupKey="${groupKey}"`);
       
       if (!sizeTypeToFields.has(groupKey)) {
@@ -515,18 +534,31 @@ export class TShirtService {
       'souvenir', 'fitted', 'crew neck', 'v-neck',
       'vneck', 'crewneck', 'unisex', "women's", "men's",
       'merchandise.tshirt', // Include merchandise fields
+      'team orange', 'teamorange', 'team blue', 'teamblue',
+      'purpose over passion', 'purposeoverpassion',
       'shirt' // Volunteer shirts and any other *shirt* product
     ];
     
     return tshirtKeywords.some(keyword => normalized.includes(keyword));
   }
 
-  private static parseTShirtProduct(productName: string): { size: string; type: string } {
+  private static getProductLine(productName: string, fallback: TShirtProductLine = 'Other'): TShirtProductLine {
+    const normalized = this.humanizeFieldName(productName);
+    if (normalized.includes('team orange')) return 'Team Orange';
+    if (normalized.includes('team blue')) return 'Team Blue';
+    if (normalized.includes('purpose over passion')) return 'Purpose Over Passion';
+    if (normalized.includes('volunteer')) return 'Volunteer';
+    if (normalized.includes('souvenir') || normalized.includes('merchandise tshirt')) return 'Souvenir 2026';
+    return fallback;
+  }
+
+  private static parseTShirtProduct(productName: string): { size: string; type: string; productLine: TShirtProductLine } {
     this.log('Parsing T-shirt product:', productName);
 
     // Normalize separators AND camelCase so "volunteerShirt.unisexMed" becomes
     // "volunteer shirt unisex med" and word-boundary patterns can match.
     const cleanProduct = this.humanizeFieldName(productName);
+    const productLine = this.getProductLine(productName);
     this.log('Cleaned product name:', cleanProduct);
     
     // Determine full style name from the product name
@@ -536,7 +568,7 @@ export class TShirtService {
     if (cleanProduct.includes('volunteer')) {
       const volunteerSize = this.extractSizeFromString(cleanProduct);
       this.log('Detected volunteer shirt:', { size: volunteerSize });
-      return { size: volunteerSize, type: 'Volunteer Shirt' };
+      return { size: volunteerSize, type: 'Unisex Crew Neck', productLine };
     }
 
     // Check for specific style patterns in order of specificity - improved to handle hyphens
@@ -585,7 +617,7 @@ export class TShirtService {
     }
 
     this.log('Final parsed result:', { size: detectedSize, type });
-    return { size: detectedSize, type };
+    return { size: detectedSize, type, productLine };
   }
 
   static async getTShirtPickupData(): Promise<{ pickups: TShirtPickupData[]; stats: TShirtStats }> {
@@ -617,6 +649,7 @@ export class TShirtService {
 
       const pickups: TShirtPickupData[] = [];
       const sizeBreakdown: Record<string, { ordered: number; pickedUp: number; remaining: number }> = {};
+      const productBreakdown: TShirtStats['productBreakdown'] = {};
       let totalItemsOrdered = 0;
       let totalItemsPickedUp = 0;
 
@@ -626,14 +659,15 @@ export class TShirtService {
         
         if (tshirtInfo.hasAnyTShirt) {
           // Group orders by style/size to get accurate quantities
-          const orderGroups = new Map<string, { style: string; size: string; quantity: number }>();
+          const orderGroups = new Map<string, { productLine: TShirtProductLine; style: string; size: string; quantity: number }>();
           
           tshirtInfo.purchaseDetails.forEach(detail => {
-            const key = `${detail.type}-${detail.size}`;
+            const key = `${detail.productLine}-${detail.type}-${detail.size}`;
             if (orderGroups.has(key)) {
               orderGroups.get(key)!.quantity++;
             } else {
               orderGroups.set(key, {
+                productLine: detail.productLine,
                 style: detail.type || 'Unisex',
                 size: detail.size || 'Unknown',
                 quantity: 1
@@ -642,21 +676,28 @@ export class TShirtService {
           });
 
           // Count attendee's pickups
-          const attendeePickups = transactions?.filter(t => t.attendee_id === attendee.id) || [];
+          const attendeePickups = (transactions?.filter(t => t.attendee_id === attendee.id) || []).flatMap(transaction => {
+            const quantity = Math.max(1, Number((transaction.extra_data as any)?.quantity) || 1);
+            return Array.from({ length: quantity }, () => transaction);
+          });
+          const usedPickupIndexes = new Set<number>();
           
           // Process each unique order group for this attendee
           orderGroups.forEach(group => {
             const size = group.size;
-            const matchingPickups = attendeePickups.filter(t => {
+            const matchingPickupIndexes = attendeePickups.map((t, index) => ({ t, index })).filter(({ t, index }) => {
+              if (usedPickupIndexes.has(index)) return false;
               const extraData = t.extra_data as any;
-              return extraData?.tshirt_style === group.style && 
-                     extraData?.tshirt_size === size;
+              const sameLegacyIdentity = extraData?.tshirt_style === group.style && extraData?.tshirt_size === size;
+              return sameLegacyIdentity && (!extraData?.product_line || extraData.product_line === group.productLine);
             });
+
+            matchingPickupIndexes.slice(0, group.quantity).forEach(({ index }) => usedPickupIndexes.add(index));
 
             // Track each individual item
             for (let i = 0; i < group.quantity; i++) {
-              const isPickedUp = i < matchingPickups.length;
-              const pickupTime = isPickedUp ? matchingPickups[i]?.created_at : null;
+              const isPickedUp = i < matchingPickupIndexes.length;
+              const pickupTime = isPickedUp ? matchingPickupIndexes[i]?.t.created_at : null;
 
               totalItemsOrdered++;
               if (isPickedUp) totalItemsPickedUp++;
@@ -672,6 +713,20 @@ export class TShirtService {
                 sizeBreakdown[size].remaining++;
               }
 
+              if (!productBreakdown[group.productLine]) {
+                productBreakdown[group.productLine] = { ordered: 0, pickedUp: 0, remaining: 0, sizeBreakdown: {} };
+              }
+              const productStats = productBreakdown[group.productLine];
+              productStats.ordered++;
+              if (isPickedUp) productStats.pickedUp++;
+              else productStats.remaining++;
+              if (!productStats.sizeBreakdown[size]) {
+                productStats.sizeBreakdown[size] = { ordered: 0, pickedUp: 0, remaining: 0 };
+              }
+              productStats.sizeBreakdown[size].ordered++;
+              if (isPickedUp) productStats.sizeBreakdown[size].pickedUp++;
+              else productStats.sizeBreakdown[size].remaining++;
+
               // Only add to pickups list if not picked up (for pending list)
               if (!isPickedUp) {
                 pickups.push({
@@ -680,6 +735,7 @@ export class TShirtService {
                   phone: attendee.phone,
                   tshirtSize: size,
                   tshirtType: group.style,
+                  productLine: group.productLine,
                   pickedUp: false,
                   pickupTime: null,
                   rfidUid: this.pickCredentialUid(attendee.rfid_tags)
@@ -694,7 +750,8 @@ export class TShirtService {
         totalOrdered: totalItemsOrdered,
         pickedUp: totalItemsPickedUp,
         remaining: totalItemsOrdered - totalItemsPickedUp,
-        sizeBreakdown
+        sizeBreakdown,
+        productBreakdown
       };
 
       return { pickups, stats };
@@ -709,7 +766,8 @@ export class TShirtService {
       totalOrdered: 0,
       pickedUp: 0,
       remaining: 0,
-      sizeBreakdown: {}
+      sizeBreakdown: {},
+      productBreakdown: {}
     };
   }
 
@@ -729,6 +787,7 @@ export class TShirtService {
     type: string | null;
     orders: Array<{
       id: string;
+        productLine: TShirtProductLine;
       style: string;
       size: string;
       quantity: number;
@@ -761,6 +820,7 @@ export class TShirtService {
 
       // Group orders by style/size and count quantities
       const orderGroups = new Map<string, {
+        productLine: TShirtProductLine;
         style: string;
         size: string;
         quantity: number;
@@ -768,7 +828,7 @@ export class TShirtService {
       }>();
 
       tshirtInfo.purchaseDetails.forEach(detail => {
-        const key = `${detail.type}-${detail.size}`;
+        const key = `${detail.productLine}-${detail.type}-${detail.size}`;
         this.log(`T-Shirt Debug - checkAttendeeHasTShirt processing detail:`, {
           product: detail.product,
           type: detail.type,
@@ -779,6 +839,7 @@ export class TShirtService {
           orderGroups.get(key)!.quantity++;
         } else {
           orderGroups.set(key, {
+            productLine: detail.productLine,
             style: detail.type || 'T-Shirt',
             size: detail.size || 'Unknown',
             quantity: 1,
@@ -794,10 +855,14 @@ export class TShirtService {
         const extraData = transaction.extra_data as any;
         const style = extraData?.tshirt_style;
         const size = extraData?.tshirt_size;
-        const key = `${style}-${size}`;
-        
-        if (orderGroups.has(key)) {
-          orderGroups.get(key)!.pickups.push(transaction);
+        const productLine = extraData?.product_line as TShirtProductLine | undefined;
+        const candidates = Array.from(orderGroups.values()).filter(group =>
+          group.style === style && group.size === size && (!productLine || group.productLine === productLine)
+        );
+        const target = candidates.find(group => group.pickups.length < group.quantity) ?? candidates[0];
+        if (target) {
+          const quantity = Math.max(1, Number(extraData?.quantity) || 1);
+          for (let i = 0; i < quantity; i++) target.pickups.push(transaction);
         }
       });
 
@@ -812,6 +877,7 @@ export class TShirtService {
         
         return {
           id: orderId,
+          productLine: group.productLine,
           style: group.style,
           size: group.size,
           quantity: group.quantity,
@@ -838,19 +904,21 @@ export class TShirtService {
   static async recordTShirtPickups(attendeeId: string, selectedOrders: TShirtOrder[], rfidUid?: string): Promise<void> {
     if (!selectedOrders.length) return;
 
-    const transactions = selectedOrders.map(order => ({
+    const transactions = selectedOrders.flatMap(order => Array.from({ length: order.quantity }, (_, itemIndex) => ({
       attendee_id: attendeeId,
       station_type: 'tshirts' as any,
       transaction_type: 'tshirt_pickup' as any,
       rfid_uid: rfidUid, // Include Code for proper audit trail
       current_status: 'picked_up',
       extra_data: {
+        product_line: order.productLine,
         tshirt_style: order.style,
         tshirt_size: order.size,
-        quantity: order.quantity,
+        quantity: 1,
+        item_index: itemIndex,
         order_id: order.id
       }
-    }));
+    })));
 
     // Record all transactions
     const { error } = await supabase

@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,6 +9,7 @@ import { TShirtService, TShirtPickupData, TShirtStats } from "@/services/tshirtS
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTime } from "@/utils/dateTimeUtils";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { ApparelProductBadge } from "@/components/ApparelProductBadge";
 
 interface TShirtTrackerProps {
   refreshTrigger?: number;
@@ -19,10 +21,12 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
     totalOrdered: 0,
     pickedUp: 0,
     remaining: 0,
-    sizeBreakdown: {}
+    sizeBreakdown: {},
+    productBreakdown: {}
   });
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isPendingPickupsOpen, setIsPendingPickupsOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState('Overall');
 
   const fetchTShirtData = useCallback(async (isBackground = false) => {
     try {
@@ -51,6 +55,8 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
     fetchTShirtData(false);
   }, [fetchTShirtData]);
 
+  const productLines = useMemo(() => Object.keys(stats.productBreakdown).sort(), [stats.productBreakdown]);
+
   if (isInitialLoading) {
     return (
       <Card>
@@ -62,7 +68,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {[1,2,3].map(i => (
                 <div key={i} className="h-16 bg-muted rounded"></div>
               ))}
@@ -75,19 +81,25 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
   }
 
   const pendingPickups = pickups.filter(p => !p.pickedUp);
+  const visiblePickups = selectedProduct === 'Overall'
+    ? pendingPickups
+    : pendingPickups.filter(pickup => pickup.productLine === selectedProduct);
+  const selectedStats = selectedProduct === 'Overall'
+    ? { ordered: stats.totalOrdered, pickedUp: stats.pickedUp, remaining: stats.remaining, sizeBreakdown: stats.sizeBreakdown }
+    : stats.productBreakdown[selectedProduct] ?? { ordered: 0, pickedUp: 0, remaining: 0, sizeBreakdown: {} };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <CardTitle className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="badge-row">
             <Shirt className="h-5 w-5" />
             T-Shirt Distribution Tracking
             <Badge variant="outline" className="text-xs font-normal">
               Items Tracking
             </Badge>
           </div>
-          <Badge 
+          <Badge
             variant={stats.remaining > 0 ? "default" : "outline"}
             className={stats.remaining > 0 ? "bg-warning" : "bg-success"}
           >
@@ -101,22 +113,38 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
           Counts come from registration orders, so totals are accurate before wristbands are
           assigned. A 0% pickup rate ahead of the event is expected.
         </p>
+        <nav aria-label="Apparel product lines" className="scroll-tabs gap-2 pb-1">
+          {['Overall', ...productLines].map(product => (
+            <Button
+              key={product}
+              type="button"
+              size="sm"
+              variant={selectedProduct === product ? 'default' : 'outline'}
+              className="touch-target"
+              aria-pressed={selectedProduct === product}
+              onClick={() => setSelectedProduct(product)}
+            >
+              {product}
+            </Button>
+          ))}
+        </nav>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center p-4 bg-info/10 rounded-lg">
             <Package className="h-6 w-6 text-info mx-auto mb-2" />
-            <div className="text-2xl font-bold text-info">{stats.totalOrdered}</div>
+            <div className="text-2xl font-bold text-info">{selectedStats.ordered}</div>
             <div className="text-sm text-muted-foreground">Total Items Ordered</div>
           </div>
           
           <div className="text-center p-4 bg-success/10 rounded-lg">
             <CheckCircle className="h-6 w-6 text-success mx-auto mb-2" />
-            <div className="text-2xl font-bold text-success">{stats.pickedUp}</div>
+            <div className="text-2xl font-bold text-success">{selectedStats.pickedUp}</div>
             <div className="text-sm text-muted-foreground">Items Picked Up</div>
           </div>
           
           <div className="text-center p-4 bg-warning/10 rounded-lg">
             <Clock className="h-6 w-6 text-warning mx-auto mb-2" />
-            <div className="text-2xl font-bold text-warning">{stats.remaining}</div>
+            <div className="text-2xl font-bold text-warning">{selectedStats.remaining}</div>
             <div className="text-sm text-muted-foreground">Items Remaining</div>
           </div>
         </div>
@@ -125,7 +153,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
         <div>
           <h4 className="font-semibold mb-4">Size Breakdown</h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            {Object.entries(stats.sizeBreakdown)
+            {Object.entries(selectedStats.sizeBreakdown)
               .sort(([a], [b]) => {
                 // Custom sort order for sizes
                 const sizeOrder = ['S', 'M', 'L', 'XL', '2X', '3X', '4X'];
@@ -160,10 +188,10 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
           <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-4 py-3 text-left transition-colors hover:bg-muted/50">
             <div className="flex items-center gap-2">
               <h4 className="font-semibold">Pending Pickups</h4>
-              {pendingPickups.length > 0 && (
+              {visiblePickups.length > 0 && (
                 <Badge variant="outline" className="text-warning">
                   <Clock className="h-3 w-3 mr-1" />
-                  {pendingPickups.length} Waiting
+                  {visiblePickups.length} Waiting
                 </Badge>
               )}
             </div>
@@ -175,26 +203,46 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
           </CollapsibleTrigger>
           
           <CollapsibleContent className="space-y-2">
-            {pendingPickups.length === 0 ? (
+            {visiblePickups.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Shirt className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>All t-shirt items have been picked up!</p>
                 <p className="text-sm">Distribution complete ✓</p>
               </div>
             ) : (
-              <div className="border rounded-lg">
+              <>
+              <div className="mobile-table-card">
+                {visiblePickups.map(pickup => (
+                  <div key={pickup.id} className="space-y-3 rounded-md border p-4">
+                    <div className="flex min-w-0 items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">{pickup.attendeeName}</p>
+                        {pickup.phone && <p className="text-sm text-muted-foreground">{formatPhoneNumber(pickup.phone)}</p>}
+                      </div>
+                      <ApparelProductBadge productLine={pickup.productLine} className="shrink-0" />
+                    </div>
+                    <div className="badge-row">
+                      <Badge variant="outline">{pickup.tshirtType || 'Unisex Crew Neck'}</Badge>
+                      <Badge variant="outline">{pickup.tshirtSize || 'Unknown size'}</Badge>
+                      <Badge variant="outline" className="font-mono">{pickup.rfidUid}</Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="desktop-table overflow-x-auto border rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Attendee</TableHead>
                       <TableHead>Phone</TableHead>
+                      <TableHead>Product</TableHead>
                       <TableHead>Size</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Wristband</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendingPickups.map((pickup) => (
+                    {visiblePickups.map((pickup) => (
                       <TableRow key={pickup.id}>
                         <TableCell className="font-medium">{pickup.attendeeName}</TableCell>
                         <TableCell>
@@ -205,6 +253,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
                             </div>
                           )}
                         </TableCell>
+                        <TableCell><ApparelProductBadge productLine={pickup.productLine} /></TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-medium">
                             {pickup.tshirtSize || 'Unknown'}
@@ -231,6 +280,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </CollapsibleContent>
         </Collapsible>
