@@ -51,6 +51,7 @@ import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { getStatusClassName, WORKING_STATUSES } from "@/lib/registrationStatus";
+import { StaffAttendeeRow } from "@/components/staff/StaffAttendeeRow";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {
@@ -183,6 +184,16 @@ export function StaffActivationHub() {
   
   // Attendee detail modal state
   const [selectedAttendee, setSelectedAttendee] = useState<EnhancedAttendee | null>(null);
+
+  // Expandable master-detail rows
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const toggleRow = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
   
   const navigate = useNavigate();
   
@@ -1199,422 +1210,65 @@ export function StaffActivationHub() {
             {/* Enhanced Search Results */}
             {processedAttendees.length > 0 ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm text-muted-foreground">
                     Found {processedAttendees.length} attendee{processedAttendees.length !== 1 ? 's' : ''}
                   </p>
-                </div>
-                
-                {/* Mobile and Desktop Attendee Display */}
-                {isMobile ? (
-                  <ScrollArea className="max-h-96">
-                    <div className="space-y-3">
-                      {processedAttendees.map((attendee) => (
-                        <Card key={attendee.id} className="transition-all duration-200 hover:shadow-md">
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-medium">
-                                    {attendee.first_name} {attendee.last_name}
-                                  </span>
-                                </div>
-                                
-                                 <div className="space-y-1 text-sm text-muted-foreground">
-                                   <p>{attendee.email}</p>
-                                   <p>{formatTicketType(attendee.ticket_type)}</p>
-                                   <div className="flex items-center gap-2 flex-wrap">
-                                     <Badge variant={getRegistrationStatusVariant(attendee.registration_status)} className={`text-xs ${getStatusClassName(attendee.registration_status)}`}>
-                                       {getRegistrationStatusDisplayText(attendee.registration_status)}
-                                     </Badge>
-                                     {(() => {
-                                       if (attendee.headphones_status === 'checked_out') {
-                                         const duration = attendee.headphones_duration || 0;
-                                         const isLong = duration > 180;
-                                         return (
-                                           <Badge 
-                                             variant={isLong ? "destructive" : "secondary"}
-                                             className="text-xs"
-                                           >
-                                             Headphones ({HeadphonesStatusService.formatCheckoutDuration(duration)})
-                                           </Badge>
-                                         );
-                                       }
-                                       if (attendee.headphones_status === 'checked_in') {
-                                         return <Badge variant="outline" className="text-xs">Headphones Available</Badge>;
-                                       }
-                                       if (attendee.headphones_status === 'never_used') {
-                                         return <Badge variant="outline" className="text-xs text-muted-foreground">No Headphone Use</Badge>;
-                                       }
-                                       return null;
-                                      })()}
-                                      {/* Golf Cart Status */}
-                                      {(() => {
-                                        if (attendee.golf_cart_status === 'checked_out') {
-                                          const duration = attendee.golf_cart_duration || 0;
-                                          const isLong = duration > 480; // 8 hours
-                                          return (
-                                            <Badge 
-                                              variant={isLong ? "destructive" : "secondary"}
-                                              className="text-xs"
-                                            >
-                                              Golf Cart ({EquipmentStatusService.formatUsageTime(duration)})
-                                            </Badge>
-                                          );
-                                        }
-                                        if (attendee.golf_cart_status === 'checked_in') {
-                                          return <Badge variant="outline" className="text-xs">Golf Cart Available</Badge>;
-                                        }
-                                        return null;
-                                      })()}
-                                      {/* Walkie Talkie Status */}
-                                      {(() => {
-                                        if (attendee.walkie_talkie_status === 'checked_out') {
-                                          const duration = attendee.walkie_talkie_duration || 0;
-                                          const isLong = duration > 480; // 8 hours
-                                          return (
-                                            <Badge 
-                                              variant={isLong ? "destructive" : "secondary"}
-                                              className="text-xs"
-                                            >
-                                              Walkie Talkie ({EquipmentStatusService.formatUsageTime(duration)})
-                                            </Badge>
-                                          );
-                                        }
-                                        if (attendee.walkie_talkie_status === 'checked_in') {
-                                          return <Badge variant="outline" className="text-xs">Walkie Talkie Available</Badge>;
-                                        }
-                                        return null;
-                                      })()}
-                                      {/* Fanny Pack Status */}
-                                      {(() => {
-                                        if (attendee.fanny_pack_status === 'checked_out') {
-                                          const duration = attendee.fanny_pack_duration || 0;
-                                          const isLong = duration > 1440; // 24 hours
-                                          return (
-                                            <Badge 
-                                              variant={isLong ? "destructive" : "secondary"}
-                                              className="text-xs"
-                                            >
-                                              Fanny Pack ({EquipmentStatusService.formatUsageTime(duration)})
-                                            </Badge>
-                                          );
-                                        }
-                                        if (attendee.fanny_pack_status === 'checked_in') {
-                                          return <Badge variant="outline" className="text-xs">Fanny Pack Available</Badge>;
-                                        }
-                                         return null;
-                                       })()}
-                                        {/* T-Shirt Status */}
-                                        {(() => {
-                                          const summary = attendee.tshirt_summary;
-                                          if (!summary?.hasAnyTShirt) return null;
-                                          
-                                          if (summary.totalPickedUp === summary.totalOrders) {
-                                            return (
-                                              <Badge variant="default" className="text-xs">
-                                                All T-Shirts Picked Up ({summary.totalOrders})
-                                              </Badge>
-                                            );
-                                          }
-                                          
-                                          if (summary.totalPickedUp > 0) {
-                                            return (
-                                              <Badge variant="secondary" className="text-xs">
-                                                Partial Pickup ({summary.totalPickedUp}/{summary.totalOrders})
-                                              </Badge>
-                                            );
-                                          }
-                                          
-                                          return (
-                                            <Badge variant="outline" className="text-xs">
-                                              T-Shirts Pending ({summary.totalOrders})
-                                            </Badge>
-                                          );
-                                        })()}
-                                     </div>
-                                     {attendee.rfid_uid && (
-                                       <p className="font-mono text-xs">Code: {attendee.rfid_uid}</p>
-                                     )}
-                                    {attendee.order_id && (
-                                      <p className="font-mono text-xs">Order: {attendee.order_id}</p>
-                                    )}
-                                 </div>
-                              </div>
-                              
-                              <div className="flex flex-col items-end gap-2">
-                                {/* Status Badge */}
-                                <Badge 
-                                  variant={getRfidStatusVariant(attendee.rfid_status, attendee.rfid_uid)}
-                                  className="text-xs"
-                                >
-                                  {attendee.activated_at ? (
-                                    <><CheckCircle2 className="h-3 w-3 mr-1" />Active</>
-                                  ) : attendee.rfid_uid ? (
-                                    <><Clock className="h-3 w-3 mr-1" />Pending</>
-                                  ) : (
-                                    <><AlertTriangle className="h-3 w-3 mr-1" />No credential</>
-                                  )}
-                                </Badge>
-                                
-                                {/* Action Buttons */}
-                                <div className="flex gap-2">
-                                  {attendee.rfid_uid && !attendee.activated_at && (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleIndividualActivation(attendee.id)}
-                                      className="text-xs"
-                                    >
-                                      <UserCheck className="h-3 w-3 mr-1" />
-                                      Activate
-                                    </Button>
-                                  )}
-                                  {attendee.is_group_order && attendee.order_id && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        const orderAttendees = attendees.filter(a => a.order_id === attendee.order_id);
-                                        handleGroupActivation(orderAttendees);
-                                      }}
-                                      className="text-xs"
-                                    >
-                                      <Users className="h-3 w-3 mr-1" />
-                                      Group
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                ) : (
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b bg-muted/30">
-                            {allColumns.filter(col => col.desktop && visibleColumns.includes(col.key)).map((column) => (
-                              <th key={column.key} className="p-3 text-left text-sm font-medium">
-                                <div className="flex items-center gap-2">
-                                  {column.label}
-                                   {column.sortable && (
-                                     <Button
-                                       variant="ghost"
-                                       size="sm"
-                                       onClick={() => handleSort(column.key as keyof EnhancedAttendee)}
-                                       className="h-4 w-4 p-0 hover:bg-accent"
-                                     >
-                                       {sortField === column.key ? (
-                                         sortDirection === 'asc' ? '↑' : '↓'
-                                       ) : '↕'}
-                                     </Button>
-                                   )}
-                                </div>
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {processedAttendees.map((attendee, index) => (
-                            <tr key={attendee.id} className={`border-b hover:bg-accent/50 cursor-pointer ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
-                               <td className="p-3 text-sm">
-                                 <AttendeeDetailModal 
-                                   attendee={attendee} 
-                                   allAttendees={attendees}
-                                   onActivate={handleIndividualActivation}
-                                   onGroupActivate={handleGroupActivation}
-                                   trigger={
-                                     <button className="text-left hover:underline focus:outline-none">
-                                       {attendee.first_name} {attendee.last_name}
-                                     </button>
-                                   }
-                                 />
-                               </td>
-                               <td className="p-3 text-sm">{attendee.email}</td>
-                               <td className="p-3 text-sm">{attendee.phone}</td>
-                               <td className="p-3 text-sm">{attendee.order_id}</td>
-                               <td className="p-3 text-sm">{formatTicketType(attendee.ticket_type)}</td>
-                               <td className="p-3 text-sm">
-                                 <Badge variant={getRegistrationStatusVariant(attendee.registration_status)} className={getStatusClassName(attendee.registration_status)}>
-                                   {getRegistrationStatusDisplayText(attendee.registration_status)}
-                                 </Badge>
-                               </td>
-                               <td className="p-3 text-sm">
-                                 <Badge variant={
-                                   attendee.rfid_status === 'active' ? 'default' :
-                                   attendee.rfid_status === 'assigned' ? 'secondary' : 'destructive'
-                                 }>
-                                   {attendee.rfid_status}
-                                 </Badge>
-                               </td>
-                               <td className="p-3 text-sm">
-                                 {(() => {
-                                   if (attendee.headphones_status === 'checked_out') {
-                                     const duration = attendee.headphones_duration || 0;
-                                     const isLong = duration > 180;
-                                     return (
-                                       <Badge 
-                                         variant={isLong ? "destructive" : "secondary"}
-                                         className="text-xs"
-                                       >
-                                         Checked Out ({HeadphonesStatusService.formatCheckoutDuration(duration)})
-                                       </Badge>
-                                     );
-                                   }
-                                   if (attendee.headphones_status === 'checked_in') {
-                                     return <Badge variant="outline" className="text-xs">Available</Badge>;
-                                   }
-                                   return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
-                                 })()}
-                               </td>
-                               <td className="p-3 text-sm">
-                                 {(() => {
-                                   if (attendee.golf_cart_status === 'checked_out') {
-                                     const duration = attendee.golf_cart_duration || 0;
-                                     const isLong = duration > 480; // 8 hours
-                                     return (
-                                       <Badge 
-                                         variant={isLong ? "destructive" : "secondary"}
-                                         className="text-xs"
-                                       >
-                                         Checked Out ({EquipmentStatusService.formatUsageTime(duration)})
-                                       </Badge>
-                                     );
-                                   }
-                                   if (attendee.golf_cart_status === 'checked_in') {
-                                     return <Badge variant="outline" className="text-xs">Available</Badge>;
-                                   }
-                                   return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
-                                 })()}
-                               </td>
-                               <td className="p-3 text-sm">
-                                 {(() => {
-                                   if (attendee.walkie_talkie_status === 'checked_out') {
-                                     const duration = attendee.walkie_talkie_duration || 0;
-                                     const isLong = duration > 480; // 8 hours
-                                     return (
-                                       <Badge 
-                                         variant={isLong ? "destructive" : "secondary"}
-                                         className="text-xs"
-                                       >
-                                         Checked Out ({EquipmentStatusService.formatUsageTime(duration)})
-                                       </Badge>
-                                     );
-                                   }
-                                   if (attendee.walkie_talkie_status === 'checked_in') {
-                                     return <Badge variant="outline" className="text-xs">Available</Badge>;
-                                   }
-                                   return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
-                                 })()}
-                               </td>
-                               <td className="p-3 text-sm">
-                                 {(() => {
-                                   if (attendee.fanny_pack_status === 'checked_out') {
-                                     const duration = attendee.fanny_pack_duration || 0;
-                                     const isLong = duration > 1440; // 24 hours
-                                     return (
-                                       <Badge 
-                                         variant={isLong ? "destructive" : "secondary"}
-                                         className="text-xs"
-                                       >
-                                         Checked Out ({EquipmentStatusService.formatUsageTime(duration)})
-                                       </Badge>
-                                     );
-                                   }
-                                   if (attendee.fanny_pack_status === 'checked_in') {
-                                     return <Badge variant="outline" className="text-xs">Available</Badge>;
-                                   }
-                                    return <Badge variant="outline" className="text-xs text-muted-foreground">Never Used</Badge>;
-                                  })()}
-                                </td>
-                                 <td className="p-3 text-sm">
-                                   {(() => {
-                                     const summary = attendee.tshirt_summary;
-                                     const orders = attendee.tshirt_orders || [];
-                                     
-                                     if (!summary?.hasAnyTShirt) {
-                                       return <Badge variant="outline" className="text-xs text-muted-foreground">None</Badge>;
-                                     }
-                                     
-                                     if (summary.totalPickedUp === summary.totalOrders) {
-                                       return (
-                                         <div className="flex flex-col gap-1">
-                                           <Badge variant="default" className="text-xs">All Picked Up</Badge>
-                                           <span className="text-xs text-muted-foreground">
-                                             {orders.map(o => `${o.style} ${o.size}`).join(', ')}
-                                           </span>
-                                         </div>
-                                       );
-                                     }
-                                     
-                                     if (summary.totalPickedUp > 0) {
-                                       return (
-                                         <div className="flex flex-col gap-1">
-                                           <Badge variant="secondary" className="text-xs">
-                                             Partial ({summary.totalPickedUp}/{summary.totalOrders})
-                                           </Badge>
-                                           <div className="space-y-1">
-                                             {orders.map(order => (
-                                               <div key={order.id} className="text-xs">
-                                                 <span className={order.isPickedUp ? "text-green-600" : "text-muted-foreground"}>
-                                                   {order.isPickedUp ? "✓" : "○"} {order.style} {order.size}
-                                                 </span>
-                                               </div>
-                                             ))}
-                                           </div>
-                                         </div>
-                                       );
-                                     }
-                                     
-                                     return (
-                                       <div className="flex flex-col gap-1">
-                                         <Badge variant="outline" className="text-xs">Pending</Badge>
-                                         <span className="text-xs text-muted-foreground">
-                                           {orders.map(o => `${o.style} ${o.size}`).join(', ')}
-                                         </span>
-                                       </div>
-                                     );
-                                   })()}
-                                 </td>
-                               <td className="p-3 text-sm">
-                                <div className="flex gap-2">
-                                  {attendee.rfid_uid && !attendee.activated_at && (
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleIndividualActivation(attendee.id)}
-                                      className="text-xs"
-                                    >
-                                      <UserCheck className="h-3 w-3 mr-1" />
-                                      Activate
-                                    </Button>
-                                  )}
-                                  {attendee.is_group_order && attendee.order_id && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        const orderAttendees = attendees.filter(a => a.order_id === attendee.order_id);
-                                        handleGroupActivation(orderAttendees);
-                                      }}
-                                      className="text-xs"
-                                    >
-                                      <Users className="h-3 w-3 mr-1" />
-                                      Group
-                                    </Button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                      value={sortField || 'first_name'}
+                      onValueChange={(value) => handleSort(value as keyof EnhancedAttendee)}
+                    >
+                      <SelectTrigger className="h-9 w-[170px]">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="first_name">Sort: First name</SelectItem>
+                        <SelectItem value="last_name">Sort: Last name</SelectItem>
+                        <SelectItem value="registration_status">Sort: Registration</SelectItem>
+                        <SelectItem value="rfid_status">Sort: Band status</SelectItem>
+                        <SelectItem value="ticket_type">Sort: Ticket type</SelectItem>
+                        <SelectItem value="order_id">Sort: Order</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                    >
+                      {sortDirection === 'asc' ? 'A → Z' : 'Z → A'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() =>
+                        setExpandedRows(prev =>
+                          prev.size === processedAttendees.length
+                            ? new Set()
+                            : new Set(processedAttendees.map(a => a.id))
+                        )
+                      }
+                    >
+                      {expandedRows.size === processedAttendees.length ? 'Collapse all' : 'Expand all'}
+                    </Button>
                   </div>
-                )}
+                </div>
+
+                <div className="space-y-2">
+                  {processedAttendees.map((attendee) => (
+                    <StaffAttendeeRow
+                      key={attendee.id}
+                      attendee={attendee}
+                      allAttendees={attendees}
+                      expanded={expandedRows.has(attendee.id)}
+                      onToggle={() => toggleRow(attendee.id)}
+                      onActivate={handleIndividualActivation}
+                      onGroupActivate={handleGroupActivation}
+                    />
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
