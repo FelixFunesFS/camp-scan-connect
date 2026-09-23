@@ -66,14 +66,11 @@ export const ReportsKpiStrip = ({ selectedPeriod, refreshTrigger, onSelect }: Re
           .lt('created_at', gateBoundaries.end.toISOString())
           .order('created_at', { ascending: true }),
         supabase
-          .from('station_transactions')
-          .select('attendee_id, transaction_type, created_at')
+          .from('attendees')
+          .select('id, rfid_tags(status)')
           .eq('event_id', eventId)
-          .eq('station_type', 'headphones')
-          .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
-          .gte('created_at', hpBoundaries.start.toISOString())
-          .lt('created_at', hpBoundaries.end.toISOString())
-          .order('created_at', { ascending: true }),
+          .eq('registration_status', 'registered')
+          .or('early_access.eq.true,arrival_window.eq.early'),
         TShirtService.getTShirtPickupData(),
       ]);
 
@@ -82,16 +79,17 @@ export const ReportsKpiStrip = ({ selectedPeriod, refreshTrigger, onSelect }: Re
         onSiteMap.set(t.attendee_id, t.transaction_type === 'gate_entry');
       });
 
-      const hpMap = new Map<string, boolean>();
-      (hpRes.data || []).forEach((t: any) => {
-        hpMap.set(t.attendee_id, t.transaction_type === 'headphone_checkout');
-      });
+      const earlyArrivals = (earlyRes.data || []) as any[];
+      const earlyArrivalsCheckedIn = earlyArrivals.filter(a =>
+        (a.rfid_tags || []).some((tag: any) => tag.status === 'active')
+      ).length;
 
       setData({
         totalAttendees: totalRes.count || 0,
         checkedIn: activeRes.count || 0,
         onSite: Array.from(onSiteMap.values()).filter(Boolean).length,
-        headphonesOut: Array.from(hpMap.values()).filter(Boolean).length,
+        earlyArrivalsCheckedIn,
+        earlyArrivalsTotal: earlyArrivals.length,
         tshirtsPickedUp: tshirtRes.stats.pickedUp,
         tshirtsOrdered: tshirtRes.stats.totalOrdered,
       });
