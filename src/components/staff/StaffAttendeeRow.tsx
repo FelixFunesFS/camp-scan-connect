@@ -146,7 +146,7 @@ export function StaffAttendeeRow({
   return (
     <Card className="overflow-hidden">
       {/* Summary row */}
-      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center lg:gap-4">
         <button
           type="button"
           onClick={onToggle}
@@ -174,7 +174,7 @@ export function StaffAttendeeRow({
           </span>
         </button>
 
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+        <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
           <Badge
             variant={getRegistrationStatusVariant(attendee.registration_status)}
             className={`text-xs ${getStatusClassName(attendee.registration_status)}`}
@@ -195,9 +195,9 @@ export function StaffAttendeeRow({
           )}
         </div>
 
-        <div className="flex gap-2 sm:shrink-0">
+        <div className="flex gap-2 lg:shrink-0">
           {attendee.rfid_uid && !attendee.activated_at && (
-            <Button size="sm" className="h-9 flex-1 sm:flex-none" onClick={() => onActivate(attendee.id)}>
+            <Button size="sm" className="h-9 flex-1 lg:flex-none" onClick={() => onActivate(attendee.id)}>
               <UserCheck className="h-4 w-4 mr-1" />
               Activate
             </Button>
@@ -206,7 +206,7 @@ export function StaffAttendeeRow({
             <Button
               size="sm"
               variant="outline"
-              className="h-9 flex-1 sm:flex-none"
+              className="h-9 flex-1 lg:flex-none"
               onClick={() =>
                 onGroupActivate(allAttendees.filter((a) => a.order_id === attendee.order_id))
               }
