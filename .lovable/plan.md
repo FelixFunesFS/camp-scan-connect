@@ -22,6 +22,11 @@ Two files saved to Files, with identical figures:
 **Sheet 3 — Activity Log**
 - Dates work was performed and the number of changes delivered on each, as supporting evidence
 
+**The PDF**
+- Page 1: the invoice itself — header block, billed-to details, the itemized work-area table with hours and line totals, total hours and amount due, payment terms
+- Page 2 onward: the same work detail as Sheet 2, so the client can see what each line covered
+- Formatted for letter-size printing with clear margins, ruled table, and shaded header row
+
 ## Work areas to be itemized
 
 Based on the actual change history in the project:
