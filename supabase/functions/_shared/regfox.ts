@@ -507,7 +507,7 @@ export function mapRegistrant(
     ticket_type: accommodation.ticket_type,
     site_location_assignment: accommodation.site_location_assignment,
     site_detail: siteDetail(f) ?? accommodation.site_detail ?? null,
-    meal_plan: mapMealPlan(f),
+    meal_plan: mealPlan,
     t_shirt_size: shirt?.label ?? null,
 
     arrival_day: earlyAccess ? 'Thursday' : 'Friday',
