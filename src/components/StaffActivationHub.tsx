@@ -35,7 +35,7 @@ import { StaffAssistanceNotifications } from "@/components/StaffAssistanceNotifi
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { WaiverStatusPanel } from "@/components/WaiverStatusPanel";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
-import { formatStandardDateTime, formatWithRelativeTime } from "@/utils/dateTimeUtils";
+import { formatStandardDateTime } from "@/utils/dateTimeUtils";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { WORKING_STATUSES } from "@/lib/registrationStatus";
 import { StaffAttendeeRow } from "@/components/staff/StaffAttendeeRow";
