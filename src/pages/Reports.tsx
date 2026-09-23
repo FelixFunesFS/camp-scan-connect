@@ -250,17 +250,6 @@ const Reports = () => {
 
               {/* Mobile Report Cards */}
               <div className="space-y-4">
-                <section id="report-overview" data-report-section="overview" className="scroll-mt-20">
-                <MobileReportCard
-                  title="Event Check-in Overview"
-                  icon={<Users className="h-5 w-5 text-primary" />}
-                  isOpen={sections.overview}
-                  onToggle={() => updateSectionState('overview', !sections.overview)}
-                >
-                  <CheckInOverview refreshTrigger={refreshTrigger} />
-                </MobileReportCard>
-                </section>
-
                 <section id="report-recent" data-report-section="recent" className="scroll-mt-20">
                   <RecentlyCheckedIn refreshTrigger={refreshTrigger} />
                 </section>
@@ -304,21 +293,28 @@ const Reports = () => {
                       section="top"
                     />
                     
-                    <HeadphonesTracker 
+                    <HeadphonesTracker
                       selectedPeriod={selectedPeriod}
                       refreshTrigger={refreshTrigger}
                     />
-                    
-                    <TShirtTracker 
-                      refreshTrigger={refreshTrigger}
-                    />
-                    
-                    <AnalyticsCards 
+
+                    <AnalyticsCards
                       selectedPeriod={selectedPeriod}
                       refreshTrigger={refreshTrigger}
                       section="bottom"
                     />
                   </div>
+                </MobileReportCard>
+                </section>
+
+                <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-20">
+                <MobileReportCard
+                  title="T-Shirt Distribution"
+                  icon={<Shirt className="h-5 w-5 text-primary" />}
+                  isOpen={sections.tshirts}
+                  onToggle={() => updateSectionState('tshirts', !sections.tshirts)}
+                >
+                  <TShirtTracker refreshTrigger={refreshTrigger} />
                 </MobileReportCard>
                 </section>
 
