@@ -131,7 +131,6 @@ export function StaffActivationHub() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeQuickFilter, setActiveQuickFilter] = useState<string | null>(null);
   const [showCancelledRegistrants, setShowCancelledRegistrants] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
