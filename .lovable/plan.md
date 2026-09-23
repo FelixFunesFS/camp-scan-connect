@@ -53,11 +53,13 @@ Hours are estimated from the recorded change history (565 individual changes acr
 
 ## Technical notes
 
-- Built with openpyxl; all totals are live Excel formulas (`SUMPRODUCT` / `SUM`), not hardcoded numbers
+- Spreadsheet built with openpyxl; all totals are live Excel formulas (`SUMPRODUCT` / `SUM`), not hardcoded numbers
 - Arial throughout, currency formatted `$#,##0.00`, hours `0.0`
 - Column widths set so nothing is clipped; header rows frozen
-- Formulas recalculated and the workbook verified error-free, then every sheet rendered to an image and visually checked before delivery
-- Output written to `/mnt/documents/` as a standalone deliverable
+- Formulas recalculated and the workbook verified error-free
+- PDF generated with reportlab from the same single source of line-item data, so the two files can never disagree
+- Both files rendered to images page by page and visually inspected for clipping, overlap, or bad wrapping before delivery
+- Output written to `/mnt/documents/` and grouped in one Files collection
 
 ## Confirmation needed at delivery
 
