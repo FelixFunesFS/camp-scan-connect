@@ -464,31 +464,6 @@ const Reports = () => {
         {sectionNavigation}
 
         <div className="space-y-6 pt-4">
-          {/* Event Check-in Overview */}
-          <section id="report-overview" data-report-section="overview" className="scroll-mt-20"><Collapsible 
-            open={sections.overview} 
-            onOpenChange={(isOpen) => updateSectionState('overview', isOpen)}
-          >
-            <CollapsibleTrigger asChild>
-              <Button 
-                variant="ghost" 
-                className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-lg border border-border/50"
-              >
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-semibold">Event Check-in Overview</h2>
-                </div>
-                {sections.overview ? 
-                  <ChevronDown className="h-4 w-4 transition-transform duration-200" /> : 
-                  <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                }
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-4">
-              <CheckInOverview refreshTrigger={refreshTrigger} />
-            </CollapsibleContent>
-          </Collapsible></section>
-
           {/* Recently Checked In - Standalone Section */}
           <section id="report-recent" data-report-section="recent" className="scroll-mt-20"><RecentlyCheckedIn refreshTrigger={refreshTrigger} /></section>
 
