@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { UserCheck, MapPin, Shirt, CalendarClock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentEventId } from "@/lib/eventRuntime";
-import { TimePeriod, getStandardTimeBoundaries, getDrinksHeadphonesTimeBoundaries } from "@/utils/etTimezone";
+import { TimePeriod, getStandardTimeBoundaries } from "@/utils/etTimezone";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 import { TShirtService } from "@/services/tshirtService";
 import { Skeleton } from "@/components/ui/skeleton";
