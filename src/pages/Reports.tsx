@@ -127,7 +127,10 @@ const Reports = () => {
   }, [isMobile]);
 
   const sectionNavigation = (
-    <nav aria-label="Go to report section" className="sticky top-0 z-30 -mx-4 border-y bg-background/95 px-4 py-2 backdrop-blur-sm sm:mx-0 sm:rounded-md sm:border">
+    <nav
+      aria-label="Go to report section"
+      className={`sticky ${isMobile ? 'top-14' : 'top-0'} z-30 -mx-4 border-y bg-background/95 px-4 py-2 backdrop-blur-sm sm:mx-0 sm:rounded-md sm:border`}
+    >
       <div className="scroll-tabs gap-2">
         <span className="shrink-0 text-xs font-semibold text-muted-foreground">Go to</span>
         {REPORT_SECTIONS.map(section => (
