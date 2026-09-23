@@ -68,13 +68,13 @@ const Reports = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
   const isMobile = useIsMobile();
-  const [activeSection, setActiveSection] = useState<ReportSection>('recent');
+  const [activeSection, setActiveSection] = useState<ReportSection>('arrivals');
   
   // Collapsible section states with localStorage persistence
   const [sections, setSections] = useState(() => {
-    const saved = localStorage.getItem('reports-sections-state');
+    const saved = localStorage.getItem('reports-sections-state-v2');
     const defaults = {
-      recent: true,       // Recently Checked In (mobile collapsible)
+      recent: false,      // Recently Checked In (default: collapsed)
       arrivals: true,     // Arrivals by Ticket Type (default: expanded)
       gate: true,         // Main Gate Access (default: expanded)
       services: true,     // Attendee Services (default: expanded)
