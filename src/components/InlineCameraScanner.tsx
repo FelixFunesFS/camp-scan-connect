@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Camera, CameraOff, Flashlight, FlashlightOff, Maximize2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { useBarcodeCamera, type DiscardReason } from '@/hooks/useBarcodeCamera';
 
 interface InlineCameraScannerProps {

@@ -106,16 +106,17 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
-    --apparel-souvenir: 215 20% 70%;
-    --apparel-orange: 25 95% 62%;
-    --apparel-blue: 217 91% 68%;
-    --apparel-purpose: 271 68% 70%;
-    --apparel-volunteer: 142 70% 58%;
   }
 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
+
+    --apparel-souvenir: 215 20% 70%;
+    --apparel-orange: 25 95% 62%;
+    --apparel-blue: 217 91% 68%;
+    --apparel-purpose: 271 68% 70%;
+    --apparel-volunteer: 142 70% 58%;
 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
