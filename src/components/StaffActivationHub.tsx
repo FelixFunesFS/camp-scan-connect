@@ -136,13 +136,6 @@ export function StaffActivationHub() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string>('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  // Unified activation section state
-  const [unifiedSearchQuery, setUnifiedSearchQuery] = useState("");
-  const [unifiedSearchResult, setUnifiedSearchResult] = useState<UnifiedSearchResult | null>(null);
-  const [showUnifiedPreview, setShowUnifiedPreview] = useState(false);
-  const [isUnifiedProcessing, setIsUnifiedProcessing] = useState(false);
-  const [isUnifiedSearching, setIsUnifiedSearching] = useState(false);
-  const [attendeeNotifications, setAttendeeNotifications] = useState<AttendeeNotification[]>([]);
   
   // Deactivation section state
   const [isDeactivationOpen, setIsDeactivationOpen] = useState(false);
