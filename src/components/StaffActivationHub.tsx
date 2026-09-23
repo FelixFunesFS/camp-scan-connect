@@ -593,10 +593,6 @@ export function StaffActivationHub() {
       
       fetchAttendees(); // Refresh data
       loadDashboardData();
-      // Also refresh unified search results if we're in that view
-      if (showUnifiedPreview) {
-        await refreshUnifiedSearchResults();
-      }
     } catch (error) {
       console.error('Group activation error:', error);
       toast.error("Failed to activate group");
