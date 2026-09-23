@@ -404,11 +404,14 @@ export function isAbandoned(raw?: string): boolean {
  *
  * `orderAccommodations` (from `buildOrderAccommodations`) lets companions on a
  * group order inherit the stay booked by the order's lead registrant.
+ * `orderExtras` (from `buildOrderExtras`) spreads add-ons bought at checkout —
+ * meal plans and the Thursday night — across the order's members.
  */
 export function mapRegistrant(
   r: RegFoxRegistrant,
   eventId: string,
   orderAccommodations?: Map<string, Accommodation>,
+  orderExtras?: OrderExtras,
 ) {
   const fields = r.fieldData;
   const f = indexFields(fields);
@@ -431,9 +434,17 @@ export function mapRegistrant(
         : 'unassigned';
   const emergency = splitEmergencyContact(f.get('emergencyContactNameNumber'));
 
-  // "Additional Night (Thursday)" add-on means they arrive a day early.
-  const extraNight = f.get('eventMerchandise.motivationalPoster');
-  const earlyAccess = !!extraNight && extraNight !== '0';
+  // "Additional Night (Thursday)" is bought once for the whole order.
+  const extrasKey = r.orderId != null ? String(r.orderId) : `solo:${r.id}`;
+  const earlyAccess = orderExtras
+    ? orderExtras.earlyAccessOrders.has(extrasKey)
+    : extraNightQty(f) > 0;
+
+  // Meal plans bought in bulk are spread across the order's members.
+  const mealPlan = orderExtras
+    ? orderExtras.mealPlanByRegistrant.get(String(r.id)) ?? 'none'
+    : mapMealPlan(f);
+
 
   const shirt = selectedChild(fields, 'merchandise.tshirt');
   const extraPerson = (f.get('willYouBeAdding') ?? '').toLowerCase() === 'yesextraperson';
