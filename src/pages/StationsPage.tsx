@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { StaffPasscodeGate } from "@/components/StaffPasscodeGate";
-import { Button } from "@/components/ui/button";
 import { useStaffAuth } from "@/contexts/StaffAuthContext";
 import {
   Utensils,
@@ -12,7 +11,6 @@ import {
   Package2,
   Shirt,
   DoorOpen,
-  LayoutDashboard,
 } from "lucide-react";
 
 const STATIONS = [
@@ -65,19 +63,6 @@ export default function StationsPage() {
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        <div className="text-center pt-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/dashboard")}
-            className="touch-target gap-1.5 text-xs text-muted-foreground"
-          >
-            <LayoutDashboard className="h-3.5 w-3.5" />
-            Staff menu
-          </Button>
         </div>
       </div>
     </div>
