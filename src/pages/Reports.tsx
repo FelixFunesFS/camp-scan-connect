@@ -45,14 +45,14 @@ import { MobileReportsControls } from "@/components/MobileReportsControls";
 import { MobileReportCard } from "@/components/MobileReportCard";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
-type ReportSection = 'overview' | 'recent' | 'arrivals' | 'gate' | 'services' | 'status';
+type ReportSection = 'recent' | 'arrivals' | 'gate' | 'services' | 'tshirts' | 'status';
 
 const REPORT_SECTIONS: Array<{ id: ReportSection; label: string }> = [
-  { id: 'overview', label: 'Overview' },
   { id: 'recent', label: 'Recent Check-ins' },
   { id: 'arrivals', label: 'Arrivals' },
   { id: 'gate', label: 'Main Gate' },
   { id: 'services', label: 'Services' },
+  { id: 'tshirts', label: 'T-Shirts' },
   { id: 'status', label: 'On-Site' },
 ];
 
@@ -63,16 +63,16 @@ const Reports = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
   const isMobile = useIsMobile();
-  const [activeSection, setActiveSection] = useState<ReportSection>('overview');
+  const [activeSection, setActiveSection] = useState<ReportSection>('recent');
   
   // Collapsible section states with localStorage persistence
   const [sections, setSections] = useState(() => {
     const saved = localStorage.getItem('reports-sections-state');
     return saved ? JSON.parse(saved) : {
-      overview: true,     // Event Check-in Overview (default: expanded)
       arrivals: true,     // Arrivals by Ticket Type (default: expanded)
       gate: true,         // Main Gate Access (default: expanded)
       services: true,     // Attendee Services (default: expanded)
+      tshirts: true,      // T-Shirt Distribution (default: expanded)
       status: true        // Check-in Status & On-Site (default: expanded)
     };
   });
@@ -92,13 +92,13 @@ const Reports = () => {
 
   // Expand/Collapse All functions
   const expandAll = () => {
-    const allExpanded = { overview: true, arrivals: true, gate: true, services: true, status: true };
+    const allExpanded = { arrivals: true, gate: true, services: true, tshirts: true, status: true };
     setSections(allExpanded);
     localStorage.setItem('reports-sections-state', JSON.stringify(allExpanded));
   };
 
   const collapseAll = () => {
-    const allCollapsed = { overview: false, arrivals: false, gate: false, services: false, status: false };
+    const allCollapsed = { arrivals: false, gate: false, services: false, tshirts: false, status: false };
     setSections(allCollapsed);
     localStorage.setItem('reports-sections-state', JSON.stringify(allCollapsed));
   };
