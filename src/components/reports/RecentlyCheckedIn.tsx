@@ -241,7 +241,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRecent.slice(0, 50).map((attendee) => (
+                {pagedRecent.map((attendee) => (
                   <TableRow key={attendee.id}>
                     <TableCell className="font-medium">{attendee.name}</TableCell>
                     <TableCell>
