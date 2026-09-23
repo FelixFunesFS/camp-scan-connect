@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { getStatusClassName } from "@/lib/registrationStatus";
+import { formatMealPlan } from "@/lib/phoneUtils";
 import {
   getRegistrationStatusVariant,
   getRegistrationStatusDisplayText,
@@ -262,7 +263,7 @@ export function StaffAttendeeRow({
                 }
               />
               <DetailItem label="Arrival" value={attendee.arrival_day} />
-              <DetailItem label="Meal plan" value={attendee.meal_plan || "No meal plan"} />
+              <DetailItem label="Meal plan" value={formatMealPlan(attendee.meal_plan ?? null)} />
             </div>
 
             <div className="rounded-lg border bg-background p-3">
