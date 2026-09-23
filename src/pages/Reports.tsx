@@ -23,8 +23,10 @@ import {
   ArrowLeft,
   Shield,
   Caravan,
-  Expand,
-  Minimize
+  Expand, 
+  Minimize,
+  MoreVertical,
+  UserCheck
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { RecentlyCheckedIn } from "@/components/reports/RecentlyCheckedIn";
