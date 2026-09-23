@@ -92,19 +92,19 @@ const Reports = () => {
 
   // Expand/Collapse All functions
   const expandAll = () => {
-    const allExpanded = { arrivals: true, gate: true, services: true, tshirts: true, status: true };
+    const allExpanded = { recent: true, arrivals: true, gate: true, services: true, tshirts: true, status: true };
     setSections(allExpanded);
     localStorage.setItem('reports-sections-state', JSON.stringify(allExpanded));
   };
 
   const collapseAll = () => {
-    const allCollapsed = { arrivals: false, gate: false, services: false, tshirts: false, status: false };
+    const allCollapsed = { recent: false, arrivals: false, gate: false, services: false, tshirts: false, status: false };
     setSections(allCollapsed);
     localStorage.setItem('reports-sections-state', JSON.stringify(allCollapsed));
   };
 
   const goToSection = (section: ReportSection) => {
-    if (section !== 'recent') updateSectionState(section, true);
+    if (section !== 'recent' || isMobile) updateSectionState(section, true);
     setActiveSection(section);
     window.setTimeout(() => {
       document.getElementById(`report-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
