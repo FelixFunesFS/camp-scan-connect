@@ -94,20 +94,20 @@ const Reports = () => {
   const updateSectionState = (section: keyof typeof sections, isOpen: boolean) => {
     const newSections = { ...sections, [section]: isOpen };
     setSections(newSections);
-    localStorage.setItem('reports-sections-state', JSON.stringify(newSections));
+    localStorage.setItem('reports-sections-state-v2', JSON.stringify(newSections));
   };
 
   // Expand/Collapse All functions
   const expandAll = () => {
     const allExpanded = { recent: true, arrivals: true, gate: true, services: true, tshirts: true, status: true };
     setSections(allExpanded);
-    localStorage.setItem('reports-sections-state', JSON.stringify(allExpanded));
+    localStorage.setItem('reports-sections-state-v2', JSON.stringify(allExpanded));
   };
 
   const collapseAll = () => {
     const allCollapsed = { recent: false, arrivals: false, gate: false, services: false, tshirts: false, status: false };
     setSections(allCollapsed);
-    localStorage.setItem('reports-sections-state', JSON.stringify(allCollapsed));
+    localStorage.setItem('reports-sections-state-v2', JSON.stringify(allCollapsed));
   };
 
   const goToSection = (section: ReportSection) => {
