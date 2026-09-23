@@ -2,6 +2,7 @@ import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserCheck, Phone, Zap, Calendar } from "lucide-react";
@@ -31,12 +32,14 @@ interface AttendeeStatus {
 
 interface RecentlyCheckedInProps {
   refreshTrigger?: number;
+  embedded?: boolean;
 }
 
-export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) => {
+export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: RecentlyCheckedInProps) => {
   const [recentCheckIns, setRecentCheckIns] = useState<AttendeeStatus[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   useEffect(() => {
     const fetchRecentCheckIns = async () => {
@@ -133,6 +136,19 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
   };
 
   if (isLoading) {
+    const skeleton = (
+      <div className="animate-pulse space-y-4">
+        <div className="h-10 bg-muted rounded"></div>
+        <div className="space-y-2">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="h-12 bg-muted rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+
+    if (embedded) return skeleton;
+
     return (
       <Card>
         <CardHeader>
@@ -141,32 +157,12 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
             Recently Checked In
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-10 bg-muted rounded"></div>
-            <div className="space-y-2">
-              {[1,2,3,4,5].map(i => (
-                <div key={i} className="h-12 bg-muted rounded"></div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
+        <CardContent>{skeleton}</CardContent>
       </Card>
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserCheck className="h-5 w-5 text-success" />
-          Recently Checked In
-          <Badge variant="outline" className="text-success">
-            {filteredRecent.length}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+  const body = (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <Select value={timeFilter} onValueChange={setTimeFilter}>
@@ -183,11 +179,23 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
               {filteredRecent.length} of {recentCheckIns.length} check-ins (ET timezone)
             </div>
           </div>
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-3 max-h-[500px] overflow-y-auto">
-            {filteredRecent.slice(0, 50).map((attendee) => (
+          {/* Mobile cards — no nested scrolling, incremental reveal */}
+          <div className="md:hidden space-y-3">
+            {filteredRecent.slice(0, visibleCount).map((attendee) => (
               <MobileAttendeeCard key={attendee.id} attendee={attendee} />
             ))}
+            {filteredRecent.length === 0 && (
+              <p className="text-sm text-muted-foreground">No check-ins in this time range.</p>
+            )}
+            {visibleCount < filteredRecent.length && (
+              <Button
+                variant="outline"
+                className="w-full min-h-11"
+                onClick={() => setVisibleCount(count => count + 10)}
+              >
+                Show 10 more ({filteredRecent.length - visibleCount} left)
+              </Button>
+            )}
           </div>
           <div className="hidden md:block border rounded-lg max-h-[500px] overflow-y-auto">
 
@@ -287,7 +295,22 @@ export const RecentlyCheckedIn = ({ refreshTrigger }: RecentlyCheckedInProps) =>
             </Table>
           </div>
         </div>
-      </CardContent>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <UserCheck className="h-5 w-5 text-success" />
+          Recently Checked In
+          <Badge variant="outline" className="text-success">
+            {filteredRecent.length}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{body}</CardContent>
     </Card>
   );
 };

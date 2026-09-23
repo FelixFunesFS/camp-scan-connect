@@ -23,8 +23,10 @@ import {
   ArrowLeft,
   Shield,
   Caravan,
-  Expand,
-  Minimize
+  Expand, 
+  Minimize,
+  MoreVertical,
+  UserCheck
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { RecentlyCheckedIn } from "@/components/reports/RecentlyCheckedIn";
@@ -39,7 +41,13 @@ import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileReportsControls } from "@/components/MobileReportsControls";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MobileReportCard } from "@/components/MobileReportCard";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
@@ -66,13 +74,15 @@ const Reports = () => {
   // Collapsible section states with localStorage persistence
   const [sections, setSections] = useState(() => {
     const saved = localStorage.getItem('reports-sections-state');
-    return saved ? JSON.parse(saved) : {
+    const defaults = {
+      recent: true,       // Recently Checked In (mobile collapsible)
       arrivals: true,     // Arrivals by Ticket Type (default: expanded)
       gate: true,         // Main Gate Access (default: expanded)
       services: true,     // Attendee Services (default: expanded)
       tshirts: true,      // T-Shirt Distribution (default: expanded)
       status: true        // Check-in Status & On-Site (default: expanded)
     };
+    return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
   });
 
   const handleRefresh = () => {
@@ -90,19 +100,19 @@ const Reports = () => {
 
   // Expand/Collapse All functions
   const expandAll = () => {
-    const allExpanded = { arrivals: true, gate: true, services: true, tshirts: true, status: true };
+    const allExpanded = { recent: true, arrivals: true, gate: true, services: true, tshirts: true, status: true };
     setSections(allExpanded);
     localStorage.setItem('reports-sections-state', JSON.stringify(allExpanded));
   };
 
   const collapseAll = () => {
-    const allCollapsed = { arrivals: false, gate: false, services: false, tshirts: false, status: false };
+    const allCollapsed = { recent: false, arrivals: false, gate: false, services: false, tshirts: false, status: false };
     setSections(allCollapsed);
     localStorage.setItem('reports-sections-state', JSON.stringify(allCollapsed));
   };
 
   const goToSection = (section: ReportSection) => {
-    if (section !== 'recent') updateSectionState(section, true);
+    if (section !== 'recent' || isMobile) updateSectionState(section, true);
     setActiveSection(section);
     window.setTimeout(() => {
       document.getElementById(`report-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -125,7 +135,10 @@ const Reports = () => {
   }, [isMobile]);
 
   const sectionNavigation = (
-    <nav aria-label="Go to report section" className="sticky top-0 z-30 -mx-4 border-y bg-background/95 px-4 py-2 backdrop-blur-sm sm:mx-0 sm:rounded-md sm:border">
+    <nav
+      aria-label="Go to report section"
+      className={`sticky ${isMobile ? 'top-14' : 'top-0'} z-30 -mx-4 border-y bg-background/95 px-4 py-2 backdrop-blur-sm sm:mx-0 sm:rounded-md sm:border`}
+    >
       <div className="scroll-tabs gap-2">
         <span className="shrink-0 text-xs font-semibold text-muted-foreground">Go to</span>
         {REPORT_SECTIONS.map(section => (
@@ -221,38 +234,81 @@ const Reports = () => {
 
           <div className="responsive-container">
             <div className="space-y-4">
-              {/* Mobile Header */}
-              <div className="mobile-header">
+              {/* Compact mobile header */}
+              <header className="sticky top-0 z-40 -mx-4 flex h-14 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur-sm">
                 <Button
-                  variant="outline"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Back to dashboard"
                   onClick={() => navigate("/")}
-                  className="flex items-center gap-2"
+                  className="h-10 w-10 shrink-0"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  Dashboard
+                  <ArrowLeft className="h-5 w-5" />
                 </Button>
-              </div>
 
-              {/* Mobile Controls */}
-              <MobileReportsControls
-                selectedPeriod={selectedPeriod}
-                onPeriodChange={(period) => setSelectedPeriod(period)}
-                onRefresh={handleRefresh}
-                onExport={handleExportReport}
-                onExpandAll={expandAll}
-                onCollapseAll={collapseAll}
-                isRefreshing={isRefreshing || isPullRefreshing}
-              />
+                <div className="min-w-0 flex-1">
+                  <h1 className="truncate text-base font-semibold leading-tight">Reports</h1>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    Live • {formatTimePeriod(selectedPeriod)}
+                  </p>
+                </div>
+
+                <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as TimePeriod)}>
+                  <SelectTrigger className="h-10 w-[112px] shrink-0 text-xs" aria-label="Time period">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                    <SelectItem value="this_event">This Event</SelectItem>
+                    <SelectItem value="all_time">All Time</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label="More report actions" className="h-10 w-10 shrink-0">
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem onSelect={handleRefresh} disabled={isRefreshing || isPullRefreshing}>
+                      <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing || isPullRefreshing ? 'animate-spin' : ''}`} />
+                      {isRefreshing || isPullRefreshing ? 'Refreshing…' : 'Refresh data'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleExportReport}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={expandAll}>
+                      <Expand className="mr-2 h-4 w-4" />
+                      Expand all sections
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={collapseAll}>
+                      <Minimize className="mr-2 h-4 w-4" />
+                      Collapse all sections
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </header>
 
               {sectionNavigation}
 
               {/* Mobile Report Cards */}
               <div className="space-y-4">
-                <section id="report-recent" data-report-section="recent" className="scroll-mt-20">
-                  <RecentlyCheckedIn refreshTrigger={refreshTrigger} />
+                <section id="report-recent" data-report-section="recent" className="scroll-mt-32">
+                  <MobileReportCard
+                    title="Recently Checked In"
+                    icon={<UserCheck className="h-5 w-5 text-success" />}
+                    isOpen={sections.recent}
+                    onToggle={() => updateSectionState('recent', !sections.recent)}
+                  >
+                    <RecentlyCheckedIn refreshTrigger={refreshTrigger} embedded />
+                  </MobileReportCard>
                 </section>
 
-                <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-20">
+                <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-32">
                 <MobileReportCard
                   title="Arrivals by Ticket Type"
                   icon={<Caravan className="h-5 w-5 text-primary" />}
@@ -263,7 +319,7 @@ const Reports = () => {
                 </MobileReportCard>
                 </section>
 
-                <section id="report-gate" data-report-section="gate" className="scroll-mt-20">
+                <section id="report-gate" data-report-section="gate" className="scroll-mt-32">
                 <MobileReportCard
                   title="Main Gate Access"
                   icon={<Shield className="h-5 w-5 text-primary" />}
@@ -277,7 +333,7 @@ const Reports = () => {
                 </MobileReportCard>
                 </section>
 
-                <section id="report-services" data-report-section="services" className="scroll-mt-20">
+                <section id="report-services" data-report-section="services" className="scroll-mt-32">
                 <MobileReportCard
                   title="Attendee Services"
                   icon={<Headphones className="h-5 w-5 text-primary" />}
@@ -305,7 +361,7 @@ const Reports = () => {
                 </MobileReportCard>
                 </section>
 
-                <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-20">
+                <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-32">
                 <MobileReportCard
                   title="T-Shirt Distribution"
                   icon={<Shirt className="h-5 w-5 text-primary" />}
@@ -316,7 +372,7 @@ const Reports = () => {
                 </MobileReportCard>
                 </section>
 
-                <section id="report-status" data-report-section="status" className="scroll-mt-20">
+                <section id="report-status" data-report-section="status" className="scroll-mt-32">
                 <MobileReportCard
                   title="Currently On-Site"
                   icon={<BarChart3 className="h-5 w-5 text-primary" />}
