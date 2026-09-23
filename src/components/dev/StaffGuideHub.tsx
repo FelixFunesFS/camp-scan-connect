@@ -95,31 +95,31 @@ export function StaffGuideHub() {
       id: 'meal',
       name: 'Meal Station',
       icon: <Utensils className="h-5 w-5" />,
-      description: 'Track meal distributions and dietary restrictions',
+      description: 'Serve the 6 weekend meals and track who has already eaten',
       keyProcedures: [
-        'Scan wristband for meal validation',
-        'Check daily meal allowances',
-        'Handle dietary restriction requests',
-        'Process veteran priority service'
+        'Scan wristband to confirm check-in and meal plan',
+        'The meal being served right now is highlighted as "Now"',
+        'Each of the 6 weekend meals can only be served once per person',
+        'People without a meal plan cannot be served'
       ],
       commonIssues: [
         {
-          problem: 'Daily limit exceeded',
-          solution: 'Check transaction history. Override only with supervisor approval'
+          problem: 'Meal shows "Already served"',
+          solution: 'That person already received that meal this weekend. Override only with supervisor approval'
         },
         {
-          problem: 'Dietary restriction not in system',
-          solution: 'Note special request and coordinate with kitchen staff'
+          problem: 'Shows "No meal plan on this ticket"',
+          solution: 'Meals were not purchased. Send to the front desk if they believe this is wrong'
         }
       ],
       quickActions: [
         {
-          action: 'Quick Meal Distribution',
+          action: 'Serve a meal',
           steps: [
             'Scan attendee wristband',
-            'Select meal type (breakfast/lunch/dinner)',
-            'Confirm dietary requirements',
-            'Complete transaction'
+            'Tap the highlighted current meal (Fri Lunch, Fri Dinner, Sat Breakfast, Sat Lunch, Sat Dinner, Sun Breakfast)',
+            'Confirm the green "Served" state appears',
+            'Reset for the next camper'
           ]
         }
       ]

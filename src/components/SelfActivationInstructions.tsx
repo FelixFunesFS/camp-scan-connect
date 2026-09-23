@@ -41,8 +41,8 @@ export function SelfActivationInstructions() {
                 3
               </div>
               <div>
-                <p className="font-medium text-sm">Check-In Your Entire Order</p>
-                <p className="text-xs text-muted-foreground">The system will automatically check in all attendees associated with your phone number</p>
+                <p className="font-medium text-sm">Choose Who to Check In</p>
+                <p className="text-xs text-muted-foreground">Everyone on your order is listed — select the people who are here, or use Check-In Everyone</p>
               </div>
             </div>
           </div>
@@ -113,7 +113,14 @@ export function SelfActivationInstructions() {
       <Alert>
         <Clock className="h-4 w-4" />
         <AlertDescription className="text-sm">
-          <strong>Automatic check-in:</strong> The system will check in all attendees linked to your phone number, including order companions.
+          <strong>Group check-in:</strong> Everyone linked to your phone number, including order companions, appears in one list so you can check in your whole group at once.
+        </AlertDescription>
+      </Alert>
+
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription className="text-sm">
+          <strong>Waiver first:</strong> Each person must have a signed waiver before they can be checked in. Staff can help you sign on-site.
         </AlertDescription>
       </Alert>
     </div>
