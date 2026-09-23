@@ -39,7 +39,13 @@ import { useCsvExport } from "@/hooks/useCsvExport";
 import { supabase } from "@/integrations/supabase/client";
 import { TimePeriod, formatTimePeriod } from "@/utils/etTimezone";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileReportsControls } from "@/components/MobileReportsControls";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MobileReportCard } from "@/components/MobileReportCard";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 
