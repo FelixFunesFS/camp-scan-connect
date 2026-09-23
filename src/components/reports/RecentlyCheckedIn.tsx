@@ -322,6 +322,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
               </TableBody>
             </Table>
           </div>
+          <div className="hidden md:block">{pagination}</div>
         </div>
   );
 
