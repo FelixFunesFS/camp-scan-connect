@@ -549,22 +549,42 @@ const Reports = () => {
               />
               
               {/* Equipment Services - positioned above Average Party Time and Peak Usage */}
-              <HeadphonesTracker 
+              <HeadphonesTracker
                 selectedPeriod={selectedPeriod}
                 refreshTrigger={refreshTrigger}
               />
-              
-              {/* T-Shirt Distribution Tracking */}
-              <TShirtTracker 
-                refreshTrigger={refreshTrigger}
-              />
-              
+
               {/* Analytics Cards - Bottom Section: Average Party Time, Peak Usage Hours */}
-              <AnalyticsCards 
+              <AnalyticsCards
                 selectedPeriod={selectedPeriod}
                 refreshTrigger={refreshTrigger}
                 section="bottom"
               />
+            </CollapsibleContent>
+          </Collapsible></section>
+
+          {/* T-Shirt Distribution */}
+          <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-20"><Collapsible
+            open={sections.tshirts}
+            onOpenChange={(isOpen) => updateSectionState('tshirts', isOpen)}
+          >
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-lg border border-border/50"
+              >
+                <div className="flex items-center gap-2">
+                  <Shirt className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">T-Shirt Distribution</h2>
+                </div>
+                {sections.tshirts ?
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200" /> :
+                  <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                }
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <TShirtTracker refreshTrigger={refreshTrigger} />
             </CollapsibleContent>
           </Collapsible></section>
 
