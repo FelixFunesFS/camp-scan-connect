@@ -7,6 +7,7 @@ import { Shirt, Package, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { UnifiedStationScanner, StationActionProps } from "@/components/UnifiedStationScanner";
 import { TShirtService, TShirtOrder } from "@/services/tshirtService";
+import { ApparelProductBadge } from "@/components/ApparelProductBadge";
 
 export default function TShirtsStation() {
   return (
@@ -216,7 +217,7 @@ function TShirtsContent({
                   
                   <div className="min-w-0 space-y-1">
                     <div className="badge-row">
-                      <Badge variant="secondary">{order.productLine}</Badge>
+                      <ApparelProductBadge productLine={order.productLine} />
                       {order.quantity > 1 && (
                         <Badge variant="outline">×{order.quantity}</Badge>
                       )}

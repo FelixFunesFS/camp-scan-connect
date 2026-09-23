@@ -534,6 +534,8 @@ export class TShirtService {
       'souvenir', 'fitted', 'crew neck', 'v-neck',
       'vneck', 'crewneck', 'unisex', "women's", "men's",
       'merchandise.tshirt', // Include merchandise fields
+      'team orange', 'teamorange', 'team blue', 'teamblue',
+      'purpose over passion', 'purposeoverpassion',
       'shirt' // Volunteer shirts and any other *shirt* product
     ];
     

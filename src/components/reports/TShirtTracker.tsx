@@ -9,6 +9,7 @@ import { TShirtService, TShirtPickupData, TShirtStats } from "@/services/tshirtS
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { formatStandardDateTime } from "@/utils/dateTimeUtils";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { ApparelProductBadge } from "@/components/ApparelProductBadge";
 
 interface TShirtTrackerProps {
   refreshTrigger?: number;
@@ -54,6 +55,8 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
     fetchTShirtData(false);
   }, [fetchTShirtData]);
 
+  const productLines = useMemo(() => Object.keys(stats.productBreakdown).sort(), [stats.productBreakdown]);
+
   if (isInitialLoading) {
     return (
       <Card>
@@ -78,7 +81,6 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
   }
 
   const pendingPickups = pickups.filter(p => !p.pickedUp);
-  const productLines = useMemo(() => Object.keys(stats.productBreakdown).sort(), [stats.productBreakdown]);
   const visiblePickups = selectedProduct === 'Overall'
     ? pendingPickups
     : pendingPickups.filter(pickup => pickup.productLine === selectedProduct);
@@ -217,7 +219,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
                         <p className="truncate font-semibold">{pickup.attendeeName}</p>
                         {pickup.phone && <p className="text-sm text-muted-foreground">{formatPhoneNumber(pickup.phone)}</p>}
                       </div>
-                      <Badge variant="secondary" className="shrink-0">{pickup.productLine}</Badge>
+                      <ApparelProductBadge productLine={pickup.productLine} className="shrink-0" />
                     </div>
                     <div className="badge-row">
                       <Badge variant="outline">{pickup.tshirtType || 'Unisex Crew Neck'}</Badge>
@@ -251,7 +253,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell><Badge variant="secondary">{pickup.productLine}</Badge></TableCell>
+                        <TableCell><ApparelProductBadge productLine={pickup.productLine} /></TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-medium">
                             {pickup.tshirtSize || 'Unknown'}

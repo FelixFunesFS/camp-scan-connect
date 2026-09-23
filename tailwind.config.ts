@@ -67,6 +67,13 @@ export default {
           DEFAULT: "hsl(var(--veteran))",
           foreground: "hsl(var(--veteran-foreground))",
         },
+        apparel: {
+          souvenir: "hsl(var(--apparel-souvenir))",
+          orange: "hsl(var(--apparel-orange))",
+          blue: "hsl(var(--apparel-blue))",
+          purpose: "hsl(var(--apparel-purpose))",
+          volunteer: "hsl(var(--apparel-volunteer))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

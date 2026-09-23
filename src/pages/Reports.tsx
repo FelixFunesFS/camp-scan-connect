@@ -408,6 +408,7 @@ const Reports = () => {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
+                <div>
                 <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as TimePeriod)}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -419,6 +420,7 @@ const Reports = () => {
                     <SelectItem value="all_time">All Time</SelectItem>
                   </SelectContent>
                 </Select>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Select time period for report data</p>
