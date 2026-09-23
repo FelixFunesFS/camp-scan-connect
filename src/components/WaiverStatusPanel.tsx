@@ -5,16 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { FileSignature, ChevronDown, Download, Search, CheckCircle2, AlertTriangle, Users, FileDown } from "lucide-react";
+import { FileSignature, ChevronDown, Download, Search, FileDown } from "lucide-react";
 import { toast } from "sonner";
-import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
 import { downloadWaiverArchive, downloadWaiverReceipt } from "@/lib/waiverReceipt";
 import { getWaiverReceiptUrl } from "@/services/waiverStorageService";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface WaiverAttendee {
   id: string;
@@ -41,18 +37,11 @@ interface WaiverStatusPanelProps {
 }
 
 export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverStatusPanelProps) {
-  const isMobile = useIsMobile();
   const [attendees, setAttendees] = useState<WaiverAttendee[]>([]);
   const [signatures, setSignatures] = useState<Map<string, SignatureRecord>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const [recordSearch, setRecordSearch] = useState("");
-  const [signing, setSigning] = useState<WaiverAttendee | null>(null);
-
-  useEffect(() => {
-    setIsOpen(!isMobile);
-  }, [isMobile]);
 
   const load = useCallback(async (background = false) => {
     if (!background) setIsLoading(true);
@@ -114,29 +103,6 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
 
   const signed = attendees.filter((a) => a.waiver_signed);
   const unsigned = attendees.filter((a) => !a.waiver_signed);
-  const percent = attendees.length ? Math.round((signed.length / attendees.length) * 100) : 0;
-
-  /** Unsigned people, grouped by order so families surface together. */
-  const unsignedGroups = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    const matches = term
-      ? unsigned.filter((a) =>
-          [a.first_name, a.last_name, a.phone, a.order_id]
-            .some((f) => f?.toLowerCase().includes(term))
-        )
-      : unsigned;
-
-    const groups = new Map<string, WaiverAttendee[]>();
-    matches.forEach((a) => {
-      const key = a.order_id || `solo-${a.id}`;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(a);
-    });
-    return Array.from(groups.entries()).map(([orderId, members]) => ({
-      orderId: orderId.startsWith("solo-") ? null : orderId,
-      members,
-    }));
-  }, [unsigned, search]);
 
   /** Signed attendees, searchable, with in-app signature detail when we captured one. */
   const signedMatches = useMemo(() => {
@@ -208,28 +174,17 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
   };
 
   return (
-    <Card>
+    <Card className="border-dashed">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CardHeader className="pb-3">
-          <CollapsibleTrigger className="w-full text-left">
-            <CardTitle className="flex items-center justify-between gap-3">
+        <CardHeader className="p-3 sm:p-4">
+          <CollapsibleTrigger className="w-full min-h-11 text-left">
+            <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
               <span className="flex items-center gap-2">
                 <FileSignature className="h-5 w-5" />
-                Waivers
+                Waiver records &amp; exports
               </span>
               <span className="flex items-center gap-2">
-                {!isLoading && unsigned.length > 0 && (
-                  <Badge variant="outline" className="text-warning border-warning">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    {unsigned.length} not signed
-                  </Badge>
-                )}
-                {!isLoading && unsigned.length === 0 && attendees.length > 0 && (
-                  <Badge variant="outline" className="text-success border-success">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    All signed
-                  </Badge>
-                )}
+                {!isLoading && <Badge variant="outline">{unsigned.length} missing</Badge>}
                 <ChevronDown
                   className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
                 />
@@ -239,126 +194,35 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
         </CardHeader>
 
         <CollapsibleContent>
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-4 border-t pt-4">
             {isLoading ? (
-              <div className="animate-pulse space-y-3">
-                <div className="h-16 bg-muted rounded" />
-                <div className="h-24 bg-muted rounded" />
-              </div>
+              <div className="h-12 animate-pulse rounded bg-muted" />
             ) : (
               <>
-                {/* Headline counts */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="text-center p-3 rounded-lg bg-success/10">
-                    <div className="text-2xl font-bold text-success">{signed.length}</div>
-                    <div className="text-xs text-muted-foreground">Signed</div>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-warning/10">
-                    <div className="text-2xl font-bold text-warning">{unsigned.length}</div>
-                    <div className="text-xs text-muted-foreground">Not signed</div>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-muted/50">
-                    <div className="text-2xl font-bold">{percent}%</div>
-                    <div className="text-xs text-muted-foreground">Complete</div>
-                  </div>
-                </div>
-
-                <Progress value={percent} className="h-2" />
-
-                <p className="text-xs text-muted-foreground">
-                  Attendees without a signed waiver cannot be activated. Sign on this device or
-                  reach out before arrival.
-                </p>
-
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      className="pl-9"
-                      placeholder="Search unsigned by name, phone or order..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  </div>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <Badge variant="outline">Signed: {signed.length}</Badge>
+                  <Badge variant="outline">Signed in app: {signatures.size}</Badge>
+                  <Badge variant="outline">Imported: {Math.max(signed.length - signatures.size, 0)}</Badge>
                   {onFilterUnsigned && (
-                    <Button variant="outline" onClick={onFilterUnsigned}>
-                      <Users className="h-4 w-4 mr-2" />
-                      Filter list
+                    <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9" onClick={onFilterUnsigned}>
+                      Show {unsigned.length} missing
                     </Button>
                   )}
-                  <Button variant="outline" onClick={exportUnsigned}>
+                  <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9" onClick={exportUnsigned}>
                     <Download className="h-4 w-4 mr-2" />
-                    Export CSV
+                    Missing CSV
                   </Button>
-                  <Button variant="outline" onClick={downloadAllSigned}>
+                  <Button variant="outline" size="sm" className="min-h-11 sm:min-h-9" onClick={downloadAllSigned}>
                     <FileDown className="h-4 w-4 mr-2" />
                     All signed PDFs
                   </Button>
                 </div>
-
-                {/* Unsigned queue */}
-                {unsignedGroups.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground text-sm">
-                    {unsigned.length === 0
-                      ? "Every registered attendee has a signed waiver."
-                      : "No unsigned attendees match that search."}
-                  </div>
-                ) : (
-                  <ScrollArea className="h-[320px] pr-3">
-                    <div className="space-y-3">
-                      {unsignedGroups.map((group) => (
-                        <div
-                          key={group.orderId || group.members[0].id}
-                          className="rounded-lg border p-3 space-y-2"
-                        >
-                          {group.orderId && group.members.length > 1 && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Users className="h-3 w-3" />
-                              Order {group.orderId} — {group.members.length} unsigned
-                            </div>
-                          )}
-                          {group.members.map((a) => (
-                            <div
-                              key={a.id}
-                              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-                            >
-                              <div className="min-w-0">
-                                <div className="font-medium truncate">
-                                  {a.first_name} {a.last_name}
-                                </div>
-                                <div className="text-xs text-muted-foreground truncate">
-                                  {a.phone ? formatPhoneNumber(a.phone) : "No phone"}
-                                  {a.order_id ? ` • Order ${a.order_id}` : ""}
-                                </div>
-                              </div>
-                              <Button size="sm" onClick={() => setSigning(a)} className="shrink-0">
-                                <FileSignature className="h-4 w-4 mr-2" />
-                                Sign waiver
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-
-                {/* Signature records */}
-                <div className="space-y-3 border-t pt-4">
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-sm font-medium mr-1">Signature records</span>
-                    <Badge variant="outline">Signed in app: {signatures.size}</Badge>
-                    <Badge variant="outline">
-                      Flagged by import: {Math.max(signed.length - signatures.size, 0)}
-                    </Badge>
-                  </div>
-
+                <div className="space-y-3">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       className="pl-9"
-                      placeholder="Look up a signed attendee to view or download their record..."
+                      placeholder="Find a signed waiver by name, phone, or order..."
                       value={recordSearch}
                       onChange={(e) => setRecordSearch(e.target.value)}
                     />
@@ -442,20 +306,6 @@ export function WaiverStatusPanel({ refreshTrigger, onFilterUnsigned }: WaiverSt
         </CollapsibleContent>
       </Collapsible>
 
-      {signing && (
-        <WaiverSigningDialog
-          open={!!signing}
-          onOpenChange={(open) => !open && setSigning(null)}
-          attendeeId={signing.id}
-          attendeeName={`${signing.first_name} ${signing.last_name}`}
-          eventId={getCurrentEventId()}
-          signedBySelf={false}
-          witnessedBy="Staff device"
-          onSigned={() => {
-            load(true);
-          }}
-        />
-      )}
     </Card>
   );
 }
