@@ -532,9 +532,6 @@ const Reports = () => {
         {sectionNavigation}
 
         <div className="space-y-6 pt-4">
-          {/* Recently Checked In - Standalone Section */}
-          <section id="report-recent" data-report-section="recent" className="scroll-mt-20"><RecentlyCheckedIn refreshTrigger={refreshTrigger} /></section>
-
           {/* Arrivals by Ticket Type */}
           <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-20"><Collapsible 
             open={sections.arrivals} 
@@ -559,6 +556,32 @@ const Reports = () => {
               <ArrivalsBreakdown refreshTrigger={refreshTrigger} />
             </CollapsibleContent>
           </Collapsible></section>
+
+          {/* Recently Checked In */}
+          <section id="report-recent" data-report-section="recent" className="scroll-mt-20"><Collapsible
+            open={sections.recent}
+            onOpenChange={(isOpen) => updateSectionState('recent', isOpen)}
+          >
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-lg border border-border/50"
+              >
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-success" />
+                  <h2 className="text-xl font-semibold">Recently Checked In</h2>
+                </div>
+                {sections.recent ?
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200" /> :
+                  <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                }
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <RecentlyCheckedIn refreshTrigger={refreshTrigger} embedded />
+            </CollapsibleContent>
+          </Collapsible></section>
+
 
           {/* Main Gate Access */}
           <section id="report-gate" data-report-section="gate" className="scroll-mt-20"><Collapsible 
