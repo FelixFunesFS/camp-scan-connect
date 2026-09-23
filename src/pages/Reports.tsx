@@ -55,12 +55,10 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 type ReportSection = 'recent' | 'arrivals' | 'gate' | 'services' | 'tshirts' | 'status';
 
 const REPORT_SECTIONS: Array<{ id: ReportSection; label: string }> = [
-  { id: 'recent', label: 'Recent Check-ins' },
   { id: 'arrivals', label: 'Arrivals' },
   { id: 'gate', label: 'Main Gate' },
   { id: 'services', label: 'Services' },
   { id: 'tshirts', label: 'T-Shirts' },
-  { id: 'status', label: 'On-Site' },
 ];
 
 const Reports = () => {
@@ -70,13 +68,13 @@ const Reports = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('today');
   const isMobile = useIsMobile();
-  const [activeSection, setActiveSection] = useState<ReportSection>('recent');
+  const [activeSection, setActiveSection] = useState<ReportSection>('arrivals');
   
   // Collapsible section states with localStorage persistence
   const [sections, setSections] = useState(() => {
-    const saved = localStorage.getItem('reports-sections-state');
+    const saved = localStorage.getItem('reports-sections-state-v2');
     const defaults = {
-      recent: true,       // Recently Checked In (mobile collapsible)
+      recent: false,      // Recently Checked In (default: collapsed)
       arrivals: true,     // Arrivals by Ticket Type (default: expanded)
       gate: true,         // Main Gate Access (default: expanded)
       services: true,     // Attendee Services (default: expanded)
@@ -96,24 +94,24 @@ const Reports = () => {
   const updateSectionState = (section: keyof typeof sections, isOpen: boolean) => {
     const newSections = { ...sections, [section]: isOpen };
     setSections(newSections);
-    localStorage.setItem('reports-sections-state', JSON.stringify(newSections));
+    localStorage.setItem('reports-sections-state-v2', JSON.stringify(newSections));
   };
 
   // Expand/Collapse All functions
   const expandAll = () => {
     const allExpanded = { recent: true, arrivals: true, gate: true, services: true, tshirts: true, status: true };
     setSections(allExpanded);
-    localStorage.setItem('reports-sections-state', JSON.stringify(allExpanded));
+    localStorage.setItem('reports-sections-state-v2', JSON.stringify(allExpanded));
   };
 
   const collapseAll = () => {
     const allCollapsed = { recent: false, arrivals: false, gate: false, services: false, tshirts: false, status: false };
     setSections(allCollapsed);
-    localStorage.setItem('reports-sections-state', JSON.stringify(allCollapsed));
+    localStorage.setItem('reports-sections-state-v2', JSON.stringify(allCollapsed));
   };
 
   const goToSection = (section: ReportSection) => {
-    if (section !== 'recent' || isMobile) updateSectionState(section, true);
+    updateSectionState(section, true);
     setActiveSection(section);
     window.setTimeout(() => {
       document.getElementById(`report-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -304,6 +302,17 @@ const Reports = () => {
 
               {/* Mobile Report Cards */}
               <div className="space-y-4">
+                <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-32">
+                <MobileReportCard
+                  title="Arrivals by Ticket Type"
+                  icon={<Caravan className="h-5 w-5 text-primary" />}
+                  isOpen={sections.arrivals}
+                  onToggle={() => updateSectionState('arrivals', !sections.arrivals)}
+                >
+                  <ArrivalsBreakdown refreshTrigger={refreshTrigger} />
+                </MobileReportCard>
+                </section>
+
                 <section id="report-recent" data-report-section="recent" className="scroll-mt-32">
                   <MobileReportCard
                     title="Recently Checked In"
@@ -315,16 +324,6 @@ const Reports = () => {
                   </MobileReportCard>
                 </section>
 
-                <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-32">
-                <MobileReportCard
-                  title="Arrivals by Ticket Type"
-                  icon={<Caravan className="h-5 w-5 text-primary" />}
-                  isOpen={sections.arrivals}
-                  onToggle={() => updateSectionState('arrivals', !sections.arrivals)}
-                >
-                  <ArrivalsBreakdown refreshTrigger={refreshTrigger} />
-                </MobileReportCard>
-                </section>
 
                 <section id="report-gate" data-report-section="gate" className="scroll-mt-32">
                 <MobileReportCard
@@ -533,9 +532,6 @@ const Reports = () => {
         {sectionNavigation}
 
         <div className="space-y-6 pt-4">
-          {/* Recently Checked In - Standalone Section */}
-          <section id="report-recent" data-report-section="recent" className="scroll-mt-20"><RecentlyCheckedIn refreshTrigger={refreshTrigger} /></section>
-
           {/* Arrivals by Ticket Type */}
           <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-20"><Collapsible 
             open={sections.arrivals} 
@@ -560,6 +556,32 @@ const Reports = () => {
               <ArrivalsBreakdown refreshTrigger={refreshTrigger} />
             </CollapsibleContent>
           </Collapsible></section>
+
+          {/* Recently Checked In */}
+          <section id="report-recent" data-report-section="recent" className="scroll-mt-20"><Collapsible
+            open={sections.recent}
+            onOpenChange={(isOpen) => updateSectionState('recent', isOpen)}
+          >
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-lg border border-border/50"
+              >
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-success" />
+                  <h2 className="text-xl font-semibold">Recently Checked In</h2>
+                </div>
+                {sections.recent ?
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200" /> :
+                  <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                }
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <RecentlyCheckedIn refreshTrigger={refreshTrigger} embedded />
+            </CollapsibleContent>
+          </Collapsible></section>
+
 
           {/* Main Gate Access */}
           <section id="report-gate" data-report-section="gate" className="scroll-mt-20"><Collapsible 

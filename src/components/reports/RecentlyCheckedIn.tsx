@@ -39,7 +39,8 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
   const [recentCheckIns, setRecentCheckIns] = useState<AttendeeStatus[]>([]);
   const [timeFilter, setTimeFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(10);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     const fetchRecentCheckIns = async () => {
@@ -129,6 +130,43 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
     }
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredRecent.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pagedRecent = filteredRecent.slice(pageStart, pageStart + PAGE_SIZE);
+
+  const pagination = (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
+      <p className="text-xs text-muted-foreground">
+        {filteredRecent.length === 0
+          ? 'No check-ins in this time range.'
+          : `Showing ${pageStart + 1}–${Math.min(pageStart + PAGE_SIZE, filteredRecent.length)} of ${filteredRecent.length} • Page ${currentPage} of ${totalPages}`}
+      </p>
+      {totalPages > 1 && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 flex-1 sm:flex-none"
+            disabled={currentPage <= 1}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 flex-1 sm:flex-none"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   // Helper function to get day comparison badge variant
   const getDayComparisonVariant = (scheduled: string, actual: string) => {
     if (scheduled === actual) return "secondary";
@@ -165,7 +203,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
   const body = (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <Select value={timeFilter} onValueChange={setTimeFilter}>
+            <Select value={timeFilter} onValueChange={(v) => { setTimeFilter(v); setPage(1); }}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue />
               </SelectTrigger>
@@ -179,25 +217,15 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
               {filteredRecent.length} of {recentCheckIns.length} check-ins (ET timezone)
             </div>
           </div>
-          {/* Mobile cards — no nested scrolling, incremental reveal */}
+          {/* Mobile cards — no nested scrolling, paginated 10 at a time */}
           <div className="md:hidden space-y-3">
-            {filteredRecent.slice(0, visibleCount).map((attendee) => (
+            {pagedRecent.map((attendee) => (
               <MobileAttendeeCard key={attendee.id} attendee={attendee} />
             ))}
-            {filteredRecent.length === 0 && (
-              <p className="text-sm text-muted-foreground">No check-ins in this time range.</p>
-            )}
-            {visibleCount < filteredRecent.length && (
-              <Button
-                variant="outline"
-                className="w-full min-h-11"
-                onClick={() => setVisibleCount(count => count + 10)}
-              >
-                Show 10 more ({filteredRecent.length - visibleCount} left)
-              </Button>
-            )}
+            {pagination}
           </div>
-          <div className="hidden md:block border rounded-lg max-h-[500px] overflow-y-auto">
+          <div className="hidden md:block border rounded-lg">
+
 
             <Table>
               <TableHeader className="sticky top-0 bg-background">
@@ -213,7 +241,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRecent.slice(0, 50).map((attendee) => (
+                {pagedRecent.map((attendee) => (
                   <TableRow key={attendee.id}>
                     <TableCell className="font-medium">{attendee.name}</TableCell>
                     <TableCell>
@@ -294,6 +322,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
               </TableBody>
             </Table>
           </div>
+          <div className="hidden md:block">{pagination}</div>
         </div>
   );
 

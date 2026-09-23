@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { UserCheck, MapPin, Headphones, Shirt } from "lucide-react";
+import { UserCheck, MapPin, Shirt, CalendarClock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentEventId } from "@/lib/eventRuntime";
-import { TimePeriod, getStandardTimeBoundaries, getDrinksHeadphonesTimeBoundaries } from "@/utils/etTimezone";
+import { TimePeriod, getStandardTimeBoundaries } from "@/utils/etTimezone";
 import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 import { TShirtService } from "@/services/tshirtService";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export type KpiTarget = 'recent' | 'status' | 'services' | 'tshirts';
+export type KpiTarget = 'recent' | 'status' | 'arrivals' | 'tshirts';
 
 interface ReportsKpiStripProps {
   selectedPeriod: TimePeriod;
@@ -19,7 +19,8 @@ interface KpiData {
   checkedIn: number;
   totalAttendees: number;
   onSite: number;
-  headphonesOut: number;
+  earlyArrivalsCheckedIn: number;
+  earlyArrivalsTotal: number;
   tshirtsPickedUp: number;
   tshirtsOrdered: number;
 }
@@ -28,7 +29,8 @@ const emptyData: KpiData = {
   checkedIn: 0,
   totalAttendees: 0,
   onSite: 0,
-  headphonesOut: 0,
+  earlyArrivalsCheckedIn: 0,
+  earlyArrivalsTotal: 0,
   tshirtsPickedUp: 0,
   tshirtsOrdered: 0,
 };
@@ -42,9 +44,8 @@ export const ReportsKpiStrip = ({ selectedPeriod, refreshTrigger, onSelect }: Re
     try {
       const eventId = getCurrentEventId();
       const gateBoundaries = getStandardTimeBoundaries(selectedPeriod);
-      const hpBoundaries = getDrinksHeadphonesTimeBoundaries(selectedPeriod);
 
-      const [totalRes, activeRes, gateRes, hpRes, tshirtRes] = await Promise.all([
+      const [totalRes, activeRes, gateRes, earlyRes, tshirtRes] = await Promise.all([
         supabase
           .from('attendees')
           .select('id', { count: 'exact', head: true })
@@ -65,14 +66,11 @@ export const ReportsKpiStrip = ({ selectedPeriod, refreshTrigger, onSelect }: Re
           .lt('created_at', gateBoundaries.end.toISOString())
           .order('created_at', { ascending: true }),
         supabase
-          .from('station_transactions')
-          .select('attendee_id, transaction_type, created_at')
+          .from('attendees')
+          .select('id, rfid_tags(status)')
           .eq('event_id', eventId)
-          .eq('station_type', 'headphones')
-          .in('transaction_type', ['headphone_checkout', 'headphone_checkin'])
-          .gte('created_at', hpBoundaries.start.toISOString())
-          .lt('created_at', hpBoundaries.end.toISOString())
-          .order('created_at', { ascending: true }),
+          .eq('registration_status', 'registered')
+          .or('early_access.eq.true,arrival_window.eq.early'),
         TShirtService.getTShirtPickupData(),
       ]);
 
@@ -81,16 +79,17 @@ export const ReportsKpiStrip = ({ selectedPeriod, refreshTrigger, onSelect }: Re
         onSiteMap.set(t.attendee_id, t.transaction_type === 'gate_entry');
       });
 
-      const hpMap = new Map<string, boolean>();
-      (hpRes.data || []).forEach((t: any) => {
-        hpMap.set(t.attendee_id, t.transaction_type === 'headphone_checkout');
-      });
+      const earlyArrivals = (earlyRes.data || []) as any[];
+      const earlyArrivalsCheckedIn = earlyArrivals.filter(a =>
+        (a.rfid_tags || []).some((tag: any) => tag.status === 'active')
+      ).length;
 
       setData({
         totalAttendees: totalRes.count || 0,
         checkedIn: activeRes.count || 0,
         onSite: Array.from(onSiteMap.values()).filter(Boolean).length,
-        headphonesOut: Array.from(hpMap.values()).filter(Boolean).length,
+        earlyArrivalsCheckedIn,
+        earlyArrivalsTotal: earlyArrivals.length,
         tshirtsPickedUp: tshirtRes.stats.pickedUp,
         tshirtsOrdered: tshirtRes.stats.totalOrdered,
       });
@@ -134,11 +133,11 @@ export const ReportsKpiStrip = ({ selectedPeriod, refreshTrigger, onSelect }: Re
       icon: <MapPin className="h-4 w-4 text-primary" />,
     },
     {
-      id: 'services',
-      label: 'Headphones',
-      value: `${data.headphonesOut}`,
-      sub: 'checked out',
-      icon: <Headphones className="h-4 w-4 text-primary" />,
+      id: 'arrivals',
+      label: 'Thur Arrivals',
+      value: `${data.earlyArrivalsCheckedIn}`,
+      sub: `of ${data.earlyArrivalsTotal} early • ${pct(data.earlyArrivalsCheckedIn, data.earlyArrivalsTotal)}%`,
+      icon: <CalendarClock className="h-4 w-4 text-primary" />,
     },
     {
       id: 'tshirts',
