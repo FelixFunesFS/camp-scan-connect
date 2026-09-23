@@ -133,11 +133,11 @@ export const ReportsKpiStrip = ({ selectedPeriod, refreshTrigger, onSelect }: Re
       icon: <MapPin className="h-4 w-4 text-primary" />,
     },
     {
-      id: 'services',
-      label: 'Headphones',
-      value: `${data.headphonesOut}`,
-      sub: 'checked out',
-      icon: <Headphones className="h-4 w-4 text-primary" />,
+      id: 'arrivals',
+      label: 'Thur Arrivals',
+      value: `${data.earlyArrivalsCheckedIn}`,
+      sub: `of ${data.earlyArrivalsTotal} early • ${pct(data.earlyArrivalsCheckedIn, data.earlyArrivalsTotal)}%`,
+      icon: <CalendarClock className="h-4 w-4 text-primary" />,
     },
     {
       id: 'tshirts',
