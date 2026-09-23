@@ -534,21 +534,6 @@ export function StaffActivationHub() {
     setSortDirection(sortField === field ? (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc');
   };
 
-  // Refresh unified search results after activation
-  const refreshUnifiedSearchResults = async () => {
-    if (unifiedSearchQuery && unifiedSearchQuery.trim()) {
-      try {
-        setIsUnifiedSearching(true);
-        const result = await EnhancedActivationService.unifiedSearch(unifiedSearchQuery.trim());
-        setUnifiedSearchResult(result);
-      } catch (error) {
-        console.error('Error refreshing search results:', error);
-      } finally {
-        setIsUnifiedSearching(false);
-      }
-    }
-  };
-
   // Enhanced activation handlers with edge case functions
   const handleIndividualActivation = async (attendeeId: string) => {
     try {
