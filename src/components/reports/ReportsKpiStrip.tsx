@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { UserCheck, MapPin, Headphones, Shirt } from "lucide-react";
+import { UserCheck, MapPin, Shirt, CalendarClock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { TimePeriod, getStandardTimeBoundaries, getDrinksHeadphonesTimeBoundaries } from "@/utils/etTimezone";
@@ -7,7 +7,7 @@ import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 import { TShirtService } from "@/services/tshirtService";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export type KpiTarget = 'recent' | 'status' | 'services' | 'tshirts';
+export type KpiTarget = 'recent' | 'status' | 'arrivals' | 'tshirts';
 
 interface ReportsKpiStripProps {
   selectedPeriod: TimePeriod;
@@ -19,7 +19,8 @@ interface KpiData {
   checkedIn: number;
   totalAttendees: number;
   onSite: number;
-  headphonesOut: number;
+  earlyArrivalsCheckedIn: number;
+  earlyArrivalsTotal: number;
   tshirtsPickedUp: number;
   tshirtsOrdered: number;
 }
@@ -28,7 +29,8 @@ const emptyData: KpiData = {
   checkedIn: 0,
   totalAttendees: 0,
   onSite: 0,
-  headphonesOut: 0,
+  earlyArrivalsCheckedIn: 0,
+  earlyArrivalsTotal: 0,
   tshirtsPickedUp: 0,
   tshirtsOrdered: 0,
 };
