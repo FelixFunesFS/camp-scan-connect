@@ -203,7 +203,7 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
   const body = (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <Select value={timeFilter} onValueChange={setTimeFilter}>
+            <Select value={timeFilter} onValueChange={(v) => { setTimeFilter(v); setPage(1); }}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue />
               </SelectTrigger>
