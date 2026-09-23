@@ -22,9 +22,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  UserCheck,
-  CheckCircle2,
-  Search
+  UserCheck
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
