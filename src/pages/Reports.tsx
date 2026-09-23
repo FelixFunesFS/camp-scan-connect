@@ -302,6 +302,17 @@ const Reports = () => {
 
               {/* Mobile Report Cards */}
               <div className="space-y-4">
+                <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-32">
+                <MobileReportCard
+                  title="Arrivals by Ticket Type"
+                  icon={<Caravan className="h-5 w-5 text-primary" />}
+                  isOpen={sections.arrivals}
+                  onToggle={() => updateSectionState('arrivals', !sections.arrivals)}
+                >
+                  <ArrivalsBreakdown refreshTrigger={refreshTrigger} />
+                </MobileReportCard>
+                </section>
+
                 <section id="report-recent" data-report-section="recent" className="scroll-mt-32">
                   <MobileReportCard
                     title="Recently Checked In"
@@ -313,16 +324,6 @@ const Reports = () => {
                   </MobileReportCard>
                 </section>
 
-                <section id="report-arrivals" data-report-section="arrivals" className="scroll-mt-32">
-                <MobileReportCard
-                  title="Arrivals by Ticket Type"
-                  icon={<Caravan className="h-5 w-5 text-primary" />}
-                  isOpen={sections.arrivals}
-                  onToggle={() => updateSectionState('arrivals', !sections.arrivals)}
-                >
-                  <ArrivalsBreakdown refreshTrigger={refreshTrigger} />
-                </MobileReportCard>
-                </section>
 
                 <section id="report-gate" data-report-section="gate" className="scroll-mt-32">
                 <MobileReportCard
