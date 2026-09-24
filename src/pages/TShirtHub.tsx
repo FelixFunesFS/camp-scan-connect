@@ -194,43 +194,52 @@ export default function TShirtHub() {
   };
 
   return (
-    <div className="container mx-auto space-y-6 p-4 sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-muted p-3">
-            <Shirt className="h-6 w-6" />
+    <div className="container mx-auto space-y-4 p-3 pb-24 sm:space-y-6 sm:p-6">
+      <div className="flex flex-row items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className="rounded-lg bg-muted p-2 sm:p-3">
+            <Shirt className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold sm:text-3xl">T-Shirt Hub</h1>
-            <p className="text-sm text-muted-foreground">Search shirt orders and hand out shirts</p>
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-bold sm:text-3xl">T-Shirt Hub</h1>
+            <p className="truncate text-xs text-muted-foreground sm:text-sm">
+              Search shirt orders and hand out shirts
+            </p>
           </div>
         </div>
-        <Button variant="outline" onClick={load} disabled={loading} className="h-11">
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+        <Button
+          variant="outline"
+          onClick={load}
+          disabled={loading}
+          className="h-11 w-11 shrink-0 p-0 sm:w-auto sm:px-4"
+          aria-label="Refresh shirt orders"
+        >
+          <RefreshCw className={`h-4 w-4 sm:mr-2 ${loading ? "animate-spin" : ""}`} />
+          <span className="hidden sm:inline">Refresh</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Shirts ordered</p>
-            <p className="text-2xl font-bold">{stats.ordered}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[11px] leading-tight text-muted-foreground sm:text-sm">Ordered</p>
+            <p className="text-xl font-bold sm:text-2xl">{stats.ordered}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Handed out</p>
-            <p className="text-2xl font-bold text-success">{stats.picked}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[11px] leading-tight text-muted-foreground sm:text-sm">Handed out</p>
+            <p className="text-xl font-bold text-success sm:text-2xl">{stats.picked}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Still to collect</p>
-            <p className="text-2xl font-bold text-warning">{stats.remaining}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[11px] leading-tight text-muted-foreground sm:text-sm">To collect</p>
+            <p className="text-xl font-bold text-warning sm:text-2xl">{stats.remaining}</p>
           </CardContent>
         </Card>
       </div>
+
 
       {Object.keys(stats.sizes).length > 0 && (
         <Card>
@@ -254,25 +263,30 @@ export default function TShirtHub() {
         </Card>
       )}
 
-      <Card>
-        <CardContent className="space-y-3 p-4">
+      <Card className="sticky top-0 z-20 shadow-sm">
+        <CardContent className="space-y-3 p-3 sm:p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, phone, order or wristband number"
-              className="h-11 pl-9"
+              placeholder="Search name, phone, order or band"
+              className="h-11 pl-9 text-base"
+              inputMode="search"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
               aria-label="Search shirt orders"
             />
           </div>
           <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="pending">To collect</TabsTrigger>
-              <TabsTrigger value="complete">Collected</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
+            <TabsList className="grid h-11 w-full grid-cols-3">
+              <TabsTrigger value="pending" className="h-9 text-xs sm:text-sm">To collect</TabsTrigger>
+              <TabsTrigger value="complete" className="h-9 text-xs sm:text-sm">Collected</TabsTrigger>
+              <TabsTrigger value="all" className="h-9 text-xs sm:text-sm">All</TabsTrigger>
             </TabsList>
           </Tabs>
+
           {productLines.length > 1 && (
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
               <Button
@@ -323,22 +337,24 @@ export default function TShirtHub() {
               const chosen = selected[person.id] || [];
               return (
                 <Card key={person.id}>
-                  <CardContent className="space-y-3 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
+                  <CardContent className="space-y-3 p-3 sm:p-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
-                        <p className="truncate font-semibold">{person.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {person.phone ? formatPhoneNumber(person.phone) : "No phone"} · Order{" "}
-                          {person.orderId || "—"} · Band {person.rfidUid || "none"}
+                        <p className="break-words font-semibold leading-tight">{person.name}</p>
+                        <p className="break-words text-xs text-muted-foreground">
+                          {person.phone ? formatPhoneNumber(person.phone) : "No phone"}
+                          <span className="hidden sm:inline"> · Order {person.orderId || "—"}</span>
+                          {" · Band "}
+                          {person.rfidUid || "none"}
                         </p>
                       </div>
                       <Badge
                         variant="outline"
-                        className={
+                        className={`w-fit shrink-0 whitespace-nowrap ${
                           complete
                             ? "bg-success/10 text-success border-success/20"
                             : "bg-warning/10 text-warning border-warning/20"
-                        }
+                        }`}
                       >
                         {person.totalPickedUp}/{person.totalOrdered} handed out
                       </Badge>
@@ -348,22 +364,20 @@ export default function TShirtHub() {
                       {person.orders.map((order) => {
                         const picked = order.pickedUpCount ?? (order.isPickedUp ? order.quantity : 0);
                         const done = picked >= order.quantity;
-                        return (
-                          <li
-                            key={order.id}
-                            className="flex flex-wrap items-center gap-3 rounded-md border p-3"
-                          >
+                        const rowContent = (
+                          <>
                             {!done && (
                               <Checkbox
                                 checked={chosen.includes(order.id)}
                                 onCheckedChange={(c) => toggleOrder(person.id, order.id, c === true)}
+                                className="h-5 w-5 shrink-0"
                                 aria-label={`Select ${order.productLine} ${order.size} for ${person.name}`}
                               />
                             )}
                             <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-1.5">
                                 <ApparelProductBadge productLine={order.productLine as any} />
-                                <span className="text-sm font-medium">
+                                <span className="break-words text-sm font-medium">
                                   {order.style} · {order.size}
                                   {order.quantity > 1 ? ` ×${order.quantity}` : ""}
                                 </span>
@@ -375,19 +389,41 @@ export default function TShirtHub() {
                               )}
                             </div>
                             {done ? (
-                              <Badge className="bg-success text-success-foreground text-xs">
+                              <Badge className="shrink-0 bg-success text-success-foreground text-xs">
                                 <CheckCircle2 className="mr-1 h-3 w-3" />
                                 Collected
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="shrink-0 text-xs">
                                 {picked}/{order.quantity}
                               </Badge>
+                            )}
+                          </>
+                        );
+                        return (
+                          <li key={order.id}>
+                            {done ? (
+                              <div className="flex min-h-[56px] items-center gap-3 rounded-md border p-3">
+                                {rowContent}
+                              </div>
+                            ) : (
+                              <label
+                                className="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-md border p-3 active:bg-muted/60"
+                                onClick={(e) => {
+                                  if ((e.target as HTMLElement).closest("button")) return;
+                                  if ((e.target as HTMLElement).getAttribute("role") === "checkbox") return;
+                                  e.preventDefault();
+                                  toggleOrder(person.id, order.id, !chosen.includes(order.id));
+                                }}
+                              >
+                                {rowContent}
+                              </label>
                             )}
                           </li>
                         );
                       })}
                     </ul>
+
 
                     {!complete && (
                       <Button
