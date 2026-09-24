@@ -611,21 +611,42 @@ export default function TShirtHub() {
                       })}
                     </ul>
 
-
                     {!complete && (
-                      <Button
-                        className="h-11 w-full"
-                        disabled={chosen.length === 0 || processingId === person.id}
-                        onClick={() => handlePickup(person)}
-                      >
-                        {processingId === person.id ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Shirt className="mr-2 h-4 w-4" />
+                      <div className="space-y-2">
+                        {pendingIds.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 w-full"
+                            onClick={() =>
+                              setSelected((prev) => ({
+                                ...prev,
+                                [person.id]:
+                                  chosen.length === pendingIds.length ? [] : pendingIds,
+                              }))
+                            }
+                          >
+                            {chosen.length === pendingIds.length
+                              ? "Clear selection"
+                              : `Select all ${pendingIds.length} shirts`}
+                          </Button>
                         )}
-                        Mark selected as handed out
-                      </Button>
+                        <Button
+                          className="h-11 w-full"
+                          disabled={chosen.length === 0 || processingId === person.id}
+                          onClick={() => handlePickup(person)}
+                        >
+                          {processingId === person.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Shirt className="mr-2 h-4 w-4" />
+                          )}
+                          Hand out {chosen.length} of {pendingIds.length} shirt
+                          {pendingIds.length === 1 ? "" : "s"}
+                        </Button>
+                      </div>
                     )}
+
                   </CardContent>
                 </Card>
               );
