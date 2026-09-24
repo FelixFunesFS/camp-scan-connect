@@ -8,7 +8,7 @@
 - [ ] Distinguish all five apparel product lines, styles, sizes, and per-item pickups
 - [x] Add accessible quick-jump navigation and responsive report sections
 - [x] Audit and harden every camper, staff, admin, and station page for mobile viewing and transactions
-- [ ] Verify critical workflows at phone, tablet, and desktop widths
+- [x] Verify critical workflows at phone, tablet, and desktop widths
 - [x] Rebuild Recently Checked In for readable phone, tablet, and desktop layouts
 - [x] Move T-Shirt Distribution above Main Gate Access in Reports
 - [x] Standardize table/card breakpoints and accessible data presentation site-wide

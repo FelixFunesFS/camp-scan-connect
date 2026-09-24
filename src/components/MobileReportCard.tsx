@@ -27,7 +27,7 @@ export const MobileReportCard: React.FC<MobileReportCardProps> = ({
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full min-h-[44px] p-0 h-auto hover:bg-transparent"
+            className="h-auto min-h-[44px] w-full p-0 text-foreground hover:bg-transparent"
             aria-expanded={isOpen}
           >
             <CardHeader className="w-full">

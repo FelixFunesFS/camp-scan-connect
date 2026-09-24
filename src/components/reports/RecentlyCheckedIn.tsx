@@ -218,10 +218,12 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
             </div>
           </div>
           {/* Phone and tablet cards — no nested scrolling, paginated 10 at a time */}
-          <div className="grid gap-3 lg:hidden sm:grid-cols-2">
-            {pagedRecent.map((attendee) => (
-              <MobileAttendeeCard key={attendee.id} attendee={attendee} />
-            ))}
+          <div className="space-y-3 lg:hidden">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {pagedRecent.map((attendee) => (
+                <MobileAttendeeCard key={attendee.id} attendee={attendee} />
+              ))}
+            </div>
             {pagination}
           </div>
           <div className="hidden overflow-x-auto rounded-lg border lg:block">
