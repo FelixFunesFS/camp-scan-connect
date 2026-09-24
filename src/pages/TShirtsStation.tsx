@@ -222,16 +222,18 @@ function TShirtsContent({
                   <div className="min-w-0 space-y-1">
                     <div className="badge-row">
                       <ApparelProductBadge productLine={order.productLine} />
-                      {order.quantity > 1 && (
-                        <Badge variant="outline">×{order.quantity}</Badge>
+                      {(order.unitCount ?? 1) > 1 && (
+                        <Badge variant="outline">
+                          Shirt {order.unitIndex} of {order.unitCount}
+                        </Badge>
                       )}
                     </div>
                     <div className="flex min-w-0 items-center gap-2 font-medium">
                       <Shirt className="h-4 w-4 shrink-0" />
-                      <span>{order.style} — {order.size}</span>
+                      <span className="break-words">{order.style} — {order.size}</span>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {order.quantity === 1 ? '1 item' : `${order.quantity} items`}
+                      1 shirt
                       {order.isPickedUp && order.pickupTime && (
                         <span className="ml-2 text-success">
                           • Picked up {new Date(order.pickupTime).toLocaleDateString()}
@@ -239,6 +241,7 @@ function TShirtsContent({
                       )}
                     </div>
                   </div>
+
                 </div>
 
                 {order.isPickedUp && (
