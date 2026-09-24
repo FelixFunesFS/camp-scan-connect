@@ -940,6 +940,10 @@ export class TShirtService {
       quantity: number;
       isPickedUp: boolean;
       pickupTime?: string;
+      pickedUpCount?: number;
+      unitIndex?: number;
+      unitCount?: number;
+
     }>;
   }> {
     try {
