@@ -47,6 +47,7 @@ const navigationItems = [
     items: [
       { title: "Credential Assignment", url: "/assignment", icon: Users },
       { title: "Staff Hub", url: "/staff-hub", icon: UserCog },
+      { title: "T-Shirt Hub", url: "/tshirt-hub", icon: Shirt },
       { title: "Equipment Hub", url: "/equipment-hub", icon: Package },
     ]
   },

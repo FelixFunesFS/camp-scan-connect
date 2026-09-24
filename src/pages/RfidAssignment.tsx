@@ -57,6 +57,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { getStatusClassName, getStatusLabel } from "@/lib/registrationStatus";
+import { TShirtService } from "@/services/tshirtService";
+import { TShirtSummaryBadge } from "@/components/TShirtSummaryBadge";
 
 export interface AttendeeData {
   id: string;
@@ -86,6 +88,17 @@ export interface AttendeeData {
   group_assignment_progress?: { assigned: number; total: number; percentage: number };
   most_recent_activation_method?: string;
   most_recent_activation_at?: string;
+  tshirt_orders?: Array<{
+    id: string;
+    productLine: string;
+    style: string;
+    size: string;
+    quantity: number;
+    isPickedUp: boolean;
+    pickedUpCount?: number;
+    pickupTime?: string;
+  }>;
+  tshirt_summary?: { hasAnyTShirt: boolean; totalOrders: number; totalPickedUp: number };
 }
 
 const ROWS_PER_PAGE = 100;
@@ -208,6 +221,7 @@ export const RfidAssignment = () => {
           city,
           state,
           custom_fields,
+          t_shirt_size,
           site_location_assignment,
           site_detail,
           rfid_tags(uid, status, activated_at)
@@ -269,6 +283,20 @@ export const RfidAssignment = () => {
         }
       });
 
+      // T-shirt pickup transactions (single query, computed in memory per attendee)
+      const { data: tshirtTx } = await supabase
+        .from('station_transactions')
+        .select('attendee_id, extra_data, created_at')
+        .eq('event_id', getCurrentEventId())
+        .eq('station_type', 'tshirts')
+        .eq('transaction_type', 'tshirt_pickup');
+      const tshirtTxByAttendee = new Map<string, Array<{ extra_data: any; created_at: string }>>();
+      (tshirtTx || []).forEach((tx: any) => {
+        const list = tshirtTxByAttendee.get(tx.attendee_id) || [];
+        list.push({ extra_data: tx.extra_data, created_at: tx.created_at });
+        tshirtTxByAttendee.set(tx.attendee_id, list);
+      });
+
       const processedAttendees: AttendeeData[] = (data || []).map(attendee => {
         const rfidTags = (attendee as any).rfid_tags;
         const rfidTag = Array.isArray(rfidTags) ? rfidTags[0] : rfidTags;
@@ -283,6 +311,16 @@ export const RfidAssignment = () => {
         ) || 'Not Assigned';
         
         const activation = activationMap.get(attendee.id);
+
+        const tshirtInfo = TShirtService.computeAttendeeTShirtInfo(
+          attendee.id,
+          (attendee as any).custom_fields,
+          (attendee as any).t_shirt_size,
+          tshirtTxByAttendee.get(attendee.id) || []
+        );
+        const totalOrders = tshirtInfo.orders.reduce((sum, o) => sum + o.quantity, 0);
+        const totalPickedUp = tshirtInfo.orders.reduce((sum, o) => sum + (o.pickedUpCount ?? (o.isPickedUp ? o.quantity : 0)), 0);
+        
         
         return {
           id: attendee.id,
@@ -310,6 +348,12 @@ export const RfidAssignment = () => {
           rfid_status: rfidTag?.status || 'unissued',
           most_recent_activation_method: activation?.method,
           most_recent_activation_at: activation?.timestamp,
+          tshirt_orders: tshirtInfo.orders,
+          tshirt_summary: {
+            hasAnyTShirt: tshirtInfo.hasTShirt && totalOrders > 0,
+            totalOrders,
+            totalPickedUp,
+          },
         };
       });
 
@@ -1343,6 +1387,11 @@ export const RfidAssignment = () => {
                               <Badge variant={attendee.waiver_signed ? 'default' : 'destructive'} className="whitespace-nowrap">
                                 Waiver {attendee.waiver_signed ? 'signed' : 'not signed'}
                               </Badge>
+                              <TShirtSummaryBadge
+                                summary={attendee.tshirt_summary}
+                                orders={attendee.tshirt_orders}
+                                showDetails
+                              />
                               {attendee.most_recent_activation_method && attendee.most_recent_activation_at ? (
                                 <div className="text-xs text-muted-foreground">
                                   {attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff assisted' : 'Self activated'}

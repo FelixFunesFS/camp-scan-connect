@@ -9,6 +9,7 @@ import { getCheckInStatus, getEnhancedCheckInStatus } from "@/utils/statusUtils"
 import type { AttendeeData } from "@/pages/RfidAssignment";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { getStatusClassName, getStatusLabel } from "@/lib/registrationStatus";
+import { TShirtSummaryBadge } from "@/components/TShirtSummaryBadge";
 
 interface MobileRfidAssignmentCardProps {
   attendee: AttendeeData;
@@ -155,6 +156,12 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
                 <span className="font-mono text-xs">#{attendee.order_id}</span>
               </div>
             )}
+
+            <TShirtSummaryBadge
+              summary={attendee.tshirt_summary}
+              orders={attendee.tshirt_orders}
+              showDetails={isExpanded}
+            />
           </div>
 
           {/* Credential Assignment Section - Always Visible */}
