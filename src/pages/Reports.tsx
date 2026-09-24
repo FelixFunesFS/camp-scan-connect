@@ -236,15 +236,6 @@ const Reports = () => {
             <div className="space-y-4">
               {/* Compact mobile header */}
               <header className="sticky top-0 z-40 -mx-4 flex h-14 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur-sm">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Back to dashboard"
-                  onClick={() => navigate("/dashboard")}
-                  className="h-10 w-10 shrink-0"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
 
                 <div className="min-w-0 flex-1">
                   <h1 className="truncate text-base font-semibold leading-tight">Reports</h1>
@@ -415,14 +406,6 @@ const Reports = () => {
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6 mt-4">
 
           <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/dashboard")}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Dashboard
-            </Button>
             <div>
               <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
                 <BarChart3 className="h-6 w-6" />

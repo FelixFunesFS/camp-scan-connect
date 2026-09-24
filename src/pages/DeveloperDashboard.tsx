@@ -29,16 +29,6 @@ const DeveloperDashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/dashboard")}
-                className="gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Dashboard
-              </Button>
-              <Separator orientation="vertical" className="hidden h-6 sm:block" />
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-bold leading-tight">Developer Dashboard</h1>
                 <p className="text-sm text-muted-foreground">
