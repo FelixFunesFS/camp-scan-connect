@@ -347,6 +347,12 @@ export const RfidAssignment = () => {
           rfid_status: rfidTag?.status || 'unissued',
           most_recent_activation_method: activation?.method,
           most_recent_activation_at: activation?.timestamp,
+          tshirt_orders: tshirtInfo.orders,
+          tshirt_summary: {
+            hasAnyTShirt: tshirtInfo.hasTShirt && totalOrders > 0,
+            totalOrders,
+            totalPickedUp,
+          },
         };
       });
 
