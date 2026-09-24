@@ -737,15 +737,6 @@ export function StaffActivationHub() {
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/dashboard")}
-              size="icon"
-              className="h-11 w-11 shrink-0"
-              aria-label="Back to dashboard"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
             <h1 className="truncate text-2xl font-bold">Staff Hub</h1>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
