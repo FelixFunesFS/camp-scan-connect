@@ -152,7 +152,7 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
         {/* Size Breakdown */}
         <div>
           <h4 className="font-semibold mb-4">Size Breakdown</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(84px,1fr))] gap-3">
             {Object.entries(selectedStats.sizeBreakdown)
               .sort(([a], [b]) => {
                 // Custom sort order for sizes
@@ -230,15 +230,15 @@ export const TShirtTracker = ({ refreshTrigger }: TShirtTrackerProps) => {
                 ))}
               </div>
               <div className="desktop-table overflow-x-auto border rounded-lg">
-                <Table>
+                <Table className="min-w-[820px] table-fixed">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Attendee</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Size</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Wristband</TableHead>
+                      <TableHead className="w-[24%]">Attendee</TableHead>
+                      <TableHead className="w-[18%]">Phone</TableHead>
+                      <TableHead className="w-[20%]">Product</TableHead>
+                      <TableHead className="w-[8%]">Size</TableHead>
+                      <TableHead className="w-[15%]">Type</TableHead>
+                      <TableHead className="w-[15%]">Wristband</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

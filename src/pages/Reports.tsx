@@ -57,9 +57,9 @@ type ReportSection = 'recent' | 'arrivals' | 'gate' | 'services' | 'tshirts' | '
 
 const REPORT_SECTIONS: Array<{ id: ReportSection; label: string }> = [
   { id: 'arrivals', label: 'Arrivals' },
+  { id: 'tshirts', label: 'T-Shirts' },
   { id: 'gate', label: 'Main Gate' },
   { id: 'services', label: 'Services' },
-  { id: 'tshirts', label: 'T-Shirts' },
 ];
 
 const Reports = () => {
@@ -326,6 +326,17 @@ const Reports = () => {
                 </section>
 
 
+                <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-32">
+                <MobileReportCard
+                  title="T-Shirt Distribution"
+                  icon={<Shirt className="h-5 w-5 text-primary" />}
+                  isOpen={sections.tshirts}
+                  onToggle={() => updateSectionState('tshirts', !sections.tshirts)}
+                >
+                  <TShirtTracker refreshTrigger={refreshTrigger} />
+                </MobileReportCard>
+                </section>
+
                 <section id="report-gate" data-report-section="gate" className="scroll-mt-32">
                 <MobileReportCard
                   title="Main Gate Access"
@@ -365,17 +376,6 @@ const Reports = () => {
                       section="bottom"
                     />
                   </div>
-                </MobileReportCard>
-                </section>
-
-                <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-32">
-                <MobileReportCard
-                  title="T-Shirt Distribution"
-                  icon={<Shirt className="h-5 w-5 text-primary" />}
-                  isOpen={sections.tshirts}
-                  onToggle={() => updateSectionState('tshirts', !sections.tshirts)}
-                >
-                  <TShirtTracker refreshTrigger={refreshTrigger} />
                 </MobileReportCard>
                 </section>
 
@@ -564,6 +564,31 @@ const Reports = () => {
           </Collapsible></section>
 
 
+          {/* T-Shirt Distribution */}
+          <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-20"><Collapsible
+            open={sections.tshirts}
+            onOpenChange={(isOpen) => updateSectionState('tshirts', isOpen)}
+          >
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-lg border border-border/50"
+              >
+                <div className="flex items-center gap-2">
+                  <Shirt className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">T-Shirt Distribution</h2>
+                </div>
+                {sections.tshirts ?
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200" /> :
+                  <ChevronRight className="h-4 w-4 transition-transform duration-200" />
+                }
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <TShirtTracker refreshTrigger={refreshTrigger} />
+            </CollapsibleContent>
+          </Collapsible></section>
+
           {/* Main Gate Access */}
           <section id="report-gate" data-report-section="gate" className="scroll-mt-20"><Collapsible 
             open={sections.gate} 
@@ -632,31 +657,6 @@ const Reports = () => {
                 refreshTrigger={refreshTrigger}
                 section="bottom"
               />
-            </CollapsibleContent>
-          </Collapsible></section>
-
-          {/* T-Shirt Distribution */}
-          <section id="report-tshirts" data-report-section="tshirts" className="scroll-mt-20"><Collapsible
-            open={sections.tshirts}
-            onOpenChange={(isOpen) => updateSectionState('tshirts', isOpen)}
-          >
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                className="flex items-center justify-between w-full p-4 hover:bg-muted/50 rounded-lg border border-border/50"
-              >
-                <div className="flex items-center gap-2">
-                  <Shirt className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-semibold">T-Shirt Distribution</h2>
-                </div>
-                {sections.tshirts ?
-                  <ChevronDown className="h-4 w-4 transition-transform duration-200" /> :
-                  <ChevronRight className="h-4 w-4 transition-transform duration-200" />
-                }
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-4">
-              <TShirtTracker refreshTrigger={refreshTrigger} />
             </CollapsibleContent>
           </Collapsible></section>
 

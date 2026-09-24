@@ -94,7 +94,7 @@ export const SiteLocationRfidView: React.FC<SiteLocationRfidViewProps> = ({
           ))}
         </div>
         <div className="desktop-table overflow-x-auto rounded-md border">
-          <Table>
+          <Table className="min-w-[980px] table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-64 min-w-[220px]">Site Location</TableHead>

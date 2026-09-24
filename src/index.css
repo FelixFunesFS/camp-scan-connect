@@ -241,11 +241,11 @@ All colors MUST be HSL.
   
   /* Responsive table alternatives */
   .mobile-table-card {
-    @apply block sm:hidden space-y-3;
+    @apply block lg:hidden space-y-3;
   }
   
   .desktop-table {
-    @apply hidden sm:block;
+    @apply hidden lg:block;
   }
   
   /* Enhanced responsive containers */

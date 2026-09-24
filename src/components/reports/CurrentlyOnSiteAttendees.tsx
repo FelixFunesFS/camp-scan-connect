@@ -80,14 +80,14 @@ const formatDuration = (minutes: number): string => {
       <CardContent>
         {/* Desktop Table */}
         <ResponsiveTable>
-          <div className="border rounded-lg max-h-[300px] overflow-y-auto">
-            <Table>
+          <div className="overflow-x-auto rounded-lg border">
+            <Table className="min-w-[680px] table-fixed">
               <TableHeader className="sticky top-0 bg-background">
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Entry Time</TableHead>
-                  <TableHead>Duration</TableHead>
+                  <TableHead className="w-[30%]">Name</TableHead>
+                  <TableHead className="w-[25%]">Wristband</TableHead>
+                  <TableHead className="w-[30%]">Entry Time</TableHead>
+                  <TableHead className="w-[15%]">Duration</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -112,7 +112,7 @@ const formatDuration = (minutes: number): string => {
 
         {/* Mobile Cards */}
         <ResponsiveTableMobile>
-          <div className="space-y-3 max-h-[300px] overflow-y-auto">
+          <div className="grid gap-3 sm:grid-cols-2">
             {attendees.map((attendee, index) => (
               <MobileOnSiteCard key={`${attendee.name}-${index}`} attendee={attendee} />
             ))}

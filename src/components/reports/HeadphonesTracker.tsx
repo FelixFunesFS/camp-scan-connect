@@ -296,14 +296,14 @@ export const HeadphonesTracker = ({ selectedPeriod, refreshTrigger }: Headphones
               ))}
             </div>
             <div className="desktop-table overflow-x-auto border rounded-lg">
-              <Table>
+              <Table className="min-w-[720px] table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Attendee</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Checkout Date/Time</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Wristband</TableHead>
+                    <TableHead className="w-[28%]">Attendee</TableHead>
+                    <TableHead className="w-[20%]">Phone</TableHead>
+                    <TableHead className="w-[25%]">Checkout Date/Time</TableHead>
+                    <TableHead className="w-[12%]">Duration</TableHead>
+                    <TableHead className="w-[15%]">Wristband</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

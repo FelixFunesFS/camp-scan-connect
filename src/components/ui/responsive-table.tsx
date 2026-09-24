@@ -1,6 +1,5 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ResponsiveTableProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -8,9 +7,7 @@ interface ResponsiveTableProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const ResponsiveTable = React.forwardRef<HTMLDivElement, ResponsiveTableProps>(
-  ({ className, children, mobileBreakpoint = "md", ...props }, ref) => {
-    const isMobile = useIsMobile();
-    
+  ({ className, children, mobileBreakpoint = "lg", ...props }, ref) => {
     return (
       <div 
         ref={ref} 
@@ -32,7 +29,7 @@ const ResponsiveTable = React.forwardRef<HTMLDivElement, ResponsiveTableProps>(
 ResponsiveTable.displayName = "ResponsiveTable";
 
 const ResponsiveTableMobile = React.forwardRef<HTMLDivElement, ResponsiveTableProps>(
-  ({ className, children, mobileBreakpoint = "md", ...props }, ref) => {
+  ({ className, children, mobileBreakpoint = "lg", ...props }, ref) => {
     return (
       <div 
         ref={ref} 

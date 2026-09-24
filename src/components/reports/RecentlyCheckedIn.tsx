@@ -217,79 +217,71 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
               {filteredRecent.length} of {recentCheckIns.length} check-ins (ET timezone)
             </div>
           </div>
-          {/* Mobile cards — no nested scrolling, paginated 10 at a time */}
-          <div className="md:hidden space-y-3">
-            {pagedRecent.map((attendee) => (
-              <MobileAttendeeCard key={attendee.id} attendee={attendee} />
-            ))}
+          {/* Phone and tablet cards — no nested scrolling, paginated 10 at a time */}
+          <div className="space-y-3 lg:hidden">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {pagedRecent.map((attendee) => (
+                <MobileAttendeeCard key={attendee.id} attendee={attendee} />
+              ))}
+            </div>
             {pagination}
           </div>
-          <div className="hidden md:block border rounded-lg">
-
-
-            <Table>
+          <div className="hidden overflow-x-auto rounded-lg border lg:block">
+            <Table className="min-w-[920px] table-fixed">
               <TableHeader className="sticky top-0 bg-background">
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Ticket Type</TableHead>
-                  <TableHead>Site Location</TableHead>
-                  <TableHead>Scheduled Arrival</TableHead>
-                  <TableHead>Actual Check-in</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Time</TableHead>
+                  <TableHead scope="col" className="w-[28%]">Camper &amp; Contact</TableHead>
+                  <TableHead scope="col" className="w-[22%]">Registration &amp; Stay</TableHead>
+                  <TableHead scope="col" className="w-[16%]">Arrival</TableHead>
+                  <TableHead scope="col" className="w-[22%]">Check-in</TableHead>
+                  <TableHead scope="col" className="w-[12%]">Method</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pagedRecent.map((attendee) => (
-                  <TableRow key={attendee.id}>
-                    <TableCell className="font-medium">{attendee.name}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
+                    <TableRow key={attendee.id} className="align-top">
+                      <TableCell>
+                        <div className="min-w-0 space-y-1">
+                          <p className="font-medium leading-snug">{attendee.name}</p>
                         {attendee.phone && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <Phone className="h-3 w-3" />
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Phone className="h-3 w-3 shrink-0" />
                             {formatPhoneNumber(attendee.phone)}
                           </div>
                         )}
                         {attendee.email && (
-                          <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+                            <div className="break-all text-xs text-muted-foreground">
                             {attendee.email}
                           </div>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {formatTicketType(attendee.ticketType)}
-                      </Badge>
+                      <TableCell>
+                        <div className="space-y-2">
+                          <Badge variant="outline" className="max-w-full text-xs">
+                            {formatTicketType(attendee.ticketType)}
+                          </Badge>
+                          <div><SiteLocationBadge siteLocationAssignment={attendee.siteLocation} maxLength={24} className="max-w-full text-xs" /></div>
+                        </div>
                     </TableCell>
                     <TableCell>
-                      <SiteLocationBadge 
-                        siteLocationAssignment={attendee.siteLocation}
-                        maxLength={15}
-                        className="text-xs"
-                      />
+                        <div className="space-y-2 text-xs">
+                          <div className="text-muted-foreground">Scheduled</div>
+                          <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" />{attendee.scheduledArrivalDay}</Badge>
+                          <div className="text-muted-foreground">Actual</div>
+                          <Badge variant={getDayComparisonVariant(attendee.scheduledArrivalDay, attendee.actualCheckInDay)}>
+                            {attendee.actualCheckInDay}
+                            {attendee.scheduledArrivalDay !== attendee.actualCheckInDay && <span className="ml-1" aria-label="Different from scheduled arrival">⚠</span>}
+                          </Badge>
+                        </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {attendee.scheduledArrivalDay}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={getDayComparisonVariant(attendee.scheduledArrivalDay, attendee.actualCheckInDay)} 
-                        className="text-xs"
-                      >
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {attendee.actualCheckInDay}
-                        {attendee.scheduledArrivalDay !== attendee.actualCheckInDay && (
-                          <span className="ml-1 text-orange-500">⚠</span>
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
+                        <div className="space-y-1 text-sm leading-snug">
+                          <div className="text-xs text-muted-foreground">{attendee.actualCheckInDay}</div>
+                          {attendee.activatedAt && formatStandardDateTimeET(attendee.activatedAt)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
                       {attendee.activationMethod && (
                         <Badge variant="outline" className="text-xs">
                           {attendee.activationMethod === 'self_activated' && (
@@ -310,19 +302,12 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>
-                      {attendee.activatedAt && (
-                        <div className="text-sm">
-                          {formatStandardDateTimeET(attendee.activatedAt)}
-                        </div>
-                      )}
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
-          <div className="hidden md:block">{pagination}</div>
+          <div className="hidden lg:block">{pagination}</div>
         </div>
   );
 
