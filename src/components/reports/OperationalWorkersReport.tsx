@@ -70,18 +70,21 @@ export const OperationalWorkersReport = ({ refreshTrigger }: { refreshTrigger?: 
                 </div>
               ))}
             </div>
-            <ul className="divide-y rounded-lg border">
+            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
               {rows.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
-                  <div className="min-w-0">
+                <li
+                  key={r.id}
+                  className="flex min-h-11 flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3 text-sm"
+                >
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{r.first_name} {r.last_name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground truncate">
                       {r.band ? `Band ${r.band}` : "No band yet"} • {r.meals} meal{r.meals === 1 ? "" : "s"} served
                     </p>
                   </div>
-                  <div className="flex gap-1.5">
-                    <Badge variant={r.waiver_signed ? "default" : "outline"}>{r.waiver_signed ? "Waiver signed" : "Waiver needed"}</Badge>
-                    {r.bandStatus === "active" && <Badge variant="secondary">Checked in</Badge>}
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant={r.waiver_signed ? "default" : "outline"} className="text-xs">{r.waiver_signed ? "Waiver signed" : "Waiver needed"}</Badge>
+                    {r.bandStatus === "active" && <Badge variant="secondary" className="text-xs">Checked in</Badge>}
                   </div>
                 </li>
               ))}

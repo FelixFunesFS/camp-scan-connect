@@ -178,31 +178,30 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                 
                 {/* Desktop Table */}
                 <ResponsiveTable>
-                  <Table>
+                  <Table className="min-w-[680px] table-fixed">
                     <TableHeader className="sticky top-0 bg-background">
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Contact</TableHead>
-                        <TableHead>Ticket Type</TableHead>
-                        <TableHead>Site Location</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Check-in Time</TableHead>
+                        <TableHead className="w-[34%]">Attendee</TableHead>
+                        <TableHead className="w-[18%]">Ticket Type</TableHead>
+                        <TableHead className="w-[18%]">Site Location</TableHead>
+                        <TableHead className="w-[12%]">Method</TableHead>
+                        <TableHead className="w-[18%]">Check-in Time</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredRecent.slice(0, 20).map((attendee) => (
-                        <TableRow key={attendee.id}>
-                          <TableCell className="font-medium">{attendee.name}</TableCell>
+                        <TableRow key={attendee.id} className="align-top">
                           <TableCell>
-                            <div className="space-y-1">
+                            <div className="min-w-0 space-y-0.5">
+                              <div className="font-medium truncate">{attendee.name}</div>
                               {attendee.phone && (
-                                <div className="flex items-center gap-1 text-sm">
-                                  <Phone className="h-3 w-3" />
-                                  {formatPhoneNumber(attendee.phone)}
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Phone className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">{formatPhoneNumber(attendee.phone)}</span>
                                 </div>
                               )}
                               {attendee.email && (
-                                <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+                                <div className="truncate text-xs text-muted-foreground">
                                   {attendee.email}
                                 </div>
                               )}
@@ -214,7 +213,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                                 {formatTicketType(attendee.ticketType)}
                               </Badge>
                               {attendee.arrivalWindow && (
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-xs text-muted-foreground truncate">
                                   {attendee.arrivalWindow}
                                 </div>
                               )}
@@ -250,7 +249,7 @@ export const CheckInStatusTables = ({ refreshTrigger }: CheckInStatusTablesProps
                           </TableCell>
                           <TableCell>
                             {attendee.activatedAt && (
-                              <div className="text-sm">
+                              <div className="text-xs leading-snug">
                                 {formatStandardDateTimeET(attendee.activatedAt)}
                               </div>
                             )}
