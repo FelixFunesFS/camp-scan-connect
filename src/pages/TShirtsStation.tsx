@@ -104,13 +104,21 @@ function TShirtsContent({
       setSelectedOrderIds([]);
 
       const orderDetails = selectedOrders
-        .map(o => `${o.quantity > 1 ? `${o.quantity}× ` : ''}${o.productLine} ${o.style} ${o.size}`)
+        .map(o => `${o.productLine} ${o.style} ${o.size}`)
         .join(", ");
+      const stillPending = tshirtOrders.filter(
+        o => !o.isPickedUp && !selectedOrderIds.includes(o.id)
+      ).length;
       toast.success(
-        `T-shirts picked up by ${selectedRfid?.attendee?.first_name}: ${orderDetails}`
+        stillPending > 0
+          ? `Handed out to ${selectedRfid?.attendee?.first_name}: ${orderDetails} — ${stillPending} shirt${stillPending > 1 ? 's' : ''} still to collect`
+          : `T-shirts picked up by ${selectedRfid?.attendee?.first_name}: ${orderDetails}`
       );
 
-      setTimeout(() => onReset(), 2000);
+      if (stillPending === 0) {
+        setTimeout(() => onReset(), 2000);
+      }
+
     } catch (error) {
       console.error("Error processing t-shirt pickups:", error);
       toast.error("Failed to process t-shirt pickups");
