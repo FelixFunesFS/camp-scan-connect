@@ -156,6 +156,12 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
                 <span className="font-mono text-xs">#{attendee.order_id}</span>
               </div>
             )}
+
+            <TShirtSummaryBadge
+              summary={attendee.tshirt_summary}
+              orders={attendee.tshirt_orders}
+              showDetails={isExpanded}
+            />
           </div>
 
           {/* Credential Assignment Section - Always Visible */}
