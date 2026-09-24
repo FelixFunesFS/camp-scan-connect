@@ -57,6 +57,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { getStatusClassName, getStatusLabel } from "@/lib/registrationStatus";
+import { TShirtService } from "@/services/tshirtService";
+import { TShirtSummaryBadge } from "@/components/TShirtSummaryBadge";
 
 export interface AttendeeData {
   id: string;
@@ -86,6 +88,17 @@ export interface AttendeeData {
   group_assignment_progress?: { assigned: number; total: number; percentage: number };
   most_recent_activation_method?: string;
   most_recent_activation_at?: string;
+  tshirt_orders?: Array<{
+    id: string;
+    productLine: string;
+    style: string;
+    size: string;
+    quantity: number;
+    isPickedUp: boolean;
+    pickedUpCount?: number;
+    pickupTime?: string;
+  }>;
+  tshirt_summary?: { hasAnyTShirt: boolean; totalOrders: number; totalPickedUp: number };
 }
 
 const ROWS_PER_PAGE = 100;
