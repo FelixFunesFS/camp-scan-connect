@@ -785,6 +785,69 @@ export class TShirtService {
     if (assigned) return assigned.uid;
     return 'No wristband yet';
   }
+  /**
+   * Turn grouped orders (e.g. 2x Souvenir Unisex Large) into one row per physical
+   * garment so staff can hand out individual shirts during a shortage or size swap.
+   * Pickups are applied oldest-first, so already collected units settle at the top.
+   */
+  private static expandGroupsToUnits(
+    attendeeId: string,
+    groups: Array<{
+      productLine: TShirtProductLine;
+      style: string;
+      size: string;
+      quantity: number;
+      pickups: Array<{ created_at: string; extra_data: any }>;
+    }>
+  ): Array<{
+    id: string;
+    productLine: TShirtProductLine;
+    style: string;
+    size: string;
+    quantity: number;
+    isPickedUp: boolean;
+    pickupTime?: string;
+    pickedUpCount?: number;
+    unitIndex: number;
+    unitCount: number;
+  }> {
+    const units: Array<{
+      id: string;
+      productLine: TShirtProductLine;
+      style: string;
+      size: string;
+      quantity: number;
+      isPickedUp: boolean;
+      pickupTime?: string;
+      pickedUpCount?: number;
+      unitIndex: number;
+      unitCount: number;
+    }> = [];
+
+    groups.forEach((group, index) => {
+      const sortedPickups = [...group.pickups].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      for (let i = 0; i < group.quantity; i++) {
+        const pickup = sortedPickups[i];
+        units.push({
+          id: `${attendeeId}-${index}-u${i}`,
+          productLine: group.productLine,
+          style: group.style,
+          size: group.size,
+          quantity: 1,
+          isPickedUp: Boolean(pickup),
+          pickupTime: pickup?.created_at,
+          pickedUpCount: pickup ? 1 : 0,
+          unitIndex: i + 1,
+          unitCount: group.quantity,
+        });
+      }
+    });
+
+    return units;
+  }
+
 
   /**
    * Synchronous, network-free version of checkAttendeeHasTShirt.
