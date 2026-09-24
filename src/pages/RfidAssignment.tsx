@@ -1368,7 +1368,7 @@ export const RfidAssignment = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="mt-2 min-h-10 xl:hidden"
+                              className="mt-2 min-h-11 xl:hidden"
                               onClick={() => setSelectedAttendeeId(attendee.id)}
                             >
                               Details

@@ -87,7 +87,7 @@ export default function EquipmentTracker({
 
   // Just return the detailed checkout table - no stats, no collapsible wrapper
   return (
-    <div className="overflow-x-auto">
+    <div>
       {checkouts.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <div className="flex flex-col items-center gap-2">
@@ -98,7 +98,7 @@ export default function EquipmentTracker({
       ) : (
         <>
         {/* Mobile cards */}
-        <div className="md:hidden space-y-3">
+        <div className="grid gap-3 lg:hidden sm:grid-cols-2">
           {checkouts.map((checkout, index) => (
             <div
               key={`m-${checkout.attendeeId}-${index}`}
@@ -132,15 +132,16 @@ export default function EquipmentTracker({
             </div>
           ))}
         </div>
-        <Table className="hidden md:table">
+        <div className="hidden overflow-x-auto rounded-lg border lg:block">
+        <Table className="min-w-[720px] table-fixed">
 
           <TableHeader>
             <TableRow>
-              <TableHead>Attendee</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Checkout Date/Time</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Wristband</TableHead>
+               <TableHead className="w-[28%]">Attendee</TableHead>
+               <TableHead className="w-[20%]">Phone</TableHead>
+               <TableHead className="w-[25%]">Checkout Date/Time</TableHead>
+               <TableHead className="w-[12%]">Duration</TableHead>
+               <TableHead className="w-[15%]">Wristband</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -190,6 +191,7 @@ export default function EquipmentTracker({
             ))}
           </TableBody>
         </Table>
+        </div>
         </>
       )}
     </div>
