@@ -21,6 +21,7 @@ import FannyPacksStation from "./pages/FannyPacksStation";
 import TShirtsStation from "./pages/TShirtsStation";
 import MainGateStation from "./pages/MainGateStation";
 import EquipmentHub from "./pages/EquipmentHub";
+import TShirtHub from "./pages/TShirtHub";
 import AttendeeDetail from "./pages/AttendeeDetail";
 import DeveloperDashboard from "./pages/DeveloperDashboard";
 import Reports from "./pages/Reports";
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="/fanny-packs-station" element={staff(<FannyPacksStation />)} />
               <Route path="/tshirts-station" element={staff(<TShirtsStation />)} />
               <Route path="/main-gate-station" element={staff(<MainGateStation />)} />
+              <Route path="/tshirt-hub" element={staff(<TShirtHub />)} />
               <Route path="/equipment-hub" element={staff(<EquipmentHub />)} />
               <Route path="/attendee/:id" element={staff(<AttendeeDetail />)} />
               <Route path="/reports" element={staff(<Reports />)} />
