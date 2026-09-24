@@ -279,23 +279,55 @@ export default function TShirtHub() {
               aria-label="Search shirt orders"
             />
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={scannerOpen ? "default" : "outline"}
+              onClick={() => setScannerOpen((v) => !v)}
+              className="h-11 flex-1 justify-center"
+              aria-expanded={scannerOpen}
+            >
+              <ScanLine className="mr-2 h-4 w-4" />
+              {scannerOpen ? "Hide scanner" : "Scan wristband"}
+            </Button>
+            {search && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setSearch("")}
+                className="h-11 shrink-0 px-3"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+
+          {scannerOpen && (
+            <InlineCameraScanner
+              autoStart
+              compact
+              onScan={handleScan}
+              className="[&_video]:max-h-[32vh]"
+            />
+          )}
+
           <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
             <TabsList className="grid h-11 w-full grid-cols-3">
-              <TabsTrigger value="pending" className="h-9 text-xs sm:text-sm">To collect</TabsTrigger>
-              <TabsTrigger value="complete" className="h-9 text-xs sm:text-sm">Collected</TabsTrigger>
-              <TabsTrigger value="all" className="h-9 text-xs sm:text-sm">All</TabsTrigger>
+              <TabsTrigger value="pending" className="h-9 min-w-0 text-xs sm:text-sm">To collect</TabsTrigger>
+              <TabsTrigger value="complete" className="h-9 min-w-0 text-xs sm:text-sm">Collected</TabsTrigger>
+              <TabsTrigger value="all" className="h-9 min-w-0 text-xs sm:text-sm">All</TabsTrigger>
             </TabsList>
           </Tabs>
 
           {productLines.length > 1 && (
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
                 variant={productFilter === "all" ? "default" : "outline"}
                 onClick={() => setProductFilter("all")}
-                className="h-9 shrink-0"
+                className="h-9 max-w-full"
               >
-                All shirts
+                <span className="truncate">All shirts</span>
               </Button>
               {productLines.map((line) => (
                 <Button
@@ -303,9 +335,9 @@ export default function TShirtHub() {
                   size="sm"
                   variant={productFilter === line ? "default" : "outline"}
                   onClick={() => setProductFilter(line)}
-                  className="h-9 shrink-0"
+                  className="h-9 max-w-full"
                 >
-                  {line}
+                  <span className="truncate">{line}</span>
                 </Button>
               ))}
             </div>
