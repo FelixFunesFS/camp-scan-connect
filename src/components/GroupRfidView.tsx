@@ -175,14 +175,6 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
               Attendees grouped by order for bulk assignment
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={expandAllGroups}>
-              Expand All
-            </Button>
-            <Button variant="outline" size="sm" onClick={collapseAllGroups}>
-              Collapse All
-            </Button>
-          </div>
         </div>
       </CardHeader>
       <CardContent>

@@ -437,38 +437,6 @@ const Reports = () => {
           <div className="flex flex-wrap items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={expandAll}
-                  className="flex items-center gap-1"
-                >
-                  <Expand className="h-3 w-3" />
-                  Expand All
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Expand all report sections</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={collapseAll}
-                  className="flex items-center gap-1"
-                >
-                  <Minimize className="h-3 w-3" />
-                  Collapse All
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Collapse all report sections</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
                 <div>
                 <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as TimePeriod)}>
                   <SelectTrigger className="w-32">
