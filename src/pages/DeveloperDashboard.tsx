@@ -27,7 +27,7 @@ const DeveloperDashboard = () => {
       <div className="min-h-screen bg-background">
       <div className="border-b">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
               <Button
                 variant="ghost"
@@ -46,7 +46,7 @@ const DeveloperDashboard = () => {
                 </p>
               </div>
             </div>
-            <div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:w-auto">
+            <div className="flex w-full min-w-0 flex-wrap items-center gap-3 lg:w-auto">
             <EventYearSwitcher />
             <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/scan-test")}>
               <ScanBarcode className="h-4 w-4" />
@@ -71,7 +71,7 @@ const DeveloperDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="timeline" className="space-y-6">
-          <TabsList className="scroll-tabs h-auto gap-1 p-1 lg:grid lg:w-full lg:grid-cols-7">
+          <TabsList className="scroll-tabs flex justify-start sticky top-0 z-10 h-auto gap-1 p-1 xl:grid xl:w-full xl:grid-cols-7 [&>button]:min-h-11">
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="timeline" className="gap-2">
