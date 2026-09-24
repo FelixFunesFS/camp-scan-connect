@@ -39,6 +39,15 @@ interface HubPerson {
 
 const PAGE_SIZE = 25;
 
+const SIZE_ORDER = ["xs", "s", "sm", "small", "m", "md", "med", "medium", "l", "lg", "large", "xl", "2x", "2xl", "3x", "3xl", "4x", "4xl", "5x", "5xl"];
+
+function sizeRank(size: string): number {
+  const key = (size || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const idx = SIZE_ORDER.indexOf(key);
+  return idx === -1 ? 999 : idx;
+}
+
+
 export default function TShirtHub() {
   const [people, setPeople] = useState<HubPerson[]>([]);
   const [loading, setLoading] = useState(true);
