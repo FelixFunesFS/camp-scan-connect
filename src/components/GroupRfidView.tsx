@@ -122,14 +122,6 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
     setExpandedGroups(newExpanded);
   };
 
-  const expandAllGroups = () => {
-    const allOrderIds = orderGroups.map(group => group.orderId || 'individual').filter(Boolean);
-    setExpandedGroups(new Set(allOrderIds));
-  };
-
-  const collapseAllGroups = () => {
-    setExpandedGroups(new Set());
-  };
 
   const getGroupProgress = (group: any) => {
     const assigned = group.attendees.filter((att: AttendeeData) => att.rfid_uid && att.rfid_status === 'assigned').length;
@@ -174,14 +166,6 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
             <p className="text-sm text-muted-foreground">
               Attendees grouped by order for bulk assignment
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={expandAllGroups}>
-              Expand All
-            </Button>
-            <Button variant="outline" size="sm" onClick={collapseAllGroups}>
-              Collapse All
-            </Button>
           </div>
         </div>
       </CardHeader>
