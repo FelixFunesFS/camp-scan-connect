@@ -34,6 +34,7 @@ const TICKET_TYPE_META: Record<string, TicketTypeMeta> = {
   glamping: { label: 'Glamping', order: 8, style: style('primary') },
   staff: { label: 'Staff', order: 9, style: style('muted-foreground') },
   vendor: { label: 'Vendor', order: 10, style: style('muted-foreground') },
+  operational_worker: { label: 'Operational Worker', order: 10.5, style: style('info') },
   // Retained so archived 2025 rows still render with a friendly name.
   premium_power: { label: 'Premium (legacy)', order: 11, style: style('primary') },
 };

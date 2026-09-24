@@ -32,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import { RecentlyCheckedIn } from "@/components/reports/RecentlyCheckedIn";
 import { HeadphonesTracker } from "@/components/reports/HeadphonesTracker";
 import { TShirtTracker } from "@/components/reports/TShirtTracker";
+import { OperationalWorkersReport } from "@/components/reports/OperationalWorkersReport";
 import { AnalyticsCards } from "@/components/reports/AnalyticsCards";
 import { GateAccessReport } from "@/components/reports/GateAccessReport";
 import { CheckInStatusAndOnSite } from "@/components/reports/CheckInStatusAndOnSite";
@@ -378,6 +379,10 @@ const Reports = () => {
                 </MobileReportCard>
                 </section>
 
+                <section id="report-ops" className="scroll-mt-32">
+                  <OperationalWorkersReport refreshTrigger={refreshTrigger} />
+                </section>
+
                 <section id="report-status" data-report-section="status" className="scroll-mt-32">
                 <MobileReportCard
                   title="Currently On-Site"
@@ -678,6 +683,10 @@ const Reports = () => {
               <TShirtTracker refreshTrigger={refreshTrigger} />
             </CollapsibleContent>
           </Collapsible></section>
+
+          <section id="report-ops" className="scroll-mt-20">
+            <OperationalWorkersReport refreshTrigger={refreshTrigger} />
+          </section>
 
           {/* Currently On-Site */}
           <section id="report-status" data-report-section="status" className="scroll-mt-20"><Collapsible 

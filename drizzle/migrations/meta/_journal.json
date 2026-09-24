@@ -22,6 +22,13 @@
       "when": 1790120294521,
       "tag": "0002_site_detail",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790261586829,
+      "tag": "0003_add_operational_worker_ticket_type",
+      "breakpoints": true
     }
   ]
 }
