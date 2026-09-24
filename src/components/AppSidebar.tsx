@@ -74,11 +74,12 @@ const navigationItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useStaffAuth();
-  const isCollapsed = state === "collapsed";
+  // The mobile drawer is always fully expanded — only desktop collapses to icons
+  const isCollapsed = !isMobile && state === "collapsed";
   
   const isActive = (path: string) => {
     if (path === "/") {

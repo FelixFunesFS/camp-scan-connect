@@ -26,21 +26,30 @@ export function MobileActivationSuccess({
 }: MobileActivationSuccessProps) {
   const [isActivatingRemaining, setIsActivatingRemaining] = useState(false);
   
-  const newlyActivated = activationResult.attendee_details?.filter((attendee: any) => 
-    !attendee.was_already_active && attendee.can_use_services
-  ) || [];
-  
-  const alreadyActive = activationResult.attendee_details?.filter((attendee: any) => 
-    attendee.was_already_active
-  ) || [];
+  const details: any[] = activationResult.attendee_details || [];
 
-  const noRfidAttendees = activationResult.attendee_details?.filter((attendee: any) => 
-    !attendee.has_rfid
-  ) || [];
+  const newlyActivated = details.filter((attendee: any) =>
+    attendee.result === 'activated' || (attendee.result === undefined && !attendee.was_already_active && attendee.can_use_services)
+  );
 
-  const pendingRfidAttendees = activationResult.attendee_details?.filter((attendee: any) => 
-    attendee.has_rfid && !attendee.activated_at
-  ) || [];
+  const alreadyActive = details.filter((attendee: any) =>
+    attendee.result === 'already_active' || (attendee.result === undefined && attendee.was_already_active)
+  );
+
+  // Only truly unassigned wristbands belong here
+  const noRfidAttendees = details.filter((attendee: any) =>
+    attendee.result === 'blocked'
+      ? attendee.reason === 'needs_rfid'
+      : attendee.result === undefined && !attendee.has_rfid
+  );
+
+  const waiverBlocked = details.filter((attendee: any) =>
+    attendee.result === 'blocked' && attendee.reason === 'waiver_required'
+  );
+
+  const pendingRfidAttendees = details.filter((attendee: any) =>
+    attendee.result === undefined && attendee.has_rfid && !attendee.activated_at
+  );
 
   // Check for veterans who were thanked during this activation
   const veteransActivated = [...newlyActivated, ...alreadyActive].filter((attendee: any) => 
@@ -175,9 +184,8 @@ export function MobileActivationSuccess({
         <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
           <CardContent className="p-4">
             <div className="text-center">
-              <div className="text-2xl mb-2">🇺🇸</div>
               <h3 className="text-lg font-semibold text-blue-800 mb-2">
-                Thank You for Your Service!
+                Thank You for Your Service! 🇺🇸
               </h3>
               <p className="text-blue-700 text-sm mb-2">
                 {veteransActivated.length === 1 
