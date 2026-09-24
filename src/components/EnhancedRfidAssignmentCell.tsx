@@ -691,7 +691,7 @@ export const EnhancedRfidAssignmentCell = ({
   if (currentRfidUid && (currentRfidStatus === 'active' || currentRfidStatus === 'assigned')) {
     if (isReplacing) {
       return (
-        <div className="space-y-2 w-full sm:min-w-[300px] p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+        <div className="space-y-2 w-full xl:min-w-[300px] p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
           <label className="text-sm font-medium text-red-900 dark:text-red-100">
             Replace lost band <span className="font-mono">{currentRfidUid}</span>:
           </label>
@@ -756,7 +756,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     if (isEditing) {
       return (
-        <div className="w-full space-y-2 sm:min-w-[280px]">
+        <div className="w-full space-y-2 xl:min-w-[280px]">
           <div className="flex items-start gap-2">
             <div className="flex-1">
             <Input
@@ -829,7 +829,7 @@ export const EnhancedRfidAssignmentCell = ({
     }
 
     return (
-      <div className="flex w-full flex-col gap-2 sm:min-w-[280px] sm:flex-row sm:items-center">
+      <div className="flex w-full flex-col gap-2 xl:min-w-[280px] xl:flex-row xl:items-center">
         <div className="min-w-0 flex-1">
           <span className="font-mono text-sm font-medium break-all">{currentRfidUid}</span>
         </div>
@@ -919,9 +919,9 @@ export const EnhancedRfidAssignmentCell = ({
 
   // Show assignment input for unassigned attendees
   return (
-    <div className="flex w-full items-start gap-2 sm:min-w-[250px]">
+    <div className="flex w-full items-start gap-2 xl:min-w-[250px]">
       <div className="min-w-0 flex-1">
-        <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-2">
           <Button
             variant={scannerMode === 'camera' ? "default" : "outline"}
             size="sm"

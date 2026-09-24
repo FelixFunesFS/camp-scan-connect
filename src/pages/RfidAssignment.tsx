@@ -1250,136 +1250,113 @@ export const RfidAssignment = () => {
           {/* Data Table */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex flex-wrap items-center justify-between gap-3">
                 <span>Attendee Management</span>
-                <div className="text-sm text-muted-foreground">
-                  Showing {sortedAndPaginatedAttendees.length} of {filteredAttendees.length} attendees
+                <div className="flex flex-wrap items-center gap-2 text-sm font-normal">
+                  <span className="text-muted-foreground">
+                    Showing {sortedAndPaginatedAttendees.length} of {filteredAttendees.length}
+                  </span>
+                  <Select
+                    value={uiState.sortField}
+                    onValueChange={(v) => setUiState(prev => ({ ...prev, sortField: v as typeof prev.sortField, currentPage: 1 }))}
+                  >
+                    <SelectTrigger className="h-10 w-[200px]" aria-label="Sort attendees by">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="name">Sort: Name</SelectItem>
+                      <SelectItem value="phone">Sort: Phone</SelectItem>
+                      <SelectItem value="order">Sort: Order ID</SelectItem>
+                      <SelectItem value="meal_plan">Sort: Meal plan</SelectItem>
+                      <SelectItem value="arrival_day">Sort: Arrival day</SelectItem>
+                      <SelectItem value="waiver">Sort: Waiver</SelectItem>
+                      <SelectItem value="check_in_status">Sort: Check-in status</SelectItem>
+                      <SelectItem value="most_recent_activation">Sort: Recent activation</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-10"
+                    onClick={() => handleSort(uiState.sortField)}
+                    aria-label="Toggle sort direction"
+                  >
+                    {uiState.sortDirection === 'asc' ? 'A–Z ↑' : 'Z–A ↓'}
+                  </Button>
                 </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[600px] table-fixed [&_.badge-row>*]:whitespace-nowrap">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
-                        <div className="flex items-center gap-2">
-                          Name {getSortIcon('name')}
-                        </div>
+                      <TableHead className="w-[32%] xl:w-[24%] cursor-pointer" onClick={() => handleSort('name')}>
+                        <div className="flex items-center gap-2">Attendee {getSortIcon('name')}</div>
                       </TableHead>
-                      <TableHead className="cursor-pointer" onClick={() => handleSort('phone')}>
-                        <div className="flex items-center gap-2">
-                          Phone {getSortIcon('phone')}
-                        </div>
+                      <TableHead className="hidden xl:table-cell w-[16%]">Registration</TableHead>
+                      <TableHead className="w-[24%] xl:w-[18%] cursor-pointer" onClick={() => handleSort('check_in_status')}>
+                        <div className="flex items-center gap-2">Status {getSortIcon('check_in_status')}</div>
                       </TableHead>
-                      <TableHead className="cursor-pointer" onClick={() => handleSort('order')}>
-                        <div className="flex items-center gap-2">
-                          Order ID {getSortIcon('order')}
-                        </div>
-                      </TableHead>
-                      <TableHead className="cursor-pointer" onClick={() => handleSort('meal_plan')}>
-                        <div className="flex items-center gap-2">
-                          Meal Plan {getSortIcon('meal_plan')}
-                        </div>
-                      </TableHead>
-                      <TableHead className="cursor-pointer" onClick={() => handleSort('arrival_day')}>
-                        <div className="flex items-center gap-2">
-                          Arrival {getSortIcon('arrival_day')}
-                        </div>
-                      </TableHead>
-                      <TableHead className="cursor-pointer" onClick={() => handleSort('waiver')}>
-                        <div className="flex items-center gap-2">
-                          Waiver {getSortIcon('waiver')}
-                        </div>
-                      </TableHead>
-                      <TableHead className="cursor-pointer" onClick={() => handleSort('check_in_status')}>
-                        <div className="flex items-center gap-2">
-                          Status {getSortIcon('check_in_status')}
-                        </div>
-                      </TableHead>
-                      <TableHead className="cursor-pointer" onClick={() => handleSort('most_recent_activation')}>
-                        <div className="flex items-center gap-2">
-                          Most Recent Activation {getSortIcon('most_recent_activation')}
-                        </div>
-                      </TableHead>
-                      <TableHead>Registration</TableHead>
-                      <TableHead>Credential Assignment</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="w-[44%] xl:w-[30%]">Wristband</TableHead>
+                      <TableHead className="hidden xl:table-cell xl:w-[12%] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sortedAndPaginatedAttendees.map((attendee) => {
                       const enhancedStatus = enhancedStatuses[attendee.id] || getCheckInStatus(attendee.rfid_uid, attendee.activated_at, attendee.rfid_status);
                       return (
-                        <TableRow key={attendee.id} data-attendee-id={attendee.id}>
-                          <TableCell>
-                            <div className="font-medium">
+                        <TableRow key={attendee.id} data-attendee-id={attendee.id} className="align-top">
+                          <TableCell className="py-4">
+                            <div className="font-semibold leading-snug">
                               {attendee.first_name} {attendee.last_name}
                             </div>
-                            {attendee.email && (
-                              <div className="text-sm text-muted-foreground">{attendee.email}</div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {attendee.phone ? formatPhoneNumber(attendee.phone) : 'No phone'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-mono text-sm">
-                              {attendee.order_id || 'No order'}
+                            <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+                              {attendee.email && <div className="truncate" title={attendee.email}>{attendee.email}</div>}
+                              <div>{attendee.phone ? formatPhoneNumber(attendee.phone) : 'No phone'}</div>
+                              <div className="font-mono text-xs">Order {attendee.order_id || '—'}</div>
+                            </div>
+                            <div className="badge-row mt-2 xl:hidden">
+                              <Badge variant="outline" className={getStatusClassName(attendee.registration_status)}>
+                                {getStatusLabel(attendee.registration_status)}
+                              </Badge>
+                              <Badge variant={attendee.arrival_window === 'early' ? 'default' : 'outline'}>{attendee.arrival_day}</Badge>
+                              <Badge variant="secondary">{attendee.formatted_meal_plan}</Badge>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">
-                              {attendee.formatted_meal_plan}
-                            </Badge>
+                          <TableCell className="hidden xl:table-cell py-4">
+                            <div className="flex flex-col items-start gap-1.5">
+                              <Badge variant="outline" className={getStatusClassName(attendee.registration_status)}>
+                                {getStatusLabel(attendee.registration_status)}
+                              </Badge>
+                              <Badge variant={attendee.arrival_window === 'early' ? 'default' : 'outline'}>
+                                {attendee.arrival_day}
+                              </Badge>
+                              <Badge variant="secondary">{attendee.formatted_meal_plan}</Badge>
+                            </div>
                           </TableCell>
-                          <TableCell>
-                            <Badge variant={attendee.arrival_window === 'early' ? 'default' : 'outline'}>
-                              {attendee.arrival_day}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={attendee.waiver_signed ? 'default' : 'destructive'}>
-                              {attendee.waiver_signed ? 'Signed' : 'Not Signed'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={enhancedStatus.variant}>
-                              {enhancedStatus.icon} {enhancedStatus.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {attendee.most_recent_activation_method ? (
-                              <div className="space-y-1">
-                                <Badge variant={attendee.most_recent_activation_method === 'staff_assisted' ? 'default' : 'secondary'}>
-                                  {attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff Assisted' : 'Self Activated'}
-                                </Badge>
+                          <TableCell className="py-4">
+                            <div className="flex flex-col items-start gap-1.5">
+                              <Badge variant={enhancedStatus.variant} className="whitespace-nowrap">
+                                {enhancedStatus.icon} {enhancedStatus.label}
+                              </Badge>
+                              <Badge variant={attendee.waiver_signed ? 'default' : 'destructive'} className="whitespace-nowrap">
+                                Waiver {attendee.waiver_signed ? 'signed' : 'not signed'}
+                              </Badge>
+                              {attendee.most_recent_activation_method && attendee.most_recent_activation_at ? (
                                 <div className="text-xs text-muted-foreground">
-                                  {new Date(attendee.most_recent_activation_at!).toLocaleString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true
+                                  {attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff assisted' : 'Self activated'}
+                                  {' · '}
+                                  {new Date(attendee.most_recent_activation_at).toLocaleString('en-US', {
+                                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
                                   })}
                                 </div>
-                              </div>
-                            ) : (
-                              <Badge variant="outline" className="text-muted-foreground">
-                                Not Activated
-                              </Badge>
-                            )}
+                              ) : (
+                                <div className="text-xs text-muted-foreground">Not activated</div>
+                              )}
+                            </div>
                           </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={getStatusClassName(attendee.registration_status)}
-                            >
-                              {getStatusLabel(attendee.registration_status)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
+                          <TableCell className="py-4">
                             <EnhancedRfidAssignmentCell
                               attendeeId={attendee.id}
                               attendeeName={`${attendee.first_name} ${attendee.last_name}`}
@@ -1388,14 +1365,23 @@ export const RfidAssignment = () => {
                               onOptimisticUpdate={handleOptimisticUpdate}
                               onAssignmentComplete={() => {}}
                             />
-                          </TableCell>
-                          <TableCell>
                             <Button
                               variant="outline"
                               size="sm"
+                              className="mt-2 min-h-10 xl:hidden"
                               onClick={() => setSelectedAttendeeId(attendee.id)}
                             >
-                              View Details
+                              Details
+                            </Button>
+                          </TableCell>
+                          <TableCell className="hidden xl:table-cell py-4 text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="min-h-10"
+                              onClick={() => setSelectedAttendeeId(attendee.id)}
+                            >
+                              Details
                             </Button>
                           </TableCell>
                         </TableRow>
