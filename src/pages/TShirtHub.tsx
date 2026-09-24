@@ -136,21 +136,73 @@ export default function TShirtHub() {
   const stats = useMemo(() => {
     let ordered = 0;
     let picked = 0;
-    const sizes: Record<string, { ordered: number; picked: number }> = {};
+    // productLine -> style/fit -> size -> counts
+    const lines = new Map<
+      string,
+      {
+        ordered: number;
+        picked: number;
+        styles: Map<string, { ordered: number; picked: number; sizes: Map<string, { ordered: number; picked: number }> }>;
+      }
+    >();
+
     people.forEach((p) =>
       p.orders.forEach((o) => {
         if (productFilter !== "all" && o.productLine !== productFilter) return;
         const up = o.pickedUpCount ?? (o.isPickedUp ? o.quantity : 0);
         ordered += o.quantity;
         picked += up;
-        const key = o.size || "Unknown";
-        sizes[key] = sizes[key] || { ordered: 0, picked: 0 };
-        sizes[key].ordered += o.quantity;
-        sizes[key].picked += up;
+
+        const lineKey = o.productLine || "Other";
+        const styleKey = o.style || "T-Shirt";
+        const sizeKey = o.size || "Unknown";
+
+        if (!lines.has(lineKey)) lines.set(lineKey, { ordered: 0, picked: 0, styles: new Map() });
+        const line = lines.get(lineKey)!;
+        line.ordered += o.quantity;
+        line.picked += up;
+
+        if (!line.styles.has(styleKey))
+          line.styles.set(styleKey, { ordered: 0, picked: 0, sizes: new Map() });
+        const style = line.styles.get(styleKey)!;
+        style.ordered += o.quantity;
+        style.picked += up;
+
+        if (!style.sizes.has(sizeKey)) style.sizes.set(sizeKey, { ordered: 0, picked: 0 });
+        const size = style.sizes.get(sizeKey)!;
+        size.ordered += o.quantity;
+        size.picked += up;
       })
     );
-    return { ordered, picked, remaining: ordered - picked, sizes };
+
+    const inventory = Array.from(lines.entries())
+      .map(([productLine, line]) => ({
+        productLine,
+        ordered: line.ordered,
+        picked: line.picked,
+        remaining: line.ordered - line.picked,
+        styles: Array.from(line.styles.entries())
+          .map(([style, s]) => ({
+            style,
+            ordered: s.ordered,
+            picked: s.picked,
+            remaining: s.ordered - s.picked,
+            sizes: Array.from(s.sizes.entries())
+              .map(([size, v]) => ({
+                size,
+                ordered: v.ordered,
+                picked: v.picked,
+                remaining: v.ordered - v.picked,
+              }))
+              .sort((a, b) => sizeRank(a.size) - sizeRank(b.size) || a.size.localeCompare(b.size)),
+          }))
+          .sort((a, b) => a.style.localeCompare(b.style)),
+      }))
+      .sort((a, b) => a.productLine.localeCompare(b.productLine));
+
+    return { ordered, picked, remaining: ordered - picked, inventory };
   }, [people, productFilter]);
+
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
