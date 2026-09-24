@@ -160,15 +160,6 @@ export default function EquipmentHub() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate("/dashboard")}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Dashboard
-                </Button>
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="h-6 w-6" />
