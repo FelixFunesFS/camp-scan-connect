@@ -872,6 +872,9 @@ export class TShirtService {
       isPickedUp: boolean;
       pickupTime?: string;
       pickedUpCount?: number;
+      unitIndex?: number;
+      unitCount?: number;
+
     }>;
   } {
     const tshirtInfo = this.extractTShirtInfo(customFields);
