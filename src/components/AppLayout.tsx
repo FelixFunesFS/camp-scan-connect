@@ -43,7 +43,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 min-w-0 flex flex-col">
-          <header className="flex items-center gap-3 border-b px-4 sm:px-6 py-3">
+          {/* Phone-only menu button; desktop/tablet use the one inside the sidebar */}
+          <header className="flex items-center gap-3 border-b px-4 sm:px-6 py-3 md:hidden">
             <SidebarTrigger className="shrink-0" />
           </header>
           <main className="flex-1 p-4 sm:p-6 mobile-container">
