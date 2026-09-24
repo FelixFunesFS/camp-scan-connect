@@ -48,6 +48,16 @@ export default function TShirtHub() {
   const [selected, setSelected] = useState<Record<string, string[]>>({});
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [scannerOpen, setScannerOpen] = useState(false);
+
+  const handleScan = useCallback((code: string) => {
+    const value = (code || "").trim();
+    if (!value) return;
+    setSearch(value);
+    setFilter("all");
+    setScannerOpen(false);
+    toast.success(`Scanned band ${value}`);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
