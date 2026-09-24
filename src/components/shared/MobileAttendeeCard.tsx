@@ -70,7 +70,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
     
     return (
       <Badge variant="veteran" className="text-xs">
-        🇺🇸 Veteran
+        Veteran
       </Badge>
     );
   };
@@ -193,7 +193,7 @@ export const MobileAttendeeCard: React.FC<MobileAttendeeCardProps> = ({
               </div>
               {attendee.is_veteran && (
                 <p className="mt-2 text-xs font-medium text-primary">
-                  Thank you for your service.
+                  Thank you for your service! 🇺🇸
                 </p>
               )}
             </div>
