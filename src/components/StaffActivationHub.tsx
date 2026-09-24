@@ -303,8 +303,16 @@ export function StaffActivationHub() {
           t.station_type === 'drinks' && t.transaction_type === 'drink'
         ).length;
 
-        // Get enhanced t-shirt information with all orders
-        const tshirtData = await TShirtService.checkAttendeeHasTShirt(attendee.id);
+        // Enhanced t-shirt information computed in-memory from already-loaded data
+        const tshirtPickupTransactions = transactions.filter(t =>
+          t.station_type === 'tshirts' && t.transaction_type === 'tshirt_pickup'
+        );
+        const tshirtData = TShirtService.computeAttendeeTShirtInfo(
+          attendee.id,
+          attendee.custom_fields,
+          attendee.t_shirt_size,
+          tshirtPickupTransactions
+        );
         const tshirtOrders = tshirtData.orders || [];
         const tshirtSummary = {
           totalOrders: tshirtOrders.reduce((sum, order) => sum + order.quantity, 0), // Total items, not just order groups
