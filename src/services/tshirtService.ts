@@ -781,6 +781,97 @@ export class TShirtService {
     return 'No wristband yet';
   }
 
+  /**
+   * Synchronous, network-free version of checkAttendeeHasTShirt.
+   * Callers that already hold the attendee row and the station transactions
+   * (e.g. the Staff Hub roster) use this to avoid one query per attendee.
+   */
+  static computeAttendeeTShirtInfo(
+    attendeeId: string,
+    customFields: any,
+    tShirtSize: string | null | undefined,
+    pickupTransactions: Array<{ extra_data: any; created_at: string }>
+  ): {
+    hasTShirt: boolean;
+    size: string | null;
+    type: string | null;
+    orders: Array<{
+      id: string;
+      productLine: TShirtProductLine;
+      style: string;
+      size: string;
+      quantity: number;
+      isPickedUp: boolean;
+      pickupTime?: string;
+      pickedUpCount?: number;
+    }>;
+  } {
+    const tshirtInfo = this.extractTShirtInfo(customFields);
+
+    const orderGroups = new Map<string, {
+      productLine: TShirtProductLine;
+      style: string;
+      size: string;
+      quantity: number;
+      pickups: Array<{ created_at: string; extra_data: any }>;
+    }>();
+
+    tshirtInfo.purchaseDetails.forEach(detail => {
+      const key = `${detail.productLine}-${detail.type}-${detail.size}`;
+      if (orderGroups.has(key)) {
+        orderGroups.get(key)!.quantity++;
+      } else {
+        orderGroups.set(key, {
+          productLine: detail.productLine,
+          style: detail.type || 'T-Shirt',
+          size: detail.size || 'Unknown',
+          quantity: 1,
+          pickups: []
+        });
+      }
+    });
+
+    pickupTransactions.forEach(transaction => {
+      const extraData = transaction.extra_data as any;
+      const style = extraData?.tshirt_style;
+      const size = extraData?.tshirt_size;
+      const productLine = extraData?.product_line as TShirtProductLine | undefined;
+      const candidates = Array.from(orderGroups.values()).filter(group =>
+        group.style === style && group.size === size && (!productLine || group.productLine === productLine)
+      );
+      const target = candidates.find(group => group.pickups.length < group.quantity) ?? candidates[0];
+      if (target) {
+        const quantity = Math.max(1, Number(extraData?.quantity) || 1);
+        for (let i = 0; i < quantity; i++) target.pickups.push(transaction);
+      }
+    });
+
+    const orders = Array.from(orderGroups.values()).map((group, index) => {
+      const pickedUpCount = group.pickups.length;
+      const latestPickup = [...group.pickups].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )[0];
+
+      return {
+        id: `${attendeeId}-${index}`,
+        productLine: group.productLine,
+        style: group.style,
+        size: group.size,
+        quantity: group.quantity,
+        isPickedUp: pickedUpCount >= group.quantity,
+        pickupTime: latestPickup?.created_at,
+        pickedUpCount
+      };
+    });
+
+    return {
+      hasTShirt: tshirtInfo.hasAnyTShirt,
+      size: tShirtSize || tshirtInfo.size,
+      type: tshirtInfo.type,
+      orders
+    };
+  }
+
   static async checkAttendeeHasTShirt(attendeeId: string): Promise<{ 
     hasTShirt: boolean; 
     size: string | null; 
