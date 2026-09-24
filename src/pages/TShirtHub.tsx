@@ -26,7 +26,10 @@ interface HubOrder {
   isPickedUp: boolean;
   pickedUpCount?: number;
   pickupTime?: string;
+  unitIndex?: number;
+  unitCount?: number;
 }
+
 
 interface HubPerson {
   id: string;
