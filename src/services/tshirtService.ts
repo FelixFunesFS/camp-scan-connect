@@ -851,23 +851,8 @@ export class TShirtService {
       }
     });
 
-    const orders = Array.from(orderGroups.values()).map((group, index) => {
-      const pickedUpCount = group.pickups.length;
-      const latestPickup = [...group.pickups].sort((a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )[0];
+    const orders = this.expandGroupsToUnits(attendeeId, Array.from(orderGroups.values()));
 
-      return {
-        id: `${attendeeId}-${index}`,
-        productLine: group.productLine,
-        style: group.style,
-        size: group.size,
-        quantity: group.quantity,
-        isPickedUp: pickedUpCount >= group.quantity,
-        pickupTime: latestPickup?.created_at,
-        pickedUpCount
-      };
-    });
 
     return {
       hasTShirt: tshirtInfo.hasAnyTShirt,
