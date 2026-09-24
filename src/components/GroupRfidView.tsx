@@ -122,14 +122,6 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
     setExpandedGroups(newExpanded);
   };
 
-  const expandAllGroups = () => {
-    const allOrderIds = orderGroups.map(group => group.orderId || 'individual').filter(Boolean);
-    setExpandedGroups(new Set(allOrderIds));
-  };
-
-  const collapseAllGroups = () => {
-    setExpandedGroups(new Set());
-  };
 
   const getGroupProgress = (group: any) => {
     const assigned = group.attendees.filter((att: AttendeeData) => att.rfid_uid && att.rfid_status === 'assigned').length;
