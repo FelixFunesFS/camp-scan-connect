@@ -263,25 +263,30 @@ export default function TShirtHub() {
         </Card>
       )}
 
-      <Card>
-        <CardContent className="space-y-3 p-4">
+      <Card className="sticky top-0 z-20 shadow-sm">
+        <CardContent className="space-y-3 p-3 sm:p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, phone, order or wristband number"
-              className="h-11 pl-9"
+              placeholder="Search name, phone, order or band"
+              className="h-11 pl-9 text-base"
+              inputMode="search"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
               aria-label="Search shirt orders"
             />
           </div>
           <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="pending">To collect</TabsTrigger>
-              <TabsTrigger value="complete">Collected</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
+            <TabsList className="grid h-11 w-full grid-cols-3">
+              <TabsTrigger value="pending" className="h-9 text-xs sm:text-sm">To collect</TabsTrigger>
+              <TabsTrigger value="complete" className="h-9 text-xs sm:text-sm">Collected</TabsTrigger>
+              <TabsTrigger value="all" className="h-9 text-xs sm:text-sm">All</TabsTrigger>
             </TabsList>
           </Tabs>
+
           {productLines.length > 1 && (
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
               <Button
