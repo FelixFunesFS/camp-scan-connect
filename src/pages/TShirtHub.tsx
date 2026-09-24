@@ -561,12 +561,16 @@ export default function TShirtHub() {
                                 <ApparelProductBadge productLine={order.productLine as any} />
                                 <span className="break-words text-sm font-medium">
                                   {order.style} · {order.size}
-                                  {order.quantity > 1 ? ` ×${order.quantity}` : ""}
                                 </span>
+                                {(order.unitCount ?? 1) > 1 && (
+                                  <Badge variant="outline" className="text-[11px]">
+                                    Shirt {order.unitIndex} of {order.unitCount}
+                                  </Badge>
+                                )}
                               </div>
                               {order.pickupTime && (
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                  Last handed out {formatStandardDateTime(order.pickupTime)}
+                                  Handed out {formatStandardDateTime(order.pickupTime)}
                                 </p>
                               )}
                             </div>
@@ -577,7 +581,8 @@ export default function TShirtHub() {
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="shrink-0 text-xs">
-                                {picked}/{order.quantity}
+                                To collect
+
                               </Badge>
                             )}
                           </>
