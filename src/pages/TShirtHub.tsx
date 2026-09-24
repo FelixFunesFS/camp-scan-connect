@@ -337,22 +337,24 @@ export default function TShirtHub() {
               const chosen = selected[person.id] || [];
               return (
                 <Card key={person.id}>
-                  <CardContent className="space-y-3 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
+                  <CardContent className="space-y-3 p-3 sm:p-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
-                        <p className="truncate font-semibold">{person.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {person.phone ? formatPhoneNumber(person.phone) : "No phone"} · Order{" "}
-                          {person.orderId || "—"} · Band {person.rfidUid || "none"}
+                        <p className="break-words font-semibold leading-tight">{person.name}</p>
+                        <p className="break-words text-xs text-muted-foreground">
+                          {person.phone ? formatPhoneNumber(person.phone) : "No phone"}
+                          <span className="hidden sm:inline"> · Order {person.orderId || "—"}</span>
+                          {" · Band "}
+                          {person.rfidUid || "none"}
                         </p>
                       </div>
                       <Badge
                         variant="outline"
-                        className={
+                        className={`w-fit shrink-0 whitespace-nowrap ${
                           complete
                             ? "bg-success/10 text-success border-success/20"
                             : "bg-warning/10 text-warning border-warning/20"
-                        }
+                        }`}
                       >
                         {person.totalPickedUp}/{person.totalOrdered} handed out
                       </Badge>
@@ -362,22 +364,20 @@ export default function TShirtHub() {
                       {person.orders.map((order) => {
                         const picked = order.pickedUpCount ?? (order.isPickedUp ? order.quantity : 0);
                         const done = picked >= order.quantity;
-                        return (
-                          <li
-                            key={order.id}
-                            className="flex flex-wrap items-center gap-3 rounded-md border p-3"
-                          >
+                        const rowContent = (
+                          <>
                             {!done && (
                               <Checkbox
                                 checked={chosen.includes(order.id)}
                                 onCheckedChange={(c) => toggleOrder(person.id, order.id, c === true)}
+                                className="h-5 w-5 shrink-0"
                                 aria-label={`Select ${order.productLine} ${order.size} for ${person.name}`}
                               />
                             )}
                             <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-1.5">
                                 <ApparelProductBadge productLine={order.productLine as any} />
-                                <span className="text-sm font-medium">
+                                <span className="break-words text-sm font-medium">
                                   {order.style} · {order.size}
                                   {order.quantity > 1 ? ` ×${order.quantity}` : ""}
                                 </span>
@@ -389,19 +389,41 @@ export default function TShirtHub() {
                               )}
                             </div>
                             {done ? (
-                              <Badge className="bg-success text-success-foreground text-xs">
+                              <Badge className="shrink-0 bg-success text-success-foreground text-xs">
                                 <CheckCircle2 className="mr-1 h-3 w-3" />
                                 Collected
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="shrink-0 text-xs">
                                 {picked}/{order.quantity}
                               </Badge>
+                            )}
+                          </>
+                        );
+                        return (
+                          <li key={order.id}>
+                            {done ? (
+                              <div className="flex min-h-[56px] items-center gap-3 rounded-md border p-3">
+                                {rowContent}
+                              </div>
+                            ) : (
+                              <label
+                                className="flex min-h-[56px] cursor-pointer items-center gap-3 rounded-md border p-3 active:bg-muted/60"
+                                onClick={(e) => {
+                                  if ((e.target as HTMLElement).closest("button")) return;
+                                  if ((e.target as HTMLElement).getAttribute("role") === "checkbox") return;
+                                  e.preventDefault();
+                                  toggleOrder(person.id, order.id, !chosen.includes(order.id));
+                                }}
+                              >
+                                {rowContent}
+                              </label>
                             )}
                           </li>
                         );
                       })}
                     </ul>
+
 
                     {!complete && (
                       <Button
