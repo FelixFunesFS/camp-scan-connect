@@ -1288,18 +1288,18 @@ export const RfidAssignment = () => {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <Table className="min-w-[640px] table-fixed">
+                <Table className="min-w-[720px] table-fixed [&_.badge-row>*]:whitespace-nowrap">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[34%] xl:w-[26%] cursor-pointer" onClick={() => handleSort('name')}>
+                      <TableHead className="w-[28%] xl:w-[24%] cursor-pointer" onClick={() => handleSort('name')}>
                         <div className="flex items-center gap-2">Attendee {getSortIcon('name')}</div>
                       </TableHead>
                       <TableHead className="hidden xl:table-cell w-[16%]">Registration</TableHead>
-                      <TableHead className="w-[18%] cursor-pointer" onClick={() => handleSort('check_in_status')}>
+                      <TableHead className="w-[20%] xl:w-[18%] cursor-pointer" onClick={() => handleSort('check_in_status')}>
                         <div className="flex items-center gap-2">Status {getSortIcon('check_in_status')}</div>
                       </TableHead>
-                      <TableHead className="w-[32%] xl:w-[30%]">Wristband</TableHead>
-                      <TableHead className="w-[10%] text-right">Actions</TableHead>
+                      <TableHead className="w-[38%] xl:w-[30%]">Wristband</TableHead>
+                      <TableHead className="w-[14%] xl:w-[12%] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1337,10 +1337,10 @@ export const RfidAssignment = () => {
                           </TableCell>
                           <TableCell className="py-4">
                             <div className="flex flex-col items-start gap-1.5">
-                              <Badge variant={enhancedStatus.variant}>
+                              <Badge variant={enhancedStatus.variant} className="whitespace-nowrap">
                                 {enhancedStatus.icon} {enhancedStatus.label}
                               </Badge>
-                              <Badge variant={attendee.waiver_signed ? 'default' : 'destructive'}>
+                              <Badge variant={attendee.waiver_signed ? 'default' : 'destructive'} className="whitespace-nowrap">
                                 Waiver {attendee.waiver_signed ? 'signed' : 'not signed'}
                               </Badge>
                               {attendee.most_recent_activation_method && attendee.most_recent_activation_at ? (
