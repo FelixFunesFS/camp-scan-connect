@@ -1014,25 +1014,8 @@ export class TShirtService {
       });
 
       // Create final orders array
-      const orders = Array.from(orderGroups.entries()).map(([key, group], index) => {
-        const orderId = `${attendeeId}-${index}`;
-        const pickedUpCount = group.pickups.length;
-        const isFullyPickedUp = pickedUpCount >= group.quantity;
-        const latestPickup = group.pickups.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )[0];
-        
-        return {
-          id: orderId,
-          productLine: group.productLine,
-          style: group.style,
-          size: group.size,
-          quantity: group.quantity,
-          isPickedUp: isFullyPickedUp,
-          pickupTime: latestPickup?.created_at,
-          pickedUpCount // Internal tracking
-        };
-      });
+      const orders = this.expandGroupsToUnits(attendeeId, Array.from(orderGroups.values()));
+
 
       this.log(`T-Shirt Debug - Final orders being returned:`, orders);
 
