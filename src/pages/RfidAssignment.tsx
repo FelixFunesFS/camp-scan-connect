@@ -282,6 +282,20 @@ export const RfidAssignment = () => {
         }
       });
 
+      // T-shirt pickup transactions (single query, computed in memory per attendee)
+      const { data: tshirtTx } = await supabase
+        .from('station_transactions')
+        .select('attendee_id, extra_data, created_at')
+        .eq('event_id', getCurrentEventId())
+        .eq('station_type', 'tshirts')
+        .eq('transaction_type', 'tshirt_pickup');
+      const tshirtTxByAttendee = new Map<string, Array<{ extra_data: any; created_at: string }>>();
+      (tshirtTx || []).forEach((tx: any) => {
+        const list = tshirtTxByAttendee.get(tx.attendee_id) || [];
+        list.push({ extra_data: tx.extra_data, created_at: tx.created_at });
+        tshirtTxByAttendee.set(tx.attendee_id, list);
+      });
+
       const processedAttendees: AttendeeData[] = (data || []).map(attendee => {
         const rfidTags = (attendee as any).rfid_tags;
         const rfidTag = Array.isArray(rfidTags) ? rfidTags[0] : rfidTags;
