@@ -37,7 +37,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   // All other pages get sidebar navigation
   return (
     <SidebarProvider 
-      defaultOpen={true}
+      defaultOpen={false}
       className="min-h-screen"
     >
       <div className="min-h-screen flex w-full">
