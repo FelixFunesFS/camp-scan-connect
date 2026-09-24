@@ -216,7 +216,7 @@ export default function TShirtHub() {
       .sort((a, b) => a.productLine.localeCompare(b.productLine));
 
     return { ordered, picked, remaining: ordered - picked, inventory };
-  }, [people, productFilter]);
+  }, [people]);
 
 
   const filtered = useMemo(() => {
