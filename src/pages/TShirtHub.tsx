@@ -164,7 +164,6 @@ export default function TShirtHub() {
 
     people.forEach((p) =>
       p.orders.forEach((o) => {
-        if (productFilter !== "all" && o.productLine !== productFilter) return;
         const up = o.pickedUpCount ?? (o.isPickedUp ? o.quantity : 0);
         ordered += o.quantity;
         picked += up;
@@ -217,7 +216,7 @@ export default function TShirtHub() {
       .sort((a, b) => a.productLine.localeCompare(b.productLine));
 
     return { ordered, picked, remaining: ordered - picked, inventory };
-  }, [people, productFilter]);
+  }, [people]);
 
 
   const filtered = useMemo(() => {
