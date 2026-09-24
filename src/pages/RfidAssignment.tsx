@@ -221,6 +221,7 @@ export const RfidAssignment = () => {
           city,
           state,
           custom_fields,
+          t_shirt_size,
           site_location_assignment,
           site_detail,
           rfid_tags(uid, status, activated_at)
