@@ -263,7 +263,7 @@ function TShirtsContent({
                   disabled={availableOrders.length === 0}
                   className="flex-1"
                 >
-                  Select All Available
+                  Select all {availableOrders.length} shirts
                 </Button>
                 <Button
                   variant="outline"
