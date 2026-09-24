@@ -240,7 +240,7 @@ const Reports = () => {
                   variant="ghost"
                   size="icon"
                   aria-label="Back to dashboard"
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate("/dashboard")}
                   className="h-10 w-10 shrink-0"
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -417,7 +417,7 @@ const Reports = () => {
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/dashboard")}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />

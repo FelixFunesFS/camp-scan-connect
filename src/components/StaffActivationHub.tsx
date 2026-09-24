@@ -728,11 +728,11 @@ export function StaffActivationHub() {
               <div className="text-center">
                 <Button 
                   variant="outline"
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate("/dashboard")}
                   className="flex items-center gap-2"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Back to Main Hub
+                  Back to Dashboard
                 </Button>
               </div>
             </CardContent>
@@ -750,10 +750,10 @@ export function StaffActivationHub() {
           <div className="flex min-w-0 items-center gap-3">
             <Button 
               variant="outline" 
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/dashboard")}
               size="icon"
               className="h-11 w-11 shrink-0"
-              aria-label="Back to main hub"
+              aria-label="Back to dashboard"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
