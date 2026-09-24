@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow, format } from "date-fns";
 import { RefreshCw, Search, Filter, Database, Webhook, AlertCircle, CheckCircle, Clock, X, HelpCircle } from "lucide-react";
@@ -235,15 +234,42 @@ export const SyncHistoryTable = () => {
           </div>
 
           <TooltipProvider>
-            <ScrollArea className="h-[500px]">
-              <Table>
+            <div className="grid gap-3 lg:hidden sm:grid-cols-2">
+              {filteredEvents.map((event) => (
+                <article key={`card-${event.type}-${event.id}`} className="space-y-3 rounded-md border p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {getTypeIcon(event.type)}
+                      <span className="font-medium">{event.type === 'webhook' ? 'Webhook' : 'API Sync'}</span>
+                    </div>
+                    {getStatusBadge(event.status)}
+                  </div>
+                  <dl className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Time</dt>
+                      <dd>{format(new Date(event.timestamp), 'MMM d, HH:mm')}</dd>
+                      <dd className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Processed</dt>
+                      <dd>{event.records || 0} record{event.records === 1 ? '' : 's'}</dd>
+                      <dd className="text-xs text-muted-foreground">{event.duration !== undefined ? `${event.duration}s` : 'No duration'}</dd>
+                    </div>
+                  </dl>
+                  <p className="break-words text-sm">{event.details}</p>
+                  {event.error && <p className="rounded bg-destructive/10 p-2 text-xs text-destructive">{event.error}</p>}
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto rounded-md border lg:block">
+              <Table className="min-w-[820px] table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[100px]">Type</TableHead>
-                    <TableHead className="w-[120px]">Status</TableHead>
-                    <TableHead className="w-[150px]">Timestamp</TableHead>
-                    <TableHead className="w-[100px]">Duration</TableHead>
-                    <TableHead className="w-[100px]">
+                    <TableHead className="w-[14%]">Type</TableHead>
+                    <TableHead className="w-[16%]">Status</TableHead>
+                    <TableHead className="w-[18%]">Timestamp</TableHead>
+                    <TableHead className="w-[10%]">Duration</TableHead>
+                    <TableHead className="w-[10%]">
                       <div className="flex items-center gap-1">
                         Records
                         <Tooltip>
@@ -259,7 +285,7 @@ export const SyncHistoryTable = () => {
                         </Tooltip>
                       </div>
                     </TableHead>
-                    <TableHead>Details</TableHead>
+                    <TableHead className="w-[32%]">Details</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -330,7 +356,13 @@ export const SyncHistoryTable = () => {
                   <p>No events found matching your filters</p>
                 </div>
               )}
-            </ScrollArea>
+            </div>
+            {filteredEvents.length === 0 && !loading && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No events found matching your filters</p>
+              </div>
+            )}
           </TooltipProvider>
         </CardContent>
       </Card>

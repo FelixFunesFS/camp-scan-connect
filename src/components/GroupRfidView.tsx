@@ -40,7 +40,7 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
   onOptimisticUpdate,
   searchTerm 
 }) => {
-  const isMobile = useIsMobile();
+  const isCompact = useIsMobile(1024);
   const [sortField, setSortField] = useState<SortField>('order_id');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -146,7 +146,7 @@ export const GroupRfidView: React.FC<GroupRfidViewProps> = ({
     );
   }
 
-  if (isMobile) {
+  if (isCompact) {
     return (
       <MobileOrderGroupList
         attendees={attendees}
