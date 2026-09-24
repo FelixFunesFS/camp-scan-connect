@@ -200,8 +200,9 @@ Deno.serve(async (req) => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')!}`,
       'apikey': Deno.env.get('SUPABASE_ANON_KEY')!,
+      'x-regfox-internal': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     },
     body: JSON.stringify({ sync_type: 'webhook', event_id: event.id, registration_id: registrationId || null }),
   });
