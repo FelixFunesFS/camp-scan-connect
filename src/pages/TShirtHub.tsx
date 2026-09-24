@@ -60,6 +60,8 @@ export default function TShirtHub() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [openLines, setOpenLines] = useState<string[]>([]);
+
 
   const handleScan = useCallback((code: string) => {
     const value = (code || "").trim();
