@@ -71,7 +71,7 @@ const DeveloperDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="timeline" className="space-y-6">
-          <TabsList className="scroll-tabs sticky top-0 z-10 h-auto gap-1 p-1 xl:grid xl:w-full xl:grid-cols-7 [&>button]:min-h-11">
+          <TabsList className="scroll-tabs flex justify-start sticky top-0 z-10 h-auto gap-1 p-1 xl:grid xl:w-full xl:grid-cols-7 [&>button]:min-h-11">
             <Tooltip>
               <TooltipTrigger asChild>
                 <TabsTrigger value="timeline" className="gap-2">
