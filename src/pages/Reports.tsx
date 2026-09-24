@@ -435,6 +435,14 @@ const Reports = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={expandAll} className="flex items-center gap-1">
+              <Expand className="h-3 w-3" />
+              Expand All
+            </Button>
+            <Button variant="outline" size="sm" onClick={collapseAll} className="flex items-center gap-1">
+              <Minimize className="h-3 w-3" />
+              Collapse All
+            </Button>
             <Tooltip>
               <TooltipTrigger asChild>
                 <div>
