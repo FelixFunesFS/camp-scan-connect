@@ -287,7 +287,7 @@ function TShirtsContent({
                     Processing Pickups...
                   </div>
                 ) : (
-                  `Process ${selectedOrderIds.length} Selected Pickup${selectedOrderIds.length !== 1 ? 's' : ''}`
+                  `Hand out ${selectedOrderIds.length} of ${availableOrders.length} shirt${availableOrders.length !== 1 ? 's' : ''}`
                 )}
               </Button>
             </div>
