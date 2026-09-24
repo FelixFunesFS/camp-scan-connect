@@ -1387,6 +1387,11 @@ export const RfidAssignment = () => {
                               <Badge variant={attendee.waiver_signed ? 'default' : 'destructive'} className="whitespace-nowrap">
                                 Waiver {attendee.waiver_signed ? 'signed' : 'not signed'}
                               </Badge>
+                              <TShirtSummaryBadge
+                                summary={attendee.tshirt_summary}
+                                orders={attendee.tshirt_orders}
+                                showDetails
+                              />
                               {attendee.most_recent_activation_method && attendee.most_recent_activation_at ? (
                                 <div className="text-xs text-muted-foreground">
                                   {attendee.most_recent_activation_method === 'staff_assisted' ? 'Staff assisted' : 'Self activated'}
