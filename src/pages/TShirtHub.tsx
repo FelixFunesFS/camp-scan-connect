@@ -313,27 +313,98 @@ export default function TShirtHub() {
       </div>
 
 
-      {Object.keys(stats.sizes).length > 0 && (
+      {stats.inventory.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Package className="h-4 w-4" />
-              Remaining by size
+            <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
+              <span className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Shirts left by style, fit and size
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2 text-xs"
+                onClick={() =>
+                  setOpenLines(
+                    openLines.length === stats.inventory.length
+                      ? []
+                      : stats.inventory.map((l) => l.productLine)
+                  )
+                }
+              >
+                {openLines.length === stats.inventory.length ? "Collapse all" : "Expand all"}
+              </Button>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(stats.sizes)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([size, v]) => (
-                  <Badge key={size} variant="outline" className="text-xs">
-                    {size}: {v.ordered - v.picked} left of {v.ordered}
-                  </Badge>
-                ))}
-            </div>
+          <CardContent className="space-y-2">
+            {stats.inventory.map((line) => {
+              const open = openLines.includes(line.productLine);
+              return (
+                <Collapsible
+                  key={line.productLine}
+                  open={open}
+                  onOpenChange={(v) =>
+                    setOpenLines((prev) =>
+                      v ? [...prev, line.productLine] : prev.filter((l) => l !== line.productLine)
+                    )
+                  }
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex min-h-[56px] w-full items-center justify-between gap-2 rounded-md border p-3 text-left active:bg-muted/60"
+                    >
+                      <span className="flex min-w-0 flex-wrap items-center gap-2">
+                        <ApparelProductBadge productLine={line.productLine as any} />
+                        <span className="text-sm text-muted-foreground">
+                          {line.remaining} to collect of {line.ordered}
+                        </span>
+                      </span>
+                      <ChevronDown
+                        className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 px-1 pb-2 pt-3">
+                    {line.styles.map((style) => (
+                      <div key={style.style} className="space-y-2">
+                        <div className="flex flex-wrap items-baseline justify-between gap-1">
+                          <p className="break-words text-sm font-medium">{style.style}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {style.remaining} left of {style.ordered}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 xs:grid-cols-4 sm:grid-cols-6 lg:grid-cols-8">
+                          {style.sizes.map((s) => (
+                            <div
+                              key={s.size}
+                              className="rounded-md border bg-muted/40 p-2 text-center"
+                            >
+                              <p className="truncate text-[11px] uppercase text-muted-foreground">
+                                {s.size}
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {s.remaining}
+                                <span className="text-xs font-normal text-muted-foreground">
+                                  {" "}
+                                  / {s.ordered}
+                                </span>
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
           </CardContent>
         </Card>
       )}
+
 
       <Card className="sticky top-0 z-20 shadow-sm">
         <CardContent className="space-y-3 p-3 sm:p-4">
