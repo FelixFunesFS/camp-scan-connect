@@ -333,6 +333,32 @@ export function MobileActivationSuccess({
               </div>
             </div>
           )}
+
+          {/* Waiver Required */}
+          {waiverBlocked.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-md font-medium text-blue-700">✍️ Waiver Required</h4>
+              <div className="space-y-2">
+                {waiverBlocked.map((attendee: any, index: number) => (
+                  <MobileAttendeeCard
+                    key={`waiver-${index}`}
+                    attendee={{
+                      name: attendee.name,
+                      phone: phoneNumber,
+                      order_id: attendee.order_id,
+                      ticket_type: attendee.ticket_type,
+                      rfid_uid: attendee.rfid_uid ?? null,
+                      activated_at: null,
+                      meal_plan: attendee.meal_plan,
+                      arrival_window: attendee.arrival_window,
+                      is_activated: false
+                    }}
+                    type="direct"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
