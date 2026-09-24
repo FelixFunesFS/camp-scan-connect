@@ -194,43 +194,52 @@ export default function TShirtHub() {
   };
 
   return (
-    <div className="container mx-auto space-y-6 p-4 sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-muted p-3">
-            <Shirt className="h-6 w-6" />
+    <div className="container mx-auto space-y-4 p-3 pb-24 sm:space-y-6 sm:p-6">
+      <div className="flex flex-row items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className="rounded-lg bg-muted p-2 sm:p-3">
+            <Shirt className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold sm:text-3xl">T-Shirt Hub</h1>
-            <p className="text-sm text-muted-foreground">Search shirt orders and hand out shirts</p>
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-bold sm:text-3xl">T-Shirt Hub</h1>
+            <p className="truncate text-xs text-muted-foreground sm:text-sm">
+              Search shirt orders and hand out shirts
+            </p>
           </div>
         </div>
-        <Button variant="outline" onClick={load} disabled={loading} className="h-11">
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+        <Button
+          variant="outline"
+          onClick={load}
+          disabled={loading}
+          className="h-11 w-11 shrink-0 p-0 sm:w-auto sm:px-4"
+          aria-label="Refresh shirt orders"
+        >
+          <RefreshCw className={`h-4 w-4 sm:mr-2 ${loading ? "animate-spin" : ""}`} />
+          <span className="hidden sm:inline">Refresh</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Shirts ordered</p>
-            <p className="text-2xl font-bold">{stats.ordered}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[11px] leading-tight text-muted-foreground sm:text-sm">Ordered</p>
+            <p className="text-xl font-bold sm:text-2xl">{stats.ordered}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Handed out</p>
-            <p className="text-2xl font-bold text-success">{stats.picked}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[11px] leading-tight text-muted-foreground sm:text-sm">Handed out</p>
+            <p className="text-xl font-bold text-success sm:text-2xl">{stats.picked}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Still to collect</p>
-            <p className="text-2xl font-bold text-warning">{stats.remaining}</p>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[11px] leading-tight text-muted-foreground sm:text-sm">To collect</p>
+            <p className="text-xl font-bold text-warning sm:text-2xl">{stats.remaining}</p>
           </CardContent>
         </Card>
       </div>
+
 
       {Object.keys(stats.sizes).length > 0 && (
         <Card>
