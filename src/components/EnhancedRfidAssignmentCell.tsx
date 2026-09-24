@@ -921,7 +921,7 @@ export const EnhancedRfidAssignmentCell = ({
   return (
     <div className="flex w-full items-start gap-2 xl:min-w-[250px]">
       <div className="min-w-0 flex-1">
-        <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="mb-2 grid grid-cols-1 gap-2 xl:grid-cols-2">
           <Button
             variant={scannerMode === 'camera' ? "default" : "outline"}
             size="sm"
