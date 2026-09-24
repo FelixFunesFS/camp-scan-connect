@@ -9,3 +9,6 @@
 - [ ] Add accessible quick-jump navigation and responsive report sections
 - [ ] Audit and harden every camper, staff, admin, and station page for mobile viewing and transactions
 - [ ] Verify critical workflows at phone, tablet, and desktop widths
+- [ ] Rebuild Recently Checked In for readable phone, tablet, and desktop layouts
+- [ ] Move T-Shirt Distribution above Main Gate Access in Reports
+- [ ] Standardize table/card breakpoints and accessible data presentation site-wide
