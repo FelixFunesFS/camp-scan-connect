@@ -9,6 +9,7 @@ import { getCheckInStatus, getEnhancedCheckInStatus } from "@/utils/statusUtils"
 import type { AttendeeData } from "@/pages/RfidAssignment";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { getStatusClassName, getStatusLabel } from "@/lib/registrationStatus";
+import { TShirtSummaryBadge } from "@/components/TShirtSummaryBadge";
 
 interface MobileRfidAssignmentCardProps {
   attendee: AttendeeData;
