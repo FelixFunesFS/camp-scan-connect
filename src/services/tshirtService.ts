@@ -54,7 +54,12 @@ export interface TShirtOrder {
   quantity: number;
   isPickedUp: boolean;
   pickupTime?: string;
+  /** 1-based position of this garment within its identical-order group. */
+  unitIndex?: number;
+  /** How many identical garments were ordered in this group. */
+  unitCount?: number;
 }
+
 
 export class TShirtService {
   /** Verbose parser logging. Off by default — thousands of lines on a full sync otherwise. */
