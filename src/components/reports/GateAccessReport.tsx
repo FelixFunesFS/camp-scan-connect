@@ -352,10 +352,13 @@ export const GateAccessReport = ({ selectedPeriod, refreshTrigger }: GateAccessR
                 <BarChart data={gateData.hourlyActivity}>
                   <XAxis 
                     dataKey="hour" 
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 11 }}
                     tickFormatter={formatHour}
+                    interval="preserveStartEnd"
+                    minTickGap={28}
+                    tickMargin={6}
                   />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 11 }} width={32} allowDecimals={false} />
                   <Tooltip 
                     formatter={(value, name) => [value, name === 'entries' ? 'Entries' : 'Exits']}
                     labelFormatter={(hour) => `Time: ${formatHour(hour)}`}

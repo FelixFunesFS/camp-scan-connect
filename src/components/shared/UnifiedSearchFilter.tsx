@@ -88,14 +88,14 @@ export const UnifiedSearchFilter: React.FC<UnifiedSearchFilterProps> = ({
 
         {/* Quick Filters */}
         {quickFilters.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="scroll-tabs -mx-1 flex gap-2 px-1 xl:flex-wrap xl:overflow-visible">
             {quickFilters.map((filter) => (
               <Button
                 key={filter.key}
                 variant={activeQuickFilters.includes(filter.key) ? "default" : "outline"}
                 size="sm"
                 onClick={() => onQuickFilterChange?.(filter.key, !activeQuickFilters.includes(filter.key))}
-                className="text-xs touch-target"
+                className="min-h-11 shrink-0 whitespace-nowrap text-xs xl:min-h-9"
               >
                 {filter.label}
                 {filter.count !== undefined && (
