@@ -184,11 +184,15 @@ function TShirtsContent({
               <Package className="h-6 w-6 text-primary" />
             </div>
             <div className="text-lg font-medium">
-              T-Shirt Orders ({tshirtOrders.reduce((sum, order) => sum + order.quantity, 0)} items, {tshirtOrders.length} order groups)
+              T-Shirt Order ({tshirtOrders.length} {tshirtOrders.length === 1 ? 'shirt' : 'shirts'})
             </div>
             <div className="text-sm text-muted-foreground">
-              {pickedUpOrders.reduce((sum, order) => sum + order.quantity, 0)} items picked up • {availableOrders.reduce((sum, order) => sum + order.quantity, 0)} items remaining
+              {pickedUpOrders.length} handed out • {availableOrders.length} still to collect
             </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Hand out each shirt individually if a size or stock issue comes up.
+            </div>
+
           </div>
 
           {/* Order Selection List */}
