@@ -383,7 +383,7 @@ export default function TShirtHub() {
                             {style.remaining} left of {style.ordered}
                           </p>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 xs:grid-cols-4 sm:grid-cols-6 lg:grid-cols-8">
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-8">
                           {style.sizes.map((s) => (
                             <div
                               key={s.size}
