@@ -517,6 +517,10 @@ export default function TShirtHub() {
             {filtered.slice(0, visibleCount).map((person) => {
               const complete = person.totalPickedUp >= person.totalOrdered;
               const chosen = selected[person.id] || [];
+              const pendingIds = person.orders
+                .filter((o) => !(o.pickedUpCount ?? (o.isPickedUp ? o.quantity : 0)))
+                .map((o) => o.id);
+
               return (
                 <Card key={person.id}>
                   <CardContent className="space-y-3 p-3 sm:p-4">
