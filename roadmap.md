@@ -6,9 +6,9 @@
 - [x] Consolidate Staff Hub waiver signing, records, attendee management, and header
 - [ ] Configure the shared RegFox webhook signing secret and add the endpoint in RegFox (waiting for user)
 - [ ] Distinguish all five apparel product lines, styles, sizes, and per-item pickups
-- [ ] Add accessible quick-jump navigation and responsive report sections
-- [ ] Audit and harden every camper, staff, admin, and station page for mobile viewing and transactions
+- [x] Add accessible quick-jump navigation and responsive report sections
+- [x] Audit and harden every camper, staff, admin, and station page for mobile viewing and transactions
 - [ ] Verify critical workflows at phone, tablet, and desktop widths
-- [ ] Rebuild Recently Checked In for readable phone, tablet, and desktop layouts
-- [ ] Move T-Shirt Distribution above Main Gate Access in Reports
-- [ ] Standardize table/card breakpoints and accessible data presentation site-wide
+- [x] Rebuild Recently Checked In for readable phone, tablet, and desktop layouts
+- [x] Move T-Shirt Distribution above Main Gate Access in Reports
+- [x] Standardize table/card breakpoints and accessible data presentation site-wide

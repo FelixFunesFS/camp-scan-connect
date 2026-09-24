@@ -228,11 +228,11 @@ export const RecentlyCheckedIn = ({ refreshTrigger, embedded = false }: Recently
             <Table className="min-w-[920px] table-fixed">
               <TableHeader className="sticky top-0 bg-background">
                 <TableRow>
-                  <TableHead className="w-[28%]">Camper &amp; Contact</TableHead>
-                  <TableHead className="w-[22%]">Registration &amp; Stay</TableHead>
-                  <TableHead className="w-[16%]">Arrival</TableHead>
-                  <TableHead className="w-[22%]">Check-in</TableHead>
-                  <TableHead className="w-[12%]">Method</TableHead>
+                  <TableHead scope="col" className="w-[28%]">Camper &amp; Contact</TableHead>
+                  <TableHead scope="col" className="w-[22%]">Registration &amp; Stay</TableHead>
+                  <TableHead scope="col" className="w-[16%]">Arrival</TableHead>
+                  <TableHead scope="col" className="w-[22%]">Check-in</TableHead>
+                  <TableHead scope="col" className="w-[12%]">Method</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
