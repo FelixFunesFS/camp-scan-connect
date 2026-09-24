@@ -310,6 +310,16 @@ export const RfidAssignment = () => {
         ) || 'Not Assigned';
         
         const activation = activationMap.get(attendee.id);
+
+        const tshirtInfo = TShirtService.computeAttendeeTShirtInfo(
+          attendee.id,
+          (attendee as any).custom_fields,
+          (attendee as any).t_shirt_size,
+          tshirtTxByAttendee.get(attendee.id) || []
+        );
+        const totalOrders = tshirtInfo.orders.reduce((sum, o) => sum + o.quantity, 0);
+        const totalPickedUp = tshirtInfo.orders.reduce((sum, o) => sum + (o.pickedUpCount ?? (o.isPickedUp ? o.quantity : 0)), 0);
+        
         
         return {
           id: attendee.id,
