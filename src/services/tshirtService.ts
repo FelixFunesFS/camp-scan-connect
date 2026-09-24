@@ -54,7 +54,12 @@ export interface TShirtOrder {
   quantity: number;
   isPickedUp: boolean;
   pickupTime?: string;
+  /** 1-based position of this garment within its identical-order group. */
+  unitIndex?: number;
+  /** How many identical garments were ordered in this group. */
+  unitCount?: number;
 }
+
 
 export class TShirtService {
   /** Verbose parser logging. Off by default — thousands of lines on a full sync otherwise. */
@@ -780,6 +785,69 @@ export class TShirtService {
     if (assigned) return assigned.uid;
     return 'No wristband yet';
   }
+  /**
+   * Turn grouped orders (e.g. 2x Souvenir Unisex Large) into one row per physical
+   * garment so staff can hand out individual shirts during a shortage or size swap.
+   * Pickups are applied oldest-first, so already collected units settle at the top.
+   */
+  private static expandGroupsToUnits(
+    attendeeId: string,
+    groups: Array<{
+      productLine: TShirtProductLine;
+      style: string;
+      size: string;
+      quantity: number;
+      pickups: Array<{ created_at: string; extra_data: any }>;
+    }>
+  ): Array<{
+    id: string;
+    productLine: TShirtProductLine;
+    style: string;
+    size: string;
+    quantity: number;
+    isPickedUp: boolean;
+    pickupTime?: string;
+    pickedUpCount?: number;
+    unitIndex: number;
+    unitCount: number;
+  }> {
+    const units: Array<{
+      id: string;
+      productLine: TShirtProductLine;
+      style: string;
+      size: string;
+      quantity: number;
+      isPickedUp: boolean;
+      pickupTime?: string;
+      pickedUpCount?: number;
+      unitIndex: number;
+      unitCount: number;
+    }> = [];
+
+    groups.forEach((group, index) => {
+      const sortedPickups = [...group.pickups].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      for (let i = 0; i < group.quantity; i++) {
+        const pickup = sortedPickups[i];
+        units.push({
+          id: `${attendeeId}-${index}-u${i}`,
+          productLine: group.productLine,
+          style: group.style,
+          size: group.size,
+          quantity: 1,
+          isPickedUp: Boolean(pickup),
+          pickupTime: pickup?.created_at,
+          pickedUpCount: pickup ? 1 : 0,
+          unitIndex: i + 1,
+          unitCount: group.quantity,
+        });
+      }
+    });
+
+    return units;
+  }
+
 
   /**
    * Synchronous, network-free version of checkAttendeeHasTShirt.
@@ -804,6 +872,9 @@ export class TShirtService {
       isPickedUp: boolean;
       pickupTime?: string;
       pickedUpCount?: number;
+      unitIndex?: number;
+      unitCount?: number;
+
     }>;
   } {
     const tshirtInfo = this.extractTShirtInfo(customFields);
@@ -846,23 +917,8 @@ export class TShirtService {
       }
     });
 
-    const orders = Array.from(orderGroups.values()).map((group, index) => {
-      const pickedUpCount = group.pickups.length;
-      const latestPickup = [...group.pickups].sort((a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )[0];
+    const orders = this.expandGroupsToUnits(attendeeId, Array.from(orderGroups.values()));
 
-      return {
-        id: `${attendeeId}-${index}`,
-        productLine: group.productLine,
-        style: group.style,
-        size: group.size,
-        quantity: group.quantity,
-        isPickedUp: pickedUpCount >= group.quantity,
-        pickupTime: latestPickup?.created_at,
-        pickedUpCount
-      };
-    });
 
     return {
       hasTShirt: tshirtInfo.hasAnyTShirt,
@@ -884,6 +940,10 @@ export class TShirtService {
       quantity: number;
       isPickedUp: boolean;
       pickupTime?: string;
+      pickedUpCount?: number;
+      unitIndex?: number;
+      unitCount?: number;
+
     }>;
   }> {
     try {
@@ -958,25 +1018,8 @@ export class TShirtService {
       });
 
       // Create final orders array
-      const orders = Array.from(orderGroups.entries()).map(([key, group], index) => {
-        const orderId = `${attendeeId}-${index}`;
-        const pickedUpCount = group.pickups.length;
-        const isFullyPickedUp = pickedUpCount >= group.quantity;
-        const latestPickup = group.pickups.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )[0];
-        
-        return {
-          id: orderId,
-          productLine: group.productLine,
-          style: group.style,
-          size: group.size,
-          quantity: group.quantity,
-          isPickedUp: isFullyPickedUp,
-          pickupTime: latestPickup?.created_at,
-          pickedUpCount // Internal tracking
-        };
-      });
+      const orders = this.expandGroupsToUnits(attendeeId, Array.from(orderGroups.values()));
+
 
       this.log(`T-Shirt Debug - Final orders being returned:`, orders);
 

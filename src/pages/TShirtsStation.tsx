@@ -104,13 +104,21 @@ function TShirtsContent({
       setSelectedOrderIds([]);
 
       const orderDetails = selectedOrders
-        .map(o => `${o.quantity > 1 ? `${o.quantity}× ` : ''}${o.productLine} ${o.style} ${o.size}`)
+        .map(o => `${o.productLine} ${o.style} ${o.size}`)
         .join(", ");
+      const stillPending = tshirtOrders.filter(
+        o => !o.isPickedUp && !selectedOrderIds.includes(o.id)
+      ).length;
       toast.success(
-        `T-shirts picked up by ${selectedRfid?.attendee?.first_name}: ${orderDetails}`
+        stillPending > 0
+          ? `Handed out to ${selectedRfid?.attendee?.first_name}: ${orderDetails} — ${stillPending} shirt${stillPending > 1 ? 's' : ''} still to collect`
+          : `T-shirts picked up by ${selectedRfid?.attendee?.first_name}: ${orderDetails}`
       );
 
-      setTimeout(() => onReset(), 2000);
+      if (stillPending === 0) {
+        setTimeout(() => onReset(), 2000);
+      }
+
     } catch (error) {
       console.error("Error processing t-shirt pickups:", error);
       toast.error("Failed to process t-shirt pickups");
@@ -184,11 +192,15 @@ function TShirtsContent({
               <Package className="h-6 w-6 text-primary" />
             </div>
             <div className="text-lg font-medium">
-              T-Shirt Orders ({tshirtOrders.reduce((sum, order) => sum + order.quantity, 0)} items, {tshirtOrders.length} order groups)
+              T-Shirt Order ({tshirtOrders.length} {tshirtOrders.length === 1 ? 'shirt' : 'shirts'})
             </div>
             <div className="text-sm text-muted-foreground">
-              {pickedUpOrders.reduce((sum, order) => sum + order.quantity, 0)} items picked up • {availableOrders.reduce((sum, order) => sum + order.quantity, 0)} items remaining
+              {pickedUpOrders.length} handed out • {availableOrders.length} still to collect
             </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Hand out each shirt individually if a size or stock issue comes up.
+            </div>
+
           </div>
 
           {/* Order Selection List */}
@@ -218,16 +230,18 @@ function TShirtsContent({
                   <div className="min-w-0 space-y-1">
                     <div className="badge-row">
                       <ApparelProductBadge productLine={order.productLine} />
-                      {order.quantity > 1 && (
-                        <Badge variant="outline">×{order.quantity}</Badge>
+                      {(order.unitCount ?? 1) > 1 && (
+                        <Badge variant="outline">
+                          Shirt {order.unitIndex} of {order.unitCount}
+                        </Badge>
                       )}
                     </div>
                     <div className="flex min-w-0 items-center gap-2 font-medium">
                       <Shirt className="h-4 w-4 shrink-0" />
-                      <span>{order.style} — {order.size}</span>
+                      <span className="break-words">{order.style} — {order.size}</span>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {order.quantity === 1 ? '1 item' : `${order.quantity} items`}
+                      1 shirt
                       {order.isPickedUp && order.pickupTime && (
                         <span className="ml-2 text-success">
                           • Picked up {new Date(order.pickupTime).toLocaleDateString()}
@@ -235,6 +249,7 @@ function TShirtsContent({
                       )}
                     </div>
                   </div>
+
                 </div>
 
                 {order.isPickedUp && (
@@ -256,7 +271,7 @@ function TShirtsContent({
                   disabled={availableOrders.length === 0}
                   className="flex-1"
                 >
-                  Select All Available
+                  Select all {availableOrders.length} shirts
                 </Button>
                 <Button
                   variant="outline"
@@ -280,7 +295,7 @@ function TShirtsContent({
                     Processing Pickups...
                   </div>
                 ) : (
-                  `Process ${selectedOrderIds.length} Selected Pickup${selectedOrderIds.length !== 1 ? 's' : ''}`
+                  `Hand out ${selectedOrderIds.length} of ${availableOrders.length} shirt${availableOrders.length !== 1 ? 's' : ''}`
                 )}
               </Button>
             </div>

@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shirt, Search, Package, CheckCircle2, Loader2, RefreshCw, ScanLine } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Shirt, Search, Package, CheckCircle2, Loader2, RefreshCw, ScanLine, ChevronDown } from "lucide-react";
+
 import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +26,10 @@ interface HubOrder {
   isPickedUp: boolean;
   pickedUpCount?: number;
   pickupTime?: string;
+  unitIndex?: number;
+  unitCount?: number;
 }
+
 
 interface HubPerson {
   id: string;
@@ -39,6 +44,15 @@ interface HubPerson {
 
 const PAGE_SIZE = 25;
 
+const SIZE_ORDER = ["xs", "s", "sm", "small", "m", "md", "med", "medium", "l", "lg", "large", "xl", "2x", "2xl", "3x", "3xl", "4x", "4xl", "5x", "5xl"];
+
+function sizeRank(size: string): number {
+  const key = (size || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const idx = SIZE_ORDER.indexOf(key);
+  return idx === -1 ? 999 : idx;
+}
+
+
 export default function TShirtHub() {
   const [people, setPeople] = useState<HubPerson[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +63,8 @@ export default function TShirtHub() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [openLines, setOpenLines] = useState<string[]>([]);
+
 
   const handleScan = useCallback((code: string) => {
     const value = (code || "").trim();
@@ -136,21 +152,73 @@ export default function TShirtHub() {
   const stats = useMemo(() => {
     let ordered = 0;
     let picked = 0;
-    const sizes: Record<string, { ordered: number; picked: number }> = {};
+    // productLine -> style/fit -> size -> counts
+    const lines = new Map<
+      string,
+      {
+        ordered: number;
+        picked: number;
+        styles: Map<string, { ordered: number; picked: number; sizes: Map<string, { ordered: number; picked: number }> }>;
+      }
+    >();
+
     people.forEach((p) =>
       p.orders.forEach((o) => {
         if (productFilter !== "all" && o.productLine !== productFilter) return;
         const up = o.pickedUpCount ?? (o.isPickedUp ? o.quantity : 0);
         ordered += o.quantity;
         picked += up;
-        const key = o.size || "Unknown";
-        sizes[key] = sizes[key] || { ordered: 0, picked: 0 };
-        sizes[key].ordered += o.quantity;
-        sizes[key].picked += up;
+
+        const lineKey = o.productLine || "Other";
+        const styleKey = o.style || "T-Shirt";
+        const sizeKey = o.size || "Unknown";
+
+        if (!lines.has(lineKey)) lines.set(lineKey, { ordered: 0, picked: 0, styles: new Map() });
+        const line = lines.get(lineKey)!;
+        line.ordered += o.quantity;
+        line.picked += up;
+
+        if (!line.styles.has(styleKey))
+          line.styles.set(styleKey, { ordered: 0, picked: 0, sizes: new Map() });
+        const style = line.styles.get(styleKey)!;
+        style.ordered += o.quantity;
+        style.picked += up;
+
+        if (!style.sizes.has(sizeKey)) style.sizes.set(sizeKey, { ordered: 0, picked: 0 });
+        const size = style.sizes.get(sizeKey)!;
+        size.ordered += o.quantity;
+        size.picked += up;
       })
     );
-    return { ordered, picked, remaining: ordered - picked, sizes };
+
+    const inventory = Array.from(lines.entries())
+      .map(([productLine, line]) => ({
+        productLine,
+        ordered: line.ordered,
+        picked: line.picked,
+        remaining: line.ordered - line.picked,
+        styles: Array.from(line.styles.entries())
+          .map(([style, s]) => ({
+            style,
+            ordered: s.ordered,
+            picked: s.picked,
+            remaining: s.ordered - s.picked,
+            sizes: Array.from(s.sizes.entries())
+              .map(([size, v]) => ({
+                size,
+                ordered: v.ordered,
+                picked: v.picked,
+                remaining: v.ordered - v.picked,
+              }))
+              .sort((a, b) => sizeRank(a.size) - sizeRank(b.size) || a.size.localeCompare(b.size)),
+          }))
+          .sort((a, b) => a.style.localeCompare(b.style)),
+      }))
+      .sort((a, b) => a.productLine.localeCompare(b.productLine));
+
+    return { ordered, picked, remaining: ordered - picked, inventory };
   }, [people, productFilter]);
+
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -252,27 +320,98 @@ export default function TShirtHub() {
       </div>
 
 
-      {Object.keys(stats.sizes).length > 0 && (
+      {stats.inventory.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Package className="h-4 w-4" />
-              Remaining by size
+            <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
+              <span className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Shirts left by style, fit and size
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2 text-xs"
+                onClick={() =>
+                  setOpenLines(
+                    openLines.length === stats.inventory.length
+                      ? []
+                      : stats.inventory.map((l) => l.productLine)
+                  )
+                }
+              >
+                {openLines.length === stats.inventory.length ? "Collapse all" : "Expand all"}
+              </Button>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(stats.sizes)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([size, v]) => (
-                  <Badge key={size} variant="outline" className="text-xs">
-                    {size}: {v.ordered - v.picked} left of {v.ordered}
-                  </Badge>
-                ))}
-            </div>
+          <CardContent className="space-y-2">
+            {stats.inventory.map((line) => {
+              const open = openLines.includes(line.productLine);
+              return (
+                <Collapsible
+                  key={line.productLine}
+                  open={open}
+                  onOpenChange={(v) =>
+                    setOpenLines((prev) =>
+                      v ? [...prev, line.productLine] : prev.filter((l) => l !== line.productLine)
+                    )
+                  }
+                >
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex min-h-[56px] w-full items-center justify-between gap-2 rounded-md border p-3 text-left active:bg-muted/60"
+                    >
+                      <span className="flex min-w-0 flex-wrap items-center gap-2">
+                        <ApparelProductBadge productLine={line.productLine as any} />
+                        <span className="text-sm text-muted-foreground">
+                          {line.remaining} to collect of {line.ordered}
+                        </span>
+                      </span>
+                      <ChevronDown
+                        className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 px-1 pb-2 pt-3">
+                    {line.styles.map((style) => (
+                      <div key={style.style} className="space-y-2">
+                        <div className="flex flex-wrap items-baseline justify-between gap-1">
+                          <p className="break-words text-sm font-medium">{style.style}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {style.remaining} left of {style.ordered}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-8">
+                          {style.sizes.map((s) => (
+                            <div
+                              key={s.size}
+                              className="rounded-md border bg-muted/40 p-2 text-center"
+                            >
+                              <p className="truncate text-[11px] uppercase text-muted-foreground">
+                                {s.size}
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {s.remaining}
+                                <span className="text-xs font-normal text-muted-foreground">
+                                  {" "}
+                                  / {s.ordered}
+                                </span>
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
           </CardContent>
         </Card>
       )}
+
 
       <Card className="sticky top-0 z-20 shadow-sm">
         <CardContent className="space-y-3 p-3 sm:p-4">
@@ -378,6 +517,10 @@ export default function TShirtHub() {
             {filtered.slice(0, visibleCount).map((person) => {
               const complete = person.totalPickedUp >= person.totalOrdered;
               const chosen = selected[person.id] || [];
+              const pendingIds = person.orders
+                .filter((o) => !(o.pickedUpCount ?? (o.isPickedUp ? o.quantity : 0)))
+                .map((o) => o.id);
+
               return (
                 <Card key={person.id}>
                   <CardContent className="space-y-3 p-3 sm:p-4">
@@ -422,12 +565,16 @@ export default function TShirtHub() {
                                 <ApparelProductBadge productLine={order.productLine as any} />
                                 <span className="break-words text-sm font-medium">
                                   {order.style} · {order.size}
-                                  {order.quantity > 1 ? ` ×${order.quantity}` : ""}
                                 </span>
+                                {(order.unitCount ?? 1) > 1 && (
+                                  <Badge variant="outline" className="text-[11px]">
+                                    Shirt {order.unitIndex} of {order.unitCount}
+                                  </Badge>
+                                )}
                               </div>
                               {order.pickupTime && (
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                  Last handed out {formatStandardDateTime(order.pickupTime)}
+                                  Handed out {formatStandardDateTime(order.pickupTime)}
                                 </p>
                               )}
                             </div>
@@ -438,7 +585,8 @@ export default function TShirtHub() {
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="shrink-0 text-xs">
-                                {picked}/{order.quantity}
+                                To collect
+
                               </Badge>
                             )}
                           </>
@@ -467,21 +615,42 @@ export default function TShirtHub() {
                       })}
                     </ul>
 
-
                     {!complete && (
-                      <Button
-                        className="h-11 w-full"
-                        disabled={chosen.length === 0 || processingId === person.id}
-                        onClick={() => handlePickup(person)}
-                      >
-                        {processingId === person.id ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Shirt className="mr-2 h-4 w-4" />
+                      <div className="space-y-2">
+                        {pendingIds.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-11 w-full"
+                            onClick={() =>
+                              setSelected((prev) => ({
+                                ...prev,
+                                [person.id]:
+                                  chosen.length === pendingIds.length ? [] : pendingIds,
+                              }))
+                            }
+                          >
+                            {chosen.length === pendingIds.length
+                              ? "Clear selection"
+                              : `Select all ${pendingIds.length} shirts`}
+                          </Button>
                         )}
-                        Mark selected as handed out
-                      </Button>
+                        <Button
+                          className="h-11 w-full"
+                          disabled={chosen.length === 0 || processingId === person.id}
+                          onClick={() => handlePickup(person)}
+                        >
+                          {processingId === person.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Shirt className="mr-2 h-4 w-4" />
+                          )}
+                          Hand out {chosen.length} of {pendingIds.length} shirt
+                          {pendingIds.length === 1 ? "" : "s"}
+                        </Button>
+                      </div>
                     )}
+
                   </CardContent>
                 </Card>
               );
