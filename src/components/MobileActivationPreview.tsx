@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatPhoneNumber } from "@/lib/phoneUtils";
 import { MobileAttendeeCard } from "@/components/shared/MobileAttendeeCard";
 import type { PhoneLookupResult } from "@/services/phoneActivationService";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface MobileActivationPreviewProps {
   phoneNumber: string;
@@ -70,6 +71,8 @@ export function MobileActivationPreview({
 
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(eligibleIds));
+  const [bandCheckOpen, setBandCheckOpen] = useState(false);
+  const [bandStep, setBandStep] = useState<'ask' | 'no'>('ask');
 
   const toggleSelected = (a: any) => {
     if (!isSelectable(a)) return;
@@ -255,7 +258,7 @@ export function MobileActivationPreview({
           )}
           {/* Primary Action: Check-In Selected */}
           <Button
-            onClick={() => onActivateSelected(Array.from(selectedIds))}
+            onClick={() => { setBandStep('ask'); setBandCheckOpen(true); }}
             disabled={isProcessing || selectedCount === 0}
             size="lg"
             className="w-full h-12 text-base font-medium"
@@ -293,6 +296,64 @@ export function MobileActivationPreview({
           </Button>
         </div>
       </div>
+
+      <Dialog open={bandCheckOpen} onOpenChange={setBandCheckOpen}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md max-h-[90vh] overflow-y-auto rounded-lg">
+          {bandStep === 'ask' ? (
+            <>
+              <DialogHeader>
+                <div className="text-4xl text-center">🎟️</div>
+                <DialogTitle className="text-center text-xl">Hold Up, Camp Cousin!</DialogTitle>
+                <DialogDescription className="text-center text-base text-foreground">
+                  Does {selectedCount > 1 ? `everyone in your party (${selectedCount})` : "you"} have{" "}
+                  {selectedCount > 1 ? "their wristbands" : "your wristband"} in hand right now?
+                </DialogDescription>
+              </DialogHeader>
+              <p className="text-sm text-center text-muted-foreground">
+                Your wristband is your all-access key to campout activities and events — plus meals
+                and T-shirts if you purchased them. Keep it on all weekend!
+              </p>
+              <div className="flex flex-col gap-2 pt-2">
+                <Button
+                  size="lg"
+                  className="w-full h-12 text-base"
+                  onClick={() => {
+                    setBandCheckOpen(false);
+                    onActivateSelected(Array.from(selectedIds));
+                  }}
+                >
+                  Yes, we've got our bands — let's go!
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full h-12 text-base"
+                  onClick={() => setBandStep('no')}
+                >
+                  Not yet
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <div className="text-4xl text-center">⛺</div>
+                <DialogTitle className="text-center text-xl">No Worries — Quick Pit Stop!</DialogTitle>
+                <DialogDescription className="text-center text-base text-foreground">
+                  Head to the <span className="font-semibold">Staff Tent in front of the Main Activity Tent</span>{" "}
+                  to pick up your wristbands, then come right back here to check in.
+                </DialogDescription>
+              </DialogHeader>
+              <p className="text-sm text-center text-muted-foreground">
+                Your party stays saved on this screen, so you won't need to re-enter your phone number.
+              </p>
+              <Button size="lg" className="w-full h-12 text-base" onClick={() => setBandCheckOpen(false)}>
+                Got it, heading to the tent!
+              </Button>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
