@@ -493,6 +493,7 @@ export const EnhancedRfidAssignmentCell = ({
       }, 300);
       setIsRemoveOpen(false);
       setRemoveReason("");
+      setRemoveConfirmed(false);
     } catch (error) {
       console.error('RFID clear error:', error);
       toast.error("Could not remove the band. Please try again.", STICKY);
