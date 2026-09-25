@@ -45,7 +45,7 @@ async function runSync(
 
     const { data: existingRows, error: existingError } = await supabase
       .from('attendees')
-      .select('id, regfox_registration_id, sync_hash, waiver_signed')
+      .select('id, regfox_registration_id, sync_hash, waiver_signed, locked_fields')
       .eq('event_id', eventId)
       .not('regfox_registration_id', 'is', null);
 
@@ -54,11 +54,15 @@ async function runSync(
     const existing = new Map<string, string | null>();
     const localWaiverSigned = new Set<string>();
     const attendeeIdByRegistration = new Map<string, string>();
+    // Fields staff changed by hand; syncs must never overwrite them.
+    const lockedByRegistration = new Map<string, string[]>();
     for (const row of existingRows ?? []) {
       const regId = row.regfox_registration_id as string;
       existing.set(regId, row.sync_hash as string | null);
       attendeeIdByRegistration.set(regId, row.id as string);
       if (row.waiver_signed) localWaiverSigned.add(regId);
+      const locked = (row.locked_fields as string[] | null) ?? [];
+      if (locked.length) lockedByRegistration.set(regId, locked);
     }
 
     // A waiver signed on site must never be reset by a RegFox form answer.
@@ -84,10 +88,15 @@ async function runSync(
     for (const r of usable) {
       try {
         const mapped = mapRegistrant(r, eventId, orderAccommodations, orderExtras);
-        const hash = contentHash(mapped);
+        const lockedFields = lockedByRegistration.get(mapped.regfox_registration_id) ?? [];
+        const unlocked: Record<string, unknown> = { ...mapped };
+        for (const f of lockedFields) {
+          if (f !== 'regfox_registration_id' && f !== 'event_id') delete unlocked[f];
+        }
+        const hash = contentHash(unlocked as typeof mapped);
         const known = existing.has(mapped.regfox_registration_id);
 
-        if (mapped.registration_status === 'cancelled') {
+        if (mapped.registration_status === 'cancelled' && !lockedFields.includes('registration_status')) {
           cancelledRegistrationIds.push(mapped.regfox_registration_id);
         }
 
@@ -100,14 +109,14 @@ async function runSync(
         else plannedNew += 1;
 
         const row: Record<string, unknown> = {
-          ...mapped,
+          ...unlocked,
           sync_hash: hash,
           last_synced_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
 
         // Operational state is owned on site, never by the form answer.
-        if (!mapped.waiver_signed && localWaiverSigned.has(mapped.regfox_registration_id)) {
+        if (!lockedFields.includes('waiver_signed') && !mapped.waiver_signed && localWaiverSigned.has(mapped.regfox_registration_id)) {
           row.waiver_signed = true;
         }
         delete row.checked_in_at;
