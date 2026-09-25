@@ -20,6 +20,7 @@ import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
 import { ScanIssueDialog } from "@/components/ScanIssueDialog";
+import { autoLogScanIssue } from "@/lib/autoScanIssueLog";
 import { normalizeCredential } from "@/lib/credentialFormat";
 import { GateQuickSearch } from "@/components/GateQuickSearch";
 import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
@@ -61,6 +62,7 @@ export function UnifiedStationScanner({
   const [error, setError] = useState<string>("");
   const [lastCode, setLastCode] = useState("");
   const [showIssue, setShowIssue] = useState(false);
+  const [autoLogged, setAutoLogged] = useState(false);
   const [autoTriggered, setAutoTriggered] = useState(false);
   const [showStaffOverride, setShowStaffOverride] = useState(false);
   const [showStaffActivation, setShowStaffActivation] = useState(false);
@@ -81,6 +83,7 @@ export function UnifiedStationScanner({
     const uid = normalizeCredential(rawUid);
     if (!uid) return;
     setError("");
+    setAutoLogged(false);
     setLastCode(uid);
     setIsLookingUp(true);
     // A new code starts a fresh scan: clear the one-commit-per-scan guard
@@ -104,9 +107,12 @@ export function UnifiedStationScanner({
         setAutoTriggered(false);
         
       } else {
-        setError(await describeUnknownCredential(uid));
+        const message = await describeUnknownCredential(uid);
+        setError(message);
         setSelectedRfid(null);
         setAttendeeReadiness(null);
+        setAutoLogged(true);
+        autoLogScanIssue({ scannedCode: uid, stationType, errorMessage: message, issueType: 'not_in_db' });
       }
 
     } catch (error) {
@@ -114,6 +120,13 @@ export function UnifiedStationScanner({
       setError("Failed to look up wristband. Please try again.");
       setSelectedRfid(null);
       setAttendeeReadiness(null);
+      setAutoLogged(true);
+      autoLogScanIssue({
+        scannedCode: uid,
+        stationType,
+        errorMessage: error instanceof Error ? error.message : 'Lookup failed',
+        issueType: 'other',
+      });
     } finally {
       setIsLookingUp(false);
     }
@@ -184,6 +197,7 @@ export function UnifiedStationScanner({
     setAttendeeReadiness(null);
     setManualUid("");
     setError("");
+    setAutoLogged(false);
     setAutoTriggered(false);
     setShowStaffOverride(false);
     setShowStaffActivation(false);
@@ -454,9 +468,19 @@ export function UnifiedStationScanner({
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">{error}</span>
                 </div>
-                <Button variant="outline" size="sm" className="mt-2 w-full sm:w-auto" onClick={() => setShowIssue(true)}>
-                  Log issue
-                </Button>
+                {autoLogged && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                    <span>Logged automatically — keep the line moving.</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="mt-2 text-xs underline text-muted-foreground"
+                  onClick={() => setShowIssue(true)}
+                >
+                  Add a note
+                </button>
                 <ScanIssueDialog open={showIssue} onOpenChange={setShowIssue} scannedCode={lastCode} stationType={stationType} errorMessage={error} />
               </div>
             )}
