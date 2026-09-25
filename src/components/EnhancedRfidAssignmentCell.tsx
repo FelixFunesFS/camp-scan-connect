@@ -439,7 +439,7 @@ export const EnhancedRfidAssignmentCell = ({
   };
 
   const handleClearRfid = async () => {
-    if (!currentRfidUid || !removeReason) return;
+    if (!currentRfidUid || !removeReason || !removeConfirmed) return;
 
     const reasonLabel =
       DEACTIVATION_REASONS.find((r) => r.value === removeReason)?.label || removeReason;
