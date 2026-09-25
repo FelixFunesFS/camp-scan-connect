@@ -544,7 +544,7 @@ export function UnifiedStationScanner({
           <WaiverSigningDialog
             open={showWaiver}
             onOpenChange={setShowWaiver}
-            attendeeId={selectedRfid.attendee.id}
+            attendeeId={selectedRfid.attendee_id}
             attendeeName={`${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`}
             onSigned={handleWaiverSigned}
           />
