@@ -30,6 +30,33 @@ export const CAMERA_DIAGNOSTIC_FORMATS = [
   BarcodeFormat.PDF_417,
 ];
 
+/** Same symbologies expressed for the native Shape Detection API. */
+const NATIVE_SUPPORTED_FORMATS = ['qr_code', 'code_128', 'code_39', 'data_matrix'];
+const NATIVE_DIAGNOSTIC_FORMATS = [
+  ...NATIVE_SUPPORTED_FORMATS,
+  'ean_13',
+  'ean_8',
+  'upc_a',
+  'upc_e',
+  'itf',
+  'pdf417',
+];
+
+interface NativeDetectedBarcode {
+  rawValue: string;
+  format?: string;
+}
+
+interface NativeBarcodeDetectorCtor {
+  new (options?: { formats?: string[] }): {
+    detect: (source: CanvasImageSource) => Promise<NativeDetectedBarcode[]>;
+  };
+  getSupportedFormats?: () => Promise<string[]>;
+}
+
+/** Which decoding engine is currently driving the camera. */
+export type ScanEngine = 'native' | 'zxing' | null;
+
 /** Ignore repeat reads of the same code inside this window. */
 const DUPLICATE_WINDOW_MS = 2500;
 /** A payload must decode twice inside this window before we trust it. */
