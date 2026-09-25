@@ -204,6 +204,18 @@ export function UnifiedStationScanner({
     lastCommitRef.current = null;
   };
 
+  /** Band didn't come up: note it and wave the camper through. */
+  const handleLetThrough = async () => {
+    const code = lastCode;
+    toast.success("Let through — keep the line moving");
+    handleReset();
+    try {
+      await markLetThrough({ scannedCode: code, stationType });
+    } catch (err) {
+      console.warn("Could not annotate the let-through", err);
+    }
+  };
+
   const handleStaffOverride = async (notes: string) => {
     if (!selectedRfid?.attendee) return;
     
