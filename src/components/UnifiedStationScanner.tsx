@@ -20,6 +20,7 @@ import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
 import { normalizeCredential } from "@/lib/credentialFormat";
+import { GateQuickSearch } from "@/components/GateQuickSearch";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -47,7 +48,8 @@ export function UnifiedStationScanner({
   stationTitle,
   children,
   mode = 'confirm',
-  autoTrigger = false
+  autoTrigger = false,
+  enableAttendeeSearch = false
 }: UnifiedStationScannerProps) {
   const [manualUid, setManualUid] = useState("");
   const [selectedRfid, setSelectedRfid] = useState<RfidTag | null>(null);

@@ -12,6 +12,7 @@ const MainGateStation = () => {
       stationTitle="Main Gate Access Control"
       mode="quick"
       autoTrigger={true}
+      enableAttendeeSearch={true}
     >
       {(props) => <MainGateContent {...props} />}
     </UnifiedStationScanner>
