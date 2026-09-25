@@ -72,7 +72,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
         let query = supabase
           .from("attendees")
           .select(
-            "id, first_name, last_name, phone, order_id, ticket_type, site_detail, waiver_signed"
+            "id, first_name, last_name, phone, email, order_id, ticket_type, site_detail, waiver_signed"
           )
           .eq("event_id", eventId)
           .in("registration_status", [...WORKING_STATUSES])
@@ -86,7 +86,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
           query = supabase
             .from("attendees")
             .select(
-              "id, first_name, last_name, phone, order_id, ticket_type, site_detail, waiver_signed"
+              "id, first_name, last_name, phone, email, order_id, ticket_type, site_detail, waiver_signed"
             )
             .eq("event_id", eventId)
             .in("registration_status", [...WORKING_STATUSES])
