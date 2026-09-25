@@ -1013,6 +1013,21 @@ export const RfidAssignment = () => {
                 </Sheet>
               </div>
 
+              {/* Category */}
+              <div className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1">
+                {CATEGORY_OPTIONS.map(option => (
+                  <Button
+                    key={option.value}
+                    variant={uiState.categoryFilter === option.value ? 'default' : 'ghost'}
+                    size="sm"
+                    className="h-10 min-w-0 px-1 text-[11px]"
+                    onClick={() => setUiState(prev => ({ ...prev, categoryFilter: option.value, currentPage: 1 }))}
+                  >
+                    <span className="truncate">{option.label}</span>
+                  </Button>
+                ))}
+              </div>
+
               {/* Grouping */}
               <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
                 {([
