@@ -41,6 +41,7 @@ import { formatStandardDateTime } from "@/utils/dateTimeUtils";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { WORKING_STATUSES } from "@/lib/registrationStatus";
 import { StaffAttendeeRow } from "@/components/staff/StaffAttendeeRow";
+import { RetiredBandsHistory } from "@/components/staff/RetiredBandsHistory";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {
@@ -848,6 +849,9 @@ export function StaffActivationHub() {
               refreshTrigger={attendees.filter((attendee) => attendee.waiver_signed).length}
               onFilterUnsigned={() => setActiveQuickFilter('waiver_missing')}
             />
+
+            <RetiredBandsHistory />
+
 
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
