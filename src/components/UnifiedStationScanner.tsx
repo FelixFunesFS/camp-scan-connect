@@ -408,7 +408,7 @@ export function UnifiedStationScanner({
                 selectedRfid?.uid ? `Scanned ${selectedRfid.uid}` : 'Scanner ready'
               }
               onExpandPreview={() => setShowPreview(true)}
-              paused={showLens}
+              paused={showLens || showWaiver || showIssue || isLookingUp || isProcessing}
               onScan={handleRfidFound}
               onExpand={() => setShowLens(true)}
             />

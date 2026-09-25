@@ -58,6 +58,7 @@ export default function MealStation() {
       stationTitle="Meal Station"
       mode="confirm"
       autoTrigger={false}
+      enableAttendeeSearch={true}
     >
       {(props) => <MealContent {...props} />}
     </UnifiedStationScanner>

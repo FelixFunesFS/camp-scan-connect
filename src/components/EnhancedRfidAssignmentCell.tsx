@@ -22,6 +22,10 @@ import { toast } from "sonner";
 import { useRfidCaptureContext } from "@/contexts/RfidCaptureContext";
 import { CameraBraceletScanner } from "@/components/CameraBraceletScanner";
 import { inferCredentialType, normalizeCredential } from "@/lib/credentialFormat";
+import { Checkbox } from "@/components/ui/checkbox";
+
+/** Assignment messages stay on screen until staff dismiss them. */
+const STICKY = { duration: Infinity, closeButton: true } as const;
 
 interface EnhancedRfidAssignmentCellProps {
   attendeeId: string;
@@ -51,6 +55,7 @@ export const EnhancedRfidAssignmentCell = ({
   const [replaceReason, setReplaceReason] = useState("");
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [removeReason, setRemoveReason] = useState("");
+  const [removeConfirmed, setRemoveConfirmed] = useState(false);
   const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
   const [scannerMode, setScannerMode] = useState<'usb' | 'camera'>('camera');
   const [cameraTarget, setCameraTarget] = useState<'assign' | 'edit' | 'replace'>('assign');
@@ -217,7 +222,7 @@ export const EnhancedRfidAssignmentCell = ({
       // Validate one more time before assignment to prevent duplicates
       const validationResult = await validateRfidUid(normalizeCredential(uid));
       if (!validationResult.isValid) {
-        toast.error("Assignment blocked - this wristband is already assigned to another attendee.");
+        toast.error("Assignment blocked - this wristband is already assigned to another attendee.", STICKY);
         return;
       }
 
@@ -252,9 +257,23 @@ export const EnhancedRfidAssignmentCell = ({
 
       if (tagExists && tagExists.attendee_id && tagExists.attendee_id !== attendeeId) {
         // This should not happen due to validation, but double-check for safety
-        toast.error("Assignment blocked - this wristband is assigned to another attendee.");
+        toast.error("Assignment blocked - this wristband is assigned to another attendee.", STICKY);
         return;
       }
+
+      // A camper who is already checked in (or signed the waiver) must be able
+      // to use their new band straight away — no extra activation step.
+      const { data: person } = await supabase
+        .from('attendees')
+        .select('checked_in_at, waiver_signed')
+        .eq('id', attendeeId)
+        .maybeSingle();
+
+      const now = new Date().toISOString();
+      const goLive = !!person?.checked_in_at || person?.waiver_signed === true;
+      const statusFields = goLive
+        ? { status: 'active' as const, activated_at: now, activation_method: 'staff_assisted' }
+        : { status: 'assigned' as const };
 
       if (!tagExists) {
         // Create new credential entry
@@ -263,10 +282,10 @@ export const EnhancedRfidAssignmentCell = ({
           .insert({
             uid: normalizeCredential(uid),
             attendee_id: attendeeId,
-            status: 'assigned',
-            issued_at: new Date().toISOString(),
+            issued_at: now,
             event_id: getCurrentEventId(),
-            credential_type: inferCredentialType(uid)
+            credential_type: inferCredentialType(uid),
+            ...statusFields
           });
       } else {
         // Update existing tag (only if unissued or deactivated)
@@ -274,13 +293,25 @@ export const EnhancedRfidAssignmentCell = ({
           .from('rfid_tags')
           .update({
             attendee_id: attendeeId,
-            status: 'assigned',
-            issued_at: new Date().toISOString(),
+            issued_at: now,
             deactivated_at: null,
-            reason: null
+            reason: null,
+            ...statusFields
           })
           .eq('uid', normalizeCredential(uid))
           .in('status', ['unissued', 'deactivated', 'replaced']);
+      }
+
+      if (goLive) {
+        await supabase
+          .from('attendees')
+          .update({
+            activated_at: now,
+            most_recent_activation_at: now,
+            most_recent_activation_method: 'staff_assisted',
+            checked_in_at: person?.checked_in_at || now
+          })
+          .eq('id', attendeeId);
       }
 
       // Log assignment transaction
@@ -295,15 +326,36 @@ export const EnhancedRfidAssignmentCell = ({
           extra_data: {
             assignment_context: 'pre_assignment',
             assignment_source: 'assignment_station',
-            previous_rfid: existingRfid?.uid || null
+            previous_rfid: existingRfid?.uid || null,
+            auto_activated: goLive
           }
         });
 
-      toast.success(`Assigned Successfully: ${normalizeCredential(uid)} → ${attendeeName}`);
+      if (goLive) {
+        await supabase
+          .from('station_transactions')
+          .insert({
+            attendee_id: attendeeId,
+            rfid_uid: normalizeCredential(uid),
+            station_type: 'activation',
+            transaction_type: 'activate',
+            current_status: 'active',
+            activation_method: 'staff_assisted',
+            event_id: getCurrentEventId(),
+            extra_data: { auto_activated_on_assignment: true }
+          });
+      }
+
+      toast.success(
+        goLive
+          ? `${normalizeCredential(uid)} → ${attendeeName}. Band is live — they can scan at any station now.`
+          : `Assigned Successfully: ${normalizeCredential(uid)} → ${attendeeName}`,
+        STICKY
+      );
 
       // Optimistic update first
       if (onOptimisticUpdate) {
-        onOptimisticUpdate(attendeeId, normalizeCredential(uid), 'assigned');
+        onOptimisticUpdate(attendeeId, normalizeCredential(uid), goLive ? 'active' : 'assigned');
       }
 
       setUid("");
@@ -315,7 +367,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     } catch (error) {
       console.error('credential assignment error:', error);
-      toast.error("Assignment Failed - Failed to assign credential. Please try again.");
+      toast.error("Assignment Failed - Failed to assign credential. Please try again.", STICKY);
     } finally {
       setIsProcessing(false);
     }
@@ -343,7 +395,7 @@ export const EnhancedRfidAssignmentCell = ({
       // Validate the new UID
       const validationResult = await validateRfidUid(normalizeCredential(editValue), true);
       if (!validationResult.isValid) {
-        toast.error("Edit blocked - this wristband is already assigned to another attendee.");
+        toast.error("Edit blocked - this wristband is already assigned to another attendee.", STICKY);
         return;
       }
 
@@ -410,7 +462,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`Wristband updated: ${normalizeCredential(editValue)} → ${attendeeName}`);
+      toast.success(`Wristband updated: ${normalizeCredential(editValue)} → ${attendeeName}`, STICKY);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
@@ -427,14 +479,14 @@ export const EnhancedRfidAssignmentCell = ({
 
     } catch (error) {
       console.error('RFID edit error:', error);
-      toast.error("Edit Failed - Failed to update credential assignment. Please try again.");
+      toast.error("Edit Failed - Failed to update credential assignment. Please try again.", STICKY);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleClearRfid = async () => {
-    if (!currentRfidUid || !removeReason) return;
+    if (!currentRfidUid || !removeReason || !removeConfirmed) return;
 
     const reasonLabel =
       DEACTIVATION_REASONS.find((r) => r.value === removeReason)?.label || removeReason;
@@ -475,7 +527,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`Band removed: ${currentRfidUid} is no longer assigned to ${attendeeName} (${reasonLabel})`);
+      toast.success(`Band removed: ${currentRfidUid} is no longer assigned to ${attendeeName} (${reasonLabel})`, STICKY);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
@@ -488,9 +540,10 @@ export const EnhancedRfidAssignmentCell = ({
       }, 300);
       setIsRemoveOpen(false);
       setRemoveReason("");
+      setRemoveConfirmed(false);
     } catch (error) {
       console.error('RFID clear error:', error);
-      toast.error("Could not remove the band. Please try again.");
+      toast.error("Could not remove the band. Please try again.", STICKY);
     } finally {
       setIsProcessing(false);
     }
@@ -525,7 +578,7 @@ export const EnhancedRfidAssignmentCell = ({
     try {
       const validationResult = await validateRfidUid(newUid, true);
       if (!validationResult.isValid) {
-        toast.error("Replacement blocked - this wristband is already assigned to another attendee.");
+        toast.error("Replacement blocked - this wristband is already assigned to another attendee.", STICKY);
         return;
       }
 
@@ -549,7 +602,7 @@ export const EnhancedRfidAssignmentCell = ({
         .single();
 
       if (tagExists?.attendee_id && tagExists.attendee_id !== attendeeId) {
-        toast.error("Replacement blocked - this wristband is assigned to another attendee.");
+        toast.error("Replacement blocked - this wristband is assigned to another attendee.", STICKY);
         return;
       }
 
@@ -638,7 +691,7 @@ export const EnhancedRfidAssignmentCell = ({
           });
       }
 
-      toast.success(`Band replaced: ${currentRfidUid} marked lost, ${newUid} → ${attendeeName}${wasActive ? ' (kept checked in)' : ''}`);
+      toast.success(`Band replaced: ${currentRfidUid} marked lost, ${newUid} → ${attendeeName}${wasActive ? ' (kept checked in)' : ''}`, STICKY);
 
       if (onOptimisticUpdate) {
         onOptimisticUpdate(attendeeId, newUid, newStatus);
@@ -651,7 +704,7 @@ export const EnhancedRfidAssignmentCell = ({
       setTimeout(() => onAssignmentComplete(), 300);
     } catch (error) {
       console.error('Band replacement error:', error);
-      toast.error("Replacement Failed - Could not replace the band. Please try again.");
+      toast.error("Replacement Failed - Could not replace the band. Please try again.", STICKY);
     } finally {
       setIsProcessing(false);
     }
@@ -833,35 +886,13 @@ export const EnhancedRfidAssignmentCell = ({
         <div className="min-w-0 flex-1">
           <span className="font-mono text-sm font-medium break-all">{currentRfidUid}</span>
         </div>
-        <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-1">
+        <div className="flex gap-1">
           <Button
             variant="outline"
             size="sm"
-            onClick={handleStartEdit}
+            onClick={() => { setRemoveReason(""); setRemoveConfirmed(false); setIsRemoveOpen(true); }}
             disabled={isProcessing}
-            className="h-11 px-2 text-xs sm:h-8 sm:px-3"
-            title="Change code"
-          >
-            <Edit3 className="h-3 w-3 sm:mr-0" />
-            <span className="ml-1 sm:hidden">Change</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleStartReplace}
-            disabled={isProcessing}
-            className="h-11 px-2 text-xs sm:h-8 sm:px-3"
-            title="Replace lost or damaged band"
-          >
-            <RefreshCw className="h-3 w-3" />
-            <span className="ml-1 sm:hidden">Replace</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { setRemoveReason(""); setIsRemoveOpen(true); }}
-            disabled={isProcessing}
-            className="h-11 px-2 text-xs text-destructive sm:h-8 sm:px-3"
+            className="h-11 w-full px-3 text-xs text-destructive sm:h-8 sm:w-auto"
             title="Remove band"
           >
             {isProcessing ? (
@@ -869,7 +900,7 @@ export const EnhancedRfidAssignmentCell = ({
             ) : (
               <X className="h-3 w-3" />
             )}
-            <span className="ml-1 sm:hidden">Remove</span>
+            <span className="ml-1">Remove band</span>
           </Button>
         </div>
 
@@ -883,7 +914,7 @@ export const EnhancedRfidAssignmentCell = ({
                   : `This band will no longer be assigned to ${attendeeName}. It can be assigned to someone else afterwards.`}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-medium">Reason (required)</label>
               <Select value={removeReason} onValueChange={setRemoveReason}>
                 <SelectTrigger className="h-11">
@@ -898,17 +929,29 @@ export const EnhancedRfidAssignmentCell = ({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                If the band was lost or broken and the person is still here, use <strong>Replace</strong> instead so their check-in carries over.
+                To give this person a different band, remove this one with a reason, then type their new band code in the same box.
               </p>
+              <label className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                <Checkbox
+                  checked={removeConfirmed}
+                  onCheckedChange={(v) => setRemoveConfirmed(v === true)}
+                  disabled={isProcessing}
+                  className="mt-0.5"
+                />
+                <span className="text-sm">
+                  I checked the reason above and want to save this removal for{" "}
+                  <strong>{attendeeName}</strong>.
+                </span>
+              </label>
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isProcessing}>Keep band</AlertDialogCancel>
               <AlertDialogAction
                 onClick={(e) => { e.preventDefault(); handleClearRfid(); }}
-                disabled={!removeReason || isProcessing}
+                disabled={!removeReason || !removeConfirmed || isProcessing}
               >
                 {isProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Remove band
+                Save removal
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
