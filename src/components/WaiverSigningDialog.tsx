@@ -174,6 +174,25 @@ export function WaiverSigningDialog({
           <p className="text-sm font-medium text-foreground pt-1">Signing as {attendeeName}</p>
         </DialogHeader>
 
+        {expressStaffSign && (
+          <div className="shrink-0 border-b bg-amber-50 p-4 space-y-2">
+            <p className="text-sm font-semibold text-amber-900">Busy line? One tap and they're in</p>
+            <p className="text-xs text-amber-800">
+              Read the short summary out loud, ask "Do you agree?", then tap below. Recorded as
+              agreed on-site with staff present.
+            </p>
+            <Button
+              onClick={handleExpressSign}
+              disabled={isSubmitting}
+              size="lg"
+              className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <CheckCircle2 className="h-5 w-5 mr-2" />
+              {isSubmitting ? "Saving..." : "They agree — sign & keep moving"}
+            </Button>
+          </div>
+        )}
+
         <div className="flex-1 min-h-0 overflow-y-auto" onScroll={handleScroll}>
           <div className="p-4 sm:p-6 space-y-5 text-sm leading-relaxed">
             {WAIVER_SECTIONS.map((section) => (
