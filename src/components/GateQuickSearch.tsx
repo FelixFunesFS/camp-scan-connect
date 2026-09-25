@@ -73,7 +73,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
             "id, first_name, last_name, phone, order_id, ticket_type, site_detail, waiver_signed"
           )
           .eq("event_id", eventId)
-          .in("registration_status", WORKING_STATUSES as unknown as string[])
+          .in("registration_status", [...WORKING_STATUSES])
           .or(filters.join(","))
           .order("last_name", { ascending: true })
           .limit(MAX_RESULTS * 3);
@@ -87,7 +87,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
               "id, first_name, last_name, phone, order_id, ticket_type, site_detail, waiver_signed"
             )
             .eq("event_id", eventId)
-            .in("registration_status", WORKING_STATUSES as unknown as string[])
+            .in("registration_status", [...WORKING_STATUSES])
             .ilike("first_name", `%${parts[0]}%`)
             .ilike("last_name", `%${parts.slice(1).join(" ")}%`)
             .order("last_name", { ascending: true })
