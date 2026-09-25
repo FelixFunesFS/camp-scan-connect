@@ -13,6 +13,7 @@ interface GateSearchRow {
   first_name: string;
   last_name: string;
   phone: string | null;
+  email: string | null;
   order_id: string | null;
   ticket_type: string | null;
   site_detail: string | null;
@@ -62,6 +63,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
           `first_name.ilike.${like}`,
           `last_name.ilike.${like}`,
           `order_id.ilike.${like}`,
+          `email.ilike.${like}`,
         ];
         if (digits.length >= 3) {
           filters.push(`phone.ilike.%${digits}%`);
@@ -70,7 +72,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
         let query = supabase
           .from("attendees")
           .select(
-            "id, first_name, last_name, phone, order_id, ticket_type, site_detail, waiver_signed"
+            "id, first_name, last_name, phone, email, order_id, ticket_type, site_detail, waiver_signed"
           )
           .eq("event_id", eventId)
           .in("registration_status", [...WORKING_STATUSES])
@@ -84,7 +86,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
           query = supabase
             .from("attendees")
             .select(
-              "id, first_name, last_name, phone, order_id, ticket_type, site_detail, waiver_signed"
+              "id, first_name, last_name, phone, email, order_id, ticket_type, site_detail, waiver_signed"
             )
             .eq("event_id", eventId)
             .in("registration_status", [...WORKING_STATUSES])
@@ -129,6 +131,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
               first_name: a.first_name,
               last_name: a.last_name,
               phone: a.phone,
+              email: a.email,
               order_id: a.order_id,
               ticket_type: a.ticket_type,
               site_detail: a.site_detail,
@@ -168,7 +171,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
           value={term}
           disabled={disabled}
           onChange={(e) => setTerm(e.target.value)}
-          placeholder="Search name, phone or order number"
+          placeholder="Search name, phone, email or order number"
           className="h-12 pl-9 pr-10 text-base"
           autoComplete="off"
         />
@@ -195,7 +198,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
         <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <UserSearch className="h-4 w-4" />
-            No one found. Try a last name or the last 4 digits of their phone.
+            No one found. Try a last name, their email, or the last 4 digits of their phone.
           </div>
         </div>
       )}
@@ -224,6 +227,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
                       <p className="truncate text-xs text-muted-foreground">
                         {[
                           row.phone ? formatPhoneNumber(row.phone) : null,
+                          row.email || undefined,
                           row.site_detail || undefined,
                           row.order_id || undefined,
                         ]
