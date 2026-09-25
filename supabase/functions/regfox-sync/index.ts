@@ -43,13 +43,22 @@ async function runSync(
     const orderAccommodations = buildOrderAccommodations(usable);
     const orderExtras = buildOrderExtras(usable);
 
-    const { data: existingRows, error: existingError } = await supabase
-      .from('attendees')
-      .select('id, regfox_registration_id, sync_hash, waiver_signed, locked_fields')
-      .eq('event_id', eventId)
-      .not('regfox_registration_id', 'is', null);
-
-    if (existingError) throw new Error(`Failed to read attendees: ${existingError.message}`);
+    // PostgREST caps a request at 1000 rows, so page through the whole roster.
+    // Missing rows here would look like "never signed" and wipe on-site state.
+    const PAGE = 1000;
+    const existingRows: Record<string, unknown>[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data: page, error: existingError } = await supabase
+        .from('attendees')
+        .select('id, regfox_registration_id, sync_hash, waiver_signed, locked_fields')
+        .eq('event_id', eventId)
+        .not('regfox_registration_id', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (existingError) throw new Error(`Failed to read attendees: ${existingError.message}`);
+      existingRows.push(...(page ?? []));
+      if (!page || page.length < PAGE) break;
+    }
 
     const existing = new Map<string, string | null>();
     const localWaiverSigned = new Set<string>();
@@ -66,10 +75,16 @@ async function runSync(
     }
 
     // A waiver signed on site must never be reset by a RegFox form answer.
-    const { data: signatureRows } = await supabase
-      .from('waiver_signatures')
-      .select('attendee_id');
-    const signedAttendeeIds = new Set((signatureRows ?? []).map((s) => s.attendee_id as string));
+    const signedAttendeeIds = new Set<string>();
+    for (let from = 0; ; from += PAGE) {
+      const { data: signatureRows } = await supabase
+        .from('waiver_signatures')
+        .select('attendee_id')
+        .order('attendee_id', { ascending: true })
+        .range(from, from + PAGE - 1);
+      for (const s of signatureRows ?? []) signedAttendeeIds.add(s.attendee_id as string);
+      if (!signatureRows || signatureRows.length < PAGE) break;
+    }
     for (const [regId, attendeeId] of attendeeIdByRegistration) {
       if (signedAttendeeIds.has(attendeeId)) localWaiverSigned.add(regId);
     }
