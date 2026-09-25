@@ -98,6 +98,19 @@ export const LensScanner: React.FC<LensScannerProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
+  // Freeze the page behind the scanner: no rubber-banding, no accidental
+  // scrolling while someone is holding a phone against a wristband.
+  useEffect(() => {
+    if (!isOpen) return;
+    const { overflow, overscrollBehavior } = document.body.style;
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      document.body.style.overflow = overflow;
+      document.body.style.overscrollBehavior = overscrollBehavior;
+    };
+  }, [isOpen]);
+
 
   const submitManual = () => {
     const code = normalizeCredential(manualCode);
@@ -159,11 +172,12 @@ export const LensScanner: React.FC<LensScannerProps> = ({
         </Button>
       </div>
 
-      {/* Aiming frame with corner reticle + sweeping scan beam */}
-      <div className="pointer-events-none relative flex flex-1 flex-col items-center justify-center gap-3 px-6">
+      {/* Aiming frame with corner reticle + sweeping scan beam.
+          Shrinks in landscape so the controls below never get pushed off. */}
+      <div className="pointer-events-none relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 landscape:gap-1.5">
         <div
           className={cn(
-            'relative h-44 w-full max-w-sm overflow-hidden rounded-2xl border-2 transition-colors',
+            'relative h-44 w-full max-w-sm overflow-hidden rounded-2xl border-2 transition-colors landscape:h-24 landscape:max-w-md',
             flash === 'hit'
               ? 'border-emerald-400'
               : flash === 'miss'
@@ -186,14 +200,15 @@ export const LensScanner: React.FC<LensScannerProps> = ({
           </div>
         ) : (
           <p className="max-w-xs text-center text-xs text-white/80">
-            Pull the band flat and hold the phone 6–8 inches away. Any angle works.
+            Keep the phone upright and pull the band flat, 6–8 inches away. It scans at
+            any angle — no need to turn the phone sideways.
           </p>
         )}
       </div>
 
       {/* Bottom sheet: status, result, controls */}
       <div
-        className="relative space-y-3 px-4 pt-3"
+        className="relative max-h-[62vh] space-y-3 overflow-y-auto px-4 pt-3 landscape:max-h-[55vh] landscape:space-y-2"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
       >
         {isStarting && (
