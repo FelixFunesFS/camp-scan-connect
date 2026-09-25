@@ -592,7 +592,22 @@ export const RfidAssignment = () => {
     }
 
     return filtered;
-  }, [attendees, enhancedStatuses, uiState.showCancelledRegistrants, uiState.showOnlyUnassigned, uiState.mealPlanFilter, uiState.arrivalDayFilter, uiState.checkInStatusFilter, uiState.searchTerm]);
+  }, [attendees, enhancedStatuses, uiState.showCancelledRegistrants, uiState.showOnlyUnassigned, uiState.mealPlanFilter, uiState.arrivalDayFilter, uiState.checkInStatusFilter, uiState.searchTerm, uiState.categoryFilter]);
+
+  // Counts per category for the quick filter chips
+  const categoryCounts = useMemo(() => {
+    const base = attendees.filter(a =>
+      uiState.showCancelledRegistrants
+        ? a.registration_status === 'cancelled'
+        : ['registered', 'pending'].includes(a.registration_status || 'registered')
+    );
+    return {
+      all: base.length,
+      campers: base.filter(a => getAttendeeCategory(a) === 'campers').length,
+      ops: base.filter(a => getAttendeeCategory(a) === 'ops').length,
+      walkins: base.filter(a => getAttendeeCategory(a) === 'walkins').length,
+    };
+  }, [attendees, uiState.showCancelledRegistrants]);
 
   // Memoized sorting and pagination
   const { sortedAndPaginatedAttendees, totalPages } = useMemo(() => {
