@@ -592,6 +592,7 @@ export function UnifiedStationScanner({
             onOpenChange={setShowWaiver}
             attendeeId={selectedRfid.attendee_id}
             attendeeName={`${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`}
+            expressStaffSign
             onSigned={handleWaiverSigned}
           />
         )}
