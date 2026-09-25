@@ -277,7 +277,7 @@ export const useBarcodeCamera = ({
             height: { ideal: 1080 },
             frameRate: { ideal: 30 },
             advanced: [{ focusMode: 'continuous' }],
-          } as MediaTrackConstraints,
+          } as unknown as MediaTrackConstraints,
         });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
