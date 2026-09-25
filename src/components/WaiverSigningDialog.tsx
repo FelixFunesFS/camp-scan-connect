@@ -40,6 +40,7 @@ export function WaiverSigningDialog({
   eventId,
   signedBySelf = true,
   witnessedBy = null,
+  expressStaffSign = false,
   onSigned,
 }: WaiverSigningDialogProps) {
   const [scrolledToEnd, setScrolledToEnd] = useState(false);
