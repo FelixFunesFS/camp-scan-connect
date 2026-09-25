@@ -42,6 +42,7 @@ import { formatTicketType } from "@/lib/ticketTypes";
 import { WORKING_STATUSES } from "@/lib/registrationStatus";
 import { StaffAttendeeRow } from "@/components/staff/StaffAttendeeRow";
 import { RetiredBandsHistory } from "@/components/staff/RetiredBandsHistory";
+import { ScanIssuesFeed } from "@/components/staff/ScanIssuesFeed";
 
 // Enhanced attendee interface matching AttendeeManagementTab
 export interface EnhancedAttendee {
@@ -850,6 +851,7 @@ export function StaffActivationHub() {
               onFilterUnsigned={() => setActiveQuickFilter('waiver_missing')}
             />
 
+            <ScanIssuesFeed />
             <RetiredBandsHistory />
 
 

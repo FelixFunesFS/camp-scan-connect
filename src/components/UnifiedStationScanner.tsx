@@ -19,6 +19,7 @@ import { LensScanner } from "@/components/LensScanner";
 import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
+import { ScanIssueDialog } from "@/components/ScanIssueDialog";
 import { normalizeCredential } from "@/lib/credentialFormat";
 import { GateQuickSearch } from "@/components/GateQuickSearch";
 
@@ -57,6 +58,8 @@ export function UnifiedStationScanner({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [error, setError] = useState<string>("");
+  const [lastCode, setLastCode] = useState("");
+  const [showIssue, setShowIssue] = useState(false);
   const [autoTriggered, setAutoTriggered] = useState(false);
   const [showStaffOverride, setShowStaffOverride] = useState(false);
   const [showStaffActivation, setShowStaffActivation] = useState(false);
@@ -76,6 +79,7 @@ export function UnifiedStationScanner({
     const uid = normalizeCredential(rawUid);
     if (!uid) return;
     setError("");
+    setLastCode(uid);
     setIsLookingUp(true);
     // A new code starts a fresh scan: clear the one-commit-per-scan guard
     if (lastCommitRef.current && !lastCommitRef.current.key.startsWith(`${uid}:`)) {
@@ -423,6 +427,10 @@ export function UnifiedStationScanner({
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">{error}</span>
                 </div>
+                <Button variant="outline" size="sm" className="mt-2 w-full sm:w-auto" onClick={() => setShowIssue(true)}>
+                  Log issue
+                </Button>
+                <ScanIssueDialog open={showIssue} onOpenChange={setShowIssue} scannedCode={lastCode} stationType={stationType} errorMessage={error} />
               </div>
             )}
 

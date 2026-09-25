@@ -459,6 +459,59 @@ export type Database = {
           },
         ]
       }
+      scan_issues: {
+        Row: {
+          attendee_id: string | null
+          attendee_label: string | null
+          created_at: string
+          error_message: string | null
+          event_id: string | null
+          id: string
+          issue_type: string
+          notes: string | null
+          resolved_at: string | null
+          scanned_code: string | null
+          station_type: string
+          status: string
+        }
+        Insert: {
+          attendee_id?: string | null
+          attendee_label?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          issue_type: string
+          notes?: string | null
+          resolved_at?: string | null
+          scanned_code?: string | null
+          station_type: string
+          status?: string
+        }
+        Update: {
+          attendee_id?: string | null
+          attendee_label?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          issue_type?: string
+          notes?: string | null
+          resolved_at?: string | null
+          scanned_code?: string | null
+          station_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_issues_attendee_id_fkey"
+            columns: ["attendee_id"]
+            isOneToOne: false
+            referencedRelation: "attendees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scans: {
         Row: {
           action: Database["public"]["Enums"]["scan_action"]
