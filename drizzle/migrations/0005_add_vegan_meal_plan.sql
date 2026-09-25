@@ -1,0 +1,1 @@
+ALTER TYPE public.meal_plan ADD VALUE IF NOT EXISTS 'vegan';

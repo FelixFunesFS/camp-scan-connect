@@ -1,3 +1,4 @@
+import { formatMealPlan } from "@/lib/phoneUtils";
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -184,7 +185,7 @@ const Reports = () => {
           ...attendee,
           rfid_uid: (attendee as any).rfid_tags?.[0]?.uid,
           rfid_status: (attendee as any).rfid_tags?.[0]?.status,
-          formatted_meal_plan: attendee.meal_plan || 'No Plan'
+          formatted_meal_plan: formatMealPlan(attendee.meal_plan ?? null)
         }));
 
         exportToCsv(formattedData as any, 'daily-report');

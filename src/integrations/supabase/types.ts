@@ -896,7 +896,7 @@ export type Database = {
       release_sync_lock: { Args: { p_sync_id?: string }; Returns: number }
     }
     Enums: {
-      meal_plan: "standard" | "premium" | "none"
+      meal_plan: "standard" | "premium" | "none" | "vegan"
       registration_status:
         | "registered"
         | "pending"
@@ -1093,7 +1093,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      meal_plan: ["standard", "premium", "none"],
+      meal_plan: ["standard", "premium", "none", "vegan"],
       registration_status: [
         "registered",
         "pending",

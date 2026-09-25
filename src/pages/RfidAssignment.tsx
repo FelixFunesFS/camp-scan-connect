@@ -1,3 +1,4 @@
+import { formatMealPlan } from "@/lib/phoneUtils";
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { RfidCaptureProvider } from '@/contexts/RfidCaptureContext';
@@ -302,8 +303,7 @@ export const RfidAssignment = () => {
         const rfidTag = Array.isArray(rfidTags) ? rfidTags[0] : rfidTags;
         
         const arrivalDay = (attendee as any).arrival_window === 'early' ? 'Thursday' : 'Friday';
-        const formattedMealPlan = (attendee as any).meal_plan === '1' ? 'Plan 1' : 
-                                 (attendee as any).meal_plan === '2' ? 'Plan 2' : 'No Plan';
+        const formattedMealPlan = formatMealPlan((attendee as any).meal_plan ?? null);
         const siteLocationAssignment = buildSiteAssignment(
           (attendee as any).ticket_type,
           (attendee as any).site_detail,
@@ -887,9 +887,9 @@ export const RfidAssignment = () => {
                           <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                           <SelectContent className="z-50 bg-popover">
                             <SelectItem value="all">All meal plans</SelectItem>
-                            <SelectItem value="1">Plan 1</SelectItem>
-                            <SelectItem value="2">Plan 2</SelectItem>
-                            <SelectItem value="none">No plan</SelectItem>
+                            <SelectItem value="standard">Standard Meal Plan</SelectItem>
+                            <SelectItem value="vegan">Vegan Meal Plan</SelectItem>
+                            <SelectItem value="none">No meal plan</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1234,9 +1234,9 @@ export const RfidAssignment = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Meal Plans</SelectItem>
-                    <SelectItem value="1">Plan 1</SelectItem>
-                    <SelectItem value="2">Plan 2</SelectItem>
-                    <SelectItem value="none">No Plan</SelectItem>
+                    <SelectItem value="standard">Standard Meal Plan</SelectItem>
+                    <SelectItem value="vegan">Vegan Meal Plan</SelectItem>
+                    <SelectItem value="none">No meal plan</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={uiState.arrivalDayFilter} onValueChange={(value) => setUiState(prev => ({ ...prev, arrivalDayFilter: value }))}>

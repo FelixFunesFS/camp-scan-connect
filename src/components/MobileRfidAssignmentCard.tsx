@@ -1,3 +1,4 @@
+import { formatMealPlan } from "@/lib/phoneUtils";
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +80,7 @@ export const MobileRfidAssignmentCard: React.FC<MobileRfidAssignmentCardProps> =
 
   const getMealPlanBadge = () => {
     if (!attendee.meal_plan) return null;
-    const mealLabel = attendee.formatted_meal_plan || 'No Plan';
+    const mealLabel = attendee.formatted_meal_plan || formatMealPlan(attendee.meal_plan ?? null);
     return (
       <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
         <Utensils className="h-3 w-3 mr-1" />

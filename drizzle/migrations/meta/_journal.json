@@ -36,6 +36,13 @@
       "when": 1790345278185,
       "tag": "0004_attendee_locked_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790352083107,
+      "tag": "0005_add_vegan_meal_plan",
+      "breakpoints": true
     }
   ]
 }
