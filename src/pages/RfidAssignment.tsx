@@ -104,6 +104,21 @@ export interface AttendeeData {
 
 const ROWS_PER_PAGE = 100;
 
+type AttendeeCategory = 'campers' | 'ops' | 'walkins';
+
+const getAttendeeCategory = (a: { ticket_type?: string; order_id?: string; first_name?: string }): AttendeeCategory => {
+  if (a.ticket_type === 'operational_worker' || (a.order_id || '').toUpperCase().startsWith('OPS-')) return 'ops';
+  if ((a.order_id || '').toUpperCase().startsWith('MCAMPER') || (a.first_name || '').toUpperCase().startsWith('MCAMPER-')) return 'walkins';
+  return 'campers';
+};
+
+const CATEGORY_OPTIONS: Array<{ value: AttendeeCategory | 'all'; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'campers', label: 'Campers' },
+  { value: 'ops', label: 'Operations' },
+  { value: 'walkins', label: 'Walk-Ins' },
+];
+
 const MOBILE_SORT_OPTIONS = [
   { value: 'name', label: 'Name' },
   { value: 'arrival_day', label: 'Arrival day' },
