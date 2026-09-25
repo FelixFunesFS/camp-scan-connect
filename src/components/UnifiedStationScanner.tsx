@@ -22,6 +22,7 @@ import { describeUnknownCredential } from "@/lib/credentialLookup";
 import { ScanIssueDialog } from "@/components/ScanIssueDialog";
 import { normalizeCredential } from "@/lib/credentialFormat";
 import { GateQuickSearch } from "@/components/GateQuickSearch";
+import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -67,6 +68,7 @@ export function UnifiedStationScanner({
   const [showLens, setShowLens] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showWaiver, setShowWaiver] = useState(false);
 
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -275,12 +277,37 @@ export function UnifiedStationScanner({
     return 'other';
   };
 
+  const needsWaiver = () =>
+    !!selectedRfid?.attendee &&
+    selectedRfid.attendee.waiver_signed !== true &&
+    selectedRfid.attendee.ticket_type !== 'operational_worker';
+
+  // One tap: activate (if needed), then re-scan so the station action fires
+  const quickResolve = async () => {
+    if (!selectedRfid?.attendee_id) return;
+    if (needsWaiver()) { setShowWaiver(true); return; }
+    await handleDirectActivation();
+  };
+
+  const handleWaiverSigned = async () => {
+    setShowWaiver(false);
+    if (!selectedRfid) return;
+    // Reflect the signature locally so activation doesn't re-prompt
+    const updated = { ...selectedRfid, attendee: selectedRfid.attendee ? { ...selectedRfid.attendee, waiver_signed: true } : selectedRfid.attendee };
+    setSelectedRfid(updated as RfidTag);
+    if (attendeeReadiness && !attendeeReadiness.hasActivation) {
+      await handleDirectActivation();
+    } else {
+      await handleRfidFound(selectedRfid.uid);
+    }
+  };
+
   const shouldShowActivationPrompt = () => {
     return selectedRfid?.attendee && 
            attendeeReadiness && 
            !attendeeReadiness.isReady && 
            attendeeReadiness.hasAssignment && 
-           !attendeeReadiness.hasActivation &&
+           (!attendeeReadiness.hasActivation || needsWaiver()) &&
            !showStaffOverride;
   };
 
@@ -507,7 +534,19 @@ export function UnifiedStationScanner({
             attendeeName={`${selectedRfid!.attendee.first_name} ${selectedRfid!.attendee.last_name}`}
             attendeeReadiness={attendeeReadiness!}
             onStaffOverride={() => setShowStaffOverride(true)}
-            onStaffActivation={isActivating ? undefined : handleDirectActivation}
+            onStaffActivation={isActivating ? undefined : quickResolve}
+            needsWaiver={needsWaiver()}
+            isWorking={isActivating}
+          />
+        )}
+
+        {selectedRfid?.attendee && (
+          <WaiverSigningDialog
+            open={showWaiver}
+            onOpenChange={setShowWaiver}
+            attendeeId={selectedRfid.attendee.id}
+            attendeeName={`${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`}
+            onSigned={handleWaiverSigned}
           />
         )}
 
