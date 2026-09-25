@@ -11,6 +11,7 @@ import {
   Package2,
   Shirt,
   DoorOpen,
+  UserSearch,
 } from "lucide-react";
 
 const STATIONS = [
