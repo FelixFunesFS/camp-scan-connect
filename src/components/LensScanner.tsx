@@ -208,7 +208,7 @@ export const LensScanner: React.FC<LensScannerProps> = ({
 
       {/* Bottom sheet: status, result, controls */}
       <div
-        className="relative space-y-3 px-4 pt-3"
+        className="relative max-h-[62vh] space-y-3 overflow-y-auto px-4 pt-3 landscape:max-h-[55vh] landscape:space-y-2"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
       >
         {isStarting && (
