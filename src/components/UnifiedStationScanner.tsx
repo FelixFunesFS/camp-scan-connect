@@ -83,6 +83,7 @@ export function UnifiedStationScanner({
     const uid = normalizeCredential(rawUid);
     if (!uid) return;
     setError("");
+    setAutoLogged(false);
     setLastCode(uid);
     setIsLookingUp(true);
     // A new code starts a fresh scan: clear the one-commit-per-scan guard
