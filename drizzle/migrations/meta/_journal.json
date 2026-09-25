@@ -29,6 +29,13 @@
       "when": 1790261586829,
       "tag": "0003_add_operational_worker_ticket_type",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790345278185,
+      "tag": "0004_attendee_locked_fields",
+      "breakpoints": true
     }
   ]
 }

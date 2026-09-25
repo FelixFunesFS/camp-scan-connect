@@ -99,12 +99,14 @@ export type Database = {
           is_veteran: boolean | null
           last_name: string
           last_synced_at: string | null
+          locked_fields: string[]
           marital_status: string | null
           meal_plan: Database["public"]["Enums"]["meal_plan"] | null
           most_recent_activation_at: string | null
           most_recent_activation_method: string | null
           notes: string | null
           order_id: string | null
+          override_log: Json | null
           phone: string | null
           postal_code: string | null
           priority: string | null
@@ -154,12 +156,14 @@ export type Database = {
           is_veteran?: boolean | null
           last_name: string
           last_synced_at?: string | null
+          locked_fields?: string[]
           marital_status?: string | null
           meal_plan?: Database["public"]["Enums"]["meal_plan"] | null
           most_recent_activation_at?: string | null
           most_recent_activation_method?: string | null
           notes?: string | null
           order_id?: string | null
+          override_log?: Json | null
           phone?: string | null
           postal_code?: string | null
           priority?: string | null
@@ -209,12 +213,14 @@ export type Database = {
           is_veteran?: boolean | null
           last_name?: string
           last_synced_at?: string | null
+          locked_fields?: string[]
           marital_status?: string | null
           meal_plan?: Database["public"]["Enums"]["meal_plan"] | null
           most_recent_activation_at?: string | null
           most_recent_activation_method?: string | null
           notes?: string | null
           order_id?: string | null
+          override_log?: Json | null
           phone?: string | null
           postal_code?: string | null
           priority?: string | null
