@@ -20,6 +20,7 @@ import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
 import { normalizeCredential } from "@/lib/credentialFormat";
+import { GateQuickSearch } from "@/components/GateQuickSearch";
 
 interface UnifiedStationScannerProps {
   stationType: StationType;
@@ -27,6 +28,8 @@ interface UnifiedStationScannerProps {
   children: (props: StationActionProps) => React.ReactNode;
   mode?: 'quick' | 'confirm'; // quick = auto-execute, confirm = show preview
   autoTrigger?: boolean; // auto-trigger action after successful scan
+  /** Show the name / phone / order lookup for busy lines (gate check-in). */
+  enableAttendeeSearch?: boolean;
 }
 
 export interface StationActionProps {
@@ -45,7 +48,8 @@ export function UnifiedStationScanner({
   stationTitle,
   children,
   mode = 'confirm',
-  autoTrigger = false
+  autoTrigger = false,
+  enableAttendeeSearch = false
 }: UnifiedStationScannerProps) {
   const [manualUid, setManualUid] = useState("");
   const [selectedRfid, setSelectedRfid] = useState<RfidTag | null>(null);
@@ -387,6 +391,19 @@ export function UnifiedStationScanner({
               >
                 Code won't scan? Enter it manually
               </Button>
+            )}
+
+            {enableAttendeeSearch && (
+              <div className="space-y-3 border-t pt-3">
+                <p className="text-sm font-medium">No band handy? Look them up</p>
+                <GateQuickSearch
+                  disabled={isLookingUp || isProcessing}
+                  onSelectCredential={(uid) => {
+                    setShowLens(false);
+                    handleRfidFound(uid);
+                  }}
+                />
+              </div>
             )}
 
             {/* Status Indicators */}
