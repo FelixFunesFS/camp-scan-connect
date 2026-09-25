@@ -55,6 +55,7 @@ export const EnhancedRfidAssignmentCell = ({
   const [replaceReason, setReplaceReason] = useState("");
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [removeReason, setRemoveReason] = useState("");
+  const [removeConfirmed, setRemoveConfirmed] = useState(false);
   const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
   const [scannerMode, setScannerMode] = useState<'usb' | 'camera'>('camera');
   const [cameraTarget, setCameraTarget] = useState<'assign' | 'edit' | 'replace'>('assign');
