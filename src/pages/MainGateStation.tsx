@@ -5,6 +5,11 @@ import { toast } from "sonner";
 import { DoorOpen, Building } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
+/** Guards against an entry being instantly flipped to an exit by a lingering band. */
+const FLIP_GUARD_MS = 15_000;
+const RECENT_GATE_SCANS = new Map<string, { at: number; action: string }>();
+
+
 const MainGateStation = () => {
   return (
     <UnifiedStationScanner 
