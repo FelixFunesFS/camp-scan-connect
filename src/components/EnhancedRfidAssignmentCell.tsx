@@ -261,6 +261,20 @@ export const EnhancedRfidAssignmentCell = ({
         return;
       }
 
+      // A camper who is already checked in (or signed the waiver) must be able
+      // to use their new band straight away — no extra activation step.
+      const { data: person } = await supabase
+        .from('attendees')
+        .select('checked_in_at, waiver_signed')
+        .eq('id', attendeeId)
+        .maybeSingle();
+
+      const now = new Date().toISOString();
+      const goLive = !!person?.checked_in_at || person?.waiver_signed === true;
+      const statusFields = goLive
+        ? { status: 'active' as const, activated_at: now, activation_method: 'staff_assisted' }
+        : { status: 'assigned' as const };
+
       if (!tagExists) {
         // Create new credential entry
         await supabase
@@ -268,10 +282,10 @@ export const EnhancedRfidAssignmentCell = ({
           .insert({
             uid: normalizeCredential(uid),
             attendee_id: attendeeId,
-            status: 'assigned',
-            issued_at: new Date().toISOString(),
+            issued_at: now,
             event_id: getCurrentEventId(),
-            credential_type: inferCredentialType(uid)
+            credential_type: inferCredentialType(uid),
+            ...statusFields
           });
       } else {
         // Update existing tag (only if unissued or deactivated)
@@ -279,13 +293,25 @@ export const EnhancedRfidAssignmentCell = ({
           .from('rfid_tags')
           .update({
             attendee_id: attendeeId,
-            status: 'assigned',
-            issued_at: new Date().toISOString(),
+            issued_at: now,
             deactivated_at: null,
-            reason: null
+            reason: null,
+            ...statusFields
           })
           .eq('uid', normalizeCredential(uid))
           .in('status', ['unissued', 'deactivated', 'replaced']);
+      }
+
+      if (goLive) {
+        await supabase
+          .from('attendees')
+          .update({
+            activated_at: now,
+            most_recent_activation_at: now,
+            most_recent_activation_method: 'staff_assisted',
+            checked_in_at: person?.checked_in_at || now
+          })
+          .eq('id', attendeeId);
       }
 
       // Log assignment transaction
@@ -300,11 +326,32 @@ export const EnhancedRfidAssignmentCell = ({
           extra_data: {
             assignment_context: 'pre_assignment',
             assignment_source: 'assignment_station',
-            previous_rfid: existingRfid?.uid || null
+            previous_rfid: existingRfid?.uid || null,
+            auto_activated: goLive
           }
         });
 
-      toast.success(`Assigned Successfully: ${normalizeCredential(uid)} → ${attendeeName}`, STICKY);
+      if (goLive) {
+        await supabase
+          .from('station_transactions')
+          .insert({
+            attendee_id: attendeeId,
+            rfid_uid: normalizeCredential(uid),
+            station_type: 'activation',
+            transaction_type: 'activate',
+            current_status: 'active',
+            activation_method: 'staff_assisted',
+            event_id: getCurrentEventId(),
+            extra_data: { auto_activated_on_assignment: true }
+          });
+      }
+
+      toast.success(
+        goLive
+          ? `${normalizeCredential(uid)} → ${attendeeName}. Band is live — they can scan at any station now.`
+          : `Assigned Successfully: ${normalizeCredential(uid)} → ${attendeeName}`,
+        STICKY
+      );
 
       // Optimistic update first
       if (onOptimisticUpdate) {
