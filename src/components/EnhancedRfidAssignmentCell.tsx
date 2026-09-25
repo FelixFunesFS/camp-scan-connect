@@ -22,6 +22,10 @@ import { toast } from "sonner";
 import { useRfidCaptureContext } from "@/contexts/RfidCaptureContext";
 import { CameraBraceletScanner } from "@/components/CameraBraceletScanner";
 import { inferCredentialType, normalizeCredential } from "@/lib/credentialFormat";
+import { Checkbox } from "@/components/ui/checkbox";
+
+/** Assignment messages stay on screen until staff dismiss them. */
+const STICKY = { duration: Infinity, closeButton: true } as const;
 
 interface EnhancedRfidAssignmentCellProps {
   attendeeId: string;
@@ -217,7 +221,7 @@ export const EnhancedRfidAssignmentCell = ({
       // Validate one more time before assignment to prevent duplicates
       const validationResult = await validateRfidUid(normalizeCredential(uid));
       if (!validationResult.isValid) {
-        toast.error("Assignment blocked - this wristband is already assigned to another attendee.");
+        toast.error("Assignment blocked - this wristband is already assigned to another attendee.", STICKY);
         return;
       }
 
@@ -252,7 +256,7 @@ export const EnhancedRfidAssignmentCell = ({
 
       if (tagExists && tagExists.attendee_id && tagExists.attendee_id !== attendeeId) {
         // This should not happen due to validation, but double-check for safety
-        toast.error("Assignment blocked - this wristband is assigned to another attendee.");
+        toast.error("Assignment blocked - this wristband is assigned to another attendee.", STICKY);
         return;
       }
 
@@ -299,7 +303,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`Assigned Successfully: ${normalizeCredential(uid)} → ${attendeeName}`);
+      toast.success(`Assigned Successfully: ${normalizeCredential(uid)} → ${attendeeName}`, STICKY);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
@@ -315,7 +319,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     } catch (error) {
       console.error('credential assignment error:', error);
-      toast.error("Assignment Failed - Failed to assign credential. Please try again.");
+      toast.error("Assignment Failed - Failed to assign credential. Please try again.", STICKY);
     } finally {
       setIsProcessing(false);
     }
@@ -343,7 +347,7 @@ export const EnhancedRfidAssignmentCell = ({
       // Validate the new UID
       const validationResult = await validateRfidUid(normalizeCredential(editValue), true);
       if (!validationResult.isValid) {
-        toast.error("Edit blocked - this wristband is already assigned to another attendee.");
+        toast.error("Edit blocked - this wristband is already assigned to another attendee.", STICKY);
         return;
       }
 
@@ -410,7 +414,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`Wristband updated: ${normalizeCredential(editValue)} → ${attendeeName}`);
+      toast.success(`Wristband updated: ${normalizeCredential(editValue)} → ${attendeeName}`, STICKY);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
@@ -427,7 +431,7 @@ export const EnhancedRfidAssignmentCell = ({
 
     } catch (error) {
       console.error('RFID edit error:', error);
-      toast.error("Edit Failed - Failed to update credential assignment. Please try again.");
+      toast.error("Edit Failed - Failed to update credential assignment. Please try again.", STICKY);
     } finally {
       setIsProcessing(false);
     }
@@ -475,7 +479,7 @@ export const EnhancedRfidAssignmentCell = ({
           }
         });
 
-      toast.success(`Band removed: ${currentRfidUid} is no longer assigned to ${attendeeName} (${reasonLabel})`);
+      toast.success(`Band removed: ${currentRfidUid} is no longer assigned to ${attendeeName} (${reasonLabel})`, STICKY);
 
       // Optimistic update first
       if (onOptimisticUpdate) {
@@ -490,7 +494,7 @@ export const EnhancedRfidAssignmentCell = ({
       setRemoveReason("");
     } catch (error) {
       console.error('RFID clear error:', error);
-      toast.error("Could not remove the band. Please try again.");
+      toast.error("Could not remove the band. Please try again.", STICKY);
     } finally {
       setIsProcessing(false);
     }
@@ -525,7 +529,7 @@ export const EnhancedRfidAssignmentCell = ({
     try {
       const validationResult = await validateRfidUid(newUid, true);
       if (!validationResult.isValid) {
-        toast.error("Replacement blocked - this wristband is already assigned to another attendee.");
+        toast.error("Replacement blocked - this wristband is already assigned to another attendee.", STICKY);
         return;
       }
 
@@ -549,7 +553,7 @@ export const EnhancedRfidAssignmentCell = ({
         .single();
 
       if (tagExists?.attendee_id && tagExists.attendee_id !== attendeeId) {
-        toast.error("Replacement blocked - this wristband is assigned to another attendee.");
+        toast.error("Replacement blocked - this wristband is assigned to another attendee.", STICKY);
         return;
       }
 
@@ -638,7 +642,7 @@ export const EnhancedRfidAssignmentCell = ({
           });
       }
 
-      toast.success(`Band replaced: ${currentRfidUid} marked lost, ${newUid} → ${attendeeName}${wasActive ? ' (kept checked in)' : ''}`);
+      toast.success(`Band replaced: ${currentRfidUid} marked lost, ${newUid} → ${attendeeName}${wasActive ? ' (kept checked in)' : ''}`, STICKY);
 
       if (onOptimisticUpdate) {
         onOptimisticUpdate(attendeeId, newUid, newStatus);
@@ -651,7 +655,7 @@ export const EnhancedRfidAssignmentCell = ({
       setTimeout(() => onAssignmentComplete(), 300);
     } catch (error) {
       console.error('Band replacement error:', error);
-      toast.error("Replacement Failed - Could not replace the band. Please try again.");
+      toast.error("Replacement Failed - Could not replace the band. Please try again.", STICKY);
     } finally {
       setIsProcessing(false);
     }
