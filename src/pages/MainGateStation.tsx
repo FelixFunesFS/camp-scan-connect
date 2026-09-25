@@ -61,6 +61,20 @@ const MainGateContent = ({
       const transactionType = isCurrentlyOnSite ? 'gate_exit' : 'gate_entry';
       const newStatus = isCurrentlyOnSite ? 'off_site' : 'on_site';
       const actionText = isCurrentlyOnSite ? 'exit' : 'entry';
+
+      // A band lingering in front of the camera used to log an entry and then
+      // immediately an exit. Ignore an opposite-direction scan of the same band
+      // within 15 seconds of the one just recorded.
+      const recent = RECENT_GATE_SCANS.get(selectedRfid.uid);
+      if (recent && Date.now() - recent.at < FLIP_GUARD_MS && recent.action !== actionText) {
+        toast.info(`Already recorded — ${recent.action === 'entry' ? 'entry' : 'exit'} logged a moment ago.`, {
+          duration: 2500,
+        });
+        setTimeout(() => onReset(), 1200);
+        return;
+      }
+      RECENT_GATE_SCANS.set(selectedRfid.uid, { at: Date.now(), action: actionText });
+      
       
       await executeAction(transactionType, {
         current_status: newStatus,
