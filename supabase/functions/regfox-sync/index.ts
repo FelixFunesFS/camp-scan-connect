@@ -131,10 +131,25 @@ async function runSync(
     }
 
 
+    // Rows with locked fields have fewer columns; a bulk upsert would null the
+    // missing ones, so they are updated one at a time with only their own keys.
+    const lockedRows = toUpsert.filter((r) => lockedByRegistration.has(String(r.regfox_registration_id)));
+    const bulkRows = toUpsert.filter((r) => !lockedByRegistration.has(String(r.regfox_registration_id)));
+    for (const row of lockedRows) {
+      const { event_id, regfox_registration_id, ...patch } = row;
+      const { error: lockErr } = await supabase
+        .from('attendees')
+        .update(patch)
+        .eq('event_id', event_id as string)
+        .eq('regfox_registration_id', regfox_registration_id as string);
+      if (lockErr) errors.push(`Registrant ${regfox_registration_id}: ${lockErr.message}`);
+      else updatedCount += 1;
+    }
+
     // Idempotent on (event_id, regfox_registration_id).
     const chunkSize = 200;
-    for (let i = 0; i < toUpsert.length; i += chunkSize) {
-      const chunk = toUpsert.slice(i, i + chunkSize);
+    for (let i = 0; i < bulkRows.length; i += chunkSize) {
+      const chunk = bulkRows.slice(i, i + chunkSize);
       const { error: upsertError } = await supabase
         .from('attendees')
         .upsert(chunk, { onConflict: 'event_id,regfox_registration_id' });
@@ -150,15 +165,19 @@ async function runSync(
 
       await touch({
         progress_info: {
-          processed: Math.min(i + chunkSize, toUpsert.length),
-          total: toUpsert.length,
+          processed: Math.min(i + chunkSize, bulkRows.length),
+          total: bulkRows.length,
           phase: 'writing',
         },
       });
     }
 
     const remoteIds = new Set(usable.map((r) => String(r.id)));
-    const removedIds = [...existing.keys()].filter((id) => !remoteIds.has(id));
+    const missingIds = [...existing.keys()].filter((id) => !remoteIds.has(id));
+    // Manually overridden status is never changed by a sync; flag for review instead.
+    const cancelledWithOverride = missingIds.filter((id) =>
+      (lockedByRegistration.get(id) ?? []).includes('registration_status'));
+    const removedIds = missingIds.filter((id) => !cancelledWithOverride.includes(id));
     if (removedIds.length > 0) {
       const { error: removalError } = await supabase
         .from('attendees')
