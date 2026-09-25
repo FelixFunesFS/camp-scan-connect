@@ -228,6 +228,10 @@ export default function ActivationStation() {
                     onReset={resetForm}
                     onGoHome={resetForm}
                     onUpdate={(result) => setActivationResult(result)}
+                    onSignNow={() => {
+                      setActivationResult(null);
+                      runLookup(false);
+                    }}
                   />
                 )}
               </CardContent>

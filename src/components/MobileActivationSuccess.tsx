@@ -15,6 +15,7 @@ interface MobileActivationSuccessProps {
   onReset: () => void;
   onGoHome: () => void;
   onUpdate?: (result: GroupActivationResult) => void;
+  onSignNow?: () => void;
 }
 
 export function MobileActivationSuccess({
@@ -22,7 +23,8 @@ export function MobileActivationSuccess({
   activationResult,
   onReset,
   onGoHome,
-  onUpdate
+  onUpdate,
+  onSignNow
 }: MobileActivationSuccessProps) {
   const [isActivatingRemaining, setIsActivatingRemaining] = useState(false);
   
@@ -357,6 +359,11 @@ export function MobileActivationSuccess({
                   />
                 ))}
               </div>
+              {onSignNow && (
+                <Button onClick={onSignNow} variant="secondary" className="w-full h-12 text-base">
+                  Sign now — back to my group
+                </Button>
+              )}
             </div>
           )}
         </div>
