@@ -865,7 +865,7 @@ export const EnhancedRfidAssignmentCell = ({
                   : `This band will no longer be assigned to ${attendeeName}. It can be assigned to someone else afterwards.`}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-medium">Reason (required)</label>
               <Select value={removeReason} onValueChange={setRemoveReason}>
                 <SelectTrigger className="h-11">
@@ -880,17 +880,29 @@ export const EnhancedRfidAssignmentCell = ({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                If the band was lost or broken and the person is still here, use <strong>Replace</strong> instead so their check-in carries over.
+                To give this person a different band, remove this one with a reason, then type their new band code in the same box.
               </p>
+              <label className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                <Checkbox
+                  checked={removeConfirmed}
+                  onCheckedChange={(v) => setRemoveConfirmed(v === true)}
+                  disabled={isProcessing}
+                  className="mt-0.5"
+                />
+                <span className="text-sm">
+                  I checked the reason above and want to save this removal for{" "}
+                  <strong>{attendeeName}</strong>.
+                </span>
+              </label>
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isProcessing}>Keep band</AlertDialogCancel>
               <AlertDialogAction
                 onClick={(e) => { e.preventDefault(); handleClearRfid(); }}
-                disabled={!removeReason || isProcessing}
+                disabled={!removeReason || !removeConfirmed || isProcessing}
               >
                 {isProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Remove band
+                Save removal
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
