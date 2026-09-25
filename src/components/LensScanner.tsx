@@ -50,6 +50,7 @@ export const LensScanner: React.FC<LensScannerProps> = ({
   const [flash, setFlash] = useState<'hit' | 'miss' | null>(null);
   const [showManual, setShowManual] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  const [scanned, setScanned] = useState('');
 
   const pulse = useCallback((kind: 'hit' | 'miss') => {
     setFlash(kind);
