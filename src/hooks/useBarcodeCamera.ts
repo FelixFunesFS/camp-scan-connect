@@ -136,11 +136,11 @@ export const useBarcodeCamera = ({
         return;
       }
 
-      // 3. Confirmation: ambiguous payloads must decode twice in quick
-      //    succession. A read that already matches our credential shape is
-      //    high-confidence and fires immediately.
-      const highConfidence = !looksLikeRetailBarcode(code) && isValidCredentialFormat(code);
-      if (!highConfidence) {
+      // 3. Confirmation: every read must decode identically twice in quick
+      //    succession. A curved/smudged band can yield a well-shaped but
+      //    truncated value (HQ3-BLW vs HQ3-BLWF) on one frame; it almost
+      //    never repeats, while the true value re-decodes within ~100 ms.
+      {
         const pending = pendingRef.current;
         if (!pending || pending.code !== code || now - pending.at > CONFIRM_WINDOW_MS) {
           pendingRef.current = { code, at: now };
