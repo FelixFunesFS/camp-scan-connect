@@ -355,7 +355,7 @@ export const EnhancedRfidAssignmentCell = ({
 
       // Optimistic update first
       if (onOptimisticUpdate) {
-        onOptimisticUpdate(attendeeId, normalizeCredential(uid), 'assigned');
+        onOptimisticUpdate(attendeeId, normalizeCredential(uid), goLive ? 'active' : 'assigned');
       }
 
       setUid("");
