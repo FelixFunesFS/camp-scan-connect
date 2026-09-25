@@ -94,11 +94,18 @@ export const CameraBraceletScanner: React.FC<CameraBraceletScannerProps> = ({
             autoPlay
           />
 
-          {/* Aiming guide */}
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="relative h-28 w-4/5 rounded-lg border-2 border-primary/80">
-              <div className="absolute inset-x-0 top-1/2 h-px animate-pulse bg-primary" />
+          {/* Aiming guide: corner reticle + sweeping beam */}
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2">
+            <div className="relative h-28 w-4/5 overflow-hidden rounded-lg border-2 border-white/50">
+              <span className="absolute left-0 top-0 h-6 w-6 rounded-tl-lg border-l-4 border-t-4 border-white" />
+              <span className="absolute right-0 top-0 h-6 w-6 rounded-tr-lg border-r-4 border-t-4 border-white" />
+              <span className="absolute bottom-0 left-0 h-6 w-6 rounded-bl-lg border-b-4 border-l-4 border-white" />
+              <span className="absolute bottom-0 right-0 h-6 w-6 rounded-br-lg border-b-4 border-r-4 border-white" />
+              <div className="scan-beam absolute inset-x-3 h-0.5 rounded-full bg-emerald-300 shadow-[0_0_10px_2px_rgba(110,231,183,0.75)]" />
             </div>
+            <p className="px-4 text-center text-[11px] leading-tight text-white drop-shadow">
+              Keep the phone upright and pull the band flat — it reads at any angle.
+            </p>
           </div>
 
           {isStarting && (
