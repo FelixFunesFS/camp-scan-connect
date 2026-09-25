@@ -20,7 +20,7 @@ import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
 import { ScanIssueDialog } from "@/components/ScanIssueDialog";
-import { autoLogScanIssue } from "@/lib/autoScanIssueLog";
+import { autoLogScanIssue, markLetThrough } from "@/lib/autoScanIssueLog";
 import { normalizeCredential } from "@/lib/credentialFormat";
 import { GateQuickSearch } from "@/components/GateQuickSearch";
 import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
