@@ -340,3 +340,21 @@ All colors MUST be HSL.
   }
 }
 
+
+/* Sweeping beam inside the camera scanner viewfinder */
+@keyframes scan-beam-sweep {
+  0% { top: 8%; opacity: 0.35; }
+  50% { top: 88%; opacity: 1; }
+  100% { top: 8%; opacity: 0.35; }
+}
+
+.scan-beam {
+  animation: scan-beam-sweep 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-beam {
+    animation: none;
+    top: 50%;
+  }
+}

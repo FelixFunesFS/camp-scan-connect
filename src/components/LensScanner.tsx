@@ -50,6 +50,7 @@ export const LensScanner: React.FC<LensScannerProps> = ({
   const [flash, setFlash] = useState<'hit' | 'miss' | null>(null);
   const [showManual, setShowManual] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  const [scanned, setScanned] = useState('');
 
   const pulse = useCallback((kind: 'hit' | 'miss') => {
     setFlash(kind);
@@ -71,7 +72,9 @@ export const LensScanner: React.FC<LensScannerProps> = ({
     active: isOpen,
     onScan: (code) => {
       setReadError('');
+      setScanned(code);
       pulse('hit');
+      setTimeout(() => setScanned(''), 2000);
       onScan(code);
     },
     onInvalidRead: (code) => {
@@ -156,20 +159,36 @@ export const LensScanner: React.FC<LensScannerProps> = ({
         </Button>
       </div>
 
-      {/* Aiming frame */}
-      <div className="pointer-events-none relative flex flex-1 items-center justify-center px-6">
+      {/* Aiming frame with corner reticle + sweeping scan beam */}
+      <div className="pointer-events-none relative flex flex-1 flex-col items-center justify-center gap-3 px-6">
         <div
           className={cn(
-            'relative h-40 w-full max-w-sm rounded-2xl border-2 transition-colors',
+            'relative h-44 w-full max-w-sm overflow-hidden rounded-2xl border-2 transition-colors',
             flash === 'hit'
               ? 'border-emerald-400'
               : flash === 'miss'
                 ? 'border-destructive'
-                : 'border-white/80'
+                : 'border-white/40'
           )}
         >
-          <div className="absolute inset-x-6 top-1/2 h-px animate-pulse bg-white/90" />
+          {/* Corner markers */}
+          <span className="absolute left-0 top-0 h-8 w-8 rounded-tl-2xl border-l-4 border-t-4 border-white" />
+          <span className="absolute right-0 top-0 h-8 w-8 rounded-tr-2xl border-r-4 border-t-4 border-white" />
+          <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-2xl border-b-4 border-l-4 border-white" />
+          <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-2xl border-b-4 border-r-4 border-white" />
+          {/* Sweeping beam */}
+          <div className="scan-beam absolute inset-x-4 h-0.5 rounded-full bg-emerald-300 shadow-[0_0_12px_2px_rgba(110,231,183,0.8)]" />
         </div>
+
+        {scanned ? (
+          <div className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-semibold text-white shadow-lg">
+            Scanned {scanned}
+          </div>
+        ) : (
+          <p className="max-w-xs text-center text-xs text-white/80">
+            Pull the band flat and hold the phone 6–8 inches away. Any angle works.
+          </p>
+        )}
       </div>
 
       {/* Bottom sheet: status, result, controls */}

@@ -30,6 +30,33 @@ export const CAMERA_DIAGNOSTIC_FORMATS = [
   BarcodeFormat.PDF_417,
 ];
 
+/** Same symbologies expressed for the native Shape Detection API. */
+const NATIVE_SUPPORTED_FORMATS = ['qr_code', 'code_128', 'code_39', 'data_matrix'];
+const NATIVE_DIAGNOSTIC_FORMATS = [
+  ...NATIVE_SUPPORTED_FORMATS,
+  'ean_13',
+  'ean_8',
+  'upc_a',
+  'upc_e',
+  'itf',
+  'pdf417',
+];
+
+interface NativeDetectedBarcode {
+  rawValue: string;
+  format?: string;
+}
+
+interface NativeBarcodeDetectorCtor {
+  new (options?: { formats?: string[] }): {
+    detect: (source: CanvasImageSource) => Promise<NativeDetectedBarcode[]>;
+  };
+  getSupportedFormats?: () => Promise<string[]>;
+}
+
+/** Which decoding engine is currently driving the camera. */
+export type ScanEngine = 'native' | 'zxing' | null;
+
 /** Ignore repeat reads of the same code inside this window. */
 const DUPLICATE_WINDOW_MS = 2500;
 /** A payload must decode twice inside this window before we trust it. */
@@ -74,6 +101,7 @@ export const useBarcodeCamera = ({
   const lastReadRef = useRef<{ code: string; at: number } | null>(null);
   const pendingRef = useRef<{ code: string; at: number } | null>(null);
   const startedAtRef = useRef<number>(0);
+  const nativeLoopRef = useRef<number | null>(null);
 
   const onScanRef = useRef(onScan);
   const onInvalidReadRef = useRef(onInvalidRead);
@@ -87,6 +115,7 @@ export const useBarcodeCamera = ({
   const [torchSupported, setTorchSupported] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [engine, setEngine] = useState<ScanEngine>(null);
 
   const handleDetected = useCallback(
     (raw: string) => {
@@ -143,14 +172,20 @@ export const useBarcodeCamera = ({
   );
 
   const stopCamera = useCallback(() => {
+    if (nativeLoopRef.current) {
+      cancelAnimationFrame(nativeLoopRef.current);
+      nativeLoopRef.current = null;
+    }
     controlsRef.current?.stop();
     controlsRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
     startedAtRef.current = 0;
     pendingRef.current = null;
     setTorchOn(false);
     setTorchSupported(false);
+    setEngine(null);
   }, []);
 
   useEffect(() => {
@@ -170,10 +205,79 @@ export const useBarcodeCamera = ({
     hints.set(DecodeHintType.TRY_HARDER, true);
     const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 60 });
 
+    /**
+     * Layer 1 — the browser's hardware-accelerated Shape Detection API.
+     * On iOS 17+ (Apple Vision) and Android Chrome (MLKit) this runs the OS
+     * vision model on the GPU/NPU. Those models are trained on real-world
+     * curved, glossy and partly damaged labels, so they recover 1D codes
+     * wrapped around a wrist that ZXing's straight scan-lines never see.
+     * Also fully omnidirectional: rotation of the band does not matter.
+     */
+    const startNativeDetector = async (): Promise<boolean> => {
+      const Detector = (window as unknown as { BarcodeDetector?: NativeBarcodeDetectorCtor })
+        .BarcodeDetector;
+      if (!Detector) return false;
+
+      try {
+        const supported = (await Detector.getSupportedFormats?.()) ?? [];
+        const wanted = (diagnostics ? NATIVE_DIAGNOSTIC_FORMATS : NATIVE_SUPPORTED_FORMATS).filter(
+          (f) => supported.includes(f)
+        );
+        // Without our linear symbologies the native path buys us nothing.
+        if (!wanted.includes('code_128') && !wanted.includes('code_39')) return false;
+
+        const detector = new Detector({ formats: wanted });
+        const video = videoRef.current;
+        if (!video) return false;
+
+        let stopped = false;
+        let inFlight = false;
+        const tick = async () => {
+          if (stopped || cancelled) return;
+          if (!inFlight && video.readyState >= 2 && video.videoWidth > 0) {
+            inFlight = true;
+            try {
+              const codes = await detector.detect(video);
+              for (const c of codes) {
+                if (c?.rawValue) handleDetected(c.rawValue);
+              }
+            } catch {
+              /* transient frame errors are normal; keep scanning */
+            } finally {
+              inFlight = false;
+            }
+          }
+          nativeLoopRef.current = requestAnimationFrame(tick);
+        };
+        nativeLoopRef.current = requestAnimationFrame(tick);
+        controlsRef.current = {
+          stop: () => {
+            stopped = true;
+            if (nativeLoopRef.current) cancelAnimationFrame(nativeLoopRef.current);
+            nativeLoopRef.current = null;
+          },
+        };
+        setEngine('native');
+        return true;
+      } catch (err) {
+        console.warn('Native BarcodeDetector unavailable, falling back to ZXing:', err);
+        return false;
+      }
+    };
+
     const start = async () => {
       try {
+        // Layer 3 — high resolution keeps the narrow bars resolvable where the
+        // band curves away from the lens; continuous focus stops the phone
+        // parking at infinity when held 6-8in from a wrist.
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: {
+            facingMode,
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 },
+            advanced: [{ focusMode: 'continuous' }],
+          } as unknown as MediaTrackConstraints,
         });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
@@ -184,11 +288,37 @@ export const useBarcodeCamera = ({
         const track = stream.getVideoTracks()[0];
         const capabilities = (track?.getCapabilities?.() ?? {}) as MediaTrackCapabilities & {
           torch?: boolean;
+          focusMode?: string[];
         };
         setTorchSupported(Boolean(capabilities.torch));
 
+        // Best-effort continuous autofocus on devices that only accept it
+        // through applyConstraints rather than at getUserMedia time.
+        if (capabilities.focusMode?.includes('continuous')) {
+          try {
+            await track.applyConstraints({
+              advanced: [{ focusMode: 'continuous' }],
+            } as unknown as MediaTrackConstraints);
+          } catch {
+            /* ignore — not fatal */
+          }
+        }
+
         if (!videoRef.current) return;
         startedAtRef.current = Date.now();
+
+        // Native engine needs the stream attached to the <video> itself.
+        videoRef.current.srcObject = stream;
+        try {
+          await videoRef.current.play();
+        } catch {
+          /* autoplay retry happens via the element's autoPlay attribute */
+        }
+
+        if (await startNativeDetector()) return;
+
+        // Layer 2 — ZXing fallback for browsers without Shape Detection.
+        setEngine('zxing');
         const controls = await reader.decodeFromStream(
           stream,
           videoRef.current,
@@ -268,5 +398,6 @@ export const useBarcodeCamera = ({
     cameraError,
     setCameraError,
     stopCamera,
+    engine,
   };
 };
