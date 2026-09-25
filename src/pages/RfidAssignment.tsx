@@ -1327,6 +1327,19 @@ export const RfidAssignment = () => {
                 </Select>
               </div>
               <div className="flex gap-2 flex-wrap">
+                {CATEGORY_OPTIONS.map(option => (
+                  <Button
+                    key={option.value}
+                    variant={uiState.categoryFilter === option.value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setUiState(prev => ({ ...prev, categoryFilter: option.value, currentPage: 1 }))}
+                  >
+                    {option.label}
+                    <Badge variant="secondary" className="ml-2">{categoryCounts[option.value]}</Badge>
+                  </Button>
+                ))}
+              </div>
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   variant={uiState.showOnlyUnassigned ? "default" : "outline"}
                   size="sm"
