@@ -368,6 +368,43 @@ export const useBarcodeCamera = ({
     return () => document.removeEventListener('visibilitychange', onHide);
   }, [active, stopCamera]);
 
+  /**
+   * Hold the screen upright while scanning. Staff instinctively rotate the
+   * phone to "line up" with a barcode, which reflows the whole page and hides
+   * the controls. Android/PWA honour the lock; iOS Safari rejects it, so the
+   * scanner layouts also stay landscape-safe on their own.
+   */
+  useEffect(() => {
+    if (!active) return;
+    const orientation = (screen as unknown as {
+      orientation?: {
+        lock?: (o: string) => Promise<void>;
+        unlock?: () => void;
+      };
+    }).orientation;
+    let locked = false;
+    try {
+      orientation?.lock?.('portrait-primary')
+        .then(() => {
+          locked = true;
+        })
+        .catch(() => {
+          /* iOS Safari and desktop reject this — layout handles it instead */
+        });
+    } catch {
+      /* not supported */
+    }
+    return () => {
+      if (locked) {
+        try {
+          orientation?.unlock?.();
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+  }, [active]);
+
   const toggleTorch = useCallback(async () => {
     const track = streamRef.current?.getVideoTracks()[0];
     if (!track) return;
