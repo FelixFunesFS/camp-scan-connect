@@ -11,6 +11,7 @@ import {
   Package2,
   Shirt,
   DoorOpen,
+  UserSearch,
 } from "lucide-react";
 
 const STATIONS = [
@@ -22,6 +23,7 @@ const STATIONS = [
   { title: "Fanny Packs Station", path: "/fanny-packs-station", icon: Package2 },
   { title: "T-Shirts Station", path: "/tshirts-station", icon: Shirt },
   { title: "Main Gate Station", path: "/main-gate-station", icon: DoorOpen },
+  { title: "Wristband Lookup", path: "/band-lookup", icon: UserSearch },
 ] as const;
 
 export default function StationsPage() {

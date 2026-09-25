@@ -20,7 +20,7 @@ import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
 import { ScanIssueDialog } from "@/components/ScanIssueDialog";
-import { autoLogScanIssue } from "@/lib/autoScanIssueLog";
+import { autoLogScanIssue, markLetThrough } from "@/lib/autoScanIssueLog";
 import { normalizeCredential } from "@/lib/credentialFormat";
 import { GateQuickSearch } from "@/components/GateQuickSearch";
 import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
@@ -202,6 +202,18 @@ export function UnifiedStationScanner({
     setShowStaffOverride(false);
     setShowStaffActivation(false);
     lastCommitRef.current = null;
+  };
+
+  /** Band didn't come up: note it and wave the camper through. */
+  const handleLetThrough = async () => {
+    const code = lastCode;
+    toast.success("Let through — keep the line moving");
+    handleReset();
+    try {
+      await markLetThrough({ scannedCode: code, stationType });
+    } catch (err) {
+      console.warn("Could not annotate the let-through", err);
+    }
   };
 
   const handleStaffOverride = async (notes: string) => {
@@ -474,6 +486,16 @@ export function UnifiedStationScanner({
                     <span>Logged automatically — keep the line moving.</span>
                   </div>
                 )}
+                {autoLogged && (
+                  <Button
+                    onClick={handleLetThrough}
+                    size="lg"
+                    className="mt-3 w-full h-12 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Let them through
+                  </Button>
+                )}
                 <button
                   type="button"
                   className="mt-2 text-xs underline text-muted-foreground"
@@ -570,6 +592,7 @@ export function UnifiedStationScanner({
             onOpenChange={setShowWaiver}
             attendeeId={selectedRfid.attendee_id}
             attendeeName={`${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`}
+            expressStaffSign
             onSigned={handleWaiverSigned}
           />
         )}

@@ -28,6 +28,7 @@ import Reports from "./pages/Reports";
 import EventDebrief from "./pages/EventDebrief";
 import ScanTester from "./pages/ScanTester";
 import StationsPage from "./pages/StationsPage";
+import BandLookupStation from "./pages/BandLookupStation";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => (
               <Route path="/fanny-packs-station" element={staff(<FannyPacksStation />)} />
               <Route path="/tshirts-station" element={staff(<TShirtsStation />)} />
               <Route path="/main-gate-station" element={staff(<MainGateStation />)} />
+              <Route path="/band-lookup" element={staff(<BandLookupStation />)} />
               <Route path="/tshirt-hub" element={staff(<TShirtHub />)} />
               <Route path="/equipment-hub" element={staff(<EquipmentHub />)} />
               <Route path="/attendee/:id" element={staff(<AttendeeDetail />)} />

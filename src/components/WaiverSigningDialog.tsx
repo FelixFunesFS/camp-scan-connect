@@ -27,6 +27,8 @@ interface WaiverSigningDialogProps {
   /** Set false when staff capture the signature with the attendee present. */
   signedBySelf?: boolean;
   witnessedBy?: string | null;
+  /** Busy gates: show the one-tap staff-witnessed agreement at the top. */
+  expressStaffSign?: boolean;
   onSigned: () => void;
 }
 
@@ -38,6 +40,7 @@ export function WaiverSigningDialog({
   eventId,
   signedBySelf = true,
   witnessedBy = null,
+  expressStaffSign = false,
   onSigned,
 }: WaiverSigningDialogProps) {
   const [scrolledToEnd, setScrolledToEnd] = useState(false);
@@ -85,6 +88,28 @@ export function WaiverSigningDialog({
       onSigned();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save the signature");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /** One tap: the camper agreed out loud with staff standing there. */
+  const handleExpressSign = async () => {
+    setIsSubmitting(true);
+    try {
+      await waiverService.signWaiver({
+        attendeeId,
+        eventId,
+        typedName: attendeeName,
+        registeredName: attendeeName,
+        signedBySelf: false,
+        witnessedBy: witnessedBy ?? "Station staff — agreed on-site",
+      });
+      toast.success(`${attendeeName} is cleared — waiver recorded`);
+      onOpenChange(false);
+      onSigned();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save the agreement");
     } finally {
       setIsSubmitting(false);
     }
@@ -148,6 +173,25 @@ export function WaiverSigningDialog({
           <DialogDescription className="text-xs sm:text-sm">{WAIVER_SUBTITLE}</DialogDescription>
           <p className="text-sm font-medium text-foreground pt-1">Signing as {attendeeName}</p>
         </DialogHeader>
+
+        {expressStaffSign && (
+          <div className="shrink-0 border-b bg-amber-50 p-4 space-y-2">
+            <p className="text-sm font-semibold text-amber-900">Busy line? One tap and they're in</p>
+            <p className="text-xs text-amber-800">
+              Read the short summary out loud, ask "Do you agree?", then tap below. Recorded as
+              agreed on-site with staff present.
+            </p>
+            <Button
+              onClick={handleExpressSign}
+              disabled={isSubmitting}
+              size="lg"
+              className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <CheckCircle2 className="h-5 w-5 mr-2" />
+              {isSubmitting ? "Saving..." : "They agree — sign & keep moving"}
+            </Button>
+          </div>
+        )}
 
         <div className="flex-1 min-h-0 overflow-y-auto" onScroll={handleScroll}>
           <div className="p-4 sm:p-6 space-y-5 text-sm leading-relaxed">
