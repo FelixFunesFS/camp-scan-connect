@@ -199,53 +199,62 @@ export const RfidAssignment = () => {
     console.log('⏳ Loading attendees from database...');
     
     try {
-      // First, get attendees data
-      let query = supabase
-        .from('attendees')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          phone,
-          order_id,
-          ticket_type,
-          meal_plan,
-          arrival_window,
-          registration_status,
-          waiver_signed,
-          activated_at,
-          is_veteran,
-          veteran_thanked_at,
-          created_at,
-          regfox_id,
-          city,
-          state,
-          custom_fields,
-          t_shirt_size,
-          site_location_assignment,
-          site_detail,
-          rfid_tags(uid, status, activated_at)
-        `)
-        .eq('event_id', getCurrentEventId())
-        .order('arrival_window', { ascending: true })
-        .order('order_id', { ascending: true });
+      // Fetch attendees in pages so large events are never clipped at 1000 rows
+      const ATTENDEE_PAGE = 1000;
+      const data: any[] = [];
+      for (let page = 0; ; page++) {
+        let query = supabase
+          .from('attendees')
+          .select(`
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            order_id,
+            ticket_type,
+            meal_plan,
+            arrival_window,
+            registration_status,
+            waiver_signed,
+            activated_at,
+            is_veteran,
+            veteran_thanked_at,
+            created_at,
+            regfox_id,
+            city,
+            state,
+            custom_fields,
+            t_shirt_size,
+            site_location_assignment,
+            site_detail,
+            rfid_tags(uid, status, activated_at)
+          `)
+          .eq('event_id', getCurrentEventId())
+          .order('arrival_window', { ascending: true })
+          .order('order_id', { ascending: true });
 
-      // Apply registration status filter
-      if (uiState.showCancelledRegistrants) {
-        query = query.eq('registration_status', 'cancelled');
-      } else {
-        query = query.in('registration_status', ['registered', 'pending']);
+        // Apply registration status filter
+        if (uiState.showCancelledRegistrants) {
+          query = query.eq('registration_status', 'cancelled');
+        } else {
+          query = query.in('registration_status', ['registered', 'pending']);
+        }
+
+        if (uiState.mode === 'day-of') {
+          query = query.order('created_at', { ascending: false });
+        }
+
+        query = query.order('id', { ascending: true }).range(page * ATTENDEE_PAGE, page * ATTENDEE_PAGE + ATTENDEE_PAGE - 1);
+
+        const { data: pageRows, error } = await query;
+        if (error) throw error;
+        data.push(...(pageRows || []));
+        if (!pageRows || pageRows.length < ATTENDEE_PAGE) break;
       }
 
-      if (uiState.mode === 'day-of') {
-        query = query.order('created_at', { ascending: false });
-      }
+      console.log(`📊 Loaded ${data.length} attendees from database`);
 
-      const { data, error } = await query;
-      if (error) throw error;
-
-      console.log(`📊 Loaded ${data?.length || 0} attendees from database`);
 
       // Fetch activation data for all attendees
       const attendeeIds = (data || []).map((a: any) => a.id);
