@@ -131,6 +131,11 @@ export function MobileActivationPreview({
               <CheckCircle2 className="h-3 w-3 mr-1" />
               Ready
             </Badge>
+          ) : attendee.is_active ? (
+            <Badge variant="outline" className="border-success/40 text-success">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Already checked in
+            </Badge>
           ) : null}
         </div>
       </div>
