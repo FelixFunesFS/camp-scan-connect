@@ -46,6 +46,24 @@ export function MobileActivationPreview({
   const waiverBlocked = all.filter((a: any) => a.blocked_reason === 'waiver_required');
   const needsRfid = all.filter((a: any) => a.blocked_reason === 'needs_rfid');
 
+  // Whole-group progress, in plain words.
+  const total = all.length;
+  const checkedInCount = all.filter((a: any) => a.is_active).length;
+  const readyCount = all.filter((a: any) => !a.is_active && !a.blocked_reason).length;
+  const seeStaffCount = all.filter(
+    (a: any) => !a.is_active && String(a.blocked_reason ?? '').startsWith('registration_')
+  ).length;
+  const groupDone = total > 0 && checkedInCount === total;
+  const headline = groupDone
+    ? total === 1 ? 'Checked in!' : `All ${total} checked in!`
+    : `${checkedInCount} of ${total} checked in`;
+  const chips = [
+    readyCount > 0 && { label: `${readyCount} ready to check in`, cls: 'bg-success/10 text-success border-success/30' },
+    waiverBlocked.length > 0 && { label: `${waiverBlocked.length} ${waiverBlocked.length === 1 ? 'needs' : 'need'} waiver`, cls: 'bg-warning/10 text-warning border-warning/30' },
+    needsRfid.length > 0 && { label: `${needsRfid.length} ${needsRfid.length === 1 ? 'needs' : 'need'} wristband (Staff Tent)`, cls: 'bg-warning/10 text-warning border-warning/30' },
+    seeStaffCount > 0 && { label: `${seeStaffCount} see staff`, cls: 'bg-destructive/10 text-destructive border-destructive/30' },
+  ].filter(Boolean) as { label: string; cls: string }[];
+
   const eligibleIds = useMemo(
     () => all.filter(isSelectable).map(attendeeId),
     [all]
@@ -158,15 +176,21 @@ export function MobileActivationPreview({
               <p className="text-muted-foreground text-sm">
                 Found {lookupResult.attendee_count} {lookupResult.attendee_count === 1 ? 'person' : 'people'}
               </p>
-              {!allCheckedIn && (eligibleIds.length > 0 || waiverBlocked.length > 0) && (
-                <p className="text-sm font-medium mt-1">
-                  {eligibleIds.length} of {eligibleIds.length + waiverBlocked.length} ready to check in
-                  {waiverBlocked.length > 0 && (
-                    <span className="text-warning">
-                      {' '}— {waiverBlocked.length} still {waiverBlocked.length === 1 ? 'needs' : 'need'} to sign the waiver
-                    </span>
+              {total > 0 && (
+                <div className="mt-1 space-y-1.5">
+                  <p className={groupDone ? "text-sm font-semibold text-success" : "text-sm font-semibold"}>
+                    {headline}
+                  </p>
+                  {chips.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {chips.map((c) => (
+                        <span key={c.label} className={`rounded-full border px-2 py-0.5 text-xs font-medium ${c.cls}`}>
+                          {c.label}
+                        </span>
+                      ))}
+                    </div>
                   )}
-                </p>
+                </div>
               )}
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="outline" className="text-xs">
@@ -296,9 +320,9 @@ export function MobileActivationPreview({
       {/* Action Buttons */}
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border/50 p-4 -m-4 mt-6">
         <div className="space-y-3">
-          {waiverBlocked.length > 0 && (
+          {!groupDone && (
             <p className="text-xs text-center text-muted-foreground">
-              {waiverBlocked.length} {waiverBlocked.length === 1 ? "person still needs" : "people still need"} to sign the waiver before they can be checked in.
+              {headline}{chips.length > 0 && ` · ${chips.map((c) => c.label).join(' · ')}`}
             </p>
           )}
           {/* Primary Action: Check-In Selected */}
