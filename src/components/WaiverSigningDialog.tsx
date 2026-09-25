@@ -93,6 +93,28 @@ export function WaiverSigningDialog({
     }
   };
 
+  /** One tap: the camper agreed out loud with staff standing there. */
+  const handleExpressSign = async () => {
+    setIsSubmitting(true);
+    try {
+      await waiverService.signWaiver({
+        attendeeId,
+        eventId,
+        typedName: attendeeName,
+        registeredName: attendeeName,
+        signedBySelf: false,
+        witnessedBy: witnessedBy ?? "Station staff — agreed on-site",
+      });
+      toast.success(`${attendeeName} is cleared — waiver recorded`);
+      onOpenChange(false);
+      onSigned();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save the agreement");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {receipt ? (
