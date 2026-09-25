@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +71,19 @@ export function MobileActivationPreview({
 
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set(eligibleIds));
+  // Auto-tick people who become eligible (e.g. just signed the waiver), keep manual un-ticks.
+  const seenEligible = useRef<Set<string>>(new Set(eligibleIds));
+  const eligibleKey = eligibleIds.join(',');
+  useEffect(() => {
+    const fresh = eligibleIds.filter((id) => !seenEligible.current.has(id));
+    fresh.forEach((id) => seenEligible.current.add(id));
+    setSelectedIds((prev) => {
+      const next = new Set([...prev].filter((id) => eligibleIds.includes(id)));
+      fresh.forEach((id) => next.add(id));
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eligibleKey]);
   const [bandCheckOpen, setBandCheckOpen] = useState(false);
   const [bandStep, setBandStep] = useState<'ask' | 'no'>('ask');
 
@@ -90,6 +103,7 @@ export function MobileActivationPreview({
 
   const renderSelectableCard = (attendee: any, type: 'direct' | 'companion', key: string) => {
     const selectable = isSelectable(attendee);
+    const needsWaiver = attendee.blocked_reason === 'waiver_required';
     const id = attendeeId(attendee);
     return (
       <div key={key} className="flex items-start gap-3">
@@ -100,8 +114,24 @@ export function MobileActivationPreview({
           className="mt-4 shrink-0"
           aria-label={`Select ${attendee.name}`}
         />
-        <div className={selectable ? "flex-1" : "flex-1 opacity-60"}>
-          <MobileAttendeeCard attendee={attendee} type={type} />
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className={selectable || needsWaiver ? "" : "opacity-60"}>
+            <MobileAttendeeCard attendee={attendee} type={type} />
+          </div>
+          {needsWaiver ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2">
+              <Badge variant="outline" className="border-warning/40 text-warning">Needs waiver</Badge>
+              <Button size="sm" variant="secondary" className="min-h-[40px]" disabled={isProcessing} onClick={() => onSignWaiver(attendee)}>
+                <FileSignature className="h-4 w-4 mr-1.5" />
+                Sign Waiver
+              </Button>
+            </div>
+          ) : selectable ? (
+            <Badge variant="outline" className="border-success/40 text-success">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Ready
+            </Badge>
+          ) : null}
         </div>
       </div>
     );
@@ -123,6 +153,16 @@ export function MobileActivationPreview({
               <p className="text-muted-foreground text-sm">
                 Found {lookupResult.attendee_count} {lookupResult.attendee_count === 1 ? 'person' : 'people'}
               </p>
+              {!allCheckedIn && (eligibleIds.length > 0 || waiverBlocked.length > 0) && (
+                <p className="text-sm font-medium mt-1">
+                  {eligibleIds.length} of {eligibleIds.length + waiverBlocked.length} ready to check in
+                  {waiverBlocked.length > 0 && (
+                    <span className="text-warning">
+                      {' '}— {waiverBlocked.length} still {waiverBlocked.length === 1 ? 'needs' : 'need'} to sign the waiver
+                    </span>
+                  )}
+                </p>
+              )}
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="outline" className="text-xs">
                   {lookupResult.has_group_order ? 'Group Order' : 'Individual Registration'}
@@ -271,7 +311,13 @@ export function MobileActivationPreview({
             ) : selectedCount === 0 ? (
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5" />
-                {allCheckedIn ? "Already checked in" : "Nothing to check in"}
+                {allCheckedIn
+                  ? "Already checked in"
+                  : eligibleIds.length === 0 && waiverBlocked.length > 0
+                    ? "Sign waivers above to continue"
+                    : eligibleIds.length > 0
+                      ? "Tick who's checking in"
+                      : "Nothing to check in"}
               </div>
             ) : (
               <div className="flex items-center gap-2">
