@@ -14,6 +14,7 @@ import {
   Mail,
   Shirt,
   FileSignature,
+  Tag,
 } from "lucide-react";
 import { formatTicketType } from "@/lib/ticketTypes";
 import { getStatusClassName } from "@/lib/registrationStatus";
@@ -27,6 +28,7 @@ import { EquipmentStatusService } from "@/services/equipmentStatusService";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
 import { MealPlanEditor } from "./MealPlanEditor";
+import { BandAssignDialog } from "./BandAssignDialog";
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState } from "react";
 import type { EnhancedAttendee } from "@/components/StaffActivationHub";
@@ -122,6 +124,7 @@ export function StaffAttendeeRow({
   onWaiverSigned,
 }: StaffAttendeeRowProps) {
   const [showWaiver, setShowWaiver] = useState(false);
+  const [showAssign, setShowAssign] = useState(false);
   const lines = equipmentLines(attendee);
   const activeEquipment = lines.filter((l) => l.status === "checked_out");
   const summary = attendee.tshirt_summary;
@@ -212,7 +215,16 @@ export function StaffAttendeeRow({
           )}
         </div>
 
-        <div className="flex gap-2 lg:shrink-0">
+        <div className="flex flex-wrap gap-2 lg:shrink-0">
+          <Button
+            size="sm"
+            variant={attendee.rfid_uid ? "outline" : "default"}
+            className="min-h-11 flex-1 lg:min-h-9 lg:flex-none"
+            onClick={() => setShowAssign(true)}
+          >
+            <Tag className="h-4 w-4 mr-1" />
+            {attendee.rfid_uid ? "Replace band" : "Assign band"}
+          </Button>
           {!attendee.waiver_signed && (
             <Button
               size="sm"
@@ -404,6 +416,15 @@ export function StaffAttendeeRow({
         signedBySelf={false}
         witnessedBy="Staff device"
         onSigned={onWaiverSigned}
+      />
+
+      <BandAssignDialog
+        open={showAssign}
+        onOpenChange={setShowAssign}
+        attendeeId={attendee.id}
+        attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+        currentUid={attendee.rfid_uid}
+        onAssigned={onWaiverSigned}
       />
     </Card>
   );

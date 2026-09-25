@@ -139,7 +139,7 @@ export function WaiverSigningDialog({
           </div>
         </DialogContent>
       ) : (
-      <DialogContent className="max-w-2xl w-[calc(100vw-2rem)] p-0 gap-0 max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl w-[calc(100vw-1.5rem)] p-0 gap-0 max-h-[calc(100dvh-2rem)] h-[calc(100dvh-2rem)] sm:h-auto sm:max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader className="p-4 sm:p-6 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <FileText className="h-5 w-5 shrink-0" />
@@ -169,7 +169,7 @@ export function WaiverSigningDialog({
           </div>
         </div>
 
-        <div className="border-t p-4 sm:p-6 space-y-4 bg-background">
+        <div className="shrink-0 border-t p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6 space-y-3 sm:space-y-4 bg-background max-h-[60dvh] overflow-y-auto">
           {!scrolledToEnd ? (
             <Alert>
               <ArrowDown className="h-4 w-4" />
