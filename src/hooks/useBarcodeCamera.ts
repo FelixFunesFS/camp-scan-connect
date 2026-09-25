@@ -99,7 +99,9 @@ export const useBarcodeCamera = ({
   const streamRef = useRef<MediaStream | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const lastReadRef = useRef<{ code: string; at: number } | null>(null);
-  const pendingRef = useRef<{ code: string; at: number } | null>(null);
+  // Every candidate seen recently. A stray misread no longer resets the
+  // confirmation of the real code on slower phones.
+  const pendingRef = useRef<Map<string, number>>(new Map());
   const startedAtRef = useRef<number>(0);
   const nativeLoopRef = useRef<number | null>(null);
 
@@ -116,6 +118,8 @@ export const useBarcodeCamera = ({
   const [isStarting, setIsStarting] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [engine, setEngine] = useState<ScanEngine>(null);
+  const [zoomRange, setZoomRange] = useState<{ min: number; max: number } | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   const handleDetected = useCallback(
     (raw: string) => {
@@ -142,13 +146,14 @@ export const useBarcodeCamera = ({
       //    never repeats, while the true value re-decodes within ~100 ms.
       {
         const pending = pendingRef.current;
-        if (!pending || pending.code !== code || now - pending.at > CONFIRM_WINDOW_MS) {
-          pendingRef.current = { code, at: now };
+        for (const [k, at] of pending) if (now - at > CONFIRM_WINDOW_MS) pending.delete(k);
+        if (!pending.has(code)) {
+          pending.set(code, now);
           onDiscardedRef.current?.(code, 'unconfirmed');
           return;
         }
       }
-      pendingRef.current = null;
+      pendingRef.current.clear();
       lastReadRef.current = { code, at: now };
 
 
@@ -182,9 +187,11 @@ export const useBarcodeCamera = ({
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     startedAtRef.current = 0;
-    pendingRef.current = null;
+    pendingRef.current.clear();
     setTorchOn(false);
     setTorchSupported(false);
+    setZoomRange(null);
+    setZoomLevel(1);
     setEngine(null);
   }, []);
 
@@ -194,7 +201,7 @@ export const useBarcodeCamera = ({
     let cancelled = false;
     setIsStarting(true);
     setCameraError('');
-    pendingRef.current = null;
+    pendingRef.current.clear();
     lastReadRef.current = null;
 
     const hints = new Map();
@@ -291,6 +298,8 @@ export const useBarcodeCamera = ({
           focusMode?: string[];
         };
         setTorchSupported(Boolean(capabilities.torch));
+        const zoomCap = (capabilities as unknown as { zoom?: { min: number; max: number } }).zoom;
+        if (zoomCap && zoomCap.max > 1) setZoomRange({ min: zoomCap.min ?? 1, max: zoomCap.max });
 
         // Best-effort continuous autofocus on devices that only accept it
         // through applyConstraints rather than at getUserMedia time.
@@ -419,6 +428,25 @@ export const useBarcodeCamera = ({
     }
   }, [torchOn]);
 
+  /** Cycle 1x -> 1.5x -> 2x hardware zoom, so staff can stand back far enough
+   *  for phones without close-up focus while bars stay large on screen. */
+  const zoomSteps = zoomRange
+    ? [1, 1.5, 2].filter((z) => z >= zoomRange.min && z <= zoomRange.max)
+    : [];
+  const cycleZoom = useCallback(async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track || zoomSteps.length < 2) return;
+    const idx = zoomSteps.indexOf(zoomLevel);
+    const next = zoomSteps[(idx + 1) % zoomSteps.length];
+    try {
+      await track.applyConstraints({ advanced: [{ zoom: next }] } as unknown as MediaTrackConstraints);
+      setZoomLevel(next);
+    } catch (err) {
+      console.error('Zoom failed:', err);
+      setZoomRange(null);
+    }
+  }, [zoomSteps, zoomLevel]);
+
   const switchCamera = useCallback(
     () => setFacingMode((m) => (m === 'environment' ? 'user' : 'environment')),
     []
@@ -431,6 +459,9 @@ export const useBarcodeCamera = ({
     torchOn,
     torchSupported,
     toggleTorch,
+    zoomSupported: zoomSteps.length > 1,
+    zoomLevel,
+    cycleZoom,
     isStarting,
     cameraError,
     setCameraError,

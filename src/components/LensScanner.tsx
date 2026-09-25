@@ -65,6 +65,9 @@ export const LensScanner: React.FC<LensScannerProps> = ({
     torchOn,
     torchSupported,
     toggleTorch,
+    zoomSupported,
+    zoomLevel,
+    cycleZoom,
     switchCamera,
     isStarting,
     cameraError,
@@ -269,6 +272,11 @@ export const LensScanner: React.FC<LensScannerProps> = ({
               aria-label="Toggle flashlight"
             >
               {torchOn ? <FlashlightOff className="h-4 w-4" /> : <Flashlight className="h-4 w-4" />}
+            </Button>
+          )}
+          {zoomSupported && (
+            <Button variant="secondary" onClick={cycleZoom} aria-label="Zoom" className="min-w-10 font-semibold">
+              {zoomLevel}x
             </Button>
           )}
           <Button

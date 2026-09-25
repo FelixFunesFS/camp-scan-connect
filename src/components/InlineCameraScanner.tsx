@@ -70,6 +70,9 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
     torchOn,
     torchSupported,
     toggleTorch,
+    zoomSupported,
+    zoomLevel,
+    cycleZoom,
     switchCamera,
     isStarting,
     cameraError,
@@ -164,7 +167,7 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
             </div>
             {!compact && (
               <p className="px-3 text-center text-[11px] leading-tight text-white drop-shadow">
-                Phone upright, band pulled flat — it reads at any angle.
+                Band flat, phone 6–8 in away. Blurry? Step back and tap zoom. Dark? Tap the light.
               </p>
             )}
           </div>
@@ -223,6 +226,17 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
               className={compact ? 'h-10 w-10' : undefined}
             >
               {torchOn ? <FlashlightOff className="h-4 w-4" /> : <Flashlight className="h-4 w-4" />}
+            </Button>
+          )}
+          {zoomSupported && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={cycleZoom}
+              aria-label="Zoom"
+              className={cn('min-w-10 font-semibold', compact && 'h-10')}
+            >
+              {zoomLevel}x
             </Button>
           )}
           <Button
