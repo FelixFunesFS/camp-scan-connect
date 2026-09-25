@@ -393,6 +393,19 @@ export function UnifiedStationScanner({
               </Button>
             )}
 
+            {enableAttendeeSearch && (
+              <div className="space-y-3 border-t pt-3">
+                <p className="text-sm font-medium">No band handy? Look them up</p>
+                <GateQuickSearch
+                  disabled={isLookingUp || isProcessing}
+                  onSelectCredential={(uid) => {
+                    setShowLens(false);
+                    handleRfidFound(uid);
+                  }}
+                />
+              </div>
+            )}
+
             {/* Status Indicators */}
             {isLookingUp && (
               <div className="flex items-center gap-2 text-sm">
