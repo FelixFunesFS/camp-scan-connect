@@ -131,6 +131,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
               first_name: a.first_name,
               last_name: a.last_name,
               phone: a.phone,
+              email: a.email,
               order_id: a.order_id,
               ticket_type: a.ticket_type,
               site_detail: a.site_detail,
