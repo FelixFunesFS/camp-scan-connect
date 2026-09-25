@@ -43,7 +43,9 @@ export function BandAssignDialog({
     }
   }, [open, attendeeId]);
 
-  const assign = async (raw: string) => {
+  const [clashName, setClashName] = useState<string | null>(null);
+
+  const assign = async (raw: string, force = false) => {
     const code = normalizeCredential(raw);
     if (!code) {
       setError("Scan or type the wristband code first.");
@@ -51,8 +53,10 @@ export function BandAssignDialog({
     }
     setBusy(true);
     setError("");
+    setClashName(null);
     try {
       const eventId = getCurrentEventId();
+      const now = new Date().toISOString();
 
       // Already on someone else?
       const { data: clash } = await supabase
@@ -63,35 +67,46 @@ export function BandAssignDialog({
         .in("status", ["assigned", "active"])
         .maybeSingle();
 
-      if (clash?.attendee_id && clash.attendee_id !== attendeeId) {
+      if (clash?.attendee_id && clash.attendee_id !== attendeeId && !force) {
         const other = clash.attendees as { first_name?: string; last_name?: string } | null;
-        setError(
-          `That band already belongs to ${other?.first_name ?? "another camper"} ${other?.last_name ?? ""}`.trim() +
-            ". Use a different band."
-        );
+        const name = `${other?.first_name ?? "another camper"} ${other?.last_name ?? ""}`.trim();
+        setClashName(name);
+        setError(`That band is linked to ${name}.`);
         return;
       }
 
       // Retire the band this person currently holds.
       const { data: held } = await supabase
         .from("rfid_tags")
-        .select("uid")
+        .select("uid, status")
         .eq("event_id", eventId)
         .eq("attendee_id", attendeeId)
         .in("status", ["assigned", "active"])
         .maybeSingle();
+
+      // Was this camper already checked in? Then the new band carries it over.
+      const { data: person } = await supabase
+        .from("attendees")
+        .select("checked_in_at, activated_at")
+        .eq("id", attendeeId)
+        .maybeSingle();
+      const carryActive = held?.status === "active" || !!person?.checked_in_at || !!person?.activated_at;
 
       if (held?.uid && held.uid !== code) {
         await supabase
           .from("rfid_tags")
           .update({
             status: "replaced",
-            deactivated_at: new Date().toISOString(),
+            deactivated_at: now,
             reason: "Replaced at Staff Hub",
           })
           .eq("uid", held.uid)
           .eq("event_id", eventId);
       }
+
+      const statusFields = carryActive
+        ? { status: "active" as const, activated_at: now, activation_method: "staff_assisted" }
+        : { status: "assigned" as const };
 
       const { data: tag } = await supabase
         .from("rfid_tags")
@@ -105,10 +120,10 @@ export function BandAssignDialog({
           .from("rfid_tags")
           .update({
             attendee_id: attendeeId,
-            status: "assigned",
-            issued_at: new Date().toISOString(),
+            ...statusFields,
+            issued_at: now,
             deactivated_at: null,
-            reason: null,
+            reason: force && clash?.attendee_id ? `Taken over from previous holder at Staff Hub` : null,
           })
           .eq("uid", code)
           .eq("event_id", eventId);
@@ -117,8 +132,8 @@ export function BandAssignDialog({
         const { error: insErr } = await supabase.from("rfid_tags").insert({
           uid: code,
           attendee_id: attendeeId,
-          status: "assigned",
-          issued_at: new Date().toISOString(),
+          ...statusFields,
+          issued_at: now,
           event_id: eventId,
           credential_type: inferCredentialType(code),
         });
@@ -195,6 +210,17 @@ export function BandAssignDialog({
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
+            )}
+
+            {clashName && (
+              <Button
+                variant="outline"
+                className="w-full h-12 border-destructive text-destructive"
+                disabled={busy}
+                onClick={() => assign(uid, true)}
+              >
+                Take over this band from {clashName}
+              </Button>
             )}
 
             <Button className="w-full h-12" disabled={busy || !uid.trim()} onClick={() => assign(uid)}>
