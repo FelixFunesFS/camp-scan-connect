@@ -837,35 +837,13 @@ export const EnhancedRfidAssignmentCell = ({
         <div className="min-w-0 flex-1">
           <span className="font-mono text-sm font-medium break-all">{currentRfidUid}</span>
         </div>
-        <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-1">
+        <div className="flex gap-1">
           <Button
             variant="outline"
             size="sm"
-            onClick={handleStartEdit}
+            onClick={() => { setRemoveReason(""); setRemoveConfirmed(false); setIsRemoveOpen(true); }}
             disabled={isProcessing}
-            className="h-11 px-2 text-xs sm:h-8 sm:px-3"
-            title="Change code"
-          >
-            <Edit3 className="h-3 w-3 sm:mr-0" />
-            <span className="ml-1 sm:hidden">Change</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleStartReplace}
-            disabled={isProcessing}
-            className="h-11 px-2 text-xs sm:h-8 sm:px-3"
-            title="Replace lost or damaged band"
-          >
-            <RefreshCw className="h-3 w-3" />
-            <span className="ml-1 sm:hidden">Replace</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { setRemoveReason(""); setIsRemoveOpen(true); }}
-            disabled={isProcessing}
-            className="h-11 px-2 text-xs text-destructive sm:h-8 sm:px-3"
+            className="h-11 w-full px-3 text-xs text-destructive sm:h-8 sm:w-auto"
             title="Remove band"
           >
             {isProcessing ? (
@@ -873,7 +851,7 @@ export const EnhancedRfidAssignmentCell = ({
             ) : (
               <X className="h-3 w-3" />
             )}
-            <span className="ml-1 sm:hidden">Remove</span>
+            <span className="ml-1">Remove band</span>
           </Button>
         </div>
 
