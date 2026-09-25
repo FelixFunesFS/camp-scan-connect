@@ -565,6 +565,10 @@ export const RfidAssignment = () => {
       } else {
         filtered = filtered.filter(a => ['registered', 'pending'].includes(a.registration_status || 'registered'));
       }
+      if (uiState.categoryFilter !== 'all') {
+        filtered = filtered.filter(a => getAttendeeCategory(a) === uiState.categoryFilter);
+      }
+
       if (uiState.showOnlyUnassigned) {
         filtered = filtered.filter(a => !a.rfid_uid || !['assigned', 'active'].includes(a.rfid_status || ''));
       }
