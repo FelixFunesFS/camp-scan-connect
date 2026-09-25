@@ -22,7 +22,9 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  RefreshCw,
+  CloudDownload
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
