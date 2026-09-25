@@ -27,6 +27,8 @@ interface WaiverSigningDialogProps {
   /** Set false when staff capture the signature with the attendee present. */
   signedBySelf?: boolean;
   witnessedBy?: string | null;
+  /** Busy gates: show the one-tap staff-witnessed agreement at the top. */
+  expressStaffSign?: boolean;
   onSigned: () => void;
 }
 
