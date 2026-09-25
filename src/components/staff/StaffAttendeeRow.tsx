@@ -26,6 +26,7 @@ import { HeadphonesStatusService } from "@/services/headphonesStatusService";
 import { EquipmentStatusService } from "@/services/equipmentStatusService";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
+import { MealPlanEditor } from "./MealPlanEditor";
 import { getCurrentEventId } from "@/lib/eventRuntime";
 import { useState } from "react";
 import type { EnhancedAttendee } from "@/components/StaffActivationHub";
@@ -290,6 +291,14 @@ export function StaffAttendeeRow({
               />
               <DetailItem label="Arrival" value={attendee.arrival_day} />
               <DetailItem label="Meal plan" value={formatMealPlan(attendee.meal_plan ?? null)} />
+              <div className="pt-2">
+                <MealPlanEditor
+                  attendeeId={attendee.id}
+                  attendeeName={`${attendee.first_name} ${attendee.last_name}`}
+                  currentPlan={attendee.meal_plan}
+                  onSaved={onWaiverSigned}
+                />
+              </div>
             </div>
 
             <div className="rounded-lg border bg-background p-3">
