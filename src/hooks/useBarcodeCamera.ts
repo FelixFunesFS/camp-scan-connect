@@ -398,5 +398,6 @@ export const useBarcodeCamera = ({
     cameraError,
     setCameraError,
     stopCamera,
+    engine,
   };
 };
