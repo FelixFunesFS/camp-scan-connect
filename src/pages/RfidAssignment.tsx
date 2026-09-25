@@ -104,6 +104,21 @@ export interface AttendeeData {
 
 const ROWS_PER_PAGE = 100;
 
+type AttendeeCategory = 'campers' | 'ops' | 'walkins';
+
+const getAttendeeCategory = (a: { ticket_type?: string; order_id?: string; first_name?: string }): AttendeeCategory => {
+  if (a.ticket_type === 'operational_worker' || (a.order_id || '').toUpperCase().startsWith('OPS-')) return 'ops';
+  if ((a.order_id || '').toUpperCase().startsWith('MCAMPER') || (a.first_name || '').toUpperCase().startsWith('MCAMPER-')) return 'walkins';
+  return 'campers';
+};
+
+const CATEGORY_OPTIONS: Array<{ value: AttendeeCategory | 'all'; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'campers', label: 'Campers' },
+  { value: 'ops', label: 'Operations' },
+  { value: 'walkins', label: 'Walk-Ins' },
+];
+
 const MOBILE_SORT_OPTIONS = [
   { value: 'name', label: 'Name' },
   { value: 'arrival_day', label: 'Arrival day' },
@@ -130,7 +145,8 @@ export const RfidAssignment = () => {
     sortDirection: 'asc' as 'asc' | 'desc',
     mealPlanFilter: 'all',
     arrivalDayFilter: 'all',
-    checkInStatusFilter: 'all'
+    checkInStatusFilter: 'all',
+    categoryFilter: 'all' as AttendeeCategory | 'all'
   });
 
   const [operationState, setOperationState] = useState({
@@ -199,53 +215,62 @@ export const RfidAssignment = () => {
     console.log('⏳ Loading attendees from database...');
     
     try {
-      // First, get attendees data
-      let query = supabase
-        .from('attendees')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          phone,
-          order_id,
-          ticket_type,
-          meal_plan,
-          arrival_window,
-          registration_status,
-          waiver_signed,
-          activated_at,
-          is_veteran,
-          veteran_thanked_at,
-          created_at,
-          regfox_id,
-          city,
-          state,
-          custom_fields,
-          t_shirt_size,
-          site_location_assignment,
-          site_detail,
-          rfid_tags(uid, status, activated_at)
-        `)
-        .eq('event_id', getCurrentEventId())
-        .order('arrival_window', { ascending: true })
-        .order('order_id', { ascending: true });
+      // Fetch attendees in pages so large events are never clipped at 1000 rows
+      const ATTENDEE_PAGE = 1000;
+      const data: any[] = [];
+      for (let page = 0; ; page++) {
+        let query = supabase
+          .from('attendees')
+          .select(`
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            order_id,
+            ticket_type,
+            meal_plan,
+            arrival_window,
+            registration_status,
+            waiver_signed,
+            activated_at,
+            is_veteran,
+            veteran_thanked_at,
+            created_at,
+            regfox_id,
+            city,
+            state,
+            custom_fields,
+            t_shirt_size,
+            site_location_assignment,
+            site_detail,
+            rfid_tags(uid, status, activated_at)
+          `)
+          .eq('event_id', getCurrentEventId())
+          .order('arrival_window', { ascending: true })
+          .order('order_id', { ascending: true });
 
-      // Apply registration status filter
-      if (uiState.showCancelledRegistrants) {
-        query = query.eq('registration_status', 'cancelled');
-      } else {
-        query = query.in('registration_status', ['registered', 'pending']);
+        // Apply registration status filter
+        if (uiState.showCancelledRegistrants) {
+          query = query.eq('registration_status', 'cancelled');
+        } else {
+          query = query.in('registration_status', ['registered', 'pending']);
+        }
+
+        if (uiState.mode === 'day-of') {
+          query = query.order('created_at', { ascending: false });
+        }
+
+        query = query.order('id', { ascending: true }).range(page * ATTENDEE_PAGE, page * ATTENDEE_PAGE + ATTENDEE_PAGE - 1);
+
+        const { data: pageRows, error } = await query;
+        if (error) throw error;
+        data.push(...(pageRows || []));
+        if (!pageRows || pageRows.length < ATTENDEE_PAGE) break;
       }
 
-      if (uiState.mode === 'day-of') {
-        query = query.order('created_at', { ascending: false });
-      }
+      console.log(`📊 Loaded ${data.length} attendees from database`);
 
-      const { data, error } = await query;
-      if (error) throw error;
-
-      console.log(`📊 Loaded ${data?.length || 0} attendees from database`);
 
       // Fetch activation data for all attendees
       const attendeeIds = (data || []).map((a: any) => a.id);
@@ -492,6 +517,12 @@ export const RfidAssignment = () => {
       filtered = filtered.filter(a => ['registered', 'pending'].includes(a.registration_status || 'registered'));
     }
 
+    // Category filter (campers / operations / walk-ins)
+    if (uiState.categoryFilter !== 'all') {
+      filtered = filtered.filter(a => getAttendeeCategory(a) === uiState.categoryFilter);
+    }
+
+
     // Assignment status filter
     if (uiState.showOnlyUnassigned) {
       filtered = filtered.filter(a => !a.rfid_uid || !['assigned', 'active'].includes(a.rfid_status || ''));
@@ -550,6 +581,10 @@ export const RfidAssignment = () => {
       } else {
         filtered = filtered.filter(a => ['registered', 'pending'].includes(a.registration_status || 'registered'));
       }
+      if (uiState.categoryFilter !== 'all') {
+        filtered = filtered.filter(a => getAttendeeCategory(a) === uiState.categoryFilter);
+      }
+
       if (uiState.showOnlyUnassigned) {
         filtered = filtered.filter(a => !a.rfid_uid || !['assigned', 'active'].includes(a.rfid_status || ''));
       }
@@ -573,7 +608,22 @@ export const RfidAssignment = () => {
     }
 
     return filtered;
-  }, [attendees, enhancedStatuses, uiState.showCancelledRegistrants, uiState.showOnlyUnassigned, uiState.mealPlanFilter, uiState.arrivalDayFilter, uiState.checkInStatusFilter, uiState.searchTerm]);
+  }, [attendees, enhancedStatuses, uiState.showCancelledRegistrants, uiState.showOnlyUnassigned, uiState.mealPlanFilter, uiState.arrivalDayFilter, uiState.checkInStatusFilter, uiState.searchTerm, uiState.categoryFilter]);
+
+  // Counts per category for the quick filter chips
+  const categoryCounts = useMemo(() => {
+    const base = attendees.filter(a =>
+      uiState.showCancelledRegistrants
+        ? a.registration_status === 'cancelled'
+        : ['registered', 'pending'].includes(a.registration_status || 'registered')
+    );
+    return {
+      all: base.length,
+      campers: base.filter(a => getAttendeeCategory(a) === 'campers').length,
+      ops: base.filter(a => getAttendeeCategory(a) === 'ops').length,
+      walkins: base.filter(a => getAttendeeCategory(a) === 'walkins').length,
+    };
+  }, [attendees, uiState.showCancelledRegistrants]);
 
   // Memoized sorting and pagination
   const { sortedAndPaginatedAttendees, totalPages } = useMemo(() => {
@@ -963,6 +1013,21 @@ export const RfidAssignment = () => {
                 </Sheet>
               </div>
 
+              {/* Category */}
+              <div className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1">
+                {CATEGORY_OPTIONS.map(option => (
+                  <Button
+                    key={option.value}
+                    variant={uiState.categoryFilter === option.value ? 'default' : 'ghost'}
+                    size="sm"
+                    className="h-10 min-w-0 px-1 text-[11px]"
+                    onClick={() => setUiState(prev => ({ ...prev, categoryFilter: option.value, currentPage: 1 }))}
+                  >
+                    <span className="truncate">{option.label}</span>
+                  </Button>
+                ))}
+              </div>
+
               {/* Grouping */}
               <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
                 {([
@@ -1260,6 +1325,19 @@ export const RfidAssignment = () => {
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {CATEGORY_OPTIONS.map(option => (
+                  <Button
+                    key={option.value}
+                    variant={uiState.categoryFilter === option.value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setUiState(prev => ({ ...prev, categoryFilter: option.value, currentPage: 1 }))}
+                  >
+                    {option.label}
+                    <Badge variant="secondary" className="ml-2">{categoryCounts[option.value]}</Badge>
+                  </Button>
+                ))}
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Button
