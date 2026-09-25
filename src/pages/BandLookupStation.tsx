@@ -266,7 +266,7 @@ export default function BandLookupStation() {
 
       {showLens && (
         <LensScanner
-          open={showLens}
+          isOpen={showLens}
           onClose={() => setShowLens(false)}
           onScan={(value) => {
             setShowLens(false);
