@@ -13,6 +13,7 @@ export default function DrinksStation() {
       stationTitle="Drinks Station"
       mode="quick"
       autoTrigger={true}
+      enableAttendeeSearch={true}
     >
       {(props) => <DrinksContent {...props} />}
     </UnifiedStationScanner>
