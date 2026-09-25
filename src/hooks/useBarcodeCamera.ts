@@ -172,14 +172,20 @@ export const useBarcodeCamera = ({
   );
 
   const stopCamera = useCallback(() => {
+    if (nativeLoopRef.current) {
+      cancelAnimationFrame(nativeLoopRef.current);
+      nativeLoopRef.current = null;
+    }
     controlsRef.current?.stop();
     controlsRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
     startedAtRef.current = 0;
     pendingRef.current = null;
     setTorchOn(false);
     setTorchSupported(false);
+    setEngine(null);
   }, []);
 
   useEffect(() => {
