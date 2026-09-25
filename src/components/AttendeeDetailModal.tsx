@@ -286,7 +286,7 @@ export function AttendeeDetailModal({
                             {companion.email} • {companion.phone ? formatPhoneNumber(companion.phone) : 'No phone'}
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            {companion.formatted_meal_plan || 'No Plan'} • {companion.arrival_day || 'Friday'}
+                            {companion.formatted_meal_plan || formatMealPlan(companion.meal_plan ?? null)} • {companion.arrival_day || 'Friday'}
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 items-end">

@@ -205,9 +205,9 @@ export const MobileRfidControls: React.FC<MobileRfidControlsProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Meal Plans</SelectItem>
-                <SelectItem value="1">Plan 1</SelectItem>
-                <SelectItem value="2">Plan 2</SelectItem>
-                <SelectItem value="none">No Plan</SelectItem>
+                <SelectItem value="standard">Standard Meal Plan</SelectItem>
+                <SelectItem value="vegan">Vegan Meal Plan</SelectItem>
+                <SelectItem value="none">No meal plan</SelectItem>
               </SelectContent>
             </Select>
           </div>
