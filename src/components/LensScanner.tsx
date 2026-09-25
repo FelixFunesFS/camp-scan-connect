@@ -98,6 +98,19 @@ export const LensScanner: React.FC<LensScannerProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
+  // Freeze the page behind the scanner: no rubber-banding, no accidental
+  // scrolling while someone is holding a phone against a wristband.
+  useEffect(() => {
+    if (!isOpen) return;
+    const { overflow, overscrollBehavior } = document.body.style;
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      document.body.style.overflow = overflow;
+      document.body.style.overscrollBehavior = overscrollBehavior;
+    };
+  }, [isOpen]);
+
 
   const submitManual = () => {
     const code = normalizeCredential(manualCode);
