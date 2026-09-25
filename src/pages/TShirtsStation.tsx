@@ -16,6 +16,7 @@ export default function TShirtsStation() {
       stationTitle="T-Shirts Station"
       mode="confirm"
       autoTrigger={false}
+      enableAttendeeSearch={true}
     >
       {(props) => <TShirtsContent {...props} />}
     </UnifiedStationScanner>

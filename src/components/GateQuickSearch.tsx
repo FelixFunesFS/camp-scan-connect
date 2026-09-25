@@ -171,7 +171,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
           value={term}
           disabled={disabled}
           onChange={(e) => setTerm(e.target.value)}
-          placeholder="Search name, phone or order number"
+          placeholder="Search name, phone, email or order number"
           className="h-12 pl-9 pr-10 text-base"
           autoComplete="off"
         />
@@ -198,7 +198,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
         <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <UserSearch className="h-4 w-4" />
-            No one found. Try a last name or the last 4 digits of their phone.
+            No one found. Try a last name, their email, or the last 4 digits of their phone.
           </div>
         </div>
       )}
@@ -227,6 +227,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
                       <p className="truncate text-xs text-muted-foreground">
                         {[
                           row.phone ? formatPhoneNumber(row.phone) : null,
+                          row.email || undefined,
                           row.site_detail || undefined,
                           row.order_id || undefined,
                         ]
