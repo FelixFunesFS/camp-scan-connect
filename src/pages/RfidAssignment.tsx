@@ -130,7 +130,8 @@ export const RfidAssignment = () => {
     sortDirection: 'asc' as 'asc' | 'desc',
     mealPlanFilter: 'all',
     arrivalDayFilter: 'all',
-    checkInStatusFilter: 'all'
+    checkInStatusFilter: 'all',
+    categoryFilter: 'all' as AttendeeCategory | 'all'
   });
 
   const [operationState, setOperationState] = useState({
