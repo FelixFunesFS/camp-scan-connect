@@ -486,6 +486,16 @@ export function UnifiedStationScanner({
                     <span>Logged automatically — keep the line moving.</span>
                   </div>
                 )}
+                {autoLogged && (
+                  <Button
+                    onClick={handleLetThrough}
+                    size="lg"
+                    className="mt-3 w-full h-12 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Let them through
+                  </Button>
+                )}
                 <button
                   type="button"
                   className="mt-2 text-xs underline text-muted-foreground"
