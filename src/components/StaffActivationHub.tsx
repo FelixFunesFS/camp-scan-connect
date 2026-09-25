@@ -143,6 +143,10 @@ export function StaffActivationHub() {
   const [manualRfid, setManualRfid] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [deactivationActivity, setDeactivationActivity] = useState<any[]>([]);
+
+  // Top-bar refresh / RegFox pull
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSyncingRegFox, setIsSyncingRegFox] = useState(false);
   
   // Attendee detail modal state
   // Expandable master-detail rows
