@@ -790,7 +790,25 @@ export function StaffActivationHub() {
           <div className="flex min-w-0 items-center gap-3">
             <h1 className="truncate text-2xl font-bold">Staff Hub</h1>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <Button
+              variant="default"
+              className="min-h-11"
+              onClick={handleQuickRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              className="min-h-11"
+              onClick={handleRegFoxPull}
+              disabled={isSyncingRegFox}
+            >
+              <CloudDownload className={`h-4 w-4 mr-2 ${isSyncingRegFox ? 'animate-pulse' : ''}`} />
+              Sync RegFox
+            </Button>
             <Button variant="outline" className="min-h-11" onClick={exportActivity}>
               <Download className="h-4 w-4 mr-2" />
               Export Activity
