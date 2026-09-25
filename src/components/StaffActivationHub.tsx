@@ -22,7 +22,9 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  RefreshCw,
+  CloudDownload
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -141,6 +143,10 @@ export function StaffActivationHub() {
   const [manualRfid, setManualRfid] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [deactivationActivity, setDeactivationActivity] = useState<any[]>([]);
+
+  // Top-bar refresh / RegFox pull
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSyncingRegFox, setIsSyncingRegFox] = useState(false);
   
   // Attendee detail modal state
   // Expandable master-detail rows
@@ -632,6 +638,51 @@ export function StaffActivationHub() {
     setStaffCode("");
   };
 
+  /** Instant re-read of the local roster — no RegFox round trip. */
+  const handleQuickRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([fetchAttendees(), loadDashboardData()]);
+      toast.success("List updated");
+    } catch (error) {
+      toast.error("Could not refresh the list");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  /** Fallback when a RegFox change has not arrived yet. */
+  const handleRegFoxPull = async () => {
+    setIsSyncingRegFox(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('regfox-sync', {
+        body: { sync_type: 'manual_sync', event_id: getCurrentEventId() },
+      });
+
+      if (error) throw error;
+
+      if ((data as any)?.skipped) {
+        toast.info("A sync is already running — new registrations are on the way");
+      } else {
+        toast.success("Pulling the latest registrations from RegFox…");
+      }
+
+      // Give the background pull a head start, then show the new rows.
+      setTimeout(() => {
+        fetchAttendees();
+        loadDashboardData();
+      }, 8000);
+    } catch (error: any) {
+      if (String(error?.message ?? '').includes('SYNC_IN_PROGRESS')) {
+        toast.info("A sync is already running. Try the refresh button in a moment.");
+      } else {
+        toast.error("Could not reach RegFox. Check the connection and try again.");
+      }
+    } finally {
+      setIsSyncingRegFox(false);
+    }
+  };
+
   // Deactivation functions
   const getReasonText = () => {
     if (selectedReason === "other") {
@@ -739,7 +790,25 @@ export function StaffActivationHub() {
           <div className="flex min-w-0 items-center gap-3">
             <h1 className="truncate text-2xl font-bold">Staff Hub</h1>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <Button
+              variant="default"
+              className="min-h-11"
+              onClick={handleQuickRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              className="min-h-11"
+              onClick={handleRegFoxPull}
+              disabled={isSyncingRegFox}
+            >
+              <CloudDownload className={`h-4 w-4 mr-2 ${isSyncingRegFox ? 'animate-pulse' : ''}`} />
+              Sync RegFox
+            </Button>
             <Button variant="outline" className="min-h-11" onClick={exportActivity}>
               <Download className="h-4 w-4 mr-2" />
               Export Activity
