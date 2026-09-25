@@ -197,6 +197,7 @@ export function UnifiedStationScanner({
     setAttendeeReadiness(null);
     setManualUid("");
     setError("");
+    setAutoLogged(false);
     setAutoTriggered(false);
     setShowStaffOverride(false);
     setShowStaffActivation(false);
@@ -467,9 +468,19 @@ export function UnifiedStationScanner({
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">{error}</span>
                 </div>
-                <Button variant="outline" size="sm" className="mt-2 w-full sm:w-auto" onClick={() => setShowIssue(true)}>
-                  Log issue
-                </Button>
+                {autoLogged && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                    <span>Logged automatically — keep the line moving.</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="mt-2 text-xs underline text-muted-foreground"
+                  onClick={() => setShowIssue(true)}
+                >
+                  Add a note
+                </button>
                 <ScanIssueDialog open={showIssue} onOpenChange={setShowIssue} scannedCode={lastCode} stationType={stationType} errorMessage={error} />
               </div>
             )}
