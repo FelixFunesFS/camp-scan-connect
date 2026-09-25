@@ -172,11 +172,12 @@ export const LensScanner: React.FC<LensScannerProps> = ({
         </Button>
       </div>
 
-      {/* Aiming frame with corner reticle + sweeping scan beam */}
-      <div className="pointer-events-none relative flex flex-1 flex-col items-center justify-center gap-3 px-6">
+      {/* Aiming frame with corner reticle + sweeping scan beam.
+          Shrinks in landscape so the controls below never get pushed off. */}
+      <div className="pointer-events-none relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 landscape:gap-1.5">
         <div
           className={cn(
-            'relative h-44 w-full max-w-sm overflow-hidden rounded-2xl border-2 transition-colors',
+            'relative h-44 w-full max-w-sm overflow-hidden rounded-2xl border-2 transition-colors landscape:h-24 landscape:max-w-md',
             flash === 'hit'
               ? 'border-emerald-400'
               : flash === 'miss'
@@ -199,7 +200,8 @@ export const LensScanner: React.FC<LensScannerProps> = ({
           </div>
         ) : (
           <p className="max-w-xs text-center text-xs text-white/80">
-            Pull the band flat and hold the phone 6–8 inches away. Any angle works.
+            Keep the phone upright and pull the band flat, 6–8 inches away. It scans at
+            any angle — no need to turn the phone sideways.
           </p>
         )}
       </div>
