@@ -27,6 +27,8 @@ interface UnifiedStationScannerProps {
   children: (props: StationActionProps) => React.ReactNode;
   mode?: 'quick' | 'confirm'; // quick = auto-execute, confirm = show preview
   autoTrigger?: boolean; // auto-trigger action after successful scan
+  /** Show the name / phone / order lookup for busy lines (gate check-in). */
+  enableAttendeeSearch?: boolean;
 }
 
 export interface StationActionProps {
