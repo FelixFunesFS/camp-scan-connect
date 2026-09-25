@@ -101,6 +101,7 @@ export const useBarcodeCamera = ({
   const lastReadRef = useRef<{ code: string; at: number } | null>(null);
   const pendingRef = useRef<{ code: string; at: number } | null>(null);
   const startedAtRef = useRef<number>(0);
+  const nativeLoopRef = useRef<number | null>(null);
 
   const onScanRef = useRef(onScan);
   const onInvalidReadRef = useRef(onInvalidRead);
@@ -114,6 +115,7 @@ export const useBarcodeCamera = ({
   const [torchSupported, setTorchSupported] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [engine, setEngine] = useState<ScanEngine>(null);
 
   const handleDetected = useCallback(
     (raw: string) => {
