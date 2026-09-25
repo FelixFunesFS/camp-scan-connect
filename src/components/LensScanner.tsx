@@ -72,7 +72,9 @@ export const LensScanner: React.FC<LensScannerProps> = ({
     active: isOpen,
     onScan: (code) => {
       setReadError('');
+      setScanned(code);
       pulse('hit');
+      setTimeout(() => setScanned(''), 2000);
       onScan(code);
     },
     onInvalidRead: (code) => {
