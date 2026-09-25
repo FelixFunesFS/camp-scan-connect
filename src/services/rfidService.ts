@@ -16,6 +16,7 @@ export interface RfidTag {
     first_name: string;
     last_name: string;
     ticket_type: string;
+    waiver_signed?: boolean | null;
     email?: string;
     phone?: string;
   };
@@ -54,6 +55,7 @@ class RfidService {
             first_name,
             last_name,
             ticket_type,
+            waiver_signed,
             email,
             phone
           )

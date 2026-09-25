@@ -6,6 +6,8 @@ export interface RfidTag {
     last_name: string;
     ticket_type: string;
     is_veteran?: boolean;
+    id?: string;
+    waiver_signed?: boolean | null;
   };
 }
 
