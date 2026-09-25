@@ -13,6 +13,7 @@ interface GateSearchRow {
   first_name: string;
   last_name: string;
   phone: string | null;
+  email: string | null;
   order_id: string | null;
   ticket_type: string | null;
   site_detail: string | null;
@@ -62,6 +63,7 @@ export function GateQuickSearch({ onSelectCredential, disabled }: GateQuickSearc
           `first_name.ilike.${like}`,
           `last_name.ilike.${like}`,
           `order_id.ilike.${like}`,
+          `email.ilike.${like}`,
         ];
         if (digits.length >= 3) {
           filters.push(`phone.ilike.%${digits}%`);
