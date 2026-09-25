@@ -20,6 +20,7 @@ import { InlineCameraScanner } from "@/components/InlineCameraScanner";
 import { OfflineQueueBadge } from "@/components/OfflineQueueBadge";
 import { describeUnknownCredential } from "@/lib/credentialLookup";
 import { ScanIssueDialog } from "@/components/ScanIssueDialog";
+import { autoLogScanIssue } from "@/lib/autoScanIssueLog";
 import { normalizeCredential } from "@/lib/credentialFormat";
 import { GateQuickSearch } from "@/components/GateQuickSearch";
 import { WaiverSigningDialog } from "@/components/WaiverSigningDialog";
@@ -61,6 +62,7 @@ export function UnifiedStationScanner({
   const [error, setError] = useState<string>("");
   const [lastCode, setLastCode] = useState("");
   const [showIssue, setShowIssue] = useState(false);
+  const [autoLogged, setAutoLogged] = useState(false);
   const [autoTriggered, setAutoTriggered] = useState(false);
   const [showStaffOverride, setShowStaffOverride] = useState(false);
   const [showStaffActivation, setShowStaffActivation] = useState(false);
@@ -104,9 +106,12 @@ export function UnifiedStationScanner({
         setAutoTriggered(false);
         
       } else {
-        setError(await describeUnknownCredential(uid));
+        const message = await describeUnknownCredential(uid);
+        setError(message);
         setSelectedRfid(null);
         setAttendeeReadiness(null);
+        setAutoLogged(true);
+        autoLogScanIssue({ scannedCode: uid, stationType, errorMessage: message, issueType: 'not_in_db' });
       }
 
     } catch (error) {
@@ -114,6 +119,13 @@ export function UnifiedStationScanner({
       setError("Failed to look up wristband. Please try again.");
       setSelectedRfid(null);
       setAttendeeReadiness(null);
+      setAutoLogged(true);
+      autoLogScanIssue({
+        scannedCode: uid,
+        stationType,
+        errorMessage: error instanceof Error ? error.message : 'Lookup failed',
+        issueType: 'other',
+      });
     } finally {
       setIsLookingUp(false);
     }
