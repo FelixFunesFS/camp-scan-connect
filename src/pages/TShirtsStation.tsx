@@ -117,7 +117,7 @@ function TShirtsContent({
       );
 
       if (stillPending === 0) {
-        setTimeout(() => onReset(), 2000);
+        setTimeout(() => onReset(), 5000);
       }
 
     } catch (error) {
