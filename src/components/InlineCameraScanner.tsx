@@ -51,6 +51,7 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
   onExpand,
   autoStart = false,
   paused = false,
+  decodePaused = false,
   compact = false,
   collapsed = false,
   collapsedLabel = 'Scanner ready',
