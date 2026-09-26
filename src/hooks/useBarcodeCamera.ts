@@ -115,9 +115,11 @@ export const useBarcodeCamera = ({
   const onScanRef = useRef(onScan);
   const onInvalidReadRef = useRef(onInvalidRead);
   const onDiscardedRef = useRef(onDiscarded);
+  const decodePausedRef = useRef(decodePaused);
   onScanRef.current = onScan;
   onInvalidReadRef.current = onInvalidRead;
   onDiscardedRef.current = onDiscarded;
+  decodePausedRef.current = decodePaused;
 
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [torchOn, setTorchOn] = useState(false);
