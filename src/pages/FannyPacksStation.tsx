@@ -11,6 +11,7 @@ export default function FannyPacksStation() {
       stationTitle="Fanny Packs Station"
       mode="quick"
       autoTrigger={true}
+      enableAttendeeSearch={true}
     >
       {(props) => <FannyPacksContent {...props} />}
     </UnifiedStationScanner>

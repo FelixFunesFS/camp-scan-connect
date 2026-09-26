@@ -17,8 +17,14 @@ interface InlineCameraScannerProps {
   onExpand?: () => void;
   /** Start the camera as soon as the panel mounts. */
   autoStart?: boolean;
-  /** External pause switch (e.g. a full-screen scanner is open). */
+  /** Hard stop — releases the camera (e.g. the full-screen scanner is open). */
   paused?: boolean;
+  /**
+   * Soft pause: stop reacting to scans but keep the camera (and the
+   * flashlight) running, so staff don't have to switch the light back on
+   * after every camper.
+   */
+  decodePaused?: boolean;
   /** Short strip preview with icon-only controls (station pages). */
   compact?: boolean;
   /** Thin status bar only — camera keeps running but the preview is hidden. */
@@ -45,6 +51,7 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
   onExpand,
   autoStart = false,
   paused = false,
+  decodePaused = false,
   compact = false,
   collapsed = false,
   collapsedLabel = 'Scanner ready',
@@ -78,6 +85,7 @@ export const InlineCameraScanner: React.FC<InlineCameraScannerProps> = ({
     cameraError,
   } = useBarcodeCamera({
     active: running && !paused && !tabHidden,
+    decodePaused,
     acceptAnyPayload,
     diagnostics,
     onDiscarded,

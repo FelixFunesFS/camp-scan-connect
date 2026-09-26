@@ -11,6 +11,7 @@ export default function HeadphonesStation() {
       stationTitle="Headphones Station"
       mode="quick"
       autoTrigger={true}
+      enableAttendeeSearch={true}
     >
       {(props) => <HeadphonesContent {...props} />}
     </UnifiedStationScanner>

@@ -11,6 +11,7 @@ export default function GolfCartsStation() {
       stationTitle="Golf Carts Station"
       mode="quick"
       autoTrigger={true}
+      enableAttendeeSearch={true}
     >
       {(props) => <GolfCartsContent {...props} />}
     </UnifiedStationScanner>

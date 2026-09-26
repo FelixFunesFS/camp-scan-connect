@@ -70,6 +70,12 @@ export type DiscardReason = 'warmup' | 'unconfirmed' | 'retail-shape' | 'invalid
 interface UseBarcodeCameraOptions {
   /** Camera runs only while this is true. */
   active: boolean;
+  /**
+   * Stop acting on decodes without releasing the camera. The stream (and the
+   * torch with it) stays on, so the flashlight does not switch itself off
+   * every time a scan is being processed.
+   */
+  decodePaused?: boolean;
   /** Called with a normalized, format-validated payload. */
   onScan: (code: string) => void;
   /** Called when a code decoded but failed credential validation. */
@@ -89,6 +95,7 @@ interface UseBarcodeCameraOptions {
  */
 export const useBarcodeCamera = ({
   active,
+  decodePaused = false,
   onScan,
   onInvalidRead,
   acceptAnyPayload = false,
@@ -108,9 +115,11 @@ export const useBarcodeCamera = ({
   const onScanRef = useRef(onScan);
   const onInvalidReadRef = useRef(onInvalidRead);
   const onDiscardedRef = useRef(onDiscarded);
+  const decodePausedRef = useRef(decodePaused);
   onScanRef.current = onScan;
   onInvalidReadRef.current = onInvalidRead;
   onDiscardedRef.current = onDiscarded;
+  decodePausedRef.current = decodePaused;
 
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [torchOn, setTorchOn] = useState(false);
@@ -123,8 +132,11 @@ export const useBarcodeCamera = ({
 
   const handleDetected = useCallback(
     (raw: string) => {
+      // Soft pause: the stream (and torch) keeps running, we just ignore reads.
+      if (decodePausedRef.current) return;
       const code = normalizeCredential(raw);
       if (!code) return;
+
 
       const now = Date.now();
 
