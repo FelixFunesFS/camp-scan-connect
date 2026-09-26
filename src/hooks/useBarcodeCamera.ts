@@ -132,8 +132,11 @@ export const useBarcodeCamera = ({
 
   const handleDetected = useCallback(
     (raw: string) => {
+      // Soft pause: the stream (and torch) keeps running, we just ignore reads.
+      if (decodePausedRef.current) return;
       const code = normalizeCredential(raw);
       if (!code) return;
+
 
       const now = Date.now();
 
