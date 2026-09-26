@@ -70,6 +70,12 @@ export type DiscardReason = 'warmup' | 'unconfirmed' | 'retail-shape' | 'invalid
 interface UseBarcodeCameraOptions {
   /** Camera runs only while this is true. */
   active: boolean;
+  /**
+   * Stop acting on decodes without releasing the camera. The stream (and the
+   * torch with it) stays on, so the flashlight does not switch itself off
+   * every time a scan is being processed.
+   */
+  decodePaused?: boolean;
   /** Called with a normalized, format-validated payload. */
   onScan: (code: string) => void;
   /** Called when a code decoded but failed credential validation. */
@@ -89,6 +95,7 @@ interface UseBarcodeCameraOptions {
  */
 export const useBarcodeCamera = ({
   active,
+  decodePaused = false,
   onScan,
   onInvalidRead,
   acceptAnyPayload = false,
