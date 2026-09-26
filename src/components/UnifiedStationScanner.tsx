@@ -246,7 +246,7 @@ export function UnifiedStationScanner({
       
     } catch (error) {
       console.error("Failed to record staff override:", error);
-      toast.error("Failed to record staff override");
+      toast.error("Failed to record staff override", { duration: Infinity, closeButton: true });
     }
   };
 
@@ -265,11 +265,11 @@ export function UnifiedStationScanner({
         // Refresh the attendee data to show activated state
         await handleRfidFound(selectedRfid.uid);
       } else {
-        toast.error(result.message);
+        toast.error(result.message, { duration: Infinity, closeButton: true });
       }
     } catch (error) {
       console.error('Direct activation error:', error);
-      toast.error('Failed to activate attendee');
+      toast.error('Failed to activate attendee', { duration: Infinity, closeButton: true });
     } finally {
       setIsActivating(false);
     }
@@ -290,7 +290,7 @@ export function UnifiedStationScanner({
       setShowLens(false);
     } catch (error) {
       console.error("Failed to handle staff activation result:", error);
-      toast.error("Failed to process staff activation");
+      toast.error("Failed to process staff activation", { duration: Infinity, closeButton: true });
     }
   };
 

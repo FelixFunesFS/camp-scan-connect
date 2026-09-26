@@ -133,7 +133,7 @@ export default function TShirtHub() {
       setPeople(rows);
     } catch (e) {
       console.error("Error loading t-shirt hub data", e);
-      toast.error("Could not load shirt orders");
+      toast.error("Could not load shirt orders", { duration: Infinity, closeButton: true });
     } finally {
       setLoading(false);
     }
