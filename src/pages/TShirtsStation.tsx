@@ -84,7 +84,7 @@ function TShirtsContent({
     );
 
     if (!selectedOrders.length) {
-      toast.error("No valid orders selected for pickup");
+      toast.error("No valid orders selected for pickup", { duration: Infinity, closeButton: true });
       return;
     }
 
@@ -117,12 +117,12 @@ function TShirtsContent({
       );
 
       if (stillPending === 0) {
-        setTimeout(() => onReset(), 2000);
+        setTimeout(() => onReset(), 5000);
       }
 
     } catch (error) {
       console.error("Error processing t-shirt pickups:", error);
-      toast.error("Failed to process t-shirt pickups");
+      toast.error("Failed to process t-shirt pickups", { duration: Infinity, closeButton: true });
     } finally {
       setIsProcessing(false);
     }
