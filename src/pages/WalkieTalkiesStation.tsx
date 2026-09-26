@@ -11,6 +11,7 @@ export default function WalkieTalkiesStation() {
       stationTitle="Walkie Talkies Station"
       mode="quick"
       autoTrigger={true}
+      enableAttendeeSearch={true}
     >
       {(props) => <WalkieTalkiesContent {...props} />}
     </UnifiedStationScanner>
