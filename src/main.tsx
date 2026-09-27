@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { startAutoUpdate } from "./lib/autoUpdate";
 
 // Ensure React is properly initialized
 if (!React) {
@@ -9,3 +10,5 @@ if (!React) {
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+startAutoUpdate();
