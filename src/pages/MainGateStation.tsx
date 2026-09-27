@@ -2,19 +2,23 @@ import { useCallback, useEffect, useState } from "react";
 import { UnifiedStationScanner } from "@/components/UnifiedStationScanner";
 import { StationActionProps } from "@/components/UnifiedStationScanner";
 import { toast } from "sonner";
-import { DoorOpen, Building } from "lucide-react";
+import { DoorOpen, PartyPopper } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-/** Guards against an entry being instantly flipped to an exit by a lingering band. */
-const FLIP_GUARD_MS = 15_000;
-const RECENT_GATE_SCANS = new Map<string, { at: number; action: string }>();
+/**
+ * The Main Gate is entry-only. Campers never scan out, so a scan always
+ * records an arrival. A band scanned twice in quick succession (lingering in
+ * front of the camera) is ignored instead of double-counted.
+ */
+const DUPLICATE_GUARD_MS = 15_000;
+const RECENT_GATE_SCANS = new Map<string, number>();
 
 
 const MainGateStation = () => {
   return (
     <UnifiedStationScanner 
       stationType="main_gate"
-      stationTitle="Main Gate Access Control"
+      stationTitle="Main Gate Entry"
       mode="quick"
       autoTrigger={true}
       enableAttendeeSearch={true}
@@ -32,91 +36,66 @@ const MainGateContent = ({
   isProcessing, 
   setIsProcessing, 
   executeAction, 
-  getLatestStatus, 
   onReset 
 }: MainGateContentProps) => {
-  const [currentStatus, setCurrentStatus] = useState<string>("");
+  const [welcomed, setWelcomed] = useState(false);
 
-  // Load current gate status when RFID is scanned
-  useEffect(() => {
-    if (selectedRfid?.uid && attendeeReadiness?.isReady) {
-      const loadStatus = async () => {
-        try {
-          const status = await getLatestStatus('current_status');
-          setCurrentStatus(status || 'off_site');
-        } catch (error) {
-          console.error('Error loading gate status:', error);
-          setCurrentStatus('off_site');
-        }
-      };
-      
-      loadStatus();
-    }
-  }, [selectedRfid?.uid, attendeeReadiness?.isReady, getLatestStatus]);
-
-  const handleGateToggle = useCallback(async () => {
+  const handleGateEntry = useCallback(async () => {
     if (!selectedRfid?.attendee_id || isProcessing) return;
     
     setIsProcessing(true);
     
     try {
-      // Get the latest status directly from database to avoid race conditions
-      const latestStatus = await getLatestStatus('current_status') || 'off_site';
-      const isCurrentlyOnSite = latestStatus === 'on_site' || latestStatus === 'gate_entry';
-      const transactionType = isCurrentlyOnSite ? 'gate_exit' : 'gate_entry';
-      const newStatus = isCurrentlyOnSite ? 'off_site' : 'on_site';
-      const actionText = isCurrentlyOnSite ? 'exit' : 'entry';
-
-      // A band lingering in front of the camera used to log an entry and then
-      // immediately an exit. Ignore an opposite-direction scan of the same band
-      // within 15 seconds of the one just recorded.
+      // A band lingering in front of the camera would otherwise log the same
+      // arrival over and over. Ignore repeat scans of the same band within
+      // 15 seconds of the one just recorded.
       const recent = RECENT_GATE_SCANS.get(selectedRfid.uid);
-      if (recent && Date.now() - recent.at < FLIP_GUARD_MS && recent.action !== actionText) {
-        toast.info(`Already recorded — ${recent.action === 'entry' ? 'entry' : 'exit'} logged a moment ago.`, {
+      if (recent && Date.now() - recent < DUPLICATE_GUARD_MS) {
+        toast.info("Already welcomed in — entry logged a moment ago.", {
           duration: 2500,
         });
         setTimeout(() => onReset(), 1200);
         return;
       }
-      RECENT_GATE_SCANS.set(selectedRfid.uid, { at: Date.now(), action: actionText });
+      RECENT_GATE_SCANS.set(selectedRfid.uid, Date.now());
       
-      
-      await executeAction(transactionType, {
-        current_status: newStatus,
+      await executeAction('gate_entry', {
+        current_status: 'on_site',
         extra_data: {
           timestamp: new Date().toISOString(),
-          action: actionText
+          action: 'entry'
         }
       });
 
-      setCurrentStatus(newStatus);
+      setWelcomed(true);
       
       const attendeeName = selectedRfid.attendee 
         ? `${selectedRfid.attendee.first_name} ${selectedRfid.attendee.last_name}`
         : 'Attendee';
       
-      toast.success(`✅ ${attendeeName} ${actionText} recorded successfully`, {
+      toast.success(`✅ Welcome, ${attendeeName}! Entry recorded.`, {
         duration: 2000,
       });
       
       // Reset after short delay
       setTimeout(() => {
+        setWelcomed(false);
         onReset();
       }, 1500);
       
     } catch (error) {
-      console.error('Gate access error:', error);
-      toast.error('Failed to record gate access. Please try again.');
+      console.error('Gate entry error:', error);
+      toast.error('Failed to record entry. Please try again.');
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedRfid, isProcessing, executeAction, setIsProcessing, onReset, getLatestStatus]);
+  }, [selectedRfid, isProcessing, executeAction, setIsProcessing, onReset]);
 
-  // Auto-trigger gate toggle when conditions are met
+  // Auto-trigger gate entry when conditions are met
   useEffect(() => {
     const handleAutoTrigger = () => {
       if (attendeeReadiness?.isReady && selectedRfid && !isProcessing) {
-        handleGateToggle();
+        handleGateEntry();
       }
     };
 
@@ -126,7 +105,7 @@ const MainGateContent = ({
     return () => {
       window.removeEventListener('autoTrigger', handleAutoTrigger);
     };
-  }, [attendeeReadiness?.isReady, selectedRfid, isProcessing, handleGateToggle]);
+  }, [attendeeReadiness?.isReady, selectedRfid, isProcessing, handleGateEntry]);
 
   if (!attendeeReadiness?.isReady) {
     return (
@@ -136,7 +115,7 @@ const MainGateContent = ({
             <DoorOpen className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="font-medium">Main Gate</p>
             <p className="text-sm text-muted-foreground">
-              {attendeeReadiness ? attendeeReadiness.message : "Scan a wristband to record an entry or exit."}
+              {attendeeReadiness ? attendeeReadiness.message : "Scan a wristband to welcome someone in."}
             </p>
           </div>
         </CardContent>
@@ -144,46 +123,22 @@ const MainGateContent = ({
     );
   }
 
-  const getStatusDisplay = () => {
-    switch (currentStatus) {
-      case 'on_site':
-      case 'gate_entry':
-        return {
-          icon: <Building className="w-8 h-8 text-green-600" />,
-          text: 'ON SITE',
-          subtitle: 'Tap to record exit',
-          bgColor: 'bg-green-50 border-green-200',
-          textColor: 'text-green-800'
-        };
-      case 'off_site':
-      case 'gate_exit':
-      default:
-        return {
-          icon: <DoorOpen className="w-8 h-8 text-blue-600" />,
-          text: 'OFF SITE',
-          subtitle: 'Tap to record entry',
-          bgColor: 'bg-blue-50 border-blue-200',
-          textColor: 'text-blue-800'
-        };
-    }
-  };
-
-  const statusDisplay = getStatusDisplay();
-
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className={`text-center p-6 rounded-lg border-2 ${statusDisplay.bgColor}`}>
+        <div className={`text-center p-6 rounded-lg border-2 ${welcomed ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
           <div className="flex justify-center mb-4">
-            {statusDisplay.icon}
+            {welcomed
+              ? <PartyPopper className="w-8 h-8 text-green-600" />
+              : <DoorOpen className="w-8 h-8 text-blue-600" />}
           </div>
           
-          <h3 className={`text-2xl font-bold mb-2 ${statusDisplay.textColor}`}>
-            {statusDisplay.text}
+          <h3 className={`text-2xl font-bold mb-2 ${welcomed ? 'text-green-800' : 'text-blue-800'}`}>
+            {welcomed ? 'WELCOME IN!' : 'READY TO ENTER'}
           </h3>
           
           <p className="text-muted-foreground mb-4">
-            {statusDisplay.subtitle}
+            {welcomed ? 'Entry recorded — enjoy!' : 'Recording entry...'}
           </p>
           
           {isProcessing && (
