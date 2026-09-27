@@ -90,5 +90,13 @@ export const inferCredentialType = (raw: string): CredentialType => {
  * Codes are case-insensitive: always compare and store the upper-case form so
  * a reader that emits lower case still matches the assigned band.
  */
-export const normalizeCredential = (raw: string): string =>
-  (raw ?? '').trim().toUpperCase();
+export const normalizeCredential = (raw: string): string => {
+  let value = (raw ?? '').trim().toUpperCase();
+  // Many scanners drop the hyphen from XXX-XXXX wristband codes, producing a
+  // 7-character read (e.g. ACRLGYR) that never matches the stored ACR-LGYR.
+  // Restore the hyphen so those scans resolve instead of erroring.
+  if (/^[A-Z0-9]{7}$/.test(value)) {
+    value = `${value.slice(0, 3)}-${value.slice(3)}`;
+  }
+  return value;
+};
